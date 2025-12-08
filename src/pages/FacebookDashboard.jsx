@@ -23,6 +23,9 @@ import {
   FileText,
   Facebook,
   Instagram as InstagramIcon,
+  Heart,
+  MessageCircle,
+  Share2,
   Settings,
   Shield,
 } from "lucide-react";
@@ -309,6 +312,9 @@ useEffect(() => {
   const [overviewSnapshot, setOverviewSnapshot] = useState(null);
   const [overviewLoading, setOverviewLoading] = useState(false);
   const [overviewSource, setOverviewSource] = useState(null);
+  const [fbPosts, setFbPosts] = useState([]);
+  const [fbPostsLoading, setFbPostsLoading] = useState(false);
+  const [fbPostsError, setFbPostsError] = useState("");
 
   const activeSnapshot = useMemo(
     () => (overviewSnapshot?.accountId === accountSnapshotKey && accountSnapshotKey ? overviewSnapshot : null),
@@ -326,6 +332,9 @@ useEffect(() => {
     setCoverImage(null);
     setCoverError("");
     setFollowersOverride(null);
+    setFbPosts([]);
+    setFbPostsError("");
+    setFbPostsLoading(false);
   }, [accountSnapshotKey]);
 
   useEffect(() => {
@@ -440,6 +449,49 @@ useEffect(() => {
       controller.abort();
     };
   }, [accountConfig?.facebookPageId, sinceParam, untilParam, apiFetch]);
+
+  useEffect(() => {
+    if (!accountConfig?.facebookPageId) {
+      setFbPosts([]);
+      setFbPostsLoading(false);
+      setFbPostsError("Página do Facebook não configurada.");
+      return () => {};
+    }
+    if (!sinceParam || !untilParam) {
+      setFbPosts([]);
+      return () => {};
+    }
+
+    let cancelled = false;
+    const loadPosts = async () => {
+      setFbPostsLoading(true);
+      setFbPostsError("");
+      try {
+        const params = new URLSearchParams();
+        params.set("pageId", accountConfig.facebookPageId);
+        params.set("since", sinceParam);
+        params.set("until", untilParam);
+        params.set("limit", "8");
+        const resp = await apiFetch(`/api/facebook/posts?${params.toString()}`);
+        if (cancelled) return;
+        const posts = Array.isArray(resp?.posts) ? resp.posts : [];
+        setFbPosts(posts);
+      } catch (err) {
+        if (cancelled) return;
+        setFbPosts([]);
+        setFbPostsError(err?.message || "Não foi possível carregar os posts.");
+      } finally {
+        if (!cancelled) {
+          setFbPostsLoading(false);
+        }
+      }
+    };
+
+    loadPosts();
+    return () => {
+      cancelled = true;
+    };
+  }, [accountConfig?.facebookPageId, apiFetch, sinceParam, untilParam]);
   const avatarUrl = useMemo(
     () => pageInfo?.picture_url || accountConfig?.profilePictureUrl || accountConfig?.pagePictureUrl || "",
     [pageInfo?.picture_url, accountConfig?.pagePictureUrl, accountConfig?.profilePictureUrl],
@@ -567,6 +619,17 @@ useEffect(() => {
       reachMetricValue,
     ],
   );
+
+  const fbTopPosts = useMemo(() => {
+    if (!Array.isArray(fbPosts) || !fbPosts.length) return [];
+    return [...fbPosts]
+      .sort((a, b) => {
+        const aTime = a?.timestamp ? new Date(a.timestamp).getTime() : 0;
+        const bTime = b?.timestamp ? new Date(b.timestamp).getTime() : 0;
+        return bTime - aTime;
+      })
+      .slice(0, 6);
+  }, [fbPosts]);
 
   const reachPeriodLabel = useMemo(() => {
     if (!selectedRange.since || !selectedRange.until) return "Alcance";
@@ -910,11 +973,77 @@ useEffect(() => {
                 <div className="ig-profile-vertical__top-posts">
                   <h4>Top posts</h4>
                   <div className="ig-top-posts-list">
-                    <div className="ig-empty-state">
-                      <p style={{ fontSize: '14px', color: '#666', textAlign: 'center', padding: '20px 0' }}>
-                        Seção de Top Posts será implementada em breve
-                      </p>
-                    </div>
+                    {fbPostsLoading && !fbTopPosts.length ? (
+                      <div className="ig-empty-state">Carregando...</div>
+                    ) : fbPostsError ? (
+                      <div className="ig-empty-state">{fbPostsError}</div>
+                    ) : fbTopPosts.length ? (
+                      fbTopPosts.map((post) => {
+                        const preview = post.previewUrl || post.full_picture || post.mediaUrl || post.media_url;
+                        const captionRaw = post.message || "Sem legenda";
+                        const caption = captionRaw.length > 140 ? `${captionRaw.slice(0, 140)}…` : captionRaw;
+                        const postDate = post.timestamp ? new Date(post.timestamp) : null;
+                        const dateLabel = postDate
+                          ? `${postDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })} ${postDate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
+                          : "";
+                        const permalink = post.permalink;
+                        const openPost = () => {
+                          if (permalink) window.open(permalink, "_blank", "noopener,noreferrer");
+                        };
+                        return (
+                          <div key={post.id || post.timestamp} className="ig-top-post-compact">
+                            <div className="ig-top-post-compact__main">
+                              <div className="ig-top-post-compact__left">
+                                <div
+                                  className="ig-top-post-compact__thumb"
+                                  onClick={openPost}
+                                  role="button"
+                                  tabIndex={0}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" || e.key === " ") {
+                                      e.preventDefault();
+                                      openPost();
+                                    }
+                                  }}
+                                >
+                                  {preview ? (
+                                    <img src={preview} alt="Post do Facebook" />
+                                  ) : (
+                                    <div className="ig-empty-thumb">Sem imagem</div>
+                                  )}
+                                </div>
+                                <div className="ig-top-post-compact__datetime">{dateLabel}</div>
+                              </div>
+                              <div className="ig-top-post-compact__right">
+                                <div className="ig-top-post-compact__metrics-column">
+                                  <span className="ig-metric ig-metric--like">
+                                    <Heart size={18} fill="#ef4444" color="#ef4444" />
+                                    <span className="ig-metric__value">{formatShortNumber(post.reactions ?? 0)}</span>
+                                  </span>
+                                  <span className="ig-metric ig-metric--comment">
+                                    <MessageCircle size={18} color="#6366f1" />
+                                    <span className="ig-metric__value">{formatShortNumber(post.comments ?? 0)}</span>
+                                  </span>
+                                  <span className="ig-metric ig-metric--share">
+                                    <Share2 size={18} color="#f97316" />
+                                    <span className="ig-metric__value">{formatShortNumber(post.shares ?? 0)}</span>
+                                  </span>
+                                  <span className="ig-metric ig-metric--reach">
+                                    <BarChart3 size={18} color="#0ea5e9" />
+                                    <span className="ig-metric__value">{formatShortNumber(post.reach ?? post.impressions ?? 0)}</span>
+                                  </span>
+                                </div>
+                                <div className="ig-top-post-compact__caption">
+                                  {caption}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="ig-empty-state">Sem posts no período selecionado.</div>
+                    )}
                   </div>
                 </div>
               </div>

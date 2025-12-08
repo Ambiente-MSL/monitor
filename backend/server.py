@@ -627,8 +627,8 @@ def _enrich_facebook_metrics_payload(payload: Dict[str, Any]) -> None:
 
 def fetch_facebook_posts(
     page_id: str,
-    _since_ts: Optional[int],
-    _until_ts: Optional[int],
+    since_ts: Optional[int],
+    until_ts: Optional[int],
     extra: Optional[Dict[str, Any]],
 ) -> Dict[str, Any]:
     limit = None
@@ -638,7 +638,7 @@ def fetch_facebook_posts(
         except (TypeError, ValueError):
             limit = None
     limit = limit or 6
-    return fb_recent_posts(page_id, limit)
+    return fb_recent_posts(page_id, limit, since_ts=since_ts, until_ts=until_ts)
 
 
 def fetch_facebook_audience(
@@ -2358,6 +2358,7 @@ def facebook_posts():
     page_id = request.args.get("pageId", PAGE_ID)
     if not page_id:
         return jsonify({"error": "META_PAGE_ID is not configured"}), 500
+    since, until = unix_range(request.args)
     limit_param = request.args.get("limit")
     try:
         limit = int(limit_param) if limit_param is not None else 6
@@ -2367,14 +2368,14 @@ def facebook_posts():
         payload, meta = get_cached_payload(
             "facebook_posts",
             page_id,
-            None,
-            None,
+            since,
+            until,
             extra={"limit": limit},
             fetcher=fetch_facebook_posts,
             platform="facebook",
         )
     except MetaAPIError as err:
-        mark_cache_error("facebook_posts", page_id, None, None, {"limit": limit}, err.args[0], platform="facebook")
+        mark_cache_error("facebook_posts", page_id, since, until, {"limit": limit}, err.args[0], platform="facebook")
         return meta_error_response(err)
     response = dict(payload)
     response["cache"] = meta

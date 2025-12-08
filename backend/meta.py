@@ -1488,7 +1488,7 @@ def ig_recent_posts(ig_user_id: str, limit: int = 6):
     }
 
 
-def fb_recent_posts(page_id: str, limit: int = 6):
+def fb_recent_posts(page_id: str, limit: int = 6, since_ts: Optional[int] = None, until_ts: Optional[int] = None):
     page_token = get_page_access_token(page_id)
     try:
         limit_int = int(limit or 6)
@@ -1501,14 +1501,16 @@ def fb_recent_posts(page_id: str, limit: int = 6):
         "insights.metric(post_impressions,post_impressions_unique,post_engaged_users,post_clicks),"
         "reactions.summary(true).limit(0),comments.summary(true).limit(0),shares"
     )
-    res = gget(
-        f"/{page_id}/posts",
-        {
-            "limit": limit_sanitized,
-            "fields": fields,
-        },
-        token=page_token,
-    )
+    params: Dict[str, Any] = {
+        "limit": limit_sanitized,
+        "fields": fields,
+    }
+    if since_ts is not None:
+        params["since"] = int(since_ts)
+    if until_ts is not None:
+        params["until"] = int(until_ts)
+
+    res = gget(f"/{page_id}/posts", params, token=page_token)
     posts: List[Dict[str, Any]] = []
 
     def extract_preview(att_list):
@@ -1525,6 +1527,23 @@ def fb_recent_posts(page_id: str, limit: int = 6):
             if url:
                 return url
         return None
+
+    def timestamp_in_range(ts: Optional[str]) -> bool:
+        if ts is None or (since_ts is None and until_ts is None):
+            return True
+        normalized = ts.replace("Z", "+00:00")
+        if normalized.endswith("+0000"):
+            normalized = normalized[:-5] + "+00:00"
+        try:
+            dt = datetime.fromisoformat(normalized)
+            epoch = int(dt.timestamp())
+        except Exception:  # noqa: BLE001
+            return True
+        if since_ts is not None and epoch < since_ts:
+            return False
+        if until_ts is not None and epoch > until_ts:
+            return False
+        return True
 
     for item in res.get("data", []):
         attachments = (item.get("attachments") or {}).get("data", [])
@@ -1559,6 +1578,9 @@ def fb_recent_posts(page_id: str, limit: int = 6):
             "clicks": post_clicks,
             "engagementTotal": engagement_total,
         })
+
+    if since_ts is not None or until_ts is not None:
+        posts = [post for post in posts if timestamp_in_range(post.get("timestamp"))]
 
     def top_post(metric_key: str) -> Optional[Dict[str, Any]]:
         best: Optional[Dict[str, Any]] = None
