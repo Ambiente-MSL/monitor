@@ -942,9 +942,9 @@ useEffect(() => {
                               paddingAngle={3}
                               stroke="none"
                             >
-                              <Cell fill="#1877F2" />
-                              <Cell fill="#0A66C2" />
-                              <Cell fill="#42A5F5" />
+                              <Cell fill="#3b82f6" />
+                              <Cell fill="#fbbf24" />
+                              <Cell fill="#10b981" />
                             </Pie>
                             <Tooltip formatter={(value, name) => [Number(value).toLocaleString("pt-BR"), name]} />
                           </PieChart>
@@ -956,7 +956,7 @@ useEffect(() => {
                           <div key={slice.name || index} className="ig-engagement-legend__item">
                             <span
                               className="ig-engagement-legend__swatch"
-                              style={{ backgroundColor: index === 0 ? "#1877F2" : index === 1 ? "#0A66C2" : "#42A5F5" }}
+                              style={{ backgroundColor: index === 0 ? "#3b82f6" : index === 1 ? "#fbbf24" : "#10b981" }}
                             />
                             <span className="ig-engagement-legend__label">{slice.name}</span>
                           </div>
