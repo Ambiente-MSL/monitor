@@ -1702,7 +1702,7 @@ body.theme-light {
     0 20px 60px rgba(0, 0, 0, 0.5),
     0 0 0 1px rgba(255, 255, 255, 0.03) inset;
   font-size: 13px;
-  padding: 16px;
+  padding: 8px 16px 16px;
   min-width: 310px;
   max-width: 310px;
   backdrop-filter: blur(20px);
@@ -1712,7 +1712,7 @@ body.theme-light {
 .react-datepicker__header {
   background: transparent;
   border-bottom: none;
-  padding: 0 0 14px 0;
+  padding: 8px 0 14px 0;
   border-radius: 0;
 }
 
