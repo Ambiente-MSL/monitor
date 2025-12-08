@@ -63,39 +63,6 @@ const HERO_TABS = [
   { id: "admin", label: "Admin", href: "/admin", icon: Shield },
 ];
 
-const FOLLOWER_GROWTH_SERIES = [
-  { label: "01/Out", tooltipDate: "01 de Outubro", value: 45 },
-  { label: "02/Out", tooltipDate: "02 de Outubro", value: 52 },
-  { label: "03/Out", tooltipDate: "03 de Outubro", value: 38 },
-  { label: "04/Out", tooltipDate: "04 de Outubro", value: 67 },
-  { label: "05/Out", tooltipDate: "05 de Outubro", value: 55 },
-  { label: "06/Out", tooltipDate: "06 de Outubro", value: 41 },
-  { label: "07/Out", tooltipDate: "07 de Outubro", value: 73 },
-  { label: "08/Out", tooltipDate: "08 de Outubro", value: 89 },
-  { label: "09/Out", tooltipDate: "09 de Outubro", value: 62 },
-  { label: "10/Out", tooltipDate: "10 de Outubro", value: 58 },
-  { label: "11/Out", tooltipDate: "11 de Outubro", value: 76 },
-  { label: "12/Out", tooltipDate: "12 de Outubro", value: 91 },
-  { label: "13/Out", tooltipDate: "13 de Outubro", value: 44 },
-  { label: "14/Out", tooltipDate: "14 de Outubro", value: 69 },
-  { label: "15/Out", tooltipDate: "15 de Outubro", value: 83 },
-  { label: "16/Out", tooltipDate: "16 de Outubro", value: 71 },
-  { label: "17/Out", tooltipDate: "17 de Outubro", value: 56 },
-  { label: "18/Out", tooltipDate: "18 de Outubro", value: 48 },
-  { label: "19/Out", tooltipDate: "19 de Outubro", value: 95 },
-  { label: "20/Out", tooltipDate: "20 de Outubro", value: 102 },
-  { label: "21/Out", tooltipDate: "21 de Outubro", value: 78 },
-  { label: "22/Out", tooltipDate: "22 de Outubro", value: 88 },
-  { label: "23/Out", tooltipDate: "23 de Outubro", value: 64 },
-  { label: "24/Out", tooltipDate: "24 de Outubro", value: 92 },
-  { label: "25/Out", tooltipDate: "25 de Outubro", value: 108 },
-  { label: "26/Out", tooltipDate: "26 de Outubro", value: 85 },
-  { label: "27/Out", tooltipDate: "27 de Outubro", value: 97 },
-  { label: "28/Out", tooltipDate: "28 de Outubro", value: 74 },
-  { label: "29/Out", tooltipDate: "29 de Outubro", value: 86 },
-  { label: "30/Out", tooltipDate: "30 de Outubro", value: 115 },
-];
-
 const toUnixSeconds = (date) => Math.floor(date.getTime() / 1000);
 
 const SHORT_DATE_FORMATTER = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" });
@@ -749,6 +716,27 @@ useEffect(() => {
       .sort((a, b) => (a.dateKey > b.dateKey ? 1 : -1));
   }, [reachSeries]);
 
+  const followerGrowthSeries = useMemo(() => {
+    const source = Array.isArray(netFollowersSeries) ? netFollowersSeries : [];
+    if (!source.length) return [];
+    return [...source]
+      .map((entry) => {
+        const dateStr = entry.date || entry.dateKey || "";
+        const parsedDate = dateStr ? new Date(`${dateStr}T00:00:00`) : new Date();
+        const adds = extractNumber(entry.adds, 0);
+        const removes = extractNumber(entry.removes, 0);
+        const net = extractNumber(entry.net, adds - removes);
+        return {
+          dateKey: dateStr,
+          label: SHORT_DATE_FORMATTER.format(parsedDate),
+          tooltipDate: parsedDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" }),
+          value: net,
+        };
+      })
+      .filter((item) => Number.isFinite(item.value))
+      .sort((a, b) => (a.dateKey > b.dateKey ? 1 : -1));
+  }, [netFollowersSeries]);
+
   const peakReachPoint = useMemo(() => {
     if (!reachTimelineData.length) return null;
     return reachTimelineData.reduce(
@@ -1240,11 +1228,11 @@ useEffect(() => {
               </header>
 
               <div className="ig-chart-area">
-                {FOLLOWER_GROWTH_SERIES.length ? (
-                  <ResponsiveContainer width="100%" height={FOLLOWER_GROWTH_SERIES.length > 15 ? 380 : 280}>
+                {followerGrowthSeries.length ? (
+                  <ResponsiveContainer width="100%" height={followerGrowthSeries.length > 15 ? 380 : 280}>
                     <BarChart
-                      data={FOLLOWER_GROWTH_SERIES}
-                      margin={{ top: 16, right: 16, bottom: FOLLOWER_GROWTH_SERIES.length > 15 ? 70 : 32, left: 0 }}
+                      data={followerGrowthSeries}
+                      margin={{ top: 16, right: 16, bottom: followerGrowthSeries.length > 15 ? 70 : 32, left: 0 }}
                       barCategoryGap="35%"
                     >
                       <defs>
@@ -1259,14 +1247,14 @@ useEffect(() => {
                         </linearGradient>
                       </defs>
                       <CartesianGrid stroke="#e5e7eb" strokeDasharray="4 8" vertical={false} />
-                      <XAxis
-                        dataKey="label"
-                        tick={{ fill: "#9ca3af", fontSize: 12 }}
-                        axisLine={false}
-                        tickLine={false}
-                        interval={FOLLOWER_GROWTH_SERIES.length > 15 ? "preserveEnd" : 0}
-                        height={32}
-                      />
+                        <XAxis
+                          dataKey="label"
+                          tick={{ fill: "#9ca3af", fontSize: 12 }}
+                          axisLine={false}
+                          tickLine={false}
+                          interval={followerGrowthSeries.length > 15 ? "preserveEnd" : 0}
+                          height={32}
+                        />
                       <YAxis
                         tick={{ fill: "#9ca3af", fontSize: 12 }}
                         axisLine={false}
@@ -1280,13 +1268,13 @@ useEffect(() => {
                           return value;
                         }}
                       />
-                      <Tooltip
-                        cursor={{ fill: "rgba(24, 119, 242, 0.25)" }}
-                        content={({ active, payload }) => {
-                          if (!active || !payload?.length) return null;
-                          const dataPoint = payload[0];
-                          const tooltipValue = dataPoint.value?.toLocaleString('pt-BR');
-                          const tooltipDate = dataPoint.payload?.tooltipDate || dataPoint.payload?.label;
+                        <Tooltip
+                          cursor={{ fill: "rgba(24, 119, 242, 0.25)" }}
+                          content={({ active, payload }) => {
+                            if (!active || !payload?.length) return null;
+                            const dataPoint = payload[0];
+                            const tooltipValue = dataPoint.value?.toLocaleString('pt-BR');
+                            const tooltipDate = dataPoint.payload?.tooltipDate || dataPoint.payload?.label;
                           return (
                             <div className="ig-follower-tooltip">
                               <div className="ig-follower-tooltip__label">
@@ -1303,11 +1291,11 @@ useEffect(() => {
                         barSize={36}
                         maxBarSize={48}
                       >
-                        {FOLLOWER_GROWTH_SERIES.map((entry, index) => (
+                        {followerGrowthSeries.map((entry, index) => (
                           <Cell
                             key={entry.label}
                             fill={
-                              index === FOLLOWER_GROWTH_SERIES.length - 1
+                              index === followerGrowthSeries.length - 1
                                 ? "url(#fbFollowerGrowthBarActive)"
                                 : "url(#fbFollowerGrowthBar)"
                             }
