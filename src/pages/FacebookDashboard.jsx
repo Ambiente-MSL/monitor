@@ -388,7 +388,6 @@ useEffect(() => {
         params.set("pageId", accountConfig.facebookPageId);
         params.set("since", sinceParam);
         params.set("until", untilParam);
-        params.set("force", "true");
         const url = `${API_BASE_URL}/api/facebook/metrics?${params.toString()}`;
         const response = await fetch(url, { signal: controller.signal });
         const raw = await response.text();
