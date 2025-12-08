@@ -718,24 +718,48 @@ useEffect(() => {
 
   const followerGrowthSeries = useMemo(() => {
     const source = Array.isArray(netFollowersSeries) ? netFollowersSeries : [];
-    if (!source.length) return [];
-    return [...source]
-      .map((entry) => {
-        const dateStr = entry.date || entry.dateKey || "";
-        const parsedDate = dateStr ? new Date(`${dateStr}T00:00:00`) : new Date();
-        const adds = extractNumber(entry.adds, 0);
-        const removes = extractNumber(entry.removes, 0);
-        const net = extractNumber(entry.net, adds - removes);
-        return {
-          dateKey: dateStr,
-          label: SHORT_DATE_FORMATTER.format(parsedDate),
-          tooltipDate: parsedDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" }),
-          value: net,
-        };
-      })
-      .filter((item) => Number.isFinite(item.value))
-      .sort((a, b) => (a.dateKey > b.dateKey ? 1 : -1));
-  }, [netFollowersSeries]);
+    if (source.length) {
+      return [...source]
+        .map((entry) => {
+          const dateStr = entry.date || entry.dateKey || "";
+          const parsedDate = dateStr ? new Date(`${dateStr}T00:00:00`) : new Date();
+          const adds = extractNumber(entry.adds, 0);
+          const removes = extractNumber(entry.removes, 0);
+          const net = extractNumber(entry.net, adds - removes);
+          return {
+            dateKey: dateStr,
+            label: SHORT_DATE_FORMATTER.format(parsedDate),
+            tooltipDate: parsedDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" }),
+            value: net,
+          };
+        })
+        .filter((item) => Number.isFinite(item.value))
+        .sort((a, b) => (a.dateKey > b.dateKey ? 1 : -1));
+    }
+
+    const fallbackGain = extractNumber(
+      pageMetricsByKey.followers_gained?.value,
+      extractNumber(overviewSource?.page_overview?.followers_gained, null),
+    );
+    if (Number.isFinite(fallbackGain) && fallbackGain !== 0) {
+      const startLabel = sinceDate ? SHORT_DATE_FORMATTER.format(sinceDate) : "";
+      const endLabel = untilDate ? SHORT_DATE_FORMATTER.format(untilDate) : "";
+      const tooltipDate =
+        startLabel && endLabel && startLabel !== endLabel
+          ? `${startLabel} a ${endLabel}`
+          : startLabel || endLabel || "Período";
+      return [
+        {
+          dateKey: "period",
+          label: tooltipDate,
+          tooltipDate,
+          value: fallbackGain,
+        },
+      ];
+    }
+
+    return [];
+  }, [netFollowersSeries, pageMetricsByKey.followers_gained?.value, overviewSource?.page_overview?.followers_gained, sinceDate, untilDate]);
 
   const peakReachPoint = useMemo(() => {
     if (!reachTimelineData.length) return null;
