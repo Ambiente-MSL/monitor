@@ -843,34 +843,40 @@ export default function InstagramDashboard() {
       setPosts([]);
       setAccountInfo(null);
       setPostsError("Conta do Instagram não configurada.");
-      return;
+      return undefined;
     }
 
-    const controller = new AbortController();
-    (async () => {
+    let cancelled = false;
+    const loadPosts = async () => {
       setLoadingPosts(true);
       setPostsError("");
       try {
         const params = new URLSearchParams({ igUserId: accountConfig.instagramUserId, limit: "20" });
-        const url = `${API_BASE_URL}/api/instagram/posts?${params.toString()}`;
-        const resp = await fetch(url, { signal: controller.signal });
-        const json = safeParseJson(await resp.text()) || {};
-        if (!resp.ok) throw new Error(describeApiError(json, "Falha ao carregar posts do Instagram."));
-        setPosts(json.posts || []);
-        setAccountInfo(json.account || null);
+        if (sinceParam) params.set("since", sinceParam);
+        if (untilParam) params.set("until", untilParam);
+        const resp = await apiFetch(`/api/instagram/posts?${params.toString()}`);
+        if (cancelled) return;
+        setPosts(Array.isArray(resp?.posts) ? resp.posts : []);
+        setAccountInfo(resp?.account || null);
       } catch (err) {
-        if (err.name !== "AbortError") {
-          setPosts([]);
-          setAccountInfo(null);
-          setPostsError(err.message || "Não foi possível carregar os posts.");
-        }
+        if (cancelled) return;
+        const rawMessage = err?.message || "";
+        const friendlyMessage = rawMessage.includes("<") ? "Não foi possível carregar os posts (erro 502)." : rawMessage;
+        setPosts([]);
+        setAccountInfo(null);
+        setPostsError(friendlyMessage || "Não foi possível carregar os posts.");
       } finally {
-        setLoadingPosts(false);
+        if (!cancelled) {
+          setLoadingPosts(false);
+        }
       }
-    })();
+    };
 
-    return () => controller.abort();
-  }, [accountConfig?.instagramUserId]);
+    loadPosts();
+    return () => {
+      cancelled = true;
+    };
+  }, [accountConfig?.instagramUserId, apiFetch, sinceParam, untilParam]);
 
   const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
   const reachMetric = metricsByKey.reach;
