@@ -4,6 +4,7 @@ import time
 import hmac
 import hashlib
 import logging
+import copy
 from datetime import datetime
 import requests
 from typing import Optional, List, Dict, Any, Sequence
@@ -28,6 +29,8 @@ BASE = f"https://graph.facebook.com/{VERSION}"
 # Configurações
 REQUEST_TIMEOUT = 30  # segundos
 MAX_RETRIES = 3
+IG_POSTS_MEM_CACHE_TTL_SEC = int(os.getenv("IG_POSTS_MEM_CACHE_TTL_SEC", "1800"))
+IG_POSTS_MEM_CACHE: Dict[str, Dict[str, Any]] = {}
 
 
 class MetaAPIError(Exception):
@@ -1327,6 +1330,12 @@ def ig_recent_posts(ig_user_id: str, limit: int = 6):
         limit_int = 6
     limit_sanitized = max(1, min(limit_int, 25))
 
+    cache_key = f"{ig_user_id}|{limit_sanitized}"
+    now_ts = time.time()
+    cached = IG_POSTS_MEM_CACHE.get(cache_key)
+    if cached and (now_ts - cached.get("ts", 0)) < IG_POSTS_MEM_CACHE_TTL_SEC:
+        return copy.deepcopy(cached.get("data"))
+
     media_fields = (
         "id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count,"
         "children{media_type,media_url,thumbnail_url,permalink,caption}"
@@ -1501,10 +1510,17 @@ def ig_recent_posts(ig_user_id: str, limit: int = 6):
         insights_container.setdefault("shares", {"value": post["shares"]})
         post["insights"] = insights_container
 
-    return {
+    result = {
         "account": account,
         "posts": posts,
     }
+
+    IG_POSTS_MEM_CACHE[cache_key] = {
+        "ts": now_ts,
+        "data": copy.deepcopy(result),
+    }
+
+    return result
 
 
 def fb_recent_posts(page_id: str, limit: int = 6, since_ts: Optional[int] = None, until_ts: Optional[int] = None):
