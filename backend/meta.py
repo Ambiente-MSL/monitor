@@ -357,6 +357,23 @@ def fb_page_window(page_id: str, since: int, until: int):
     reach = sum_series("page_impressions_unique")
     engaged = sum_series("page_post_engagements")
     likes_add = sum_series("page_fan_adds_unique")
+    reach_series_raw = extract_insight_series(ins, "page_impressions_unique") or []
+    reach_timeseries: List[Dict[str, Any]] = []
+    for entry in reach_series_raw:
+        if not isinstance(entry, dict):
+            continue
+        value = _coerce_number(entry.get("value"))
+        end_time = entry.get("end_time") or entry.get("date") or entry.get("time")
+        if value is None or not end_time:
+            continue
+        normalized = str(end_time).replace("Z", "+00:00")
+        if normalized.endswith("+0000"):
+            normalized = normalized[:-5] + "+00:00"
+        try:
+            date_key = datetime.fromisoformat(normalized).date().isoformat()
+        except Exception:
+            continue
+        reach_timeseries.append({"date": date_key, "value": int(round(value))})
 
     # Função auxiliar para buscar métricas opcionais com fallback
     def fetch_optional_metrics(metric_list, capture_series: Optional[List[str]] = None):
@@ -588,8 +605,10 @@ def fb_page_window(page_id: str, since: int, until: int):
             "followers_lost": followers_lost,
             "net_followers": net_followers,
             "followers_total": followers_total,
+            "reach_timeseries": reach_timeseries,
         },
         "net_followers_series": net_followers_series,
+        "reach_timeseries": reach_timeseries,
     }
 
 

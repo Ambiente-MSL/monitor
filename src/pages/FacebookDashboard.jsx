@@ -308,6 +308,7 @@ useEffect(() => {
   const [pageMetrics, setPageMetrics] = useState([]);
   const [pageError, setPageError] = useState("");
   const [netFollowersSeries, setNetFollowersSeries] = useState([]);
+  const [reachSeries, setReachSeries] = useState([]);
 
   const [overviewSnapshot, setOverviewSnapshot] = useState(null);
   const [overviewLoading, setOverviewLoading] = useState(false);
@@ -324,6 +325,7 @@ useEffect(() => {
   useEffect(() => {
     setPageMetrics([]);
     setNetFollowersSeries([]);
+    setReachSeries([]);
     setOverviewSnapshot(null);
     setOverviewSource(null);
     setOverviewLoading(false);
@@ -341,6 +343,7 @@ useEffect(() => {
     if (!accountConfig?.facebookPageId) {
       setPageMetrics([]);
       setNetFollowersSeries([]);
+      setReachSeries([]);
       setOverviewSource(null);
       setOverviewLoading(false);
       setPageError("Página do Facebook não configurada.");
@@ -428,12 +431,14 @@ useEffect(() => {
         if (cancelled) return;
         setPageMetrics(Array.isArray(json.metrics) ? json.metrics : []);
         setNetFollowersSeries(Array.isArray(json.net_followers_series) ? json.net_followers_series : []);
+        setReachSeries(Array.isArray(json.reach_timeseries) ? json.reach_timeseries : []);
         setOverviewSource(json);
       } catch (err) {
         if (controller.signal.aborted || cancelled) return;
         console.error(err);
         setPageMetrics([]);
         setNetFollowersSeries([]);
+        setReachSeries([]);
         setOverviewSource(null);
         setPageError(err.message || "Não foi possível carregar as métricas do Facebook.");
       } finally {
@@ -710,7 +715,8 @@ useEffect(() => {
 
   // Reach timeline
   const reachTimelineData = useMemo(() => {
-    if (!netFollowersSeries.length) {
+    const source = Array.isArray(reachSeries) ? reachSeries : [];
+    if (!source.length) {
       // Default mock data
       return [
         { dateKey: "2025-01-29", label: "29/01", value: 12000 },
@@ -723,16 +729,19 @@ useEffect(() => {
       ];
     }
 
-    return netFollowersSeries.map((entry) => {
-      const dateStr = entry.date || "";
-      const parsedDate = new Date(`${dateStr}T00:00:00`);
-      return {
-        dateKey: dateStr,
-        label: SHORT_DATE_FORMATTER.format(parsedDate),
-        value: extractNumber(entry.cumulative, 0),
-      };
-    });
-  }, [netFollowersSeries]);
+    return [...source]
+      .map((entry) => {
+        const dateStr = entry.date || entry.dateKey || "";
+        const parsedDate = dateStr ? new Date(`${dateStr}T00:00:00`) : new Date();
+        return {
+          dateKey: dateStr,
+          label: SHORT_DATE_FORMATTER.format(parsedDate),
+          value: extractNumber(entry.value ?? entry.reach ?? entry.impressions, 0),
+        };
+      })
+      .filter((item) => Number.isFinite(item.value))
+      .sort((a, b) => (a.dateKey > b.dateKey ? 1 : -1));
+  }, [reachSeries]);
 
   const peakReachPoint = useMemo(() => {
     if (!reachTimelineData.length) return null;
