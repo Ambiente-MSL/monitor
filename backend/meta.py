@@ -1752,6 +1752,46 @@ def ads_highlights(act_id: str, since_str: str, until_str: str):
         for key, value in sorted(actions_totals.items(), key=lambda item: item[1], reverse=True)
     ]
 
+    # Distribuição geográfica (spend por região)
+    spend_by_region: List[Dict[str, Any]] = []
+    try:
+        region_res = gget(
+            f"/{act_id}/insights",
+            {
+                "fields": "spend,impressions,reach",
+                "time_range[since]": since_str,
+                "time_range[until]": until_str,
+                "level": "account",
+                "breakdowns": "region",
+                "limit": 5000,
+            },
+        )
+        region_totals: Dict[str, Dict[str, float]] = {}
+        for row in region_res.get("data", []):
+            region = row.get("region") or row.get("country") or "Desconhecido"
+            spend = float(row.get("spend", 0) or 0)
+            impressions = float(row.get("impressions", 0) or 0)
+            reach = float(row.get("reach", 0) or 0)
+            entry = region_totals.setdefault(region, {"spend": 0.0, "impressions": 0.0, "reach": 0.0})
+            entry["spend"] += spend
+            entry["impressions"] += impressions
+            entry["reach"] += reach
+        spend_by_region = [
+            {
+                "name": region,
+                "spend": round(values["spend"], 2),
+                "impressions": int(values["impressions"]),
+                "reach": int(values["reach"]),
+            }
+            for region, values in region_totals.items()
+            if values["spend"] > 0
+        ]
+        spend_by_region.sort(key=lambda item: item["spend"], reverse=True)
+    except MetaAPIError:
+        spend_by_region = []
+    except Exception:
+        spend_by_region = []
+
     # detalhes por anúncio (criativos)
     creatives: List[Dict[str, Any]] = []
     try:
@@ -1939,4 +1979,5 @@ def ads_highlights(act_id: str, since_str: str, until_str: str):
         "spend_series": spend_series,
         "campaigns": top_campaigns,
         "creatives": creatives,
+        "spend_by_region": spend_by_region,
     }

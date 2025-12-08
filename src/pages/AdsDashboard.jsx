@@ -330,7 +330,7 @@ export default function AdsDashboard() {
   }, [availableAccounts, queryAccountId]);
 
   const [activeSpendBar, setActiveSpendBar] = useState(-1);
-  const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
+  const [activeRegionIndex, setActiveRegionIndex] = useState(-1);
   const [activeCampaignIndex, setActiveCampaignIndex] = useState(-1);
   const [adsData, setAdsData] = useState(null);
   const [adsError, setAdsError] = useState("");
@@ -563,6 +563,20 @@ export default function AdsDashboard() {
     if (Array.isArray(adsData?.spend_series)) return adsData.spend_series;
     if (adsData) return [];
     return MOCK_SPEND_SERIES;
+  }, [adsData]);
+
+  const spendByRegion = useMemo(() => {
+    if (Array.isArray(adsData?.spend_by_region)) {
+      return adsData.spend_by_region
+        .filter((item) => Number(item?.spend) > 0 && item?.name)
+        .map((item) => ({
+          name: item.name,
+          value: Number(item.spend) || 0,
+          reach: Number(item.reach) || 0,
+          impressions: Number(item.impressions) || 0,
+        }));
+    }
+    return [];
   }, [adsData]);
 
   const peakSpendPoint = useMemo(() => {
@@ -979,48 +993,64 @@ export default function AdsDashboard() {
 
               {/* Gender Distribution Donut */}
               <div className="ig-profile-vertical__engagement">
-                <h4>Distribuição por Gênero</h4>
-                <div className="ig-profile-vertical__engagement-chart">
-                  <ResponsiveContainer width="100%" height={140}>
-                    <PieChart>
-                      <Pie
-                        data={MOCK_GENDER_DISTRIBUTION}
-                        dataKey="value"
-                        nameKey="name"
-                        innerRadius={35}
-                        outerRadius={55}
-                        paddingAngle={3}
-                        stroke="none"
-                        activeIndex={activeGenderIndex}
-                        activeShape={renderActiveShape}
-                        onMouseEnter={(_, index) => setActiveGenderIndex(index)}
-                        onMouseLeave={() => setActiveGenderIndex(-1)}
-                      >
-                        {MOCK_GENDER_DISTRIBUTION.map((_, index) => (
-                          <Cell key={index} fill={IG_DONUT_COLORS[index % IG_DONUT_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value, name) => [`${value}%`, name]} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="ig-engagement-legend" style={{ marginTop: "8px", gap: "10px" }}>
-                  {MOCK_GENDER_DISTRIBUTION.map((slice, index) => (
-                    <div key={slice.name} className="ig-engagement-legend__item" style={{ fontSize: "14px" }}>
-                      <span
-                        className="ig-engagement-legend__swatch"
-                        style={{
-                          backgroundColor: IG_DONUT_COLORS[index % IG_DONUT_COLORS.length],
-                          width: "12px",
-                          height: "12px",
-                        }}
-                      />
-                      <span className="ig-engagement-legend__label">{slice.name}</span>
-                      <span className="ig-engagement-legend__value">{slice.value}%</span>
+                <h4>Investimento por região</h4>
+                {spendByRegion.length ? (
+                  <>
+                    <div className="ig-profile-vertical__engagement-chart">
+                      <ResponsiveContainer width="100%" height={160}>
+                        <PieChart>
+                          <Pie
+                            data={spendByRegion}
+                            dataKey="value"
+                            nameKey="name"
+                            innerRadius={40}
+                            outerRadius={60}
+                            paddingAngle={3}
+                            stroke="none"
+                            activeIndex={activeRegionIndex}
+                            activeShape={renderActiveShape}
+                            onMouseEnter={(_, index) => setActiveRegionIndex(index)}
+                            onMouseLeave={() => setActiveRegionIndex(-1)}
+                          >
+                            {spendByRegion.map((_, index) => (
+                              <Cell key={index} fill={IG_DONUT_COLORS[index % IG_DONUT_COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            formatter={(value, name, props) => [
+                              formatCurrency(value),
+                              name,
+                              props?.payload ? (
+                                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                                  <span>Alcance: {formatNumber(props.payload.reach)}</span>
+                                  <span>Impressões: {formatNumber(props.payload.impressions)}</span>
+                                </div>
+                              ) : null,
+                            ]}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
                     </div>
-                  ))}
-                </div>
+                    <div className="ig-engagement-legend" style={{ marginTop: "8px", gap: "10px" }}>
+                      {spendByRegion.slice(0, 6).map((slice, index) => (
+                        <div key={slice.name} className="ig-engagement-legend__item" style={{ fontSize: "14px" }}>
+                          <span
+                            className="ig-engagement-legend__swatch"
+                            style={{
+                              backgroundColor: IG_DONUT_COLORS[index % IG_DONUT_COLORS.length],
+                              width: "12px",
+                              height: "12px",
+                            }}
+                          />
+                          <span className="ig-engagement-legend__label">{slice.name}</span>
+                          <span className="ig-engagement-legend__value">{formatCurrency(slice.value)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <div className="ig-empty-state">Sem dados regionais para o período.</div>
+                )}
               </div>
 
               <div className="ig-profile-vertical__divider" />
