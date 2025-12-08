@@ -2236,24 +2236,41 @@ def facebook_metrics():
     if not page_id:
         return jsonify({"error": "META_PAGE_ID is not configured"}), 500
     since, until = unix_range(request.args)
+    force_refresh = request.args.get("force")
+    force_refresh_flag = str(force_refresh).lower() in ("1", "true", "yes", "y")
     try:
-        payload, meta = get_cached_payload(
-            "facebook_metrics",
-            page_id,
-            since,
-            until,
-            fetcher=fetch_facebook_metrics,
-            platform="facebook",
-        )
+        if force_refresh_flag:
+            payload = fetch_facebook_metrics(page_id, since, until, None)
+            meta = {"forced": True}
+        else:
+            payload, meta = get_cached_payload(
+                "facebook_metrics",
+                page_id,
+                since,
+                until,
+                fetcher=fetch_facebook_metrics,
+                platform="facebook",
+            )
     except MetaAPIError as err:
         mark_cache_error("facebook_metrics", page_id, since, until, None, err.args[0], platform="facebook")
         return meta_error_response(err)
     except ValueError as err:
         return jsonify({"error": str(err)}), 400
 
-    payload = dict(payload)
-    _enrich_facebook_metrics_payload(payload)
-    response = dict(payload)
+    payload_obj = dict(payload)
+    if not payload_obj.get("reach_timeseries") and since is not None and until is not None:
+        try:
+            refreshed = fetch_facebook_metrics(page_id, since, until, None)
+            if refreshed:
+                payload_obj = dict(refreshed)
+                if isinstance(meta, dict):
+                    meta = dict(meta)
+                    meta["refreshed_missing_reach_timeseries"] = True
+        except Exception:
+            pass
+
+    _enrich_facebook_metrics_payload(payload_obj)
+    response = dict(payload_obj)
     response["cache"] = meta
     return jsonify(response)
 

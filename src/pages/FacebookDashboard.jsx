@@ -421,6 +421,7 @@ useEffect(() => {
         params.set("pageId", accountConfig.facebookPageId);
         params.set("since", sinceParam);
         params.set("until", untilParam);
+        params.set("force", "true");
         const url = `${API_BASE_URL}/api/facebook/metrics?${params.toString()}`;
         const response = await fetch(url, { signal: controller.signal });
         const raw = await response.text();
@@ -431,7 +432,12 @@ useEffect(() => {
         if (cancelled) return;
         setPageMetrics(Array.isArray(json.metrics) ? json.metrics : []);
         setNetFollowersSeries(Array.isArray(json.net_followers_series) ? json.net_followers_series : []);
-        setReachSeries(Array.isArray(json.reach_timeseries) ? json.reach_timeseries : []);
+        const reachSeriesPayload = Array.isArray(json.reach_timeseries)
+          ? json.reach_timeseries
+          : Array.isArray(json.page_overview?.reach_timeseries)
+            ? json.page_overview.reach_timeseries
+            : [];
+        setReachSeries(reachSeriesPayload);
         setOverviewSource(json);
       } catch (err) {
         if (controller.signal.aborted || cancelled) return;
