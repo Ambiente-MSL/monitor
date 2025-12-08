@@ -479,7 +479,9 @@ useEffect(() => {
       } catch (err) {
         if (cancelled) return;
         setFbPosts([]);
-        setFbPostsError(err?.message || "Não foi possível carregar os posts.");
+        const rawMessage = err?.message || "";
+        const friendlyMessage = rawMessage.includes("<") ? "Não foi possível carregar os posts (erro 502)." : rawMessage;
+        setFbPostsError(friendlyMessage || "Não foi possível carregar os posts.");
       } finally {
         if (!cancelled) {
           setFbPostsLoading(false);
