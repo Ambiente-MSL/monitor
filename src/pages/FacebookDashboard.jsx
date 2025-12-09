@@ -1427,353 +1427,403 @@ useEffect(() => {
               </div>
             </section>
 
+            {/* Card de Performance de Conteúdo */}
+            <section className="ig-growth-clean fb-content-performance">
+              <header className="ig-card-header">
+                <div>
+                  <h3>Performance de Conteúdo</h3>
+                  <p className="ig-card-subtitle">Tipos de mídia mais engajados</p>
+                </div>
+              </header>
+
+              <div className="fb-content-grid">
+                <div className="fb-content-type-card fb-content-type-card--video">
+                  <div className="fb-content-type-card__icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polygon points="5 3 19 12 5 21 5 3" />
+                    </svg>
+                  </div>
+                  <div className="fb-content-type-card__stats">
+                    <div className="fb-content-type-card__value">12.4k</div>
+                    <div className="fb-content-type-card__label">Vídeos</div>
+                    <div className="fb-content-type-card__metric">
+                      <span className="fb-content-type-card__badge fb-content-type-card__badge--up">+18%</span>
+                      <span>vs. período anterior</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="fb-content-type-card fb-content-type-card--image">
+                  <div className="fb-content-type-card__icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <polyline points="21 15 16 10 5 21" />
+                    </svg>
+                  </div>
+                  <div className="fb-content-type-card__stats">
+                    <div className="fb-content-type-card__value">8.2k</div>
+                    <div className="fb-content-type-card__label">Imagens</div>
+                    <div className="fb-content-type-card__metric">
+                      <span className="fb-content-type-card__badge fb-content-type-card__badge--up">+12%</span>
+                      <span>vs. período anterior</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="fb-content-type-card fb-content-type-card--text">
+                  <div className="fb-content-type-card__icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="16" y1="13" x2="8" y2="13" />
+                      <line x1="16" y1="17" x2="8" y2="17" />
+                      <polyline points="10 9 9 9 8 9" />
+                    </svg>
+                  </div>
+                  <div className="fb-content-type-card__stats">
+                    <div className="fb-content-type-card__value">5.6k</div>
+                    <div className="fb-content-type-card__label">Texto</div>
+                    <div className="fb-content-type-card__metric">
+                      <span className="fb-content-type-card__badge fb-content-type-card__badge--down">-5%</span>
+                      <span>vs. período anterior</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="fb-content-type-card fb-content-type-card--link">
+                  <div className="fb-content-type-card__icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                    </svg>
+                  </div>
+                  <div className="fb-content-type-card__stats">
+                    <div className="fb-content-type-card__value">3.1k</div>
+                    <div className="fb-content-type-card__label">Links</div>
+                    <div className="fb-content-type-card__metric">
+                      <span className="fb-content-type-card__badge fb-content-type-card__badge--up">+8%</span>
+                      <span>vs. período anterior</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Card de Engajamento por Horário */}
+            <section className="ig-growth-clean fb-engagement-timing">
+              <header className="ig-card-header">
+                <div>
+                  <h3>Melhor Horário para Publicar</h3>
+                  <p className="ig-card-subtitle">Engajamento por hora do dia</p>
+                </div>
+              </header>
+
+              <div className="fb-heatmap-container">
+                <ResponsiveContainer width="100%" height={260}>
+                  <ComposedChart
+                    data={[
+                      { hour: '0h', engagement: 120 },
+                      { hour: '3h', engagement: 80 },
+                      { hour: '6h', engagement: 180 },
+                      { hour: '9h', engagement: 420 },
+                      { hour: '12h', engagement: 680 },
+                      { hour: '15h', engagement: 520 },
+                      { hour: '18h', engagement: 850 },
+                      { hour: '21h', engagement: 720 },
+                      { hour: '24h', engagement: 280 },
+                    ]}
+                    margin={{ top: 20, right: 20, left: 0, bottom: 20 }}
+                  >
+                    <defs>
+                      <linearGradient id="fbEngagementGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#1877F2" stopOpacity={0.8} />
+                        <stop offset="50%" stopColor="#42A5F5" stopOpacity={0.5} />
+                        <stop offset="100%" stopColor="#1877F2" stopOpacity={0.1} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                    <XAxis
+                      dataKey="hour"
+                      tick={{ fill: '#6b7280', fontSize: 12 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fill: '#6b7280', fontSize: 12 }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(value) => formatShortNumber(value)}
+                    />
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null;
+                        const item = payload[0];
+                        return (
+                          <div className="ig-tooltip">
+                            <span className="ig-tooltip__title">{item.payload.hour}</span>
+                            <div className="ig-tooltip__row">
+                              <span>Engajamento</span>
+                              <strong>{formatNumber(item.value)}</strong>
+                            </div>
+                          </div>
+                        );
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="engagement"
+                      stroke="#1877F2"
+                      strokeWidth={3}
+                      fill="url(#fbEngagementGradient)"
+                      dot={{ fill: '#1877F2', strokeWidth: 2, r: 5 }}
+                      activeDot={{ r: 7, fill: '#ffffff', stroke: '#1877F2', strokeWidth: 3 }}
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+
+                <div className="fb-best-time-highlight">
+                  <div className="fb-best-time-highlight__icon">⭐</div>
+                  <div className="fb-best-time-highlight__content">
+                    <div className="fb-best-time-highlight__label">Melhor horário</div>
+                    <div className="fb-best-time-highlight__value">18:00 - 21:00</div>
+                    <div className="fb-best-time-highlight__desc">850 engajamentos médios</div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Cards de Alcance e Sentimento */}
             <div className="ig-analytics-grid fb-analytics-grid--pair">
-              <section className="ig-card-white fb-analytics-card">
+              <section className="ig-card-white fb-analytics-card fb-reach-sources">
                 <div className="ig-analytics-card__header">
-                  <h4>Estatística por gênero</h4>
+                  <h4>Fontes de Alcance</h4>
+                  <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Origem do alcance total</p>
                 </div>
                 <div className="ig-analytics-card__body">
-                  <ResponsiveContainer width="100%" height={180}>
-                    <PieChart>
-                      {/* Blue circle (background) */}
-                      <Pie
-                        data={[{ value: 100 }]}
-                        dataKey="value"
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={70}
-                        innerRadius={0}
-                        fill="#1877F2"
-                        stroke="none"
-                        isAnimationActive={false}
-                      />
-                      {/* Light blue circle (foreground - overlapping) */}
-                      <Pie
-                        data={genderStatsSeries}
-                        dataKey="value"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={70}
-                        innerRadius={0}
-                        startAngle={90}
-                        endAngle={90 + (genderStatsSeries[0]?.value || 0) * 3.6}
-                        fill="#42A5F5"
-                        stroke="none"
-                        paddingAngle={0}
-                      />
-                      <Tooltip content={(props) => <BubbleTooltip {...props} suffix="%" />} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="ig-analytics-legend">
-                    {genderStatsSeries.map((slice, index) => (
-                      <div key={slice.name || index} className="ig-analytics-legend__item">
-                        <span
-                          className="ig-analytics-legend__swatch"
-                          style={{ backgroundColor: index === 0 ? "#42A5F5" : "#1877F2" }}
-                        />
-                        <span className="ig-analytics-legend__label">{slice.name}</span>
+                  <div className="fb-reach-sources-grid">
+                    <div className="fb-reach-source-item">
+                      <div className="fb-reach-source-item__header">
+                        <div className="fb-reach-source-item__icon fb-reach-source-item__icon--organic">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                          </svg>
+                        </div>
+                        <span className="fb-reach-source-item__label">Orgânico</span>
                       </div>
-                    ))}
+                      <div className="fb-reach-source-item__value">64.2k</div>
+                      <div className="fb-reach-source-item__bar">
+                        <div className="fb-reach-source-item__bar-fill" style={{ width: '85%', background: 'linear-gradient(90deg, #1877F2 0%, #42A5F5 100%)' }} />
+                      </div>
+                      <div className="fb-reach-source-item__percentage">85%</div>
+                    </div>
+
+                    <div className="fb-reach-source-item">
+                      <div className="fb-reach-source-item__header">
+                        <div className="fb-reach-source-item__icon fb-reach-source-item__icon--paid">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <line x1="12" y1="1" x2="12" y2="23" />
+                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                          </svg>
+                        </div>
+                        <span className="fb-reach-source-item__label">Pago</span>
+                      </div>
+                      <div className="fb-reach-source-item__value">11.5k</div>
+                      <div className="fb-reach-source-item__bar">
+                        <div className="fb-reach-source-item__bar-fill" style={{ width: '15%', background: 'linear-gradient(90deg, #10b981 0%, #34d399 100%)' }} />
+                      </div>
+                      <div className="fb-reach-source-item__percentage">15%</div>
+                    </div>
+                  </div>
+
+                  <div className="fb-reach-total">
+                    <div className="fb-reach-total__label">Alcance Total</div>
+                    <div className="fb-reach-total__value">75.7k</div>
                   </div>
                 </div>
               </section>
 
-              <section className="ig-card-white fb-analytics-card">
+              <section className="ig-card-white fb-analytics-card fb-sentiment-card">
                 <div className="ig-analytics-card__header">
-                  <h4>Top 10 Cidades</h4>
+                  <h4>Sentimento dos Comentários</h4>
+                  <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Análise de sentimento</p>
                 </div>
-                <div className="ig-top-cities-new-layout">
-                  <div className="ig-top-cities-new-layout__left">
-                    <div style={{ marginBottom: '16px' }}>
-                      <div style={{ fontSize: '32px', fontWeight: '700', color: '#1f2937', lineHeight: '1', marginBottom: '8px' }}>
-                        2.100
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span className="ig-top-city-row__icon" style={{ backgroundColor: "#1877F2", width: '12px', height: '12px', borderRadius: '3px' }}></span>
-                        <span style={{ fontSize: '13px', fontWeight: '500', color: '#374151' }}>Fortaleza</span>
-                        <svg width="14" height="14" viewBox="0 0 16 16">
-                          <path d="M8 3 L13 9 L3 9 Z" fill="#10b981" />
-                        </svg>
-                      </div>
+                <div className="ig-analytics-card__body">
+                  <div className="fb-sentiment-grid">
+                    <div className="fb-sentiment-item fb-sentiment-item--positive">
+                      <div className="fb-sentiment-item__emoji">😊</div>
+                      <div className="fb-sentiment-item__label">Positivo</div>
+                      <div className="fb-sentiment-item__value">72%</div>
+                      <div className="fb-sentiment-item__count">1.8k comentários</div>
                     </div>
 
-                    <div className="ig-top-cities__table">
-                      <div className="ig-top-city-row">
-                        <div className="ig-top-city-row__left">
-                          <span className="ig-top-city-row__icon" style={{ backgroundColor: "#1877F2" }}></span>
-                          <span className="ig-top-city-row__name">São Paulo</span>
-                        </div>
-                        <span className="ig-top-city-row__value">1.850</span>
-                      </div>
-                      <div className="ig-top-city-row">
-                        <div className="ig-top-city-row__left">
-                          <span className="ig-top-city-row__icon" style={{ backgroundColor: "#42A5F5" }}></span>
-                          <span className="ig-top-city-row__name">Rio de Janeiro</span>
-                        </div>
-                        <span className="ig-top-city-row__value">1.620</span>
-                      </div>
-                      <div className="ig-top-city-row">
-                        <div className="ig-top-city-row__left">
-                          <span className="ig-top-city-row__icon" style={{ backgroundColor: "#0A66C2" }}></span>
-                          <span className="ig-top-city-row__name">Brasília</span>
-                        </div>
-                        <span className="ig-top-city-row__value">1.340</span>
-                      </div>
-                      <div className="ig-top-city-row">
-                        <div className="ig-top-city-row__left">
-                          <span className="ig-top-city-row__icon" style={{ backgroundColor: "#1976D2" }}></span>
-                          <span className="ig-top-city-row__name">Belo Horizonte</span>
-                        </div>
-                        <span className="ig-top-city-row__value">980</span>
-                      </div>
+                    <div className="fb-sentiment-item fb-sentiment-item--neutral">
+                      <div className="fb-sentiment-item__emoji">😐</div>
+                      <div className="fb-sentiment-item__label">Neutro</div>
+                      <div className="fb-sentiment-item__value">18%</div>
+                      <div className="fb-sentiment-item__count">450 comentários</div>
+                    </div>
+
+                    <div className="fb-sentiment-item fb-sentiment-item--negative">
+                      <div className="fb-sentiment-item__emoji">😞</div>
+                      <div className="fb-sentiment-item__label">Negativo</div>
+                      <div className="fb-sentiment-item__value">10%</div>
+                      <div className="fb-sentiment-item__count">250 comentários</div>
                     </div>
                   </div>
 
-                  <div className="ig-top-cities-new-layout__right">
-                    <ResponsiveContainer width="100%" height={120}>
-                      <ComposedChart
-                        data={[
-                          { name: '26', value: 1800 },
-                          { name: '27', value: 1920 },
-                          { name: '28', value: 1950 },
-                          { name: '29', value: 2050 },
-                          { name: '30', value: 2020 },
-                          { name: '31', value: 2080 },
-                          { name: '01', value: 2100 }
-                        ]}
-                        margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
-                      >
-                        <defs>
-                          <linearGradient id="fbCityGrowthGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#1877F2" stopOpacity={0.3} />
-                            <stop offset="100%" stopColor="#1877F2" stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <Area
-                          type="monotone"
-                          dataKey="value"
-                          stroke="#1877F2"
-                          strokeWidth={2}
-                          fill="url(#fbCityGrowthGradient)"
-                          dot={false}
-                          animationDuration={800}
-                        />
-                      </ComposedChart>
-                    </ResponsiveContainer>
+                  <div className="fb-sentiment-summary">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    <span>Recepção muito positiva da audiência</span>
                   </div>
                 </div>
               </section>
             </div>
 
+            {/* Cards de Demografia */}
             <div className="ig-analytics-grid fb-analytics-grid--pair">
-              <section className="ig-card-white fb-analytics-card">
+              <section className="ig-card-white fb-analytics-card fb-demographics-card">
                 <div className="ig-analytics-card__header">
-                  <h4>Comparativo em Gráfico</h4>
+                  <h4>Top 5 Cidades</h4>
+                  <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Principais localizações da audiência</p>
                 </div>
                 <div className="ig-analytics-card__body">
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{
-                      width: '100%',
-                      borderCollapse: 'separate',
-                      borderSpacing: '0',
-                      fontSize: '13px',
-                      minWidth: '500px'
-                    }}>
-                      <thead>
-                        <tr style={{
-                          background: 'linear-gradient(135deg, #1877F2 0%, #0A66C2 100%)',
-                          color: 'white'
-                        }}>
-                          <th style={{
-                            padding: '12px 16px',
-                            textAlign: 'left',
-                            fontWeight: '600',
-                            borderTopLeftRadius: '8px'
-                          }}>Tema</th>
-                          <th style={{
-                            padding: '12px 16px',
-                            textAlign: 'center',
-                            fontWeight: '600'
-                          }}>Posts</th>
-                          <th style={{
-                            padding: '12px 16px',
-                            textAlign: 'center',
-                            fontWeight: '600'
-                          }}>Alcance Médio</th>
-                          <th style={{
-                            padding: '12px 16px',
-                            textAlign: 'center',
-                            fontWeight: '600'
-                          }}>Eng. Médio</th>
-                          <th style={{
-                            padding: '12px 16px',
-                            textAlign: 'center',
-                            fontWeight: '600',
-                            borderTopRightRadius: '8px'
-                          }}>Compartilhamentos</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr style={{
-                          background: 'rgba(24, 119, 242, 0.05)',
-                          borderBottom: '1px solid rgba(24, 119, 242, 0.1)'
-                        }}>
-                          <td style={{
-                            padding: '12px 16px',
-                            fontWeight: '600',
-                            color: '#1f2937'
-                          }}>Saúde</td>
-                          <td style={{
-                            padding: '12px 16px',
-                            textAlign: 'center',
-                            color: '#374151'
-                          }}>15</td>
-                          <td style={{
-                            padding: '12px 16px',
-                            textAlign: 'center',
-                            color: '#374151'
-                          }}>8.500</td>
-                          <td style={{
-                            padding: '12px 16px',
-                            textAlign: 'center',
-                            color: '#374151'
-                          }}>320</td>
-                          <td style={{
-                            padding: '12px 16px',
-                            textAlign: 'center',
-                            fontWeight: '600',
-                            color: '#1877F2'
-                          }}>45</td>
-                        </tr>
-                        <tr style={{
-                          background: 'white',
-                          borderBottom: '1px solid rgba(24, 119, 242, 0.1)'
-                        }}>
-                          <td style={{
-                            padding: '12px 16px',
-                            fontWeight: '600',
-                            color: '#1f2937'
-                          }}>Segurança</td>
-                          <td style={{
-                            padding: '12px 16px',
-                            textAlign: 'center',
-                            color: '#374151'
-                          }}>12</td>
-                          <td style={{
-                            padding: '12px 16px',
-                            textAlign: 'center',
-                            color: '#374151'
-                          }}>12.000</td>
-                          <td style={{
-                            padding: '12px 16px',
-                            textAlign: 'center',
-                            color: '#374151'
-                          }}>480</td>
-                          <td style={{
-                            padding: '12px 16px',
-                            textAlign: 'center',
-                            fontWeight: '600',
-                            color: '#1877F2'
-                          }}>89</td>
-                        </tr>
-                        <tr style={{
-                          background: 'rgba(24, 119, 242, 0.05)',
-                          borderBottom: '1px solid rgba(24, 119, 242, 0.1)'
-                        }}>
-                          <td style={{
-                            padding: '12px 16px',
-                            fontWeight: '600',
-                            color: '#1f2937'
-                          }}>Educação</td>
-                          <td style={{
-                            padding: '12px 16px',
-                            textAlign: 'center',
-                            color: '#374151'
-                          }}>18</td>
-                          <td style={{
-                            padding: '12px 16px',
-                            textAlign: 'center',
-                            color: '#374151'
-                          }}>6.200</td>
-                          <td style={{
-                            padding: '12px 16px',
-                            textAlign: 'center',
-                            color: '#374151'
-                          }}>245</td>
-                          <td style={{
-                            padding: '12px 16px',
-                            textAlign: 'center',
-                            fontWeight: '600',
-                            color: '#1877F2'
-                          }}>32</td>
-                        </tr>
-                        <tr style={{
-                          background: 'white'
-                        }}>
-                          <td style={{
-                            padding: '12px 16px',
-                            fontWeight: '600',
-                            color: '#1f2937',
-                            borderBottomLeftRadius: '8px'
-                          }}>Entretenimento</td>
-                          <td style={{
-                            padding: '12px 16px',
-                            textAlign: 'center',
-                            color: '#374151'
-                          }}>20</td>
-                          <td style={{
-                            padding: '12px 16px',
-                            textAlign: 'center',
-                            color: '#374151'
-                          }}>15.800</td>
-                          <td style={{
-                            padding: '12px 16px',
-                            textAlign: 'center',
-                            color: '#374151'
-                          }}>680</td>
-                          <td style={{
-                            padding: '12px 16px',
-                            textAlign: 'center',
-                            fontWeight: '600',
-                            color: '#1877F2',
-                            borderBottomRightRadius: '8px'
-                          }}>124</td>
-                        </tr>
-                      </tbody>
-                    </table>
+                  <div className="fb-cities-list">
+                    <div className="fb-city-item fb-city-item--1">
+                      <div className="fb-city-item__rank">1</div>
+                      <div className="fb-city-item__info">
+                        <div className="fb-city-item__name">Fortaleza - CE</div>
+                        <div className="fb-city-item__bar">
+                          <div className="fb-city-item__bar-fill" style={{ width: '100%' }} />
+                        </div>
+                      </div>
+                      <div className="fb-city-item__value">12.5k</div>
+                    </div>
+
+                    <div className="fb-city-item fb-city-item--2">
+                      <div className="fb-city-item__rank">2</div>
+                      <div className="fb-city-item__info">
+                        <div className="fb-city-item__name">São Paulo - SP</div>
+                        <div className="fb-city-item__bar">
+                          <div className="fb-city-item__bar-fill" style={{ width: '85%' }} />
+                        </div>
+                      </div>
+                      <div className="fb-city-item__value">10.2k</div>
+                    </div>
+
+                    <div className="fb-city-item fb-city-item--3">
+                      <div className="fb-city-item__rank">3</div>
+                      <div className="fb-city-item__info">
+                        <div className="fb-city-item__name">Brasília - DF</div>
+                        <div className="fb-city-item__bar">
+                          <div className="fb-city-item__bar-fill" style={{ width: '70%' }} />
+                        </div>
+                      </div>
+                      <div className="fb-city-item__value">8.8k</div>
+                    </div>
+
+                    <div className="fb-city-item">
+                      <div className="fb-city-item__rank">4</div>
+                      <div className="fb-city-item__info">
+                        <div className="fb-city-item__name">Rio de Janeiro - RJ</div>
+                        <div className="fb-city-item__bar">
+                          <div className="fb-city-item__bar-fill" style={{ width: '60%' }} />
+                        </div>
+                      </div>
+                      <div className="fb-city-item__value">7.5k</div>
+                    </div>
+
+                    <div className="fb-city-item">
+                      <div className="fb-city-item__rank">5</div>
+                      <div className="fb-city-item__info">
+                        <div className="fb-city-item__name">Belo Horizonte - MG</div>
+                        <div className="fb-city-item__bar">
+                          <div className="fb-city-item__bar-fill" style={{ width: '45%' }} />
+                        </div>
+                      </div>
+                      <div className="fb-city-item__value">5.6k</div>
+                    </div>
                   </div>
                 </div>
               </section>
 
-              <section className="ig-card-white fb-analytics-card">
+              <section className="ig-card-white fb-analytics-card fb-age-gender-card">
                 <div className="ig-analytics-card__header">
-                  <h4>Idade</h4>
+                  <h4>Distribuição por Idade e Gênero</h4>
+                  <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Demografia da audiência</p>
                 </div>
                 <div className="ig-analytics-card__body">
-                  <ResponsiveContainer width="100%" height={220}>
+                  <ResponsiveContainer width="100%" height={240}>
                     <BarChart
                       data={[
-                        { age: "13-17", male: 20, female: 30 },
-                        { age: "18-24", male: 60, female: 80 },
-                        { age: "25-34", male: 70, female: 75 },
-                        { age: "35-44", male: 40, female: 35 },
-                        { age: "45++", male: 30, female: 25 },
+                        { age: "13-17", male: 150, female: 220 },
+                        { age: "18-24", male: 680, female: 820 },
+                        { age: "25-34", male: 1240, female: 1380 },
+                        { age: "35-44", male: 980, female: 850 },
+                        { age: "45-54", male: 640, female: 520 },
+                        { age: "55+", male: 420, female: 380 },
                       ]}
                       layout="vertical"
-                      margin={{ left: 0, right: 0, top: 5, bottom: 5 }}
+                      margin={{ left: 0, right: 20, top: 10, bottom: 10 }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
-                      <XAxis type="number" tick={{ fill: '#111827' }} fontSize={12} />
-                      <YAxis type="category" dataKey="age" tick={{ fill: '#111827' }} fontSize={12} width={60} />
-                      <Tooltip
-                        cursor={{ fill: 'rgba(24, 119, 242, 0.1)' }}
-                        formatter={(value) => Number(value).toLocaleString("pt-BR")}
+                      <defs>
+                        <linearGradient id="fbMaleGradient" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" stopColor="#1877F2" />
+                          <stop offset="100%" stopColor="#0A66C2" />
+                        </linearGradient>
+                        <linearGradient id="fbFemaleGradient" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" stopColor="#42A5F5" />
+                          <stop offset="100%" stopColor="#64B5F6" />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
+                      <XAxis
+                        type="number"
+                        tick={{ fill: '#6b7280', fontSize: 11 }}
+                        tickFormatter={(value) => formatShortNumber(value)}
                       />
-                      <Bar dataKey="male" fill="#1877F2" radius={[0, 4, 4, 0]} />
-                      <Bar dataKey="female" fill="#42A5F5" radius={[0, 4, 4, 0]} />
+                      <YAxis
+                        type="category"
+                        dataKey="age"
+                        tick={{ fill: '#374151', fontSize: 12, fontWeight: 600 }}
+                        width={55}
+                      />
+                      <Tooltip
+                        cursor={{ fill: 'rgba(24, 119, 242, 0.08)' }}
+                        content={({ active, payload }) => {
+                          if (!active || !payload?.length) return null;
+                          return (
+                            <div className="ig-tooltip">
+                              <span className="ig-tooltip__title">{payload[0].payload.age} anos</span>
+                              <div className="ig-tooltip__row">
+                                <span>Masculino</span>
+                                <strong>{formatNumber(payload[0].value)}</strong>
+                              </div>
+                              <div className="ig-tooltip__row">
+                                <span>Feminino</span>
+                                <strong>{formatNumber(payload[1].value)}</strong>
+                              </div>
+                            </div>
+                          );
+                        }}
+                      />
+                      <Bar dataKey="male" fill="url(#fbMaleGradient)" radius={[0, 6, 6, 0]} name="Masculino" />
+                      <Bar dataKey="female" fill="url(#fbFemaleGradient)" radius={[0, 6, 6, 0]} name="Feminino" />
                     </BarChart>
                   </ResponsiveContainer>
+
+                  <div className="fb-gender-legend">
+                    <div className="fb-gender-legend__item">
+                      <div className="fb-gender-legend__dot" style={{ background: 'linear-gradient(90deg, #1877F2, #0A66C2)' }} />
+                      <span>Masculino (48%)</span>
+                    </div>
+                    <div className="fb-gender-legend__item">
+                      <div className="fb-gender-legend__dot" style={{ background: 'linear-gradient(90deg, #42A5F5, #64B5F6)' }} />
+                      <span>Feminino (52%)</span>
+                    </div>
+                  </div>
                 </div>
               </section>
             </div>
