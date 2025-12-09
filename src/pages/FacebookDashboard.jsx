@@ -33,6 +33,7 @@ import useQueryState from "../hooks/useQueryState";
 import { useAccounts } from "../context/AccountsContext";
 import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import { useAuth } from "../context/AuthContext";
+import { getDashboardCache, makeDashboardCacheKey, mergeDashboardCache, setDashboardCache } from "../lib/dashboardCache";
 const API_BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 const FALLBACK_ACCOUNT_ID = DEFAULT_ACCOUNTS[0]?.id || "";
 
@@ -196,6 +197,18 @@ useEffect(() => {
 
   const sinceParam = getQuery("since");
   const untilParam = getQuery("until");
+  const pageCacheKey = useMemo(
+    () => makeDashboardCacheKey("facebook-page", accountSnapshotKey || "none"),
+    [accountSnapshotKey],
+  );
+  const overviewCacheKey = useMemo(
+    () => makeDashboardCacheKey("facebook-overview", accountSnapshotKey || "none", sinceParam || "auto", untilParam || "auto"),
+    [accountSnapshotKey, sinceParam, untilParam],
+  );
+  const fbPostsCacheKey = useMemo(
+    () => makeDashboardCacheKey("facebook-posts", accountSnapshotKey || "none", sinceParam || "auto", untilParam || "auto"),
+    [accountSnapshotKey, sinceParam, untilParam],
+  );
   const sinceDate = useMemo(() => parseQueryDate(sinceParam), [sinceParam]);
   const untilDate = useMemo(() => parseQueryDate(untilParam), [untilParam]);
   const now = useMemo(() => new Date(), []);
@@ -290,21 +303,53 @@ useEffect(() => {
   );
 
   useEffect(() => {
-    setPageMetrics([]);
-    setNetFollowersSeries([]);
-    setReachSeries([]);
-    setOverviewSnapshot(null);
-    setOverviewSource(null);
-    setOverviewLoading(false);
-    setPageError("");
-    setPageInfo(null);
-    setCoverImage(null);
-    setCoverError("");
-    setFollowersOverride(null);
-    setFbPosts([]);
-    setFbPostsError("");
-    setFbPostsLoading(false);
-  }, [accountSnapshotKey]);
+    const cachedPage = getDashboardCache(pageCacheKey);
+    if (cachedPage) {
+      setPageInfo(cachedPage.pageInfo || null);
+      setCoverImage(cachedPage.coverImage ?? null);
+      setCoverError("");
+      setCoverLoading(false);
+    } else {
+      setPageInfo(null);
+      setCoverImage(null);
+      setCoverError("");
+      setCoverLoading(false);
+    }
+
+    const cachedOverview = getDashboardCache(overviewCacheKey);
+    if (cachedOverview) {
+      setPageMetrics(Array.isArray(cachedOverview.pageMetrics) ? cachedOverview.pageMetrics : []);
+      setNetFollowersSeries(Array.isArray(cachedOverview.netFollowersSeries) ? cachedOverview.netFollowersSeries : []);
+      setReachSeries(Array.isArray(cachedOverview.reachSeries) ? cachedOverview.reachSeries : []);
+      setOverviewSnapshot(null);
+      setOverviewSource(cachedOverview.overviewSource || null);
+      setOverviewLoading(false);
+      setPageError("");
+      setFollowersOverride(
+        cachedOverview.followersOverride !== undefined ? cachedOverview.followersOverride : null,
+      );
+    } else {
+      setPageMetrics([]);
+      setNetFollowersSeries([]);
+      setReachSeries([]);
+      setOverviewSnapshot(null);
+      setOverviewSource(null);
+      setOverviewLoading(false);
+      setPageError("");
+      setFollowersOverride(null);
+    }
+
+    const cachedPosts = getDashboardCache(fbPostsCacheKey);
+    if (cachedPosts) {
+      setFbPosts(Array.isArray(cachedPosts.posts) ? cachedPosts.posts : []);
+      setFbPostsError("");
+      setFbPostsLoading(false);
+    } else {
+      setFbPosts([]);
+      setFbPostsError("");
+      setFbPostsLoading(false);
+    }
+  }, [pageCacheKey, overviewCacheKey, fbPostsCacheKey]);
 
   useEffect(() => {
     if (!accountConfig?.facebookPageId) {
@@ -317,12 +362,16 @@ useEffect(() => {
       return () => {};
     }
 
+    const cachedPage = getDashboardCache(pageCacheKey);
+    const cachedOverview = sinceParam && untilParam ? getDashboardCache(overviewCacheKey) : null;
+
     let cancelled = false;
     const loadPageInfo = async () => {
       try {
         const resp = await apiFetch(`/api/facebook/page-info?pageId=${encodeURIComponent(accountConfig.facebookPageId)}`);
         if (cancelled) return;
         setPageInfo(resp?.page || null);
+        mergeDashboardCache(pageCacheKey, { pageInfo: resp?.page || null });
       } catch (err) {
         if (cancelled) return;
         setPageInfo(null);
@@ -336,7 +385,9 @@ useEffect(() => {
           `/api/covers?platform=facebook&account_id=${encodeURIComponent(accountConfig.facebookPageId)}`,
         );
         if (cancelled) return;
-        setCoverImage(resp?.cover?.url || resp?.cover?.storage_url || null);
+        const cover = resp?.cover?.url || resp?.cover?.storage_url || null;
+        setCoverImage(cover);
+        mergeDashboardCache(pageCacheKey, { coverImage: cover });
       } catch (err) {
         if (cancelled) return;
         setCoverImage(null);
@@ -359,7 +410,9 @@ useEffect(() => {
         if (cancelled) return;
         const val = resp?.followers?.value;
         if (val !== undefined && val !== null) {
-          setFollowersOverride(Number(val));
+          const followersValue = Number(val);
+          setFollowersOverride(followersValue);
+          mergeDashboardCache(overviewCacheKey, { followersOverride: followersValue });
         }
       } catch (err) {
         if (cancelled) return;
@@ -367,13 +420,33 @@ useEffect(() => {
       }
     };
 
-    loadPageInfo();
-    loadCover();
-    loadFollowers();
+    const shouldLoadPageInfo = !cachedPage || cachedPage.pageInfo === undefined;
+    const shouldLoadCover = !cachedPage || cachedPage.coverImage === undefined;
+    if (shouldLoadPageInfo) {
+      loadPageInfo();
+    }
+    if (shouldLoadCover) {
+      loadCover();
+    }
+    if (!cachedOverview || cachedOverview.followersOverride === undefined) {
+      loadFollowers();
+    } else if (cachedOverview.followersOverride !== undefined) {
+      setFollowersOverride(cachedOverview.followersOverride);
+    }
 
     if (!sinceParam || !untilParam) {
       setOverviewSource(null);
       setOverviewLoading(true);
+      return () => { cancelled = true; };
+    }
+
+    if (cachedOverview) {
+      setPageMetrics(Array.isArray(cachedOverview.pageMetrics) ? cachedOverview.pageMetrics : []);
+      setNetFollowersSeries(Array.isArray(cachedOverview.netFollowersSeries) ? cachedOverview.netFollowersSeries : []);
+      setReachSeries(Array.isArray(cachedOverview.reachSeries) ? cachedOverview.reachSeries : []);
+      setOverviewSource(cachedOverview.overviewSource || null);
+      setOverviewLoading(false);
+      setPageError("");
       return () => { cancelled = true; };
     }
 
@@ -396,15 +469,24 @@ useEffect(() => {
           throw new Error(describeApiError(json, "Falha ao carregar métricas do Facebook."));
         }
         if (cancelled) return;
-        setPageMetrics(Array.isArray(json.metrics) ? json.metrics : []);
-        setNetFollowersSeries(Array.isArray(json.net_followers_series) ? json.net_followers_series : []);
+        const fetchedMetrics = Array.isArray(json.metrics) ? json.metrics : [];
+        const fetchedFollowersSeries = Array.isArray(json.net_followers_series) ? json.net_followers_series : [];
         const reachSeriesPayload = Array.isArray(json.reach_timeseries)
           ? json.reach_timeseries
           : Array.isArray(json.page_overview?.reach_timeseries)
             ? json.page_overview.reach_timeseries
             : [];
+        setPageMetrics(fetchedMetrics);
+        setNetFollowersSeries(fetchedFollowersSeries);
         setReachSeries(reachSeriesPayload);
         setOverviewSource(json);
+        mergeDashboardCache(overviewCacheKey, {
+          pageMetrics: fetchedMetrics,
+          netFollowersSeries: fetchedFollowersSeries,
+          reachSeries: reachSeriesPayload,
+          overviewSource: json,
+          followersOverride,
+        });
       } catch (err) {
         if (controller.signal.aborted || cancelled) return;
         console.error(err);
@@ -425,7 +507,7 @@ useEffect(() => {
       cancelled = true;
       controller.abort();
     };
-  }, [accountConfig?.facebookPageId, sinceParam, untilParam, apiFetch]);
+  }, [accountConfig?.facebookPageId, sinceParam, untilParam, apiFetch, pageCacheKey, overviewCacheKey]);
 
   useEffect(() => {
     if (!accountConfig?.facebookPageId) {
@@ -436,6 +518,14 @@ useEffect(() => {
     }
     if (!sinceParam || !untilParam) {
       setFbPosts([]);
+      return () => {};
+    }
+
+    const cachedPosts = getDashboardCache(fbPostsCacheKey);
+    if (cachedPosts) {
+      setFbPosts(Array.isArray(cachedPosts.posts) ? cachedPosts.posts : []);
+      setFbPostsLoading(false);
+      setFbPostsError("");
       return () => {};
     }
 
@@ -453,6 +543,7 @@ useEffect(() => {
         if (cancelled) return;
         const posts = Array.isArray(resp?.posts) ? resp.posts : [];
         setFbPosts(posts);
+        setDashboardCache(fbPostsCacheKey, { posts });
       } catch (err) {
         if (cancelled) return;
         setFbPosts([]);
@@ -470,7 +561,7 @@ useEffect(() => {
     return () => {
       cancelled = true;
     };
-  }, [accountConfig?.facebookPageId, apiFetch, sinceParam, untilParam]);
+  }, [accountConfig?.facebookPageId, apiFetch, sinceParam, untilParam, fbPostsCacheKey]);
   const avatarUrl = useMemo(
     () => pageInfo?.picture_url || accountConfig?.profilePictureUrl || accountConfig?.pagePictureUrl || "",
     [pageInfo?.picture_url, accountConfig?.pagePictureUrl, accountConfig?.profilePictureUrl],
@@ -514,13 +605,15 @@ useEffect(() => {
           size_bytes: file.size,
         },
       });
-      setCoverImage(resp?.cover?.url || resp?.cover?.storage_url || dataUrl);
+      const newCover = resp?.cover?.url || resp?.cover?.storage_url || dataUrl;
+      setCoverImage(newCover);
+      mergeDashboardCache(pageCacheKey, { coverImage: newCover });
     } catch (err) {
       setCoverError(err?.message || "Não foi possível salvar a capa.");
     } finally {
       setCoverLoading(false);
     }
-  }, [accountConfig?.facebookPageId, apiFetch]);
+  }, [accountConfig?.facebookPageId, apiFetch, pageCacheKey]);
 
   const handleCoverRemove = useCallback(async () => {
     if (!accountConfig?.facebookPageId) return;
@@ -531,12 +624,13 @@ useEffect(() => {
         method: "DELETE",
       });
       setCoverImage(null);
+      mergeDashboardCache(pageCacheKey, { coverImage: null });
     } catch (err) {
       setCoverError(err?.message || "Não foi possível remover a capa.");
     } finally {
       setCoverLoading(false);
     }
-  }, [accountConfig?.facebookPageId, apiFetch]);
+  }, [accountConfig?.facebookPageId, apiFetch, pageCacheKey]);
 
   // Facebook metrics no longer trigger full API calls; only reach uses the backend.
 

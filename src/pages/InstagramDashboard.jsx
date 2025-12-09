@@ -48,6 +48,7 @@ import { useAccounts } from "../context/AccountsContext";
 import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import WordCloudCard from "../components/WordCloudCard";
 import { useAuth } from "../context/AuthContext";
+import { getDashboardCache, makeDashboardCacheKey, setDashboardCache } from "../lib/dashboardCache";
 
 const API_BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 const FALLBACK_ACCOUNT_ID = DEFAULT_ACCOUNTS[0]?.id || "";
@@ -611,6 +612,14 @@ export default function InstagramDashboard() {
 
   const sinceParam = getQuery("since");
   const untilParam = getQuery("until");
+  const metricsCacheKey = useMemo(
+    () => makeDashboardCacheKey("instagram-metrics", accountSnapshotKey, sinceParam || "auto", untilParam || "auto"),
+    [accountSnapshotKey, sinceParam, untilParam],
+  );
+  const postsCacheKey = useMemo(
+    () => makeDashboardCacheKey("instagram-posts", accountSnapshotKey, sinceParam || "auto", untilParam || "auto"),
+    [accountSnapshotKey, sinceParam, untilParam],
+  );
   const sinceDate = useMemo(() => parseQueryDate(sinceParam), [sinceParam]);
   const untilDate = useMemo(() => parseQueryDate(untilParam), [untilParam]);
   const sinceIso = useMemo(() => toUtcDateString(sinceDate), [sinceDate]);
@@ -751,14 +760,33 @@ export default function InstagramDashboard() {
   );
 
   useEffect(() => {
-    setMetrics([]);
-    setFollowerSeries([]);
-    setFollowerCounts(null);
-    setPosts([]);
-    setAccountInfo(null);
-    setReachCacheSeries([]);
-    setOverviewSnapshot(null);
-  }, [accountSnapshotKey]);
+    const cachedMetrics = getDashboardCache(metricsCacheKey);
+    if (cachedMetrics) {
+      setMetrics(Array.isArray(cachedMetrics.metrics) ? cachedMetrics.metrics : []);
+      setFollowerSeries(Array.isArray(cachedMetrics.followerSeries) ? cachedMetrics.followerSeries : []);
+      setFollowerCounts(cachedMetrics.followerCounts ?? null);
+      setReachCacheSeries(Array.isArray(cachedMetrics.reachSeries) ? cachedMetrics.reachSeries : []);
+      setMetricsError("");
+      setMetricsLoading(false);
+    } else {
+      setMetrics([]);
+      setFollowerSeries([]);
+      setFollowerCounts(null);
+      setReachCacheSeries([]);
+      setOverviewSnapshot(null);
+    }
+
+    const cachedPosts = getDashboardCache(postsCacheKey);
+    if (cachedPosts) {
+      setPosts(Array.isArray(cachedPosts.posts) ? cachedPosts.posts : []);
+      setAccountInfo(cachedPosts.accountInfo || null);
+      setPostsError("");
+      setLoadingPosts(false);
+    } else {
+      setPosts([]);
+      setAccountInfo(null);
+    }
+  }, [metricsCacheKey, postsCacheKey]);
 
   useEffect(() => {
     if (!accountConfig?.instagramUserId) {
@@ -770,6 +798,17 @@ export default function InstagramDashboard() {
       setMetricsLoading(false);
       setMetricsError("Conta do Instagram não configurada.");
       return;
+    }
+
+    const cachedMetrics = getDashboardCache(metricsCacheKey);
+    if (cachedMetrics) {
+      setMetrics(Array.isArray(cachedMetrics.metrics) ? cachedMetrics.metrics : []);
+      setFollowerSeries(Array.isArray(cachedMetrics.followerSeries) ? cachedMetrics.followerSeries : []);
+      setFollowerCounts(cachedMetrics.followerCounts ?? null);
+      setReachCacheSeries(Array.isArray(cachedMetrics.reachSeries) ? cachedMetrics.reachSeries : []);
+      setMetricsError("");
+      setMetricsLoading(false);
+      return undefined;
     }
 
     const preset = IG_TOPBAR_PRESETS.find((item) => item.id === "7d") || IG_TOPBAR_PRESETS[0];
@@ -797,9 +836,9 @@ export default function InstagramDashboard() {
         const json = safeParseJson(await resp.text()) || {};
         if (!resp.ok) throw new Error(describeApiError(json, "Falha ao carregar metricas do Instagram."));
         if (cancelled) return;
-        setMetrics(json.metrics || []);
-        setFollowerSeries(Array.isArray(json.follower_series) ? json.follower_series : []);
-        setFollowerCounts(json.follower_counts || null);
+        const fetchedMetrics = json.metrics || [];
+        const fetchedFollowerSeries = Array.isArray(json.follower_series) ? json.follower_series : [];
+        const fetchedFollowerCounts = json.follower_counts || null;
         const reachSeries = Array.isArray(json.reach_timeseries)
           ? json.reach_timeseries
             .map((entry) => {
@@ -816,7 +855,16 @@ export default function InstagramDashboard() {
             .filter(Boolean)
           : [];
         if (cancelled) return;
+        setMetrics(fetchedMetrics);
+        setFollowerSeries(fetchedFollowerSeries);
+        setFollowerCounts(fetchedFollowerCounts);
         setReachCacheSeries(reachSeries);
+        setDashboardCache(metricsCacheKey, {
+          metrics: fetchedMetrics,
+          followerSeries: fetchedFollowerSeries,
+          followerCounts: fetchedFollowerCounts,
+          reachSeries,
+        });
       } catch (err) {
         if (!cancelled && err.name !== "AbortError") {
           setMetrics([]);
@@ -836,13 +884,22 @@ export default function InstagramDashboard() {
       cancelled = true;
       controller.abort();
     };
-  }, [accountConfig?.instagramUserId, sinceDate, untilDate, defaultEnd, sinceParam, untilParam]);
+  }, [accountConfig?.instagramUserId, sinceDate, untilDate, defaultEnd, sinceParam, untilParam, metricsCacheKey]);
 
   useEffect(() => {
     if (!accountConfig?.instagramUserId) {
       setPosts([]);
       setAccountInfo(null);
       setPostsError("Conta do Instagram não configurada.");
+      return undefined;
+    }
+
+    const cachedPosts = getDashboardCache(postsCacheKey);
+    if (cachedPosts) {
+      setPosts(Array.isArray(cachedPosts.posts) ? cachedPosts.posts : []);
+      setAccountInfo(cachedPosts.accountInfo || null);
+      setPostsError("");
+      setLoadingPosts(false);
       return undefined;
     }
 
@@ -856,8 +913,11 @@ export default function InstagramDashboard() {
         if (untilParam) params.set("until", untilParam);
         const resp = await apiFetch(`/api/instagram/posts?${params.toString()}`);
         if (cancelled) return;
-        setPosts(Array.isArray(resp?.posts) ? resp.posts : []);
-        setAccountInfo(resp?.account || null);
+        const normalizedPosts = Array.isArray(resp?.posts) ? resp.posts : [];
+        const account = resp?.account || null;
+        setPosts(normalizedPosts);
+        setAccountInfo(account);
+        setDashboardCache(postsCacheKey, { posts: normalizedPosts, accountInfo: account });
       } catch (err) {
         if (cancelled) return;
         const rawMessage = err?.message || "";
@@ -876,7 +936,7 @@ export default function InstagramDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [accountConfig?.instagramUserId, apiFetch, sinceParam, untilParam]);
+  }, [accountConfig?.instagramUserId, apiFetch, sinceParam, untilParam, postsCacheKey]);
 
   const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
   const reachMetric = metricsByKey.reach;
