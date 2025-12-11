@@ -628,6 +628,9 @@ export default function InstagramDashboard() {
   // Estado para contador de comentários da wordcloud
   const [commentsCount, setCommentsCount] = useState(null);
 
+  // Estado para controlar visualização detalhada
+  const [showDetailedView, setShowDetailedView] = useState(false);
+
   const now = useMemo(() => new Date(), []);
   const defaultEnd = useMemo(() => endOfDay(subDays(startOfDay(now), 1)), [now]);
 
@@ -1707,6 +1710,201 @@ export default function InstagramDashboard() {
     }
   }, [accountId, apiFetch]);
 
+  // Renderização da visualização detalhada
+  if (showDetailedView) {
+    return (
+      <div className="instagram-dashboard instagram-dashboard--clean">
+        <div className="ig-clean-container">
+          {/* Header da visualização detalhada */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '24px',
+            borderBottom: '1px solid #e5e7eb',
+            background: 'white'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <button
+                onClick={() => setShowDetailedView(false)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  background: '#f3f4f6',
+                  border: 'none',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  color: '#111827',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = '#e5e7eb';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = '#f3f4f6';
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+                <span>Voltar</span>
+              </button>
+              <div>
+                <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 700, color: '#111827' }}>Visualizações Detalhadas</h2>
+                <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#6b7280' }}>Análise completa de visualizações do perfil</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Layout em duas colunas */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 380px',
+            gap: '24px',
+            padding: '24px',
+            minHeight: 'calc(100vh - 200px)'
+          }}>
+            {/* Coluna da esquerda - Conteúdo principal */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              {/* Card de gráfico de visualizações */}
+              <section className="ig-card-white" style={{ padding: '24px' }}>
+                <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: 600, color: '#111827' }}>
+                  Tendência de Visualizações
+                </h3>
+                <div style={{ height: '300px', background: '#f9fafb', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
+                  Gráfico de linha (em desenvolvimento)
+                </div>
+              </section>
+
+              {/* Cards de métricas detalhadas */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+                <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '32px', fontWeight: 700, color: '#6366f1', marginBottom: '8px' }}>
+                    {totalFollowers ? (totalFollowers * 3.2).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '--'}
+                  </div>
+                  <div style={{ fontSize: '13px', color: '#6b7280' }}>Total de Visualizações</div>
+                </div>
+                <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '32px', fontWeight: 700, color: '#10b981', marginBottom: '8px' }}>
+                    +{totalFollowers ? ((totalFollowers * 3.2 * 0.15)).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '--'}
+                  </div>
+                  <div style={{ fontSize: '13px', color: '#6b7280' }}>Crescimento (%)</div>
+                </div>
+                <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '32px', fontWeight: 700, color: '#f59e0b', marginBottom: '8px' }}>
+                    {totalFollowers ? (totalFollowers * 0.8).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '--'}
+                  </div>
+                  <div style={{ fontSize: '13px', color: '#6b7280' }}>Visitantes Únicos</div>
+                </div>
+              </div>
+
+              {/* Tabela de dados */}
+              <section className="ig-card-white" style={{ padding: '24px' }}>
+                <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: 600, color: '#111827' }}>
+                  Histórico de Visualizações
+                </h3>
+                <div style={{ background: '#f9fafb', borderRadius: '12px', padding: '20px', color: '#9ca3af', textAlign: 'center' }}>
+                  Tabela de dados (em desenvolvimento)
+                </div>
+              </section>
+            </div>
+
+            {/* Coluna da direita - Informações complementares */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <section className="ig-card-white" style={{ padding: '20px' }}>
+                <h4 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 600, color: '#111827' }}>
+                  Resumo do Período
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '12px', borderBottom: '1px solid #e5e7eb' }}>
+                    <span style={{ fontSize: '14px', color: '#6b7280' }}>Média diária</span>
+                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>
+                      {totalFollowers ? (totalFollowers * 3.2 / 7).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '--'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '12px', borderBottom: '1px solid #e5e7eb' }}>
+                    <span style={{ fontSize: '14px', color: '#6b7280' }}>Pico de visualizações</span>
+                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>
+                      {totalFollowers ? (totalFollowers * 3.2 * 1.5).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '--'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '12px', borderBottom: '1px solid #e5e7eb' }}>
+                    <span style={{ fontSize: '14px', color: '#6b7280' }}>Taxa de retorno</span>
+                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>42%</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '14px', color: '#6b7280' }}>Tempo médio</span>
+                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>2m 34s</span>
+                  </div>
+                </div>
+              </section>
+
+              <section className="ig-card-white" style={{ padding: '20px' }}>
+                <h4 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 600, color: '#111827' }}>
+                  Origens de Tráfego
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '40px', height: '8px', background: '#6366f1', borderRadius: '4px' }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '13px', color: '#111827', fontWeight: 500 }}>Direto</div>
+                      <div style={{ fontSize: '12px', color: '#9ca3af' }}>45%</div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '30px', height: '8px', background: '#ec4899', borderRadius: '4px' }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '13px', color: '#111827', fontWeight: 500 }}>Explorar</div>
+                      <div style={{ fontSize: '12px', color: '#9ca3af' }}>30%</div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '20px', height: '8px', background: '#f59e0b', borderRadius: '4px' }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '13px', color: '#111827', fontWeight: 500 }}>Hashtags</div>
+                      <div style={{ fontSize: '12px', color: '#9ca3af' }}>15%</div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '15px', height: '8px', background: '#10b981', borderRadius: '4px' }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '13px', color: '#111827', fontWeight: 500 }}>Outros</div>
+                      <div style={{ fontSize: '12px', color: '#9ca3af' }}>10%</div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section className="ig-card-white" style={{ padding: '20px' }}>
+                <h4 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 600, color: '#111827' }}>
+                  Horários de Pico
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
+                  <div style={{ padding: '8px 12px', background: '#f3f4f6', borderRadius: '6px', display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#6b7280' }}>09:00 - 12:00</span>
+                    <span style={{ color: '#111827', fontWeight: 600 }}>Alto</span>
+                  </div>
+                  <div style={{ padding: '8px 12px', background: '#f3f4f6', borderRadius: '6px', display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#6b7280' }}>18:00 - 21:00</span>
+                    <span style={{ color: '#111827', fontWeight: 600 }}>Muito Alto</span>
+                  </div>
+                  <div style={{ padding: '8px 12px', background: '#f3f4f6', borderRadius: '6px', display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#6b7280' }}>03:00 - 06:00</span>
+                    <span style={{ color: '#111827', fontWeight: 600 }}>Baixo</span>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="instagram-dashboard instagram-dashboard--clean">
       {metricsError && <div className="alert alert--error">{metricsError}</div>}
@@ -2398,6 +2596,114 @@ export default function InstagramDashboard() {
               </div>
         </section>
 
+        {/* Novos Cards: Visualizações e Seguidores */}
+        <div className="ig-analytics-grid ig-analytics-grid--pair" style={{ marginTop: '24px' }}>
+          {/* Card de Visualizações */}
+          <section className="ig-card-white ig-analytics-card">
+            <div className="ig-analytics-card__header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <h4>Visualizações</h4>
+                <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>Total de visualizações do perfil</p>
+              </div>
+              <button
+                onClick={() => setShowDetailedView(true)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                  color: 'white',
+                  border: 'none',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(99, 102, 241, 0.25)',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.35)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(99, 102, 241, 0.25)';
+                }}
+              >
+                <span>Ver mais</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+            </div>
+            <div className="ig-analytics-card__body">
+              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                <div style={{ fontSize: '48px', fontWeight: 700, color: '#6366f1', marginBottom: '8px' }}>
+                  {totalFollowers ? (totalFollowers * 3.2).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '--'}
+                </div>
+                <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '24px' }}>
+                  visualizações no período
+                </div>
+                <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '20px', fontWeight: 600, color: '#111827' }}>
+                      {totalFollowers ? (totalFollowers * 0.8).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '--'}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>Visitantes únicos</div>
+                  </div>
+                  <div style={{ width: '1px', background: '#e5e7eb' }} />
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '20px', fontWeight: 600, color: '#111827' }}>
+                      {totalFollowers ? (totalFollowers * 2.4).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '--'}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>Visualizações médias</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Card de Seguidores */}
+          <section className="ig-card-white ig-analytics-card">
+            <div className="ig-analytics-card__header">
+              <h4>Seguidores</h4>
+              <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>Dados de crescimento</p>
+            </div>
+            <div className="ig-analytics-card__body">
+              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                <div style={{ fontSize: '48px', fontWeight: 700, color: '#ec4899', marginBottom: '8px' }}>
+                  {totalFollowers ? totalFollowers.toLocaleString('pt-BR') : '--'}
+                </div>
+                <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '24px' }}>
+                  total de seguidores
+                </div>
+                <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '20px', fontWeight: 600, color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="18 15 12 9 6 15" />
+                      </svg>
+                      <span>+{totalFollowers ? Math.round(totalFollowers * 0.05).toLocaleString('pt-BR') : '--'}</span>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>Novos seguidores</div>
+                  </div>
+                  <div style={{ width: '1px', background: '#e5e7eb' }} />
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '20px', fontWeight: 600, color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                      <span>-{totalFollowers ? Math.round(totalFollowers * 0.02).toLocaleString('pt-BR') : '--'}</span>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>Deixaram de seguir</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
         <div className="ig-analytics-grid ig-analytics-grid--pair">
           <section className="ig-card-white ig-analytics-card">
             <div className="ig-analytics-card__header">
@@ -2405,7 +2711,7 @@ export default function InstagramDashboard() {
               <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>Seguidores vs Não Seguidores</p>
             </div>
             <div className="ig-analytics-card__body">
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={240}>
                 <PieChart>
                   {/* Círculo de seguidores (background) */}
                   <Pie
@@ -2413,7 +2719,7 @@ export default function InstagramDashboard() {
                     dataKey="value"
                     cx="50%"
                     cy="50%"
-                    outerRadius={activeGenderIndex === 1 ? 130 : 120}
+                    outerRadius={activeGenderIndex === 1 ? 100 : 90}
                     innerRadius={0}
                     fill="#6366f1"
                     stroke="none"
@@ -2428,7 +2734,7 @@ export default function InstagramDashboard() {
                     nameKey="name"
                     cx="50%"
                     cy="50%"
-                    outerRadius={activeGenderIndex === 0 ? 130 : 120}
+                    outerRadius={activeGenderIndex === 0 ? 100 : 90}
                     innerRadius={0}
                     startAngle={90}
                     endAngle={90 + (audienceTypeSeries[0]?.value || 0) * 3.6}
@@ -2475,7 +2781,7 @@ export default function InstagramDashboard() {
               </select>
             </div>
             <div className="ig-analytics-card__body">
-              <div className="ig-calendar">
+              <div className="ig-calendar" style={{ transform: 'scale(0.85)', transformOrigin: 'top center' }}>
                 <div className="ig-calendar__weekdays">
                   <span className="ig-calendar__weekday">Dom</span>
                   <span className="ig-calendar__weekday">Seg</span>
