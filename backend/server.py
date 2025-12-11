@@ -800,6 +800,42 @@ def fetch_instagram_metrics(
             }
         )
 
+    profile_views_series_raw = cur.get("profile_views_timeseries") or []
+    profile_views_timeseries: List[Dict[str, Any]] = []
+    for entry in profile_views_series_raw:
+        value = entry.get("value")
+        if value is None:
+            continue
+        try:
+            numeric_value = float(value)
+        except (TypeError, ValueError):
+            continue
+        if not math.isfinite(numeric_value):
+            continue
+        end_time = entry.get("end_time")
+        start_time = entry.get("start_time")
+        raw_ts = end_time or start_time or entry.get("date")
+        normalized_date = None
+        if raw_ts:
+            normalized_input = str(raw_ts).replace("Z", "+00:00")
+            try:
+                normalized_date = datetime.fromisoformat(normalized_input).date().isoformat()
+            except ValueError:
+                try:
+                    normalized_date = datetime.strptime(str(raw_ts), "%Y-%m-%dT%H:%M:%S%z").date().isoformat()
+                except ValueError:
+                    normalized_date = str(raw_ts)[:10]
+        if normalized_date is None and raw_ts is None:
+            continue
+        profile_views_timeseries.append(
+            {
+                "date": normalized_date or raw_ts,
+                "end_time": end_time,
+                "start_time": start_time,
+                "value": int(round(numeric_value)),
+            }
+        )
+
     metrics = [
         {"key": "followers_total", "label": "SEGUIDORES", "value": cur.get("follower_count_end"), "deltaPct": pct(cur.get("follower_count_end"), prev.get("follower_count_end"))},
         {
@@ -808,6 +844,13 @@ def fetch_instagram_metrics(
             "value": cur["reach"],
             "deltaPct": pct(cur["reach"], prev["reach"]),
             "timeseries": reach_timeseries,
+        },
+        {
+            "key": "profile_views",
+            "label": "VISUALIZACOES",
+            "value": cur.get("profile_views"),
+            "deltaPct": pct(cur.get("profile_views"), prev.get("profile_views")),
+            "timeseries": profile_views_timeseries,
         },
         {"key": "interactions", "label": "INTERACOES", "value": cur["interactions"], "deltaPct": pct(cur["interactions"], prev["interactions"])},
         {"key": "likes", "label": "CURTIDAS", "value": cur.get("likes"), "deltaPct": pct(cur.get("likes"), prev.get("likes")) if prev.get("likes") else None},
@@ -846,6 +889,7 @@ def fetch_instagram_metrics(
         "follower_series": cur.get("follower_series") or [],
         "top_posts": top_posts,
         "reach_timeseries": reach_timeseries,
+        "profile_views_timeseries": profile_views_timeseries,
     }
 
 

@@ -751,14 +751,16 @@ export default function InstagramDashboard() {
     setCalendarMonth((current) => (current === defaultCalendarValue ? current : defaultCalendarValue));
   }, [defaultCalendarValue]);
 
-  const [accountInfo, setAccountInfo] = useState(null);
-  const [followerSeries, setFollowerSeries] = useState([]);
-  const [followerCounts, setFollowerCounts] = useState(null);
-  const [overviewSnapshot, setOverviewSnapshot] = useState(null);
-  const [reachCacheSeries, setReachCacheSeries] = useState([]);
-  const [activeFollowerGrowthBar, setActiveFollowerGrowthBar] = useState(-1);
-  const [activeEngagementIndex, setActiveEngagementIndex] = useState(-1);
-  const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
+const [accountInfo, setAccountInfo] = useState(null);
+const [followerSeries, setFollowerSeries] = useState([]);
+const [followerCounts, setFollowerCounts] = useState(null);
+const [overviewSnapshot, setOverviewSnapshot] = useState(null);
+const [reachCacheSeries, setReachCacheSeries] = useState([]);
+const [profileViewsSeries, setProfileViewsSeries] = useState([]);
+const [profileVisitorsBreakdown, setProfileVisitorsBreakdown] = useState(null);
+const [activeFollowerGrowthBar, setActiveFollowerGrowthBar] = useState(-1);
+const [activeEngagementIndex, setActiveEngagementIndex] = useState(-1);
+const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
 
   const activeSnapshot = useMemo(
     () => (overviewSnapshot?.accountId === accountSnapshotKey && accountSnapshotKey ? overviewSnapshot : null),
@@ -772,6 +774,8 @@ export default function InstagramDashboard() {
       setFollowerSeries(Array.isArray(cachedMetrics.followerSeries) ? cachedMetrics.followerSeries : []);
       setFollowerCounts(cachedMetrics.followerCounts ?? null);
       setReachCacheSeries(Array.isArray(cachedMetrics.reachSeries) ? cachedMetrics.reachSeries : []);
+      setProfileViewsSeries(Array.isArray(cachedMetrics.profileViewsSeries) ? cachedMetrics.profileViewsSeries : []);
+      setProfileVisitorsBreakdown(cachedMetrics.profileVisitorsBreakdown ?? null);
       setMetricsError("");
       setMetricsLoading(false);
     } else {
@@ -779,6 +783,8 @@ export default function InstagramDashboard() {
       setFollowerSeries([]);
       setFollowerCounts(null);
       setReachCacheSeries([]);
+      setProfileViewsSeries([]);
+      setProfileVisitorsBreakdown(null);
       setOverviewSnapshot(null);
     }
 
@@ -800,6 +806,8 @@ export default function InstagramDashboard() {
       setFollowerSeries([]);
       setFollowerCounts(null);
       setReachCacheSeries([]);
+      setProfileViewsSeries([]);
+      setProfileVisitorsBreakdown(null);
       setOverviewSnapshot(null);
       setMetricsLoading(false);
       setMetricsError("Conta do Instagram não configurada.");
@@ -807,15 +815,17 @@ export default function InstagramDashboard() {
     }
 
     const cachedMetrics = getDashboardCache(metricsCacheKey);
-    if (cachedMetrics) {
-      setMetrics(Array.isArray(cachedMetrics.metrics) ? cachedMetrics.metrics : []);
-      setFollowerSeries(Array.isArray(cachedMetrics.followerSeries) ? cachedMetrics.followerSeries : []);
-      setFollowerCounts(cachedMetrics.followerCounts ?? null);
-      setReachCacheSeries(Array.isArray(cachedMetrics.reachSeries) ? cachedMetrics.reachSeries : []);
-      setMetricsError("");
-      setMetricsLoading(false);
-      return undefined;
-    }
+  if (cachedMetrics) {
+    setMetrics(Array.isArray(cachedMetrics.metrics) ? cachedMetrics.metrics : []);
+    setFollowerSeries(Array.isArray(cachedMetrics.followerSeries) ? cachedMetrics.followerSeries : []);
+    setFollowerCounts(cachedMetrics.followerCounts ?? null);
+    setReachCacheSeries(Array.isArray(cachedMetrics.reachSeries) ? cachedMetrics.reachSeries : []);
+    setProfileViewsSeries(Array.isArray(cachedMetrics.profileViewsSeries) ? cachedMetrics.profileViewsSeries : []);
+    setProfileVisitorsBreakdown(cachedMetrics.profileVisitorsBreakdown ?? null);
+    setMetricsError("");
+    setMetricsLoading(false);
+    return undefined;
+  }
 
     const preset = IG_TOPBAR_PRESETS.find((item) => item.id === "7d") || IG_TOPBAR_PRESETS[0];
     const fallbackStart = startOfDay(subDays(defaultEnd, (preset?.days ?? 7) - 1));
@@ -860,16 +870,36 @@ export default function InstagramDashboard() {
             })
             .filter(Boolean)
           : [];
+        const parsedProfileViewsSeries = Array.isArray(json.profile_views_timeseries)
+          ? json.profile_views_timeseries
+            .map((entry) => {
+              if (!entry) return null;
+              const dateRaw = entry.date || entry.metric_date || entry.end_time || entry.start_time || entry.label;
+              if (!dateRaw) return null;
+              const numericValue = extractNumber(entry.value, null);
+              if (numericValue === null) return null;
+              return {
+                date: dateRaw,
+                value: numericValue,
+              };
+            })
+            .filter(Boolean)
+          : [];
+        const visitorsBreakdown = json.profile_visitors_breakdown || null;
         if (cancelled) return;
         setMetrics(fetchedMetrics);
         setFollowerSeries(fetchedFollowerSeries);
         setFollowerCounts(fetchedFollowerCounts);
         setReachCacheSeries(reachSeries);
+        setProfileViewsSeries(parsedProfileViewsSeries);
+        setProfileVisitorsBreakdown(visitorsBreakdown);
         setDashboardCache(metricsCacheKey, {
           metrics: fetchedMetrics,
           followerSeries: fetchedFollowerSeries,
           followerCounts: fetchedFollowerCounts,
           reachSeries,
+          profileViewsSeries: parsedProfileViewsSeries,
+          profileVisitorsBreakdown: visitorsBreakdown,
         });
       } catch (err) {
         if (!cancelled && err.name !== "AbortError") {
@@ -877,6 +907,8 @@ export default function InstagramDashboard() {
           setFollowerSeries([]);
           setFollowerCounts(null);
           setReachCacheSeries([]);
+          setProfileViewsSeries([]);
+          setProfileVisitorsBreakdown(null);
           setMetricsError(err.message || "Não foi possível atualizar.");
         }
       } finally {
@@ -944,14 +976,103 @@ export default function InstagramDashboard() {
     };
   }, [accountConfig?.instagramUserId, apiFetch, sinceParam, untilParam, postsCacheKey]);
 
-  const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
-  const reachMetric = metricsByKey.reach;
-  const followersMetric = metricsByKey.followers_total;
-  const followerGrowthMetric = metricsByKey.follower_growth;
-  const engagementRateMetric = metricsByKey.engagement_rate;
+const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
+const reachMetric = metricsByKey.reach;
+const followersMetric = metricsByKey.followers_total;
+const followerGrowthMetric = metricsByKey.follower_growth;
+const engagementRateMetric = metricsByKey.engagement_rate;
+const profileViewsMetric = metricsByKey.profile_views;
 
   const reachMetricValue = useMemo(() => extractNumber(reachMetric?.value, null), [reachMetric?.value]);
   const timelineReachSeries = useMemo(() => seriesFromMetric(reachMetric), [reachMetric]);
+  const profileViewsSeriesFromMetric = useMemo(() => seriesFromMetric(profileViewsMetric), [profileViewsMetric]);
+  const resolvedProfileViewsSeries = useMemo(() => {
+    const baseSeries = profileViewsSeriesFromMetric.length ? profileViewsSeriesFromMetric : profileViewsSeries;
+    if (!baseSeries?.length) return [];
+    const normalized = baseSeries
+      .map((entry) => {
+        const dateKey = normalizeDateKey(entry.date || entry.end_time || entry.endTime);
+        if (!dateKey) return null;
+        return { date: dateKey, value: extractNumber(entry.value, null) };
+      })
+      .filter(Boolean)
+      .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+    if (!sinceDate && !untilDate) return normalized;
+    const startBoundary = sinceDate ? startOfDay(sinceDate).getTime() : null;
+    const endBoundary = untilDate ? endOfDay(untilDate).getTime() : null;
+    return normalized.filter((item) => {
+      if (!item?.date) return false;
+      const currentDate = new Date(`${item.date}T00:00:00`);
+      const current = currentDate.getTime();
+      if (Number.isNaN(current)) return false;
+      if (startBoundary != null && current < startBoundary) return false;
+      if (endBoundary != null && current > endBoundary) return false;
+      return true;
+    });
+  }, [profileViewsSeriesFromMetric, profileViewsSeries, sinceDate, untilDate]);
+  const profileViewsTotal = useMemo(() => {
+    const metricValue = extractNumber(profileViewsMetric?.value, null);
+    if (metricValue != null) return metricValue;
+    if (!resolvedProfileViewsSeries.length) return null;
+    return resolvedProfileViewsSeries.reduce((sum, entry) => sum + extractNumber(entry.value, 0), 0);
+  }, [profileViewsMetric?.value, resolvedProfileViewsSeries]);
+  const profileViewsPeak = useMemo(() => {
+    if (!resolvedProfileViewsSeries.length) return null;
+    return resolvedProfileViewsSeries.reduce((max, entry) => Math.max(max, extractNumber(entry.value, 0)), 0);
+  }, [resolvedProfileViewsSeries]);
+  const profileViewsDays = useMemo(() => {
+    if (sinceDate && untilDate) {
+      return differenceInCalendarDays(endOfDay(untilDate), startOfDay(sinceDate)) + 1;
+    }
+    return resolvedProfileViewsSeries.length || null;
+  }, [sinceDate, untilDate, resolvedProfileViewsSeries.length]);
+  const profileViewsAverage = useMemo(() => {
+    if (profileViewsTotal == null || !profileViewsDays) return null;
+    if (profileViewsDays <= 0) return null;
+    return profileViewsTotal / profileViewsDays;
+  }, [profileViewsTotal, profileViewsDays]);
+  const profileViewsDeltaPct = useMemo(() => {
+    if (typeof profileViewsMetric?.deltaPct === "number") return profileViewsMetric.deltaPct;
+    return null;
+  }, [profileViewsMetric?.deltaPct]);
+  const profileVisitorsTotals = useMemo(() => {
+    if (!profileVisitorsBreakdown) return null;
+    const followers = extractNumber(profileVisitorsBreakdown.followers ?? profileVisitorsBreakdown.followers, null);
+    const nonFollowers = extractNumber(profileVisitorsBreakdown.non_followers ?? profileVisitorsBreakdown.nonFollowers, null);
+    const other = extractNumber(profileVisitorsBreakdown.other, null);
+    const totalFromPayload = extractNumber(profileVisitorsBreakdown.total, null);
+    const computedTotal = [followers, nonFollowers, other].reduce(
+      (sum, value) => (value != null ? sum + value : sum),
+      0,
+    );
+    const finalTotal = totalFromPayload != null ? totalFromPayload : computedTotal || null;
+    return {
+      followers: followers ?? null,
+      nonFollowers: nonFollowers ?? null,
+      other: other ?? null,
+      total: finalTotal,
+    };
+  }, [profileVisitorsBreakdown]);
+  const profileViewsPerVisitor = useMemo(() => {
+    if (!profileVisitorsTotals?.total || profileViewsTotal == null) return null;
+    if (profileVisitorsTotals.total <= 0) return null;
+    return profileViewsTotal / profileVisitorsTotals.total;
+  }, [profileVisitorsTotals, profileViewsTotal]);
+  const profileReturnRate = useMemo(() => {
+    if (!profileVisitorsTotals?.total || profileVisitorsTotals.total <= 0) return null;
+    if (profileVisitorsTotals.followers == null) return null;
+    return (profileVisitorsTotals.followers / profileVisitorsTotals.total) * 100;
+  }, [profileVisitorsTotals]);
+  const profileViewsChartData = useMemo(() => resolvedProfileViewsSeries.map((entry) => {
+    const dateLabel = entry.date
+      ? new Date(`${entry.date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })
+      : "";
+    return {
+      label: dateLabel,
+      date: entry.date,
+      value: extractNumber(entry.value, 0),
+    };
+  }), [resolvedProfileViewsSeries]);
   const followerSeriesNormalized = useMemo(() => (followerSeries || [])
     .map((entry) => {
       const dateKey = normalizeDateKey(entry.date || entry.end_time || entry.endTime);
@@ -1775,28 +1896,50 @@ export default function InstagramDashboard() {
                 <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: 600, color: '#111827' }}>
                   Tendência de Visualizações
                 </h3>
-                <div style={{ height: '300px', background: '#f9fafb', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
-                  Gráfico de linha (em desenvolvimento)
-                </div>
+                {profileViewsChartData.length ? (
+                  <div style={{ height: 320 }}>
+                    <ResponsiveContainer>
+                      <LineChart data={profileViewsChartData}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis dataKey="label" tick={{ fontSize: 12 }} />
+                        <YAxis tick={{ fontSize: 12 }} />
+                        <Tooltip
+                          formatter={(value) => formatNumber(value)}
+                          labelFormatter={(label) => `Dia ${label}`}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="value"
+                          stroke="#6366f1"
+                          strokeWidth={3}
+                          dot={{ r: 3 }}
+                          activeDot={{ r: 5, strokeWidth: 0 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="ig-empty-state" style={{ height: 300 }}>Sem dados de visualizações.</div>
+                )}
               </section>
 
               {/* Cards de métricas detalhadas */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
                 <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
                   <div style={{ fontSize: '32px', fontWeight: 700, color: '#6366f1', marginBottom: '8px' }}>
-                    {totalFollowers ? (totalFollowers * 3.2).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '--'}
+                    {formatNumber(profileViewsTotal ?? null)}
                   </div>
                   <div style={{ fontSize: '13px', color: '#6b7280' }}>Total de Visualizações</div>
                 </div>
                 <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
                   <div style={{ fontSize: '32px', fontWeight: 700, color: '#10b981', marginBottom: '8px' }}>
-                    +{totalFollowers ? ((totalFollowers * 3.2 * 0.15)).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '--'}
+                    {profileViewsDeltaPct != null ? `${profileViewsDeltaPct > 0 ? '+' : ''}${profileViewsDeltaPct}%` : '--'}
                   </div>
                   <div style={{ fontSize: '13px', color: '#6b7280' }}>Crescimento (%)</div>
                 </div>
                 <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
                   <div style={{ fontSize: '32px', fontWeight: 700, color: '#f59e0b', marginBottom: '8px' }}>
-                    {totalFollowers ? (totalFollowers * 0.8).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '--'}
+                    {formatNumber(profileVisitorsTotals?.total ?? null)}
                   </div>
                   <div style={{ fontSize: '13px', color: '#6b7280' }}>Visitantes Únicos</div>
                 </div>
@@ -1807,9 +1950,18 @@ export default function InstagramDashboard() {
                 <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: 600, color: '#111827' }}>
                   Histórico de Visualizações
                 </h3>
-                <div style={{ background: '#f9fafb', borderRadius: '12px', padding: '20px', color: '#9ca3af', textAlign: 'center' }}>
-                  Tabela de dados (em desenvolvimento)
-                </div>
+                {profileViewsChartData.length ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px' }}>
+                    {profileViewsChartData.slice(-12).map((item) => (
+                      <div key={item.date} style={{ padding: '12px', borderRadius: '10px', background: '#f9fafb' }}>
+                        <div style={{ fontSize: '13px', color: '#6b7280' }}>{item.label}</div>
+                        <div style={{ fontSize: '18px', fontWeight: 700, color: '#111827' }}>{formatNumber(item.value)}</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="ig-empty-state">Sem histórico disponível.</div>
+                )}
               </section>
             </div>
 
@@ -1823,22 +1975,26 @@ export default function InstagramDashboard() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '12px', borderBottom: '1px solid #e5e7eb' }}>
                     <span style={{ fontSize: '14px', color: '#6b7280' }}>Média diária</span>
                     <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>
-                      {totalFollowers ? (totalFollowers * 3.2 / 7).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '--'}
+                      {profileViewsAverage != null ? formatNumber(Math.round(profileViewsAverage)) : '--'}
                     </span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '12px', borderBottom: '1px solid #e5e7eb' }}>
                     <span style={{ fontSize: '14px', color: '#6b7280' }}>Pico de visualizações</span>
                     <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>
-                      {totalFollowers ? (totalFollowers * 3.2 * 1.5).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '--'}
+                      {profileViewsPeak != null ? formatNumber(profileViewsPeak) : '--'}
                     </span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '12px', borderBottom: '1px solid #e5e7eb' }}>
                     <span style={{ fontSize: '14px', color: '#6b7280' }}>Taxa de retorno</span>
-                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>42%</span>
+                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>
+                      {profileReturnRate != null ? `${profileReturnRate.toFixed(1)}%` : '--'}
+                    </span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '14px', color: '#6b7280' }}>Tempo médio</span>
-                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>2m 34s</span>
+                    <span style={{ fontSize: '14px', color: '#6b7280' }}>Média por visitante</span>
+                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>
+                      {profileViewsPerVisitor != null ? formatNumber(profileViewsPerVisitor.toFixed(1)) : '--'}
+                    </span>
                   </div>
                 </div>
               </section>
@@ -2640,24 +2796,50 @@ export default function InstagramDashboard() {
             <div className="ig-analytics-card__body">
               <div style={{ textAlign: 'center', padding: '40px 20px' }}>
                 <div style={{ fontSize: '48px', fontWeight: 700, color: '#6366f1', marginBottom: '8px' }}>
-                  {totalFollowers ? (totalFollowers * 3.2).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '--'}
+                  {formatNumber(profileViewsTotal ?? null)}
                 </div>
                 <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '24px' }}>
                   visualizações no período
                 </div>
+                {typeof profileViewsDeltaPct === "number" && (
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '6px 12px',
+                      borderRadius: '999px',
+                      background: profileViewsDeltaPct >= 0 ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                      color: profileViewsDeltaPct >= 0 ? '#047857' : '#b91c1c',
+                      fontWeight: 600,
+                      fontSize: '12px',
+                      marginBottom: '20px',
+                    }}
+                  >
+                    {profileViewsDeltaPct >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                    <span>{profileViewsDeltaPct >= 0 ? '+' : ''}{profileViewsDeltaPct}% vs. período anterior</span>
+                  </div>
+                )}
                 <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
                   <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: '20px', fontWeight: 600, color: '#111827' }}>
-                      {totalFollowers ? (totalFollowers * 0.8).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '--'}
+                      {formatNumber(profileVisitorsTotals?.total ?? null)}
                     </div>
                     <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>Visitantes únicos</div>
                   </div>
                   <div style={{ width: '1px', background: '#e5e7eb' }} />
                   <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: '20px', fontWeight: 600, color: '#111827' }}>
-                      {totalFollowers ? (totalFollowers * 2.4).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '--'}
+                      {profileViewsAverage != null ? formatNumber(Math.round(profileViewsAverage)) : '--'}
                     </div>
                     <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>Visualizações médias</div>
+                  </div>
+                  <div style={{ width: '1px', background: '#e5e7eb' }} />
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '20px', fontWeight: 600, color: '#111827' }}>
+                      {profileViewsPeak != null ? formatNumber(profileViewsPeak) : '--'}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>Pico diário</div>
                   </div>
                 </div>
               </div>

@@ -699,6 +699,7 @@ def ig_window(ig_user_id: str, since: int, until: int):
     reach_timeseries = extract_time_series(reach_payload, "reach")
     if not reach_timeseries:
         reach_timeseries = extract_time_series(ins, "reach")
+    profile_views_timeseries = extract_time_series(ins, "profile_views")
 
     def by(name):
         m = next((m for m in ins.get("data", []) if m.get("name") == name), {})
@@ -892,6 +893,7 @@ def ig_window(ig_user_id: str, since: int, until: int):
         "interactions": interactions,
         "accounts_engaged": accounts_engaged,
         "profile_views": profile_views,
+        "profile_views_timeseries": profile_views_timeseries,
         "website_clicks": website,
         "likes": sum_likes,
         "comments": sum_comments,
