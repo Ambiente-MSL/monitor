@@ -170,7 +170,7 @@ export default function Login() {
             } else if (response?.status === 'not_authorized') {
               reject(new Error('Permissão do Facebook não autorizada.'));
             } else {
-              reject(new Error('Login com Facebook cancelado ou não disponível.'));
+              reject(new Error('Login com Facebook cancelado ou não disponível!'));
             }
           },
           options,
