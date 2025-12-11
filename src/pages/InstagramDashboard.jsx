@@ -625,6 +625,9 @@ export default function InstagramDashboard() {
   const sinceIso = useMemo(() => toUtcDateString(sinceDate), [sinceDate]);
   const untilIso = useMemo(() => toUtcDateString(untilDate), [untilDate]);
 
+  // Estado para contador de comentários da wordcloud
+  const [commentsCount, setCommentsCount] = useState(null);
+
   const now = useMemo(() => new Date(), []);
   const defaultEnd = useMemo(() => endOfDay(subDays(startOfDay(now), 1)), [now]);
 
@@ -2673,8 +2676,27 @@ export default function InstagramDashboard() {
       {/* Palavras-chave e Hashtags - Largura Total */}
       <div className="ig-analytics-grid ig-analytics-grid--pair">
         <section className="ig-card-white ig-analytics-card ig-analytics-card--large">
-          <div className="ig-analytics-card__header">
-            <h4>Palavras chaves mais comentadas</h4>
+          <div className="ig-analytics-card__header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+            <h4 style={{ margin: 0 }}>Palavras chaves mais comentadas</h4>
+            {commentsCount !== null && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '6px 16px',
+                borderRadius: '20px',
+                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                boxShadow: '0 2px 8px rgba(239, 68, 68, 0.25)',
+                fontSize: '13px',
+                fontWeight: 600,
+                color: 'white'
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+                <span>{commentsCount.toLocaleString('pt-BR')} comentário{commentsCount !== 1 ? 's' : ''} analisado{commentsCount !== 1 ? 's' : ''}</span>
+              </div>
+            )}
           </div>
           <div className="ig-analytics-card__body">
             <WordCloudCard
@@ -2683,6 +2705,8 @@ export default function InstagramDashboard() {
               since={sinceIso}
               until={untilIso}
               top={120}
+              showCommentsCount={false}
+              onCommentsCountRender={setCommentsCount}
             />
           </div>
         </section>

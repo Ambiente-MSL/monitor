@@ -58,6 +58,8 @@ export default function WordCloudCard({
   since,
   until,
   top = 30,
+  showCommentsCount = true,
+  onCommentsCountRender = null,
 }) {
   const sanitizedBaseUrl = useMemo(() => (apiBaseUrl || "").replace(/\/$/, ""), [apiBaseUrl]);
 
@@ -99,6 +101,12 @@ export default function WordCloudCard({
   }
 
   const entries = buildCloudEntries(data?.words || []);
+
+  // Chama callback com o total de comentários se fornecido
+  if (onCommentsCountRender && typeof data?.total_comments === "number") {
+    onCommentsCountRender(data.total_comments);
+  }
+
   if (!entries.length) {
     return (
       <div className="flex min-h-[300px] items-center justify-center text-sm text-slate-500">
@@ -109,7 +117,7 @@ export default function WordCloudCard({
 
   return (
     <div className="flex w-full flex-col gap-3">
-      {typeof data.total_comments === "number" ? (
+      {showCommentsCount && typeof data.total_comments === "number" ? (
         <div className="flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-xs font-medium text-slate-600">
           <span className="inline-flex h-2 w-2 rounded-full bg-rose-500" />
           <span>
