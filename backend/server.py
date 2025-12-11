@@ -58,6 +58,13 @@ DEFAULT_DEV_ORIGINS = [
     "http://127.0.0.1:3010",
 ]
 CONNECTED_ACCOUNTS_TABLE = os.getenv("CONNECTED_ACCOUNTS_TABLE", "connected_accounts")
+META_TOKENS_TABLE = os.getenv("META_TOKENS_TABLE", "meta_user_tokens")
+META_LOGIN_SCOPES = [
+    scope.strip()
+    for scope in (os.getenv("META_LOGIN_SCOPES") or "pages_read_engagement,pages_show_list,instagram_basic,email,public_profile").split(",")
+    if scope.strip()
+]
+META_LOGIN_SCOPES_SET = {scope.lower() for scope in META_LOGIN_SCOPES}
 
 
 def _resolve_allowed_origins() -> Union[str, List[str]]:
@@ -113,6 +120,38 @@ def _ensure_connected_accounts_table() -> None:
         logger.error("Falha ao garantir tabela de contas conectadas: %s", err)
 
 
+def _ensure_meta_tokens_table() -> None:
+    """
+    Garante que a tabela de tokens Meta exista para armazenar access_tokens aprovados no login.
+    """
+    try:
+        execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS {META_TOKENS_TABLE} (
+                id UUID PRIMARY KEY,
+                user_id UUID REFERENCES {APP_USERS_TABLE}(id) ON DELETE CASCADE,
+                facebook_user_id TEXT NOT NULL,
+                scopes TEXT[] NOT NULL DEFAULT '{{}}'::text[],
+                user_access_token TEXT NOT NULL,
+                user_access_expires_at TIMESTAMPTZ,
+                page_id TEXT NOT NULL DEFAULT '',
+                page_access_token TEXT,
+                instagram_user_id TEXT,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            );
+            """,
+        )
+        execute(
+            f"CREATE UNIQUE INDEX IF NOT EXISTS {META_TOKENS_TABLE}_user_page_idx ON {META_TOKENS_TABLE} (user_id, page_id);"
+        )
+        execute(
+            f"CREATE INDEX IF NOT EXISTS {META_TOKENS_TABLE}_facebook_idx ON {META_TOKENS_TABLE} (facebook_user_id);"
+        )
+    except Exception as err:  # noqa: BLE001
+        logger.error("Falha ao garantir tabela de tokens Meta: %s", err)
+
+
 def _load_connected_accounts() -> List[Dict[str, Any]]:
     try:
         rows = fetch_all(f"SELECT * FROM {CONNECTED_ACCOUNTS_TABLE} ORDER BY label ASC")
@@ -141,8 +180,6 @@ CORS(
     supports_credentials=True,
 )
 LEGAL_DOCS_DIR = os.path.join(app.root_path, "static", "legal")
-
-_ensure_connected_accounts_table()
 
 AUTH_SECRET_KEY = (
     os.getenv("AUTH_SECRET_KEY")
@@ -215,6 +252,9 @@ WORDCLOUD_STOPWORDS = {
 }
 EMAIL_VALIDATION_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 VALID_USER_ROLES = {"analista", "admin"}
+
+_ensure_connected_accounts_table()
+_ensure_meta_tokens_table()
 
 
 def validate_timestamp(ts: int, param_name: str = "timestamp") -> int:
@@ -1027,6 +1067,20 @@ def _validate_facebook_access_token(access_token: str) -> Dict[str, Any]:
 
     email = str(profile_body.get("email") or "").strip().lower() or None
     facebook_id = str(debug_data.get("user_id") or profile_body.get("id") or "").strip()
+    scopes_field = debug_data.get("scopes") or []
+    normalized_scopes = []
+    if isinstance(scopes_field, (list, tuple)):
+        for scope in scopes_field:
+            if scope:
+                normalized_scopes.append(str(scope).strip())
+
+    expires_at_dt = None
+    if expires_at:
+        try:
+            expires_at_dt = datetime.fromtimestamp(int(expires_at), tz=timezone.utc)
+        except Exception:
+            expires_at_dt = None
+
     if not facebook_id:
         raise ValueError("Não foi possível identificar o usuário do Facebook.")
 
@@ -1038,6 +1092,8 @@ def _validate_facebook_access_token(access_token: str) -> Dict[str, Any]:
         "email": email,
         "nome": profile_body.get("name"),
         "facebook_name": profile_body.get("name"),
+        "scopes": normalized_scopes,
+        "expires_at": expires_at_dt.isoformat() if expires_at_dt else None,
     }
 
 
@@ -1060,6 +1116,158 @@ def _serialize_user_row(row: Dict[str, Any]) -> Dict[str, Any]:
         "role": row.get("role"),
         "nome": row.get("nome"),
     }
+
+
+def _exchange_long_lived_user_token(access_token: str) -> tuple[str, Optional[datetime]]:
+    """
+    Troca o token curto retornado pelo login do Facebook por um token de usuario long-lived (~60 dias).
+    Mantem o token original se a troca falhar.
+    """
+    if not access_token:
+        return "", None
+    params = {
+        "grant_type": "fb_exchange_token",
+        "client_id": FACEBOOK_APP_ID,
+        "client_secret": FACEBOOK_APP_SECRET,
+        "fb_exchange_token": access_token,
+    }
+    try:
+        response = requests.get(_facebook_api_url("/oauth/access_token"), params=params, timeout=10)
+    except Exception as err:  # noqa: BLE001
+        logger.warning("Falha ao trocar token de usuario por long-lived: %s", err)
+        return access_token, None
+
+    body = _parse_facebook_response(response)
+    token_value = body.get("access_token") if isinstance(body, dict) else None
+    if not response.ok or not token_value:
+        logger.warning("Nao foi possivel trocar o token do usuario: %s", body)
+        return access_token, None
+
+    expires_at = None
+    expires_in = body.get("expires_in") if isinstance(body, dict) else None
+    if expires_in:
+        try:
+            expires_at = datetime.now(timezone.utc) + timedelta(seconds=int(expires_in))
+        except Exception:
+            expires_at = None
+
+    return token_value, expires_at
+
+
+def _fetch_user_pages_and_tokens(user_token: str) -> List[Dict[str, Any]]:
+    """
+    Lista paginas e tokens de pagina/Instagram a partir do token do usuario.
+    """
+    if not user_token:
+        return []
+    try:
+        response = requests.get(
+            _facebook_api_url("/me/accounts"),
+            params={
+                "access_token": user_token,
+                "fields": "id,name,access_token,instagram_business_account{id,username,profile_picture_url}",
+                "limit": 100,
+            },
+            timeout=15,
+        )
+    except Exception as err:  # noqa: BLE001
+        logger.exception("Falha ao buscar paginas com token do usuario Meta")
+        raise ValueError("Nao foi possivel listar paginas com este token.") from err
+
+    payload = _parse_facebook_response(response)
+    if not response.ok:
+        error_message = None
+        error_field = payload.get("error") if isinstance(payload, dict) else None
+        if isinstance(error_field, dict):
+            error_message = error_field.get("message")
+        raise ValueError(error_message or "Token nao autorizado para listar paginas.")
+
+    pages: List[Dict[str, Any]] = []
+    for item in payload.get("data", []):
+        if not isinstance(item, dict):
+            continue
+        page_id = str(item.get("id") or "").strip()
+        if not page_id:
+            continue
+        ig_info = item.get("instagram_business_account") or {}
+        ig_id = ""
+        ig_username = ""
+        if isinstance(ig_info, dict):
+            ig_id = str(ig_info.get("id") or "").strip()
+            ig_username = str(ig_info.get("username") or "").strip()
+        pages.append(
+            {
+                "id": page_id,
+                "name": item.get("name"),
+                "access_token": item.get("access_token"),
+                "instagram_user_id": ig_id,
+                "instagram_username": ig_username,
+            }
+        )
+    return pages
+
+
+def _persist_meta_user_token(
+    user_id: str,
+    facebook_user_id: str,
+    scopes: Sequence[str],
+    user_access_token: str,
+    user_access_expires_at: Optional[datetime],
+    page_access_token: Optional[str],
+    page_id: Optional[str],
+    instagram_user_id: Optional[str],
+) -> Dict[str, Any]:
+    if not user_id or not facebook_user_id or not user_access_token:
+        raise ValueError("user_id, facebook_user_id e user_access_token sao obrigatorios")
+
+    _ensure_meta_tokens_table()
+    normalized_scopes = [scope.strip().lower() for scope in scopes if scope]
+    normalized_page_id = (page_id or "").strip()
+    normalized_instagram_id = (instagram_user_id or "").strip()
+    params = {
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "facebook_user_id": facebook_user_id,
+        "scopes": normalized_scopes,
+        "user_access_token": user_access_token,
+        "user_access_expires_at": user_access_expires_at,
+        "page_id": normalized_page_id,
+        "page_access_token": page_access_token or None,
+        "instagram_user_id": normalized_instagram_id,
+    }
+
+    execute(
+        f"""
+        INSERT INTO {META_TOKENS_TABLE} (
+            id, user_id, facebook_user_id, scopes, user_access_token, user_access_expires_at,
+            page_id, page_access_token, instagram_user_id, created_at, updated_at
+        ) VALUES (
+            %(id)s, %(user_id)s, %(facebook_user_id)s, %(scopes)s, %(user_access_token)s, %(user_access_expires_at)s,
+            %(page_id)s, %(page_access_token)s, %(instagram_user_id)s, NOW(), NOW()
+        )
+        ON CONFLICT (user_id, page_id) DO UPDATE SET
+            facebook_user_id = EXCLUDED.facebook_user_id,
+            scopes = EXCLUDED.scopes,
+            user_access_token = EXCLUDED.user_access_token,
+            user_access_expires_at = EXCLUDED.user_access_expires_at,
+            page_access_token = EXCLUDED.page_access_token,
+            instagram_user_id = EXCLUDED.instagram_user_id,
+            updated_at = NOW();
+        """,
+        params,
+    )
+
+    response = {
+        "user_id": user_id,
+        "facebook_user_id": facebook_user_id,
+        "page_id": normalized_page_id,
+        "instagram_user_id": normalized_instagram_id,
+        "scopes": normalized_scopes,
+    }
+    if user_access_expires_at:
+        response["user_access_expires_at"] = user_access_expires_at
+        response["user_access_expires_at_iso"] = user_access_expires_at.isoformat()
+    return response
 
 
 def _serialize_cover_row(row: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
@@ -1931,6 +2139,95 @@ def auth_facebook() -> Any:
 
     token = _issue_auth_token(user_row["id"])
     return jsonify({"token": token, "user": _serialize_user_row(user_row)})
+
+
+@app.post("/api/auth/meta-token")
+def auth_meta_token() -> Any:
+    """
+    Persiste o token do usuario Meta com escopos aprovados e salva o token de pagina/IG.
+    Mantem o fluxo de login anterior (email/senha ou facebook) e adiciona um passo opcional
+    para guardar o access_token com scopes limitados.
+    """
+    user, error = _authenticate_request(request)
+    if error:
+        return error
+
+    payload = request.get_json(silent=True) or {}
+    access_token = str(payload.get("access_token") or payload.get("accessToken") or "").strip()
+    preferred_page_id = str(payload.get("page_id") or payload.get("pageId") or "").strip()
+
+    if not access_token:
+        return jsonify({"error": "access_token is required"}), 400
+
+    try:
+        profile = _validate_facebook_access_token(access_token)
+    except ValueError as err:
+        return jsonify({"error": str(err)}), 400
+    except Exception as err:  # noqa: BLE001
+        logger.exception("Erro inesperado ao validar token Meta para persistencia")
+        return jsonify({"error": "could not validate meta token"}), 502
+
+    scopes = [scope.lower() for scope in profile.get("scopes") or []]
+    missing_scopes = sorted(scope for scope in META_LOGIN_SCOPES_SET if scope not in scopes)
+    if missing_scopes:
+        return jsonify({"error": f"scopes ausentes: {', '.join(missing_scopes)}"}), 400
+
+    user_expires_at = None
+    raw_expires = profile.get("expires_at")
+    if raw_expires:
+        try:
+            user_expires_at = datetime.fromisoformat(str(raw_expires))
+        except Exception:
+            user_expires_at = None
+
+    long_token, long_expires_at = _exchange_long_lived_user_token(access_token)
+    effective_user_token = long_token or access_token
+    if long_expires_at:
+        user_expires_at = long_expires_at
+
+    try:
+        pages = _fetch_user_pages_and_tokens(effective_user_token)
+    except ValueError as err:
+        return jsonify({"error": str(err)}), 400
+    except Exception as err:  # noqa: BLE001
+        logger.exception("Falha ao listar paginas para token do usuario %s", user.get("id"))
+        return jsonify({"error": "could not fetch pages for this token"}), 502
+
+    selected_page = None
+    if preferred_page_id:
+        for page in pages:
+            if str(page.get("id")) == preferred_page_id:
+                selected_page = page
+                break
+    if not selected_page and pages:
+        selected_page = pages[0]
+
+    if not selected_page or not selected_page.get("access_token"):
+        return jsonify({"error": "nenhuma pagina com access_token retornada para este token"}), 400
+
+    try:
+        saved = _persist_meta_user_token(
+            user["id"],
+            profile.get("facebook_id") or profile.get("id") or "",
+            scopes,
+            effective_user_token,
+            user_expires_at,
+            selected_page.get("access_token"),
+            selected_page.get("id") or "",
+            selected_page.get("instagram_user_id") or "",
+        )
+    except Exception as err:  # noqa: BLE001
+        logger.exception("Falha ao persistir token Meta do usuario %s", user.get("id"))
+        return jsonify({"error": "could not persist meta token"}), 500
+
+    response = {
+        "pageId": saved.get("page_id"),
+        "instagramUserId": saved.get("instagram_user_id"),
+        "facebookUserId": saved.get("facebook_user_id"),
+        "scopes": saved.get("scopes"),
+        "userAccessExpiresAt": saved.get("user_access_expires_at_iso"),
+    }
+    return jsonify(response), 201
 
 
 @app.get("/api/auth/session")

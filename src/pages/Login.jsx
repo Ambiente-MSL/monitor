@@ -25,6 +25,13 @@ const translateError = (rawMessage) => {
 
 const facebookAppId = process.env.REACT_APP_FACEBOOK_APP_ID;
 const facebookConfigId = process.env.REACT_APP_FACEBOOK_CONFIG_ID;
+const metaScopes = 'pages_read_engagement,pages_show_list,instagram_basic,email,public_profile';
+const apiBaseUrl = (process.env.REACT_APP_API_URL || '').replace(/\/$/, '');
+const buildApiUrl = (path = '') => {
+  if (!path) return apiBaseUrl || '';
+  const normalized = path.startsWith('/') ? path : `/${path}`;
+  return `${apiBaseUrl}${normalized}`;
+};
 
 const ensureFacebookSdk = () =>
   new Promise((resolve, reject) => {
@@ -153,8 +160,8 @@ export default function Login() {
       const FB = await ensureFacebookSdk();
       const accessToken = await new Promise((resolve, reject) => {
         const options = facebookConfigId
-          ? { config_id: facebookConfigId, scope: 'email,public_profile', return_scopes: true }
-          : { scope: 'email,public_profile', return_scopes: true };
+          ? { config_id: facebookConfigId, scope: metaScopes, return_scopes: true }
+          : { scope: metaScopes, return_scopes: true };
 
         FB.login(
           (response) => {
@@ -170,7 +177,30 @@ export default function Login() {
         );
       });
 
-      await signInWithFacebook(accessToken);
+      const loginResponse = await signInWithFacebook(accessToken);
+
+      // Passo opcional: registrar o token com scopes aprovados para armazenar page/IG token sem quebrar o login anterior
+      const sessionToken = loginResponse?.token;
+      if (sessionToken) {
+        try {
+          const persistResponse = await fetch(buildApiUrl('/api/auth/meta-token'), {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${sessionToken}`,
+            },
+            body: JSON.stringify({ access_token: accessToken }),
+          });
+          if (!persistResponse.ok) {
+            const body = await persistResponse.json().catch(() => ({}));
+            const message = body?.error || `Falha ao salvar token Meta (${persistResponse.status})`;
+            console.warn(message);
+          }
+        } catch (err) {
+          console.warn('Falha ao persistir token de página/IG no backend.', err);
+        }
+      }
+
       navigate(redirectPath, { replace: true });
     } catch (err) {
       setFormError(translateError(err?.message));

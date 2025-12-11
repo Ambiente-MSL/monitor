@@ -16,6 +16,24 @@ CREATE TABLE IF NOT EXISTS app_users (
 CREATE UNIQUE INDEX IF NOT EXISTS app_users_email_lower_idx ON app_users (LOWER(email));
 CREATE UNIQUE INDEX IF NOT EXISTS app_users_facebook_id_idx ON app_users (facebook_id) WHERE facebook_id IS NOT NULL;
 
+-- Tokens de autorização Meta vinculados ao usuário logado (para manter o fluxo antigo e registrar escopos aprovados)
+CREATE TABLE IF NOT EXISTS meta_user_tokens (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES app_users(id) ON DELETE CASCADE,
+    facebook_user_id TEXT NOT NULL,
+    scopes TEXT[] NOT NULL DEFAULT '{}'::text[],
+    user_access_token TEXT NOT NULL,
+    user_access_expires_at TIMESTAMPTZ,
+    page_id TEXT NOT NULL DEFAULT '',
+    page_access_token TEXT,
+    instagram_user_id TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS meta_user_tokens_user_page_idx ON meta_user_tokens (user_id, page_id);
+CREATE INDEX IF NOT EXISTS meta_user_tokens_facebook_idx ON meta_user_tokens (facebook_user_id);
+
 CREATE TABLE IF NOT EXISTS ig_comments (
     id TEXT PRIMARY KEY,
     account_id TEXT NOT NULL,
