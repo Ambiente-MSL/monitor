@@ -22,6 +22,7 @@ import {
   Pie,
   Cell,
   ComposedChart,
+  LineChart,
   Line,
   ReferenceDot,
   ReferenceLine,
