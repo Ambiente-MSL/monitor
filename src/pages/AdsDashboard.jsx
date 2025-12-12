@@ -18,7 +18,6 @@ import {
   Line,
   ReferenceLine,
   ReferenceDot,
-  Sector,
   Brush,
 } from "recharts";
 import {
@@ -285,33 +284,6 @@ const translateObjective = (value) => {
   return value;
 };
 
-const renderActiveShape = (props) => {
-  const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
-  return (
-    <g>
-      <defs>
-        <filter id="glow">
-          <feGaussianBlur stdDeviation="3" result="coloredBlur" />
-          <feMerge>
-            <feMergeNode in="coloredBlur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-      </defs>
-      <Sector
-        cx={cx}
-        cy={cy}
-        innerRadius={innerRadius}
-        outerRadius={outerRadius + 8}
-        startAngle={startAngle}
-        endAngle={endAngle}
-        fill={fill}
-        filter="url(#glow)"
-      />
-    </g>
-  );
-};
-
 export default function AdsDashboard() {
   const location = useLocation();
   const outletContext = useOutletContext() || {};
@@ -330,7 +302,6 @@ export default function AdsDashboard() {
   }, [availableAccounts, queryAccountId]);
 
   const [activeSpendBar, setActiveSpendBar] = useState(-1);
-  const [activeRegionIndex, setActiveRegionIndex] = useState(-1);
   const [activeCampaignIndex, setActiveCampaignIndex] = useState(-1);
   const [adsData, setAdsData] = useState(null);
   const [adsError, setAdsError] = useState("");
@@ -578,6 +549,15 @@ export default function AdsDashboard() {
     }
     return [];
   }, [adsData]);
+
+  const regionChartHeight = useMemo(() => {
+    if (!spendByRegion.length) return 200;
+    const base = 180;
+    const perItem = 32;
+    const padding = 60;
+    const max = 420;
+    return Math.min(max, Math.max(base, spendByRegion.length * perItem + padding));
+  }, [spendByRegion.length]);
 
   const peakSpendPoint = useMemo(() => {
     const series = spendSeries;
@@ -997,29 +977,32 @@ export default function AdsDashboard() {
                 {spendByRegion.length ? (
                   <>
                     <div className="ig-profile-vertical__engagement-chart">
-                      <ResponsiveContainer width="100%" height={160}>
-                        <PieChart>
-                          <Pie
-                            data={spendByRegion}
-                            dataKey="value"
-                            nameKey="name"
-                            innerRadius={40}
-                            outerRadius={60}
-                            paddingAngle={3}
-                            stroke="none"
-                            activeIndex={activeRegionIndex}
-                            activeShape={renderActiveShape}
-                            onMouseEnter={(_, index) => setActiveRegionIndex(index)}
-                            onMouseLeave={() => setActiveRegionIndex(-1)}
-                          >
-                            {spendByRegion.map((_, index) => (
-                              <Cell key={index} fill={IG_DONUT_COLORS[index % IG_DONUT_COLORS.length]} />
-                            ))}
-                          </Pie>
+                      <ResponsiveContainer width="100%" height={regionChartHeight}>
+                        <BarChart
+                          data={spendByRegion}
+                          layout="vertical"
+                          margin={{ top: 8, right: 16, left: 0, bottom: 8 }}
+                          barSize={18}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                          <XAxis
+                            type="number"
+                            tickFormatter={formatCurrency}
+                            axisLine={false}
+                            tickLine={false}
+                          />
+                          <YAxis
+                            type="category"
+                            dataKey="name"
+                            width={120}
+                            axisLine={false}
+                            tickLine={false}
+                          />
                           <Tooltip
-                            formatter={(value, name, props) => [
+                            cursor={{ fill: "rgba(99,102,241,0.08)" }}
+                            formatter={(value, _name, props) => [
                               formatCurrency(value),
-                              name,
+                              "Investimento",
                               props?.payload ? (
                                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                                   <span>Alcance: {formatNumber(props.payload.reach)}</span>
@@ -1028,7 +1011,12 @@ export default function AdsDashboard() {
                               ) : null,
                             ]}
                           />
-                        </PieChart>
+                          <Bar dataKey="value" radius={[6, 6, 6, 6]}>
+                            {spendByRegion.map((_, index) => (
+                              <Cell key={index} fill={IG_DONUT_COLORS[index % IG_DONUT_COLORS.length]} />
+                            ))}
+                          </Bar>
+                        </BarChart>
                       </ResponsiveContainer>
                     </div>
                     <div className="ig-engagement-legend" style={{ marginTop: "8px", gap: "10px" }}>
