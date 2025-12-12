@@ -3,6 +3,7 @@ import logging
 import os
 from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 from cache import get_cached_payload, get_fetcher, register_fetcher
@@ -157,10 +158,24 @@ def to_unix(dt: datetime) -> int:
     return int(dt.replace(tzinfo=timezone.utc).timestamp())
 
 
-def day_bounds(target: date) -> Dict[str, int]:
-    start_dt = datetime.combine(target, datetime.min.time(), tzinfo=timezone.utc)
-    end_dt = start_dt + timedelta(days=1, seconds=-1)
-    return {"since": to_unix(start_dt), "until": to_unix(end_dt)}
+BRT = ZoneInfo("America/Sao_Paulo")
+
+
+def day_bounds(target: date, tz: ZoneInfo = BRT) -> Dict[str, int]:
+    """
+    Retorna bounds Unix para um dia no fuso local (ex.: BRT).
+    """
+    start_local = datetime.combine(target, datetime.min.time(), tzinfo=tz)
+    end_local = datetime.combine(target, datetime.max.time().replace(microsecond=0), tzinfo=tz)
+    start_utc = start_local.astimezone(timezone.utc)
+    end_utc = end_local.astimezone(timezone.utc)
+    return {
+        "since": int(start_utc.timestamp()),
+        "until": int(end_utc.timestamp()),
+        "local_date": target.isoformat(),
+        "utc_start": start_utc.isoformat(),
+        "utc_end": end_utc.isoformat(),
+    }
 
 
 def snapshot_to_rows(

@@ -668,131 +668,157 @@ def fetch_page_video_metrics(page_id: str, page_token: str, since: int, until: i
 
 # ---- Instagram (orgânico) ----
 
-def ig_window(ig_user_id: str, since: int, until: int):
+def ig_window(ig_user_id: str, since: int, until: int) -> Dict[str, Any]:
     """
-    Métricas de conta + agregados básicos de mídia (para likes/comments/shares/saves).
+    Métricas de conta Instagram para um período.
+
+    IMPORTANTE:
+    - API limita a 30 dias por chamada
+    - Timestamps devem estar em UTC
+    - Dados são retornados em UTC e devem ser convertidos para exibição
     """
-    metrics_query = "reach,profile_views,website_clicks,accounts_engaged,total_interactions"
-    ins = gget(
-        f"/{ig_user_id}/insights",
-        {
-            "metric": metrics_query,
-            "period": "day",
-            "metric_type": "total_value",
-            "since": since,
-            "until": until,
-        },
-    )
+    MAX_DAYS_PER_CALL = 30
+
+    period_seconds = until - since
+    period_days = period_seconds / 86400
+
+    if period_days > MAX_DAYS_PER_CALL:
+        return _ig_window_chunked(ig_user_id, since, until, MAX_DAYS_PER_CALL)
+
+    account_metrics = "reach,profile_views,website_clicks,accounts_engaged"
+
     try:
-        reach_payload = gget(
+        insights_response = gget(
             f"/{ig_user_id}/insights",
             {
-                "metric": "reach",
+                "metric": account_metrics,
                 "period": "day",
                 "since": since,
                 "until": until,
             },
         )
+    except MetaAPIError as err:
+        logger.warning("Falha ao buscar insights de conta: %s", err)
+        insights_response = {"data": []}
+
+    reach_timeseries = extract_time_series(insights_response, "reach")
+    profile_views_timeseries = extract_time_series(insights_response, "profile_views")
+
+    def sum_series(series: List[Dict[str, Any]]) -> int:
+        return sum(int(entry.get("value") or 0) for entry in series)
+
+    reach = sum_series(reach_timeseries)
+    profile_views = sum_series(profile_views_timeseries)
+
+    def get_metric_total(response: Dict[str, Any], metric_name: str) -> int:
+        for item in response.get("data", []):
+            if item.get("name") == metric_name:
+                values = item.get("values") or []
+                return sum(int((v.get("value") or 0)) for v in values if isinstance(v, dict))
+        return 0
+
+    website_clicks = get_metric_total(insights_response, "website_clicks")
+    accounts_engaged = get_metric_total(insights_response, "accounts_engaged")
+
+    try:
+        interactions_response = gget(
+            f"/{ig_user_id}/insights",
+            {
+                "metric": "total_interactions",
+                "period": "day",
+                "metric_type": "total_value",
+                "since": since,
+                "until": until,
+            },
+        )
+        total_interactions = 0
+        for item in interactions_response.get("data", []):
+            if item.get("name") == "total_interactions":
+                total_value = item.get("total_value") or {}
+                if isinstance(total_value, dict):
+                    total_interactions = int(total_value.get("value") or 0)
+                break
     except MetaAPIError:
-        reach_payload = {}
+        total_interactions = 0
 
-    reach_timeseries = extract_time_series(reach_payload, "reach")
-    if not reach_timeseries:
-        reach_timeseries = extract_time_series(ins, "reach")
-    profile_views_timeseries = extract_time_series(ins, "profile_views")
-
-    def by(name):
-        m = next((m for m in ins.get("data", []) if m.get("name") == name), {})
-        values = m.get("values") or []
-        if values:
-            return values
-        total_value = m.get("total_value")
-        if isinstance(total_value, dict):
-            scalar = _coerce_number(total_value.get("value"))
-            if scalar is not None:
-                return [{"value": scalar}]
-        return []
-
-    if reach_timeseries:
-        reach = sum((_coerce_number(entry.get("value")) or 0) for entry in reach_timeseries)
-    else:
-        reach = sum_values(by("reach"))
-    profile_views = sum_values(by("profile_views"))
-    website = sum_values(by("website_clicks"))
-    accounts_engaged = sum_values(by("accounts_engaged"))
-    total_interactions_metric = sum_values(by("total_interactions"))
-
-    # Agregar métricas por mídia (likes/comments/shares/saves)
     sum_likes = sum_comments = sum_shares = sum_saves = 0
     post_details: List[Dict[str, Any]] = []
 
-    url = f"/{ig_user_id}/media"
-    params = {
-        "since": since,
-        "until": until,
-        "limit": 100,
-        "fields": "id,media_type,timestamp,like_count,comments_count,permalink",
-    }
-    page = gget(url, params)
-    while True:
-        for media in page.get("data", []):
-            timestamp_iso = media.get("timestamp")
-            timestamp_unix = None
-            if timestamp_iso:
-                try:
-                    timestamp_dt = datetime.fromisoformat(timestamp_iso.replace("Z", "+00:00"))
-                    timestamp_unix = int(timestamp_dt.timestamp())
-                except ValueError:
-                    timestamp_dt = None
-            else:
-                timestamp_dt = None
-            try:
-                mi = gget(
-                    f"/{media['id']}/insights",
-                    {"metric": "reach,shares,saved,likes,comments"},
-                )
-                insights_map: Dict[str, Any] = {}
-                for k_item in mi.get("data", []):
-                    v = (k_item.get("values") or [{}])[0].get("value", 0) or 0
-                    name = (k_item.get("name") or "").lower()
-                    insights_map[name] = v
-                    if name == "shares":
-                        sum_shares += v
-                    elif name in ("saved", "saves"):
-                        sum_saves += v
-            except Exception:
-                insights_map = {}
-                pass
-            reach_value = int(round((insights_map.get("reach") or 0))) if insights_map else 0
-            shares_value = int(round((insights_map.get("shares") or 0)))
-            saves_value = int(round((insights_map.get("saved") or insights_map.get("saves") or 0)))
-            likes_base = media.get("like_count", 0) or 0
-            comments_base = media.get("comments_count", 0) or 0
-            likes_value = int(insights_map.get("likes") or likes_base)
-            comments_value = int(insights_map.get("comments") or comments_base)
-            sum_likes += likes_value
-            sum_comments += comments_value
-            interactions_value = likes_value + comments_value + shares_value + saves_value
-            post_details.append({
-                "id": media.get("id"),
-                "timestamp": timestamp_iso,
-                "timestamp_unix": timestamp_unix,
-                "permalink": media.get("permalink"),
-                "media_type": media.get("media_type"),
-                "preview_url": media.get("media_url") or media.get("thumbnail_url"),
-                "likes": likes_value,
-                "comments": comments_value,
-                "shares": shares_value,
-                "saves": saves_value,
-                "reach": reach_value,
-                "interactions": interactions_value,
-            })
-        nextp = (page.get("paging") or {}).get("next")
-        if not nextp:
-            break
-        page = requests.get(nextp, timeout=15).json()
+    try:
+        media_response = gget(
+            f"/{ig_user_id}/media",
+            {
+                "since": since,
+                "until": until,
+                "limit": 100,
+                "fields": "id,media_type,timestamp,like_count,comments_count,permalink",
+            },
+        )
 
-    interactions = total_interactions_metric or (sum_likes + sum_comments + sum_shares + sum_saves)
+        page = media_response
+        while True:
+            for media in page.get("data", []):
+                media_id = media.get("id")
+                timestamp_iso = media.get("timestamp")
+                timestamp_unix = None
+
+                if timestamp_iso:
+                    try:
+                        timestamp_dt = datetime.fromisoformat(timestamp_iso.replace("Z", "+00:00"))
+                        timestamp_unix = int(timestamp_dt.timestamp())
+                    except ValueError:
+                        pass
+
+                try:
+                    media_insights = gget(
+                        f"/{media_id}/insights",
+                        {"metric": "reach,shares,saved,likes,comments"},
+                    )
+                    insights_map = {}
+                    for item in media_insights.get("data", []):
+                        name = (item.get("name") or "").lower()
+                        values = item.get("values") or [{}]
+                        insights_map[name] = int((values[0].get("value") or 0))
+                except MetaAPIError:
+                    insights_map = {}
+
+                likes = insights_map.get("likes") or media.get("like_count") or 0
+                comments = insights_map.get("comments") or media.get("comments_count") or 0
+                shares = insights_map.get("shares") or 0
+                saves = insights_map.get("saved") or insights_map.get("saves") or 0
+                reach_value = insights_map.get("reach") or 0
+
+                sum_likes += likes
+                sum_comments += comments
+                sum_shares += shares
+                sum_saves += saves
+
+                post_details.append({
+                    "id": media_id,
+                    "timestamp": timestamp_iso,
+                    "timestamp_unix": timestamp_unix,
+                    "permalink": media.get("permalink"),
+                    "media_type": media.get("media_type"),
+                    "likes": likes,
+                    "comments": comments,
+                    "shares": shares,
+                    "saves": saves,
+                    "reach": reach_value,
+                    "interactions": likes + comments + shares + saves,
+                })
+
+            next_page = (page.get("paging") or {}).get("next")
+            if not next_page:
+                break
+            page = requests.get(next_page, timeout=15).json()
+
+    except MetaAPIError as err:
+        logger.warning("Falha ao buscar mídias: %s", err)
+
+    interactions = total_interactions or (sum_likes + sum_comments + sum_shares + sum_saves)
+
+    if reach == 0:
+        reach = sum(p.get("reach") or 0 for p in post_details)
 
     follower_series = []
     follower_growth = None
@@ -800,8 +826,9 @@ def ig_window(ig_user_id: str, since: int, until: int):
     follower_end = None
     follows_total = None
     unfollows_total = None
+
     try:
-        follower_payload = gget(
+        follower_response = gget(
             f"/{ig_user_id}/insights",
             {
                 "metric": "follower_count",
@@ -810,16 +837,16 @@ def ig_window(ig_user_id: str, since: int, until: int):
                 "until": until,
             },
         )
-        follower_series = extract_time_series(follower_payload, "follower_count")
+        follower_series = extract_time_series(follower_response, "follower_count")
         if follower_series:
-            follower_start = follower_series[0]["value"]
-            follower_end = follower_series[-1]["value"]
+            follower_start = int(follower_series[0].get("value") or 0)
+            follower_end = int(follower_series[-1].get("value") or 0)
             follower_growth = follower_end - follower_start
     except MetaAPIError:
         pass
 
     try:
-        follows_payload = gget(
+        follows_response = gget(
             f"/{ig_user_id}/insights",
             {
                 "metric": "follows_and_unfollows",
@@ -829,18 +856,18 @@ def ig_window(ig_user_id: str, since: int, until: int):
                 "metric_type": "total_value",
             },
         )
-        follows_map = aggregate_dimension_values(follows_payload, "follows_and_unfollows")
-        if follows_map:
-            follows_total = follows_map.get("follows")
-            unfollows_total = follows_map.get("unfollows")
+        follows_map = aggregate_dimension_values(follows_response, "follows_and_unfollows")
+        follows_total = follows_map.get("follows")
+        unfollows_total = follows_map.get("unfollows")
     except MetaAPIError:
         pass
 
-    visitor_breakdown_source = None
+    profile_visitors_breakdown = None
     visitors_breakdown = {"followers": 0.0, "non_followers": 0.0, "other": 0.0}
+
     for metric_name in ("profile_views", "accounts_engaged"):
         try:
-            payload = gget(
+            breakdown_response = gget(
                 f"/{ig_user_id}/insights",
                 {
                     "metric": metric_name,
@@ -851,41 +878,27 @@ def ig_window(ig_user_id: str, since: int, until: int):
                     "breakdown": "follow_type",
                 },
             )
-            breakdown = aggregate_dimension_values(payload, metric_name)
+            breakdown = aggregate_dimension_values(breakdown_response, metric_name)
             if breakdown:
-                visitor_breakdown_source = metric_name
                 for key, value in breakdown.items():
                     norm = (key or "").strip().lower()
-                    val = value or 0.0
                     if "non" in norm and "follow" in norm:
-                        visitors_breakdown["non_followers"] += val
+                        visitors_breakdown["non_followers"] += value or 0
                     elif "follow" in norm:
-                        visitors_breakdown["followers"] += val
+                        visitors_breakdown["followers"] += value or 0
                     else:
-                        visitors_breakdown["other"] += val
+                        visitors_breakdown["other"] += value or 0
                 break
         except MetaAPIError:
             continue
 
-    def _as_int(number):
-        if number is None:
-            return None
-        return int(round(number))
-
-    visitors_total = (
-        visitors_breakdown["followers"]
-        + visitors_breakdown["non_followers"]
-        + visitors_breakdown["other"]
-    )
-
-    profile_visitors_breakdown = None
-    if visitor_breakdown_source or visitors_total > 0:
+    visitors_total = sum(visitors_breakdown.values())
+    if visitors_total > 0:
         profile_visitors_breakdown = {
-            "source": visitor_breakdown_source,
-            "followers": _as_int(visitors_breakdown["followers"]),
-            "non_followers": _as_int(visitors_breakdown["non_followers"]),
-            "other": _as_int(visitors_breakdown["other"]),
-            "total": _as_int(visitors_total),
+            "followers": int(visitors_breakdown["followers"]),
+            "non_followers": int(visitors_breakdown["non_followers"]),
+            "other": int(visitors_breakdown["other"]),
+            "total": int(visitors_total),
         }
 
     return {
@@ -894,21 +907,97 @@ def ig_window(ig_user_id: str, since: int, until: int):
         "accounts_engaged": accounts_engaged,
         "profile_views": profile_views,
         "profile_views_timeseries": profile_views_timeseries,
-        "website_clicks": website,
+        "website_clicks": website_clicks,
         "likes": sum_likes,
         "comments": sum_comments,
         "shares": sum_shares,
         "saves": sum_saves,
-        "follower_growth": _as_int(follower_growth),
-        "follower_count_start": _as_int(follower_start),
-        "follower_count_end": _as_int(follower_end),
-        "follows": _as_int(follows_total),
-        "unfollows": _as_int(unfollows_total),
+        "follower_growth": follower_growth,
+        "follower_count_start": follower_start,
+        "follower_count_end": follower_end,
+        "follows": follows_total,
+        "unfollows": unfollows_total,
         "profile_visitors_breakdown": profile_visitors_breakdown,
         "follower_series": follower_series,
         "posts_detailed": post_details,
         "reach_timeseries": reach_timeseries,
     }
+
+
+def _ig_window_chunked(ig_user_id: str, since: int, until: int, chunk_days: int = 30) -> Dict[str, Any]:
+    """
+    Busca dados em chunks de N dias para períodos longos.
+    """
+    results: List[Dict[str, Any]] = []
+    current_since = since
+
+    while current_since < until:
+        current_until = min(current_since + (chunk_days * 86400), until)
+
+        try:
+            chunk_data = ig_window(ig_user_id, current_since, current_until)
+            results.append(chunk_data)
+        except Exception as err:
+            logger.warning("Falha no chunk %s-%s: %s", current_since, current_until, err)
+
+        current_since = current_until
+
+    if not results:
+        return ig_window(ig_user_id, since, until)
+
+    aggregated = {
+        "reach": 0,
+        "interactions": 0,
+        "accounts_engaged": 0,
+        "profile_views": 0,
+        "website_clicks": 0,
+        "likes": 0,
+        "comments": 0,
+        "shares": 0,
+        "saves": 0,
+        "follower_growth": 0,
+        "follower_count_start": None,
+        "follower_count_end": None,
+        "follows": 0,
+        "unfollows": 0,
+        "profile_visitors_breakdown": None,
+        "follower_series": [],
+        "posts_detailed": [],
+        "reach_timeseries": [],
+        "profile_views_timeseries": [],
+    }
+
+    for chunk in results:
+        aggregated["reach"] += chunk.get("reach") or 0
+        aggregated["interactions"] += chunk.get("interactions") or 0
+        aggregated["accounts_engaged"] += chunk.get("accounts_engaged") or 0
+        aggregated["profile_views"] += chunk.get("profile_views") or 0
+        aggregated["website_clicks"] += chunk.get("website_clicks") or 0
+        aggregated["likes"] += chunk.get("likes") or 0
+        aggregated["comments"] += chunk.get("comments") or 0
+        aggregated["shares"] += chunk.get("shares") or 0
+        aggregated["saves"] += chunk.get("saves") or 0
+        aggregated["follows"] += chunk.get("follows") or 0
+        aggregated["unfollows"] += chunk.get("unfollows") or 0
+
+        if chunk.get("follower_series"):
+            aggregated["follower_series"].extend(chunk["follower_series"])
+        if chunk.get("posts_detailed"):
+            aggregated["posts_detailed"].extend(chunk["posts_detailed"])
+        if chunk.get("reach_timeseries"):
+            aggregated["reach_timeseries"].extend(chunk["reach_timeseries"])
+        if chunk.get("profile_views_timeseries"):
+            aggregated["profile_views_timeseries"].extend(chunk["profile_views_timeseries"])
+
+    if results:
+        first = results[0]
+        last = results[-1]
+        aggregated["follower_count_start"] = first.get("follower_count_start")
+        aggregated["follower_count_end"] = last.get("follower_count_end")
+        if aggregated["follower_count_start"] and aggregated["follower_count_end"]:
+            aggregated["follower_growth"] = aggregated["follower_count_end"] - aggregated["follower_count_start"]
+
+    return aggregated
 
 
 def _safe(val, cast=float):
