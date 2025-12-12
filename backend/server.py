@@ -1968,6 +1968,16 @@ def build_instagram_metrics_from_db(ig_id: str, since_ts: int, until_ts: int) ->
         for entry in current_data.get("reach", [])
         if entry.get("value") is not None
     ]
+    profile_views_total = _sum_metric(current_data, "profile_views")
+    profile_views_previous = _sum_metric(previous_data, "profile_views") if previous_data else None
+    profile_views_timeseries = [
+        {
+            "date": entry["metric_date"].isoformat(),
+            "value": _as_int(entry.get("value")),
+        }
+        for entry in current_data.get("profile_views", [])
+        if entry.get("value") is not None
+    ]
 
     metrics_payload = [
         {
@@ -1982,6 +1992,13 @@ def build_instagram_metrics_from_db(ig_id: str, since_ts: int, until_ts: int) ->
             "value": _as_int(reach_total),
             "deltaPct": _percentage_delta(reach_total, reach_previous),
             "timeseries": reach_timeseries,
+        },
+        {
+            "key": "profile_views",
+            "label": "VISUALIZACOES",
+            "value": _as_int(profile_views_total),
+            "deltaPct": _percentage_delta(profile_views_total, profile_views_previous),
+            "timeseries": profile_views_timeseries,
         },
         {
             "key": "interactions",
@@ -2040,6 +2057,7 @@ def build_instagram_metrics_from_db(ig_id: str, since_ts: int, until_ts: int) ->
         "follower_series": follower_series,
         "top_posts": top_posts_payload,
         "reach_timeseries": reach_timeseries,
+        "profile_views_timeseries": profile_views_timeseries,
         "coverage": coverage,
     }
     rollups = _load_instagram_rollups(ig_id, until_date)
