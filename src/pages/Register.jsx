@@ -91,7 +91,7 @@ export default function Register() {
         </div>
         <form className="auth-form" onSubmit={handleSubmit}>
           <label className="auth-label" htmlFor="nome">
-            Nome Completo
+            Nome completo
           </label>
           <input
             id="nome"
