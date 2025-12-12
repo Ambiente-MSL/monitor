@@ -972,11 +972,17 @@ export default function AdsDashboard() {
               <div className="ig-profile-vertical__divider" />
 
               {/* Gender Distribution Donut */}
-              <div className="ig-profile-vertical__engagement">
+              <div
+                className="ig-profile-vertical__engagement"
+                style={{ minHeight: regionChartHeight + 120 }}
+              >
                 <h4>Investimento por região</h4>
                 {spendByRegion.length ? (
                   <>
-                    <div className="ig-profile-vertical__engagement-chart">
+                    <div
+                      className="ig-profile-vertical__engagement-chart"
+                      style={{ height: regionChartHeight, alignItems: "flex-start" }}
+                    >
                       <ResponsiveContainer width="100%" height={regionChartHeight}>
                         <BarChart
                           data={spendByRegion}
