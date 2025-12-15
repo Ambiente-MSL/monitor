@@ -767,7 +767,68 @@ export default function AdsDashboard() {
           </nav>
         </div>
 
-        <h2 className="ig-clean-title">Visão Geral</h2>
+        {/* Título com Foto de Perfil e Nome da Conta */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          marginBottom: '24px'
+        }}>
+          {/* Foto de Perfil */}
+          <div style={{
+            width: '48px',
+            height: '48px',
+            borderRadius: '50%',
+            overflow: 'hidden',
+            border: '2px solid rgba(99, 102, 241, 0.2)',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+            flexShrink: 0
+          }}>
+            {selectedAccount?.profilePictureUrl || selectedAccount?.pagePictureUrl ? (
+              <img
+                src={selectedAccount.profilePictureUrl || selectedAccount.pagePictureUrl}
+                alt={selectedAccount.label || 'Perfil'}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover'
+                }}
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <div style={{
+              width: '100%',
+              height: '100%',
+              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+              display: selectedAccount?.profilePictureUrl || selectedAccount?.pagePictureUrl ? 'none' : 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontSize: '18px',
+              fontWeight: 700
+            }}>
+              {selectedAccount?.label?.charAt(0)?.toUpperCase() || 'A'}
+            </div>
+          </div>
+
+          {/* Título e Nome da Conta */}
+          <div style={{ flex: 1 }}>
+            <h2 className="ig-clean-title" style={{ margin: 0, lineHeight: 1.2 }}>Visão Geral</h2>
+            {selectedAccount?.label && (
+              <p style={{
+                margin: '4px 0 0 0',
+                fontSize: '14px',
+                color: '#6b7280',
+                fontWeight: 500
+              }}>
+                {selectedAccount.label}
+              </p>
+            )}
+          </div>
+        </div>
 
         {/* Grid Principal */}
         <div className="ig-clean-grid">
