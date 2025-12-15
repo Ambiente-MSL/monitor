@@ -203,7 +203,7 @@ IG_ID = os.getenv("META_IG_USER_ID")
 ACT_ID = os.getenv("META_AD_ACCOUNT_ID")
 
 # Constantes
-MAX_DAYS_RANGE = 90  # Máximo de 90 dias
+MAX_DAYS_RANGE = int(os.getenv("MAX_DAYS_RANGE", "365"))  # Limite máximo de dias para requests
 MIN_TIMESTAMP = 946684800  # 1 Jan 2000
 DEFAULT_DAYS = 7
 DEFAULT_REFRESH_RESOURCES = [
