@@ -775,7 +775,12 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
       setFollowerSeries(Array.isArray(cachedMetrics.followerSeries) ? cachedMetrics.followerSeries : []);
       setFollowerCounts(cachedMetrics.followerCounts ?? null);
       setReachCacheSeries(Array.isArray(cachedMetrics.reachSeries) ? cachedMetrics.reachSeries : []);
-      setProfileViewsSeries(Array.isArray(cachedMetrics.profileViewsSeries) ? cachedMetrics.profileViewsSeries : []);
+      const cachedViewsSeries = Array.isArray(cachedMetrics.videoViewsSeries)
+        ? cachedMetrics.videoViewsSeries
+        : Array.isArray(cachedMetrics.profileViewsSeries)
+          ? cachedMetrics.profileViewsSeries
+          : [];
+      setProfileViewsSeries(cachedViewsSeries);
       setProfileVisitorsBreakdown(cachedMetrics.profileVisitorsBreakdown ?? null);
       setMetricsError("");
       setMetricsLoading(false);
@@ -816,17 +821,22 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
     }
 
     const cachedMetrics = getDashboardCache(metricsCacheKey);
-  if (cachedMetrics) {
-    setMetrics(Array.isArray(cachedMetrics.metrics) ? cachedMetrics.metrics : []);
-    setFollowerSeries(Array.isArray(cachedMetrics.followerSeries) ? cachedMetrics.followerSeries : []);
-    setFollowerCounts(cachedMetrics.followerCounts ?? null);
-    setReachCacheSeries(Array.isArray(cachedMetrics.reachSeries) ? cachedMetrics.reachSeries : []);
-    setProfileViewsSeries(Array.isArray(cachedMetrics.profileViewsSeries) ? cachedMetrics.profileViewsSeries : []);
-    setProfileVisitorsBreakdown(cachedMetrics.profileVisitorsBreakdown ?? null);
-    setMetricsError("");
-    setMetricsLoading(false);
-    return undefined;
-  }
+    if (cachedMetrics) {
+      setMetrics(Array.isArray(cachedMetrics.metrics) ? cachedMetrics.metrics : []);
+      setFollowerSeries(Array.isArray(cachedMetrics.followerSeries) ? cachedMetrics.followerSeries : []);
+      setFollowerCounts(cachedMetrics.followerCounts ?? null);
+      setReachCacheSeries(Array.isArray(cachedMetrics.reachSeries) ? cachedMetrics.reachSeries : []);
+      const cachedViewsSeries = Array.isArray(cachedMetrics.videoViewsSeries)
+        ? cachedMetrics.videoViewsSeries
+        : Array.isArray(cachedMetrics.profileViewsSeries)
+          ? cachedMetrics.profileViewsSeries
+          : [];
+      setProfileViewsSeries(cachedViewsSeries);
+      setProfileVisitorsBreakdown(cachedMetrics.profileVisitorsBreakdown ?? null);
+      setMetricsError("");
+      setMetricsLoading(false);
+      return undefined;
+    }
 
     const preset = IG_TOPBAR_PRESETS.find((item) => item.id === "7d") || IG_TOPBAR_PRESETS[0];
     const fallbackStart = startOfDay(subDays(defaultEnd, (preset?.days ?? 7) - 1));
@@ -856,50 +866,42 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
         const fetchedMetrics = json.metrics || [];
         const fetchedFollowerSeries = Array.isArray(json.follower_series) ? json.follower_series : [];
         const fetchedFollowerCounts = json.follower_counts || null;
-        const reachSeries = Array.isArray(json.reach_timeseries)
-          ? json.reach_timeseries
-            .map((entry) => {
-              if (!entry) return null;
-              const dateRaw = entry.date || entry.metric_date || entry.end_time || entry.start_time || entry.label;
-              if (!dateRaw) return null;
-              const numericValue = extractNumber(entry.value, null);
-              if (numericValue === null) return null;
-              return {
-                date: dateRaw,
-                value: numericValue,
-              };
-            })
-            .filter(Boolean)
-          : [];
-        const parsedProfileViewsSeries = Array.isArray(json.profile_views_timeseries)
-          ? json.profile_views_timeseries
-            .map((entry) => {
-              if (!entry) return null;
-              const dateRaw = entry.date || entry.metric_date || entry.end_time || entry.start_time || entry.label;
-              if (!dateRaw) return null;
-              const numericValue = extractNumber(entry.value, null);
-              if (numericValue === null) return null;
-              return {
-                date: dateRaw,
-                value: numericValue,
-              };
-            })
-            .filter(Boolean)
-          : [];
+        const parseNumericSeries = (series) => (
+          Array.isArray(series)
+            ? series
+              .map((entry) => {
+                if (!entry) return null;
+                const dateRaw = entry.date || entry.metric_date || entry.end_time || entry.start_time || entry.label;
+                if (!dateRaw) return null;
+                const numericValue = extractNumber(entry.value, null);
+                if (numericValue === null) return null;
+                return {
+                  date: dateRaw,
+                  value: numericValue,
+                };
+              })
+              .filter(Boolean)
+            : []
+        );
+        const reachSeries = parseNumericSeries(json.reach_timeseries);
+        const parsedVideoViewsSeries = parseNumericSeries(json.video_views_timeseries);
+        const parsedProfileViewsSeries = parseNumericSeries(json.profile_views_timeseries);
+        const resolvedViewsSeries = parsedVideoViewsSeries.length ? parsedVideoViewsSeries : parsedProfileViewsSeries;
         const visitorsBreakdown = json.profile_visitors_breakdown || null;
         if (cancelled) return;
         setMetrics(fetchedMetrics);
         setFollowerSeries(fetchedFollowerSeries);
         setFollowerCounts(fetchedFollowerCounts);
         setReachCacheSeries(reachSeries);
-        setProfileViewsSeries(parsedProfileViewsSeries);
+        setProfileViewsSeries(resolvedViewsSeries);
         setProfileVisitorsBreakdown(visitorsBreakdown);
         setDashboardCache(metricsCacheKey, {
           metrics: fetchedMetrics,
           followerSeries: fetchedFollowerSeries,
           followerCounts: fetchedFollowerCounts,
           reachSeries,
-          profileViewsSeries: parsedProfileViewsSeries,
+          profileViewsSeries: resolvedViewsSeries,
+          videoViewsSeries: parsedVideoViewsSeries,
           profileVisitorsBreakdown: visitorsBreakdown,
         });
       } catch (err) {
@@ -982,7 +984,7 @@ const reachMetric = metricsByKey.reach;
 const followersMetric = metricsByKey.followers_total;
 const followerGrowthMetric = metricsByKey.follower_growth;
 const engagementRateMetric = metricsByKey.engagement_rate;
-const profileViewsMetric = metricsByKey.profile_views;
+const profileViewsMetric = metricsByKey.video_views || metricsByKey.profile_views;
 
   const reachMetricValue = useMemo(() => extractNumber(reachMetric?.value, null), [reachMetric?.value]);
   const timelineReachSeries = useMemo(() => seriesFromMetric(reachMetric), [reachMetric]);
@@ -1923,7 +1925,7 @@ const profileViewsMetric = metricsByKey.profile_views;
                   color: 'rgba(255, 255, 255, 0.9)',
                   fontWeight: 400
                 }}>
-                  Acompanhe as visualizações do seu perfil com insights detalhados
+                  Acompanhe as visualizações dos seus conteúdos (Reels, Feed e Stories) com insights detalhados
                 </p>
               </div>
 
@@ -3196,23 +3198,7 @@ const profileViewsMetric = metricsByKey.profile_views;
         {/* Novos Cards: Visualizações e Seguidores */}
         <div className="ig-analytics-grid ig-analytics-grid--pair" style={{ marginTop: '24px' }}>
           {/* Card de Visualizações - Estilo Aprimorado */}
-          <section className="ig-card-white ig-analytics-card" style={{
-            position: 'relative',
-            overflow: 'hidden',
-            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.03) 0%, rgba(139, 92, 246, 0.06) 100%)',
-            border: '1px solid rgba(99, 102, 241, 0.1)'
-          }}>
-            {/* Elemento decorativo de fundo */}
-            <div style={{
-              position: 'absolute',
-              top: -50,
-              right: -50,
-              width: 200,
-              height: 200,
-              background: 'radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, transparent 70%)',
-              borderRadius: '50%',
-              pointerEvents: 'none'
-            }} />
+          <section className="ig-card-white ig-analytics-card" style={{ position: 'relative', overflow: 'hidden' }}>
 
             <div className="ig-analytics-card__header" style={{
               display: 'flex',
@@ -3239,7 +3225,7 @@ const profileViewsMetric = metricsByKey.profile_views;
                 </div>
                 <div>
                   <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#111827' }}>Visualizações</h4>
-                  <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '2px', marginBottom: 0 }}>Total de visualizações do perfil</p>
+                  <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '2px', marginBottom: 0 }}>Total de reproduções (Reels, Feed e Stories)</p>
                 </div>
               </div>
               <button
@@ -3289,7 +3275,7 @@ const profileViewsMetric = metricsByKey.profile_views;
                   {formatNumber(profileViewsTotal ?? null)}
                 </div>
                 <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '20px', fontWeight: 500 }}>
-                  visualizações no período
+                  visualizações de conteúdo no período
                 </div>
                 {typeof profileViewsDeltaPct === "number" && (
                   <div

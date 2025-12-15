@@ -836,6 +836,42 @@ def fetch_instagram_metrics(
             }
         )
 
+    video_views_series_raw = cur.get("video_views_timeseries") or []
+    video_views_timeseries: List[Dict[str, Any]] = []
+    for entry in video_views_series_raw:
+        value = entry.get("value")
+        if value is None:
+            continue
+        try:
+            numeric_value = float(value)
+        except (TypeError, ValueError):
+            continue
+        if not math.isfinite(numeric_value):
+            continue
+        end_time = entry.get("end_time")
+        start_time = entry.get("start_time")
+        raw_ts = end_time or start_time or entry.get("date")
+        normalized_date = None
+        if raw_ts:
+            normalized_input = str(raw_ts).replace("Z", "+00:00")
+            try:
+                normalized_date = datetime.fromisoformat(normalized_input).date().isoformat()
+            except ValueError:
+                try:
+                    normalized_date = datetime.strptime(str(raw_ts), "%Y-%m-%dT%H:%M:%S%z").date().isoformat()
+                except ValueError:
+                    normalized_date = str(raw_ts)[:10]
+        if normalized_date is None and raw_ts is None:
+            continue
+        video_views_timeseries.append(
+            {
+                "date": normalized_date or raw_ts,
+                "end_time": end_time,
+                "start_time": start_time,
+                "value": int(round(numeric_value)),
+            }
+        )
+
     metrics = [
         {"key": "followers_total", "label": "SEGUIDORES", "value": cur.get("follower_count_end"), "deltaPct": pct(cur.get("follower_count_end"), prev.get("follower_count_end"))},
         {
@@ -846,8 +882,15 @@ def fetch_instagram_metrics(
             "timeseries": reach_timeseries,
         },
         {
-            "key": "profile_views",
+            "key": "video_views",
             "label": "VISUALIZACOES",
+            "value": cur.get("video_views"),
+            "deltaPct": pct(cur.get("video_views"), prev.get("video_views")),
+            "timeseries": video_views_timeseries or profile_views_timeseries,
+        },
+        {
+            "key": "profile_views",
+            "label": "VISITAS AO PERFIL",
             "value": cur.get("profile_views"),
             "deltaPct": pct(cur.get("profile_views"), prev.get("profile_views")),
             "timeseries": profile_views_timeseries,
@@ -890,6 +933,7 @@ def fetch_instagram_metrics(
         "top_posts": top_posts,
         "reach_timeseries": reach_timeseries,
         "profile_views_timeseries": profile_views_timeseries,
+        "video_views_timeseries": video_views_timeseries or profile_views_timeseries,
     }
 
 
@@ -1978,6 +2022,16 @@ def build_instagram_metrics_from_db(ig_id: str, since_ts: int, until_ts: int) ->
         for entry in current_data.get("profile_views", [])
         if entry.get("value") is not None
     ]
+    video_views_total = _sum_metric(current_data, "video_views")
+    video_views_previous = _sum_metric(previous_data, "video_views") if previous_data else None
+    video_views_timeseries = [
+        {
+            "date": entry["metric_date"].isoformat(),
+            "value": _as_int(entry.get("value")),
+        }
+        for entry in current_data.get("video_views", [])
+        if entry.get("value") is not None
+    ]
 
     metrics_payload = [
         {
@@ -1994,8 +2048,15 @@ def build_instagram_metrics_from_db(ig_id: str, since_ts: int, until_ts: int) ->
             "timeseries": reach_timeseries,
         },
         {
-            "key": "profile_views",
+            "key": "video_views",
             "label": "VISUALIZACOES",
+            "value": _as_int(video_views_total if video_views_total is not None else profile_views_total),
+            "deltaPct": _percentage_delta(video_views_total if video_views_total is not None else profile_views_total, video_views_previous if video_views_total is not None else profile_views_previous),
+            "timeseries": video_views_timeseries or profile_views_timeseries,
+        },
+        {
+            "key": "profile_views",
+            "label": "VISITAS AO PERFIL",
             "value": _as_int(profile_views_total),
             "deltaPct": _percentage_delta(profile_views_total, profile_views_previous),
             "timeseries": profile_views_timeseries,
@@ -2058,6 +2119,7 @@ def build_instagram_metrics_from_db(ig_id: str, since_ts: int, until_ts: int) ->
         "top_posts": top_posts_payload,
         "reach_timeseries": reach_timeseries,
         "profile_views_timeseries": profile_views_timeseries,
+        "video_views_timeseries": video_views_timeseries or profile_views_timeseries,
         "coverage": coverage,
     }
     rollups = _load_instagram_rollups(ig_id, until_date)

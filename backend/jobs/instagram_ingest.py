@@ -203,6 +203,7 @@ def snapshot_to_rows(
     add("interactions", snapshot.get("interactions"))
     add("accounts_engaged", snapshot.get("accounts_engaged"))
     add("profile_views", snapshot.get("profile_views"))
+    add("video_views", snapshot.get("video_views"))
     add("website_clicks", snapshot.get("website_clicks"))
     add("likes", snapshot.get("likes"))
     add("comments", snapshot.get("comments"))

@@ -742,6 +742,8 @@ def ig_window(ig_user_id: str, since: int, until: int) -> Dict[str, Any]:
         total_interactions = 0
 
     sum_likes = sum_comments = sum_shares = sum_saves = 0
+    sum_video_views = 0
+    video_views_by_date: Dict[str, int] = {}
     post_details: List[Dict[str, Any]] = []
 
     try:
@@ -751,7 +753,7 @@ def ig_window(ig_user_id: str, since: int, until: int) -> Dict[str, Any]:
                 "since": since,
                 "until": until,
                 "limit": 100,
-                "fields": "id,media_type,timestamp,like_count,comments_count,permalink",
+                "fields": "id,media_type,media_product_type,timestamp,like_count,comments_count,permalink",
             },
         )
 
@@ -769,10 +771,18 @@ def ig_window(ig_user_id: str, since: int, until: int) -> Dict[str, Any]:
                     except ValueError:
                         pass
 
+                media_type = (media.get("media_type") or "").upper()
+                media_product_type = (media.get("media_product_type") or "").upper()
+                is_video_type = media_type in {"VIDEO", "REEL", "IGTV"} or media_product_type in {"REELS", "VIDEO", "IGTV"}
+
+                metrics_list = ["reach", "shares", "saved", "likes", "comments", "impressions"]
+                if is_video_type:
+                    metrics_list.extend(["plays", "video_views"])
+
                 try:
                     media_insights = gget(
                         f"/{media_id}/insights",
-                        {"metric": "reach,shares,saved,likes,comments"},
+                        {"metric": ",".join(metrics_list)},
                     )
                     insights_map = {}
                     for item in media_insights.get("data", []):
@@ -781,17 +791,45 @@ def ig_window(ig_user_id: str, since: int, until: int) -> Dict[str, Any]:
                         insights_map[name] = int((values[0].get("value") or 0))
                 except MetaAPIError:
                     insights_map = {}
+                    try:
+                        fallback_insights = gget(
+                            f"/{media_id}/insights",
+                            {"metric": "reach,shares,saved,likes,comments"},
+                        )
+                        for item in fallback_insights.get("data", []):
+                            name = (item.get("name") or "").lower()
+                            values = item.get("values") or [{}]
+                            insights_map[name] = int((values[0].get("value") or 0))
+                    except MetaAPIError:
+                        insights_map = {}
 
                 likes = insights_map.get("likes") or media.get("like_count") or 0
                 comments = insights_map.get("comments") or media.get("comments_count") or 0
                 shares = insights_map.get("shares") or 0
                 saves = insights_map.get("saved") or insights_map.get("saves") or 0
                 reach_value = insights_map.get("reach") or 0
+                video_views_value = 0
+                if is_video_type:
+                    video_views_value = insights_map.get("plays") or insights_map.get("video_views") or insights_map.get("views") or 0
+                if not video_views_value and media_type == "STORY":
+                    video_views_value = insights_map.get("impressions") or insights_map.get("reach") or 0
+                video_views_value = int(video_views_value or 0)
 
                 sum_likes += likes
                 sum_comments += comments
                 sum_shares += shares
                 sum_saves += saves
+                sum_video_views += video_views_value
+
+                if video_views_value and timestamp_iso:
+                    date_key = None
+                    try:
+                        dt = datetime.fromisoformat(timestamp_iso.replace("Z", "+00:00"))
+                        date_key = dt.date().isoformat()
+                    except ValueError:
+                        date_key = timestamp_iso[:10]
+                    if date_key:
+                        video_views_by_date[date_key] = video_views_by_date.get(date_key, 0) + video_views_value
 
                 post_details.append({
                     "id": media_id,
@@ -799,11 +837,13 @@ def ig_window(ig_user_id: str, since: int, until: int) -> Dict[str, Any]:
                     "timestamp_unix": timestamp_unix,
                     "permalink": media.get("permalink"),
                     "media_type": media.get("media_type"),
+                    "media_product_type": media_product_type,
                     "likes": likes,
                     "comments": comments,
                     "shares": shares,
                     "saves": saves,
                     "reach": reach_value,
+                    "views": video_views_value,
                     "interactions": likes + comments + shares + saves,
                 })
 
@@ -819,6 +859,10 @@ def ig_window(ig_user_id: str, since: int, until: int) -> Dict[str, Any]:
 
     if reach == 0:
         reach = sum(p.get("reach") or 0 for p in post_details)
+    video_views_timeseries = [
+        {"date": key, "value": value}
+        for key, value in sorted(video_views_by_date.items())
+    ]
 
     follower_series = []
     follower_growth = None
@@ -907,6 +951,8 @@ def ig_window(ig_user_id: str, since: int, until: int) -> Dict[str, Any]:
         "accounts_engaged": accounts_engaged,
         "profile_views": profile_views,
         "profile_views_timeseries": profile_views_timeseries,
+        "video_views": sum_video_views,
+        "video_views_timeseries": video_views_timeseries,
         "website_clicks": website_clicks,
         "likes": sum_likes,
         "comments": sum_comments,
@@ -965,6 +1011,8 @@ def _ig_window_chunked(ig_user_id: str, since: int, until: int, chunk_days: int 
         "posts_detailed": [],
         "reach_timeseries": [],
         "profile_views_timeseries": [],
+        "video_views": 0,
+        "video_views_timeseries": [],
     }
 
     for chunk in results:
@@ -979,6 +1027,7 @@ def _ig_window_chunked(ig_user_id: str, since: int, until: int, chunk_days: int 
         aggregated["saves"] += chunk.get("saves") or 0
         aggregated["follows"] += chunk.get("follows") or 0
         aggregated["unfollows"] += chunk.get("unfollows") or 0
+        aggregated["video_views"] += chunk.get("video_views") or 0
 
         if chunk.get("follower_series"):
             aggregated["follower_series"].extend(chunk["follower_series"])
@@ -988,6 +1037,8 @@ def _ig_window_chunked(ig_user_id: str, since: int, until: int, chunk_days: int 
             aggregated["reach_timeseries"].extend(chunk["reach_timeseries"])
         if chunk.get("profile_views_timeseries"):
             aggregated["profile_views_timeseries"].extend(chunk["profile_views_timeseries"])
+        if chunk.get("video_views_timeseries"):
+            aggregated["video_views_timeseries"].extend(chunk["video_views_timeseries"])
 
     if results:
         first = results[0]
