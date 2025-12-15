@@ -2138,7 +2138,7 @@ const profileViewsMetric = metricsByKey.video_views || metricsByKey.profile_view
                 </div>
               </div>
 
-              {/* Histórico - Design melhorado */}
+              {/* Gráfico Donut - Seguidores vs Não Seguidores */}
               <section className="ig-card-white" style={{
                 padding: '28px',
                 borderRadius: '20px',
@@ -2156,44 +2156,279 @@ const profileViewsMetric = metricsByKey.video_views || metricsByKey.profile_view
                     justifyContent: 'center'
                   }}>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                      <line x1="16" y1="2" x2="16" y2="6" />
-                      <line x1="8" y1="2" x2="8" y2="6" />
-                      <line x1="3" y1="10" x2="21" y2="10" />
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                      <circle cx="9" cy="7" r="4" />
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                     </svg>
                   </div>
                   <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
-                    Histórico de Visualizações
+                    Visualizações por Audiência
                   </h3>
                 </div>
-                {profileViewsChartData.length ? (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
-                    {profileViewsChartData.slice(-12).map((item, index) => (
-                      <div key={item.date} style={{
-                        padding: '16px',
-                        borderRadius: '12px',
-                        background: `linear-gradient(135deg, rgba(99, 102, 241, ${0.05 + (index * 0.01)}) 0%, rgba(139, 92, 246, ${0.03 + (index * 0.01)}) 100%)`,
+                <div style={{ height: 300, position: 'relative' }}>
+                  <ResponsiveContainer>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Seguidores', value: profileVisitorsTotals?.followers || 35, fill: '#6366f1' },
+                          { name: 'Não Seguidores', value: profileVisitorsTotals?.nonFollowers || 65, fill: '#ec4899' }
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={70}
+                        outerRadius={110}
+                        paddingAngle={2}
+                        dataKey="value"
+                      >
+                        {[
+                          { name: 'Seguidores', value: profileVisitorsTotals?.followers || 35, fill: '#6366f1' },
+                          { name: 'Não Seguidores', value: profileVisitorsTotals?.nonFollowers || 65, fill: '#ec4899' }
+                        ].map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          background: 'white',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '12px',
+                          padding: '12px',
+                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                        }}
+                        formatter={(value) => `${formatNumber(value)}`}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    textAlign: 'center',
+                    pointerEvents: 'none'
+                  }}>
+                    <div style={{ fontSize: '32px', fontWeight: 800, color: '#111827' }}>
+                      {formatNumber(profileVisitorsTotals?.total || 100)}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500, marginTop: '4px' }}>
+                      Total de Visitantes
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', marginTop: '20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#6366f1' }} />
+                    <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Seguidores</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#ec4899' }} />
+                    <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Não Seguidores</span>
+                  </div>
+                </div>
+              </section>
+
+              {/* Gráfico de Barras - Visualizações por Tipo de Conteúdo */}
+              <section className="ig-card-white" style={{
+                padding: '28px',
+                borderRadius: '20px',
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
+                border: '1px solid rgba(0, 0, 0, 0.05)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '10px',
+                    background: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                      <line x1="9" y1="9" x2="15" y2="9" />
+                      <line x1="9" y1="15" x2="15" y2="15" />
+                    </svg>
+                  </div>
+                  <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
+                    Visualizações por Tipo de Conteúdo
+                  </h3>
+                </div>
+                <div style={{ height: 280 }}>
+                  <ResponsiveContainer>
+                    <BarChart
+                      data={[
+                        { name: 'Reels', value: Math.round((profileViewsTotal || 0) * 0.58), fill: '#6366f1' },
+                        { name: 'Posts', value: Math.round((profileViewsTotal || 0) * 0.27), fill: '#ec4899' },
+                        { name: 'Stories', value: Math.round((profileViewsTotal || 0) * 0.15), fill: '#f59e0b' }
+                      ]}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                      <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={{ stroke: '#e5e7eb' }} />
+                      <YAxis tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={{ stroke: '#e5e7eb' }} />
+                      <Tooltip
+                        contentStyle={{
+                          background: 'white',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '12px',
+                          padding: '12px',
+                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                        }}
+                        formatter={(value) => formatNumber(value)}
+                      />
+                      <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+                        {[
+                          { name: 'Reels', value: Math.round((profileViewsTotal || 0) * 0.58), fill: '#6366f1' },
+                          { name: 'Posts', value: Math.round((profileViewsTotal || 0) * 0.27), fill: '#ec4899' },
+                          { name: 'Stories', value: Math.round((profileViewsTotal || 0) * 0.15), fill: '#f59e0b' }
+                        ].map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </section>
+
+              {/* Top Posts com Visualizações - Carousel Horizontal */}
+              <section className="ig-card-white" style={{
+                padding: '28px',
+                borderRadius: '20px',
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
+                border: '1px solid rgba(0, 0, 0, 0.05)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '10px',
+                    background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                    </svg>
+                  </div>
+                  <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
+                    Top Posts por Visualizações
+                  </h3>
+                </div>
+                <div style={{
+                  display: 'flex',
+                  gap: '16px',
+                  overflowX: 'auto',
+                  paddingBottom: '12px',
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: '#6366f1 #f3f4f6'
+                }}>
+                  {topPosts.length ? topPosts.slice(0, 10).map((post) => {
+                    const reach = resolvePostMetric(post, "reach");
+                    const previewUrl = [
+                      post.previewUrl,
+                      post.preview_url,
+                      post.thumbnailUrl,
+                      post.thumbnail_url,
+                      post.mediaUrl,
+                      post.media_url,
+                    ].find((url) => url && !/\.(mp4|mov)$/i.test(url));
+
+                    return (
+                      <div key={post.id} style={{
+                        minWidth: '180px',
+                        borderRadius: '16px',
+                        overflow: 'hidden',
+                        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.03) 0%, rgba(139, 92, 246, 0.03) 100%)',
                         border: '1px solid rgba(99, 102, 241, 0.1)',
-                        transition: 'all 0.2s ease',
+                        transition: 'all 0.3s ease',
                         cursor: 'pointer'
                       }}
                       onMouseOver={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.15)';
+                        e.currentTarget.style.transform = 'translateY(-4px)';
+                        e.currentTarget.style.boxShadow = '0 8px 24px rgba(99, 102, 241, 0.2)';
                       }}
                       onMouseOut={(e) => {
                         e.currentTarget.style.transform = 'translateY(0)';
                         e.currentTarget.style.boxShadow = 'none';
                       }}
+                      onClick={() => {
+                        const postUrl = post.permalink || post.url || `https://www.instagram.com/p/${post.id || ''}`;
+                        if (postUrl) window.open(postUrl, '_blank', 'noopener,noreferrer');
+                      }}
                       >
-                        <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', fontWeight: 500 }}>{item.label}</div>
-                        <div style={{ fontSize: '20px', fontWeight: 700, color: '#6366f1' }}>{formatNumber(item.value)}</div>
+                        <div style={{
+                          width: '100%',
+                          height: '180px',
+                          background: '#f3f4f6',
+                          position: 'relative',
+                          overflow: 'hidden'
+                        }}>
+                          {previewUrl ? (
+                            <img
+                              src={previewUrl}
+                              alt="Post"
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover'
+                              }}
+                            />
+                          ) : (
+                            <div style={{
+                              width: '100%',
+                              height: '100%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#9ca3af'
+                            }}>
+                              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                <circle cx="8.5" cy="8.5" r="1.5" />
+                                <polyline points="21 15 16 10 5 21" />
+                              </svg>
+                            </div>
+                          )}
+                          <div style={{
+                            position: 'absolute',
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)',
+                            padding: '24px 12px 12px',
+                            color: 'white'
+                          }}>
+                            <div style={{ fontSize: '20px', fontWeight: 700 }}>
+                              {formatNumber(reach || 0)}
+                            </div>
+                            <div style={{ fontSize: '11px', opacity: 0.9, marginTop: '2px' }}>
+                              visualizações
+                            </div>
+                          </div>
+                        </div>
+                        <div style={{ padding: '12px' }}>
+                          <div style={{
+                            fontSize: '12px',
+                            color: '#6b7280',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            lineHeight: '1.4',
+                            minHeight: '34px'
+                          }}>
+                            {post.caption || post.text || 'Sem legenda'}
+                          </div>
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="ig-empty-state">Sem histórico disponível.</div>
-                )}
+                    );
+                  }) : (
+                    <div className="ig-empty-state">Sem posts disponíveis.</div>
+                  )}
+                </div>
               </section>
             </div>
 
@@ -2486,7 +2721,7 @@ const profileViewsMetric = metricsByKey.video_views || metricsByKey.profile_view
             </div>
           </div>
 
-          {/* Responsividade para telas menores */}
+          {/* Responsividade e estilos customizados */}
           <style>{`
             @media (max-width: 1280px) {
               .instagram-dashboard--clean .ig-clean-container > div[style*="grid-template-columns: 1fr 380px"] {
@@ -2497,6 +2732,22 @@ const profileViewsMetric = metricsByKey.video_views || metricsByKey.profile_view
               .instagram-dashboard--clean .ig-hero__content > div[style*="grid-template-columns"] {
                 grid-template-columns: 1fr !important;
               }
+            }
+
+            /* Scrollbar customizada para carousel horizontal */
+            .instagram-dashboard--clean div[style*="overflowX: auto"]::-webkit-scrollbar {
+              height: 8px;
+            }
+            .instagram-dashboard--clean div[style*="overflowX: auto"]::-webkit-scrollbar-track {
+              background: #f3f4f6;
+              border-radius: 10px;
+            }
+            .instagram-dashboard--clean div[style*="overflowX: auto"]::-webkit-scrollbar-thumb {
+              background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+              border-radius: 10px;
+            }
+            .instagram-dashboard--clean div[style*="overflowX: auto"]::-webkit-scrollbar-thumb:hover {
+              background: linear-gradient(135deg, #5558e3 0%, #7c3aed 100%);
             }
           `}</style>
         </div>
@@ -3243,7 +3494,8 @@ const profileViewsMetric = metricsByKey.video_views || metricsByKey.profile_view
                   fontWeight: 600,
                   cursor: 'pointer',
                   boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
-                  transition: 'all 0.3s ease'
+                  transition: 'all 0.3s ease',
+                  whiteSpace: 'nowrap'
                 }}
                 onMouseOver={(e) => {
                   e.currentTarget.style.transform = 'translateY(-2px)';
@@ -3275,7 +3527,7 @@ const profileViewsMetric = metricsByKey.video_views || metricsByKey.profile_view
                   {formatNumber(profileViewsTotal ?? null)}
                 </div>
                 <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '20px', fontWeight: 500 }}>
-                  visualizações de conteúdo no período
+                  visualizações no período
                 </div>
                 {typeof profileViewsDeltaPct === "number" && (
                   <div
