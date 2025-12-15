@@ -1837,47 +1837,145 @@ const profileViewsMetric = metricsByKey.profile_views;
     return (
       <div className="instagram-dashboard instagram-dashboard--clean">
         <div className="ig-clean-container">
-          {/* Header da visualização detalhada */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '24px',
-            borderBottom: '1px solid #e5e7eb',
-            background: 'white'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <button
-                onClick={() => setShowDetailedView(false)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  background: '#f3f4f6',
-                  border: 'none',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  color: '#111827',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.background = '#e5e7eb';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.background = '#f3f4f6';
-                }}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="15 18 9 12 15 6" />
-                </svg>
-                <span>Voltar</span>
-              </button>
+          {/* Degradê de fundo do Instagram */}
+          <div className="ig-hero-gradient" aria-hidden="true" />
+
+          {/* Header com Logo Instagram */}
+          <div className="ig-clean-header" style={{ marginBottom: '24px' }}>
+            <div className="ig-clean-header__brand">
+              <div className="ig-clean-header__logo">
+                <InstagramIcon size={32} />
+              </div>
+              <h1>Instagram</h1>
+            </div>
+          </div>
+
+          {/* Hero com navegação */}
+          <div className="ig-hero" style={{ marginTop: '20px', marginBottom: '32px' }}>
+            <div className="ig-hero__background" />
+            <div className="ig-hero__content">
+              {/* Navegação de volta */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <button
+                  onClick={() => setShowDetailedView(false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 20px',
+                    borderRadius: '12px',
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: 'white',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                  <span>Voltar ao Dashboard</span>
+                </button>
+              </div>
+
+              {/* Título da seção */}
               <div>
-                <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 700, color: '#111827' }}>Visualizações Detalhadas</h2>
-                <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#6b7280' }}>Análise completa de visualizações do perfil</p>
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '10px 20px',
+                  borderRadius: '12px',
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  marginBottom: '12px'
+                }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                  <span style={{ fontSize: '14px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Visualizações</span>
+                </div>
+                <h2 style={{
+                  margin: 0,
+                  fontSize: '36px',
+                  fontWeight: 700,
+                  color: 'white',
+                  lineHeight: 1.2
+                }}>
+                  Análise Detalhada
+                </h2>
+                <p style={{
+                  margin: '8px 0 0 0',
+                  fontSize: '16px',
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  fontWeight: 400
+                }}>
+                  Acompanhe as visualizações do seu perfil com insights detalhados
+                </p>
+              </div>
+
+              {/* Cards de KPI rápido na hero */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '16px',
+                marginTop: '24px'
+              }}>
+                <div style={{
+                  padding: '20px',
+                  borderRadius: '16px',
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)'
+                }}>
+                  <div style={{ fontSize: '32px', fontWeight: 700, color: 'white', marginBottom: '4px' }}>
+                    {formatNumber(profileViewsTotal ?? null)}
+                  </div>
+                  <div style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.85)', fontWeight: 500 }}>
+                    Total de Visualizações
+                  </div>
+                </div>
+                <div style={{
+                  padding: '20px',
+                  borderRadius: '16px',
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)'
+                }}>
+                  <div style={{ fontSize: '32px', fontWeight: 700, color: 'white', marginBottom: '4px' }}>
+                    {profileViewsAverage != null ? formatNumber(Math.round(profileViewsAverage)) : '--'}
+                  </div>
+                  <div style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.85)', fontWeight: 500 }}>
+                    Média Diária
+                  </div>
+                </div>
+                <div style={{
+                  padding: '20px',
+                  borderRadius: '16px',
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)'
+                }}>
+                  <div style={{ fontSize: '32px', fontWeight: 700, color: 'white', marginBottom: '4px' }}>
+                    {profileViewsPeak != null ? formatNumber(profileViewsPeak) : '--'}
+                  </div>
+                  <div style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.85)', fontWeight: 500 }}>
+                    Pico de Visualizações
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1887,35 +1985,76 @@ const profileViewsMetric = metricsByKey.profile_views;
             display: 'grid',
             gridTemplateColumns: '1fr 380px',
             gap: '24px',
-            padding: '24px',
+            padding: '0 24px 24px',
             minHeight: 'calc(100vh - 200px)'
           }}>
             {/* Coluna da esquerda - Conteúdo principal */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              {/* Card de gráfico de visualizações */}
-              <section className="ig-card-white" style={{ padding: '24px' }}>
-                <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: 600, color: '#111827' }}>
-                  Tendência de Visualizações
-                </h3>
+              {/* Card de gráfico de visualizações - Design melhorado */}
+              <section className="ig-card-white" style={{
+                padding: '28px',
+                background: 'white',
+                borderRadius: '20px',
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
+                border: '1px solid rgba(0, 0, 0, 0.05)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '10px',
+                    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                      <polyline points="17 6 23 6 23 12" />
+                    </svg>
+                  </div>
+                  <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
+                    Tendência de Visualizações
+                  </h3>
+                </div>
                 {profileViewsChartData.length ? (
-                  <div style={{ height: 320 }}>
+                  <div style={{ height: 340, marginTop: '16px' }}>
                     <ResponsiveContainer>
                       <LineChart data={profileViewsChartData}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                        <XAxis dataKey="label" tick={{ fontSize: 12 }} />
-                        <YAxis tick={{ fontSize: 12 }} />
+                        <defs>
+                          <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/>
+                            <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                        <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={{ stroke: '#e5e7eb' }} />
+                        <YAxis tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={{ stroke: '#e5e7eb' }} />
                         <Tooltip
                           formatter={(value) => formatNumber(value)}
                           labelFormatter={(label) => `Dia ${label}`}
+                          contentStyle={{
+                            background: 'white',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '12px',
+                            padding: '12px',
+                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                          }}
                         />
                         <Line
                           type="monotone"
                           dataKey="value"
-                          stroke="#6366f1"
+                          stroke="url(#gradientLine)"
                           strokeWidth={3}
-                          dot={{ r: 3 }}
-                          activeDot={{ r: 5, strokeWidth: 0 }}
+                          dot={{ r: 4, fill: '#6366f1', strokeWidth: 2, stroke: 'white' }}
+                          activeDot={{ r: 6, strokeWidth: 2, stroke: 'white' }}
                         />
+                        <defs>
+                          <linearGradient id="gradientLine" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" stopColor="#6366f1" />
+                            <stop offset="100%" stopColor="#8b5cf6" />
+                          </linearGradient>
+                        </defs>
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
@@ -1924,39 +2063,129 @@ const profileViewsMetric = metricsByKey.profile_views;
                 )}
               </section>
 
-              {/* Cards de métricas detalhadas */}
+              {/* Cards de métricas detalhadas - Design aprimorado */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
-                <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '32px', fontWeight: 700, color: '#6366f1', marginBottom: '8px' }}>
+                <div className="ig-card-white" style={{
+                  padding: '24px',
+                  textAlign: 'center',
+                  borderRadius: '16px',
+                  background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(99, 102, 241, 0.02) 100%)',
+                  border: '1px solid rgba(99, 102, 241, 0.15)',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}>
+                  <div style={{
+                    position: 'absolute',
+                    top: -20,
+                    right: -20,
+                    width: 80,
+                    height: 80,
+                    background: 'radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%)',
+                    borderRadius: '50%'
+                  }} />
+                  <div style={{ fontSize: '36px', fontWeight: 800, color: '#6366f1', marginBottom: '8px', position: 'relative' }}>
                     {formatNumber(profileViewsTotal ?? null)}
                   </div>
-                  <div style={{ fontSize: '13px', color: '#6b7280' }}>Total de Visualizações</div>
+                  <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Total de Visualizações</div>
                 </div>
-                <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '32px', fontWeight: 700, color: '#10b981', marginBottom: '8px' }}>
+                <div className="ig-card-white" style={{
+                  padding: '24px',
+                  textAlign: 'center',
+                  borderRadius: '16px',
+                  background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.02) 100%)',
+                  border: '1px solid rgba(16, 185, 129, 0.15)',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}>
+                  <div style={{
+                    position: 'absolute',
+                    top: -20,
+                    right: -20,
+                    width: 80,
+                    height: 80,
+                    background: 'radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, transparent 70%)',
+                    borderRadius: '50%'
+                  }} />
+                  <div style={{ fontSize: '36px', fontWeight: 800, color: '#10b981', marginBottom: '8px', position: 'relative' }}>
                     {profileViewsDeltaPct != null ? `${profileViewsDeltaPct > 0 ? '+' : ''}${profileViewsDeltaPct}%` : '--'}
                   </div>
-                  <div style={{ fontSize: '13px', color: '#6b7280' }}>Crescimento (%)</div>
+                  <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Crescimento (%)</div>
                 </div>
-                <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '32px', fontWeight: 700, color: '#f59e0b', marginBottom: '8px' }}>
+                <div className="ig-card-white" style={{
+                  padding: '24px',
+                  textAlign: 'center',
+                  borderRadius: '16px',
+                  background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(245, 158, 11, 0.02) 100%)',
+                  border: '1px solid rgba(245, 158, 11, 0.15)',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}>
+                  <div style={{
+                    position: 'absolute',
+                    top: -20,
+                    right: -20,
+                    width: 80,
+                    height: 80,
+                    background: 'radial-gradient(circle, rgba(245, 158, 11, 0.1) 0%, transparent 70%)',
+                    borderRadius: '50%'
+                  }} />
+                  <div style={{ fontSize: '36px', fontWeight: 800, color: '#f59e0b', marginBottom: '8px', position: 'relative' }}>
                     {formatNumber(profileVisitorsTotals?.total ?? null)}
                   </div>
-                  <div style={{ fontSize: '13px', color: '#6b7280' }}>Visitantes Únicos</div>
+                  <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Visitantes Únicos</div>
                 </div>
               </div>
 
-              {/* Tabela de dados */}
-              <section className="ig-card-white" style={{ padding: '24px' }}>
-                <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: 600, color: '#111827' }}>
-                  Histórico de Visualizações
-                </h3>
+              {/* Histórico - Design melhorado */}
+              <section className="ig-card-white" style={{
+                padding: '28px',
+                borderRadius: '20px',
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
+                border: '1px solid rgba(0, 0, 0, 0.05)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '10px',
+                    background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                      <line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                  </div>
+                  <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
+                    Histórico de Visualizações
+                  </h3>
+                </div>
                 {profileViewsChartData.length ? (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px' }}>
-                    {profileViewsChartData.slice(-12).map((item) => (
-                      <div key={item.date} style={{ padding: '12px', borderRadius: '10px', background: '#f9fafb' }}>
-                        <div style={{ fontSize: '13px', color: '#6b7280' }}>{item.label}</div>
-                        <div style={{ fontSize: '18px', fontWeight: 700, color: '#111827' }}>{formatNumber(item.value)}</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+                    {profileViewsChartData.slice(-12).map((item, index) => (
+                      <div key={item.date} style={{
+                        padding: '16px',
+                        borderRadius: '12px',
+                        background: `linear-gradient(135deg, rgba(99, 102, 241, ${0.05 + (index * 0.01)}) 0%, rgba(139, 92, 246, ${0.03 + (index * 0.01)}) 100%)`,
+                        border: '1px solid rgba(99, 102, 241, 0.1)',
+                        transition: 'all 0.2s ease',
+                        cursor: 'pointer'
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.15)';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                      >
+                        <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', fontWeight: 500 }}>{item.label}</div>
+                        <div style={{ fontSize: '20px', fontWeight: 700, color: '#6366f1' }}>{formatNumber(item.value)}</div>
                       </div>
                     ))}
                   </div>
@@ -1968,95 +2197,306 @@ const profileViewsMetric = metricsByKey.profile_views;
 
             {/* Coluna da direita - Informações complementares */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <section className="ig-card-white" style={{ padding: '20px' }}>
-                <h4 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 600, color: '#111827' }}>
-                  Resumo do Período
-                </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '12px', borderBottom: '1px solid #e5e7eb' }}>
-                    <span style={{ fontSize: '14px', color: '#6b7280' }}>Média diária</span>
-                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>
+              <section className="ig-card-white" style={{
+                padding: '24px',
+                borderRadius: '20px',
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
+                border: '1px solid rgba(0, 0, 0, 0.05)',
+                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.02) 0%, rgba(139, 92, 246, 0.02) 100%)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+                  <div style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '8px',
+                    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                      <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                      <line x1="12" y1="22.08" x2="12" y2="12" />
+                    </svg>
+                  </div>
+                  <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#111827' }}>
+                    Resumo do Período
+                  </h4>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    padding: '12px',
+                    borderRadius: '10px',
+                    background: 'rgba(99, 102, 241, 0.05)',
+                    border: '1px solid rgba(99, 102, 241, 0.1)'
+                  }}>
+                    <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Média diária</span>
+                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#6366f1' }}>
                       {profileViewsAverage != null ? formatNumber(Math.round(profileViewsAverage)) : '--'}
                     </span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '12px', borderBottom: '1px solid #e5e7eb' }}>
-                    <span style={{ fontSize: '14px', color: '#6b7280' }}>Pico de visualizações</span>
-                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    padding: '12px',
+                    borderRadius: '10px',
+                    background: 'rgba(139, 92, 246, 0.05)',
+                    border: '1px solid rgba(139, 92, 246, 0.1)'
+                  }}>
+                    <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Pico de visualizações</span>
+                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#8b5cf6' }}>
                       {profileViewsPeak != null ? formatNumber(profileViewsPeak) : '--'}
                     </span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '12px', borderBottom: '1px solid #e5e7eb' }}>
-                    <span style={{ fontSize: '14px', color: '#6b7280' }}>Taxa de retorno</span>
-                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    padding: '12px',
+                    borderRadius: '10px',
+                    background: 'rgba(168, 85, 247, 0.05)',
+                    border: '1px solid rgba(168, 85, 247, 0.1)'
+                  }}>
+                    <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Taxa de retorno</span>
+                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#a855f7' }}>
                       {profileReturnRate != null ? `${profileReturnRate.toFixed(1)}%` : '--'}
                     </span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '14px', color: '#6b7280' }}>Média por visitante</span>
-                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    padding: '12px',
+                    borderRadius: '10px',
+                    background: 'rgba(236, 72, 153, 0.05)',
+                    border: '1px solid rgba(236, 72, 153, 0.1)'
+                  }}>
+                    <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Média por visitante</span>
+                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#ec4899' }}>
                       {profileViewsPerVisitor != null ? formatNumber(profileViewsPerVisitor.toFixed(1)) : '--'}
                     </span>
                   </div>
                 </div>
               </section>
 
-              <section className="ig-card-white" style={{ padding: '20px' }}>
-                <h4 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 600, color: '#111827' }}>
-                  Origens de Tráfego
-                </h4>
+              <section className="ig-card-white" style={{
+                padding: '24px',
+                borderRadius: '20px',
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
+                border: '1px solid rgba(0, 0, 0, 0.05)',
+                background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.02) 0%, rgba(244, 114, 182, 0.02) 100%)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+                  <div style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '8px',
+                    background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10" />
+                      <polygon points="10 8 16 12 10 16 10 8" />
+                    </svg>
+                  </div>
+                  <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#111827' }}>
+                    Origens de Tráfego
+                  </h4>
+                </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: '40px', height: '8px', background: '#6366f1', borderRadius: '4px' }} />
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '12px',
+                    borderRadius: '10px',
+                    background: 'rgba(99, 102, 241, 0.05)',
+                    border: '1px solid rgba(99, 102, 241, 0.1)',
+                    transition: 'all 0.2s ease'
+                  }}>
+                    <div style={{
+                      width: '50px',
+                      height: '6px',
+                      background: 'linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%)',
+                      borderRadius: '3px',
+                      flexShrink: 0
+                    }} />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '13px', color: '#111827', fontWeight: 500 }}>Direto</div>
-                      <div style={{ fontSize: '12px', color: '#9ca3af' }}>45%</div>
+                      <div style={{ fontSize: '13px', color: '#111827', fontWeight: 600 }}>Direto</div>
+                      <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>45% das visualizações</div>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: '30px', height: '8px', background: '#ec4899', borderRadius: '4px' }} />
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '12px',
+                    borderRadius: '10px',
+                    background: 'rgba(236, 72, 153, 0.05)',
+                    border: '1px solid rgba(236, 72, 153, 0.1)'
+                  }}>
+                    <div style={{
+                      width: '35px',
+                      height: '6px',
+                      background: 'linear-gradient(90deg, #ec4899 0%, #f472b6 100%)',
+                      borderRadius: '3px',
+                      flexShrink: 0
+                    }} />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '13px', color: '#111827', fontWeight: 500 }}>Explorar</div>
-                      <div style={{ fontSize: '12px', color: '#9ca3af' }}>30%</div>
+                      <div style={{ fontSize: '13px', color: '#111827', fontWeight: 600 }}>Explorar</div>
+                      <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>30% das visualizações</div>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: '20px', height: '8px', background: '#f59e0b', borderRadius: '4px' }} />
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '12px',
+                    borderRadius: '10px',
+                    background: 'rgba(245, 158, 11, 0.05)',
+                    border: '1px solid rgba(245, 158, 11, 0.1)'
+                  }}>
+                    <div style={{
+                      width: '25px',
+                      height: '6px',
+                      background: 'linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%)',
+                      borderRadius: '3px',
+                      flexShrink: 0
+                    }} />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '13px', color: '#111827', fontWeight: 500 }}>Hashtags</div>
-                      <div style={{ fontSize: '12px', color: '#9ca3af' }}>15%</div>
+                      <div style={{ fontSize: '13px', color: '#111827', fontWeight: 600 }}>Hashtags</div>
+                      <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>15% das visualizações</div>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: '15px', height: '8px', background: '#10b981', borderRadius: '4px' }} />
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '12px',
+                    borderRadius: '10px',
+                    background: 'rgba(16, 185, 129, 0.05)',
+                    border: '1px solid rgba(16, 185, 129, 0.1)'
+                  }}>
+                    <div style={{
+                      width: '18px',
+                      height: '6px',
+                      background: 'linear-gradient(90deg, #10b981 0%, #34d399 100%)',
+                      borderRadius: '3px',
+                      flexShrink: 0
+                    }} />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '13px', color: '#111827', fontWeight: 500 }}>Outros</div>
-                      <div style={{ fontSize: '12px', color: '#9ca3af' }}>10%</div>
+                      <div style={{ fontSize: '13px', color: '#111827', fontWeight: 600 }}>Outros</div>
+                      <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>10% das visualizações</div>
                     </div>
                   </div>
                 </div>
               </section>
 
-              <section className="ig-card-white" style={{ padding: '20px' }}>
-                <h4 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 600, color: '#111827' }}>
-                  Horários de Pico
-                </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
-                  <div style={{ padding: '8px 12px', background: '#f3f4f6', borderRadius: '6px', display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#6b7280' }}>09:00 - 12:00</span>
-                    <span style={{ color: '#111827', fontWeight: 600 }}>Alto</span>
+              <section className="ig-card-white" style={{
+                padding: '24px',
+                borderRadius: '20px',
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
+                border: '1px solid rgba(0, 0, 0, 0.05)',
+                background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.02) 0%, rgba(251, 191, 36, 0.02) 100%)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+                  <div style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '8px',
+                    background: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
+                    </svg>
                   </div>
-                  <div style={{ padding: '8px 12px', background: '#f3f4f6', borderRadius: '6px', display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#6b7280' }}>18:00 - 21:00</span>
-                    <span style={{ color: '#111827', fontWeight: 600 }}>Muito Alto</span>
+                  <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#111827' }}>
+                    Horários de Pico
+                  </h4>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{
+                    padding: '12px 14px',
+                    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.05) 100%)',
+                    borderRadius: '10px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    border: '1px solid rgba(16, 185, 129, 0.15)'
+                  }}>
+                    <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>09:00 - 12:00</span>
+                    <span style={{
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      color: '#10b981',
+                      background: 'rgba(16, 185, 129, 0.15)',
+                      padding: '4px 10px',
+                      borderRadius: '6px'
+                    }}>Alto</span>
                   </div>
-                  <div style={{ padding: '8px 12px', background: '#f3f4f6', borderRadius: '6px', display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#6b7280' }}>03:00 - 06:00</span>
-                    <span style={{ color: '#111827', fontWeight: 600 }}>Baixo</span>
+                  <div style={{
+                    padding: '12px 14px',
+                    background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(239, 68, 68, 0.05) 100%)',
+                    borderRadius: '10px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    border: '1px solid rgba(239, 68, 68, 0.15)'
+                  }}>
+                    <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>18:00 - 21:00</span>
+                    <span style={{
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      color: '#ef4444',
+                      background: 'rgba(239, 68, 68, 0.15)',
+                      padding: '4px 10px',
+                      borderRadius: '6px'
+                    }}>Muito Alto</span>
+                  </div>
+                  <div style={{
+                    padding: '12px 14px',
+                    background: 'linear-gradient(135deg, rgba(100, 116, 139, 0.08) 0%, rgba(100, 116, 139, 0.05) 100%)',
+                    borderRadius: '10px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    border: '1px solid rgba(100, 116, 139, 0.15)'
+                  }}>
+                    <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>03:00 - 06:00</span>
+                    <span style={{
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      color: '#64748b',
+                      background: 'rgba(100, 116, 139, 0.15)',
+                      padding: '4px 10px',
+                      borderRadius: '6px'
+                    }}>Baixo</span>
                   </div>
                 </div>
               </section>
             </div>
           </div>
+
+          {/* Responsividade para telas menores */}
+          <style>{`
+            @media (max-width: 1280px) {
+              .instagram-dashboard--clean .ig-clean-container > div[style*="grid-template-columns: 1fr 380px"] {
+                grid-template-columns: 1fr !important;
+              }
+            }
+            @media (max-width: 768px) {
+              .instagram-dashboard--clean .ig-hero__content > div[style*="grid-template-columns"] {
+                grid-template-columns: 1fr !important;
+              }
+            }
+          `}</style>
         </div>
       </div>
     );
@@ -2755,12 +3195,52 @@ const profileViewsMetric = metricsByKey.profile_views;
 
         {/* Novos Cards: Visualizações e Seguidores */}
         <div className="ig-analytics-grid ig-analytics-grid--pair" style={{ marginTop: '24px' }}>
-          {/* Card de Visualizações */}
-          <section className="ig-card-white ig-analytics-card">
-            <div className="ig-analytics-card__header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <h4>Visualizações</h4>
-                <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>Total de visualizações do perfil</p>
+          {/* Card de Visualizações - Estilo Aprimorado */}
+          <section className="ig-card-white ig-analytics-card" style={{
+            position: 'relative',
+            overflow: 'hidden',
+            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.03) 0%, rgba(139, 92, 246, 0.06) 100%)',
+            border: '1px solid rgba(99, 102, 241, 0.1)'
+          }}>
+            {/* Elemento decorativo de fundo */}
+            <div style={{
+              position: 'absolute',
+              top: -50,
+              right: -50,
+              width: 200,
+              height: 200,
+              background: 'radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, transparent 70%)',
+              borderRadius: '50%',
+              pointerEvents: 'none'
+            }} />
+
+            <div className="ig-analytics-card__header" style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              position: 'relative',
+              zIndex: 1
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)'
+                }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#111827' }}>Visualizações</h4>
+                  <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '2px', marginBottom: 0 }}>Total de visualizações do perfil</p>
+                </div>
               </div>
               <button
                 onClick={() => setShowDetailedView(true)}
@@ -2768,38 +3248,47 @@ const profileViewsMetric = metricsByKey.profile_views;
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
-                  padding: '8px 16px',
-                  borderRadius: '8px',
+                  padding: '10px 18px',
+                  borderRadius: '10px',
                   background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
                   color: 'white',
                   border: 'none',
                   fontSize: '13px',
                   fontWeight: 600,
                   cursor: 'pointer',
-                  boxShadow: '0 2px 8px rgba(99, 102, 241, 0.25)',
-                  transition: 'all 0.2s ease'
+                  boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
+                  transition: 'all 0.3s ease'
                 }}
                 onMouseOver={(e) => {
                   e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.35)';
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(99, 102, 241, 0.4)';
                 }}
                 onMouseOut={(e) => {
                   e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(99, 102, 241, 0.25)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.3)';
                 }}
               >
-                <span>Ver mais</span>
+                <span>Ver detalhes</span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="9 18 15 12 9 6" />
                 </svg>
               </button>
             </div>
-            <div className="ig-analytics-card__body">
-              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                <div style={{ fontSize: '48px', fontWeight: 700, color: '#6366f1', marginBottom: '8px' }}>
+
+            <div className="ig-analytics-card__body" style={{ position: 'relative', zIndex: 1 }}>
+              <div style={{ textAlign: 'center', padding: '32px 20px 24px' }}>
+                <div style={{
+                  fontSize: '56px',
+                  fontWeight: 800,
+                  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  marginBottom: '8px',
+                  lineHeight: 1
+                }}>
                   {formatNumber(profileViewsTotal ?? null)}
                 </div>
-                <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '24px' }}>
+                <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '20px', fontWeight: 500 }}>
                   visualizações no período
                 </div>
                 {typeof profileViewsDeltaPct === "number" && (
@@ -2808,39 +3297,60 @@ const profileViewsMetric = metricsByKey.profile_views;
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '6px',
-                      padding: '6px 12px',
+                      padding: '8px 16px',
                       borderRadius: '999px',
-                      background: profileViewsDeltaPct >= 0 ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                      background: profileViewsDeltaPct >= 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
                       color: profileViewsDeltaPct >= 0 ? '#047857' : '#b91c1c',
                       fontWeight: 600,
-                      fontSize: '12px',
-                      marginBottom: '20px',
+                      fontSize: '13px',
+                      marginBottom: '24px',
+                      border: `1px solid ${profileViewsDeltaPct >= 0 ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`
                     }}
                   >
-                    {profileViewsDeltaPct >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                    {profileViewsDeltaPct >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
                     <span>{profileViewsDeltaPct >= 0 ? '+' : ''}{profileViewsDeltaPct}% vs. período anterior</span>
                   </div>
                 )}
-                <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '20px', fontWeight: 600, color: '#111827' }}>
+
+                {/* Grid de métricas secundárias */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gap: '12px',
+                  marginTop: '20px'
+                }}>
+                  <div style={{
+                    padding: '16px 12px',
+                    borderRadius: '12px',
+                    background: 'rgba(99, 102, 241, 0.05)',
+                    border: '1px solid rgba(99, 102, 241, 0.1)'
+                  }}>
+                    <div style={{ fontSize: '22px', fontWeight: 700, color: '#6366f1' }}>
                       {formatNumber(profileVisitorsTotals?.total ?? null)}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>Visitantes únicos</div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px', fontWeight: 500 }}>Visitantes únicos</div>
                   </div>
-                  <div style={{ width: '1px', background: '#e5e7eb' }} />
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '20px', fontWeight: 600, color: '#111827' }}>
+                  <div style={{
+                    padding: '16px 12px',
+                    borderRadius: '12px',
+                    background: 'rgba(139, 92, 246, 0.05)',
+                    border: '1px solid rgba(139, 92, 246, 0.1)'
+                  }}>
+                    <div style={{ fontSize: '22px', fontWeight: 700, color: '#8b5cf6' }}>
                       {profileViewsAverage != null ? formatNumber(Math.round(profileViewsAverage)) : '--'}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>Visualizações médias</div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px', fontWeight: 500 }}>Média diária</div>
                   </div>
-                  <div style={{ width: '1px', background: '#e5e7eb' }} />
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '20px', fontWeight: 600, color: '#111827' }}>
+                  <div style={{
+                    padding: '16px 12px',
+                    borderRadius: '12px',
+                    background: 'rgba(168, 85, 247, 0.05)',
+                    border: '1px solid rgba(168, 85, 247, 0.1)'
+                  }}>
+                    <div style={{ fontSize: '22px', fontWeight: 700, color: '#a855f7' }}>
                       {profileViewsPeak != null ? formatNumber(profileViewsPeak) : '--'}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>Pico diário</div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px', fontWeight: 500 }}>Pico diário</div>
                   </div>
                 </div>
               </div>
