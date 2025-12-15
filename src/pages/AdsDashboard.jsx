@@ -1,8 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link, useLocation, useOutletContext } from "react-router-dom";
 import { differenceInCalendarDays, endOfDay, startOfDay, subDays } from "date-fns";
-
-const API_BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 import {
   ResponsiveContainer,
   AreaChart,
@@ -42,6 +40,8 @@ import { useAccounts } from "../context/AccountsContext";
 import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import { useAuth } from "../context/AuthContext";
 import useQueryState from "../hooks/useQueryState";
+
+const API_BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 
 // Hero Tabs
 const HERO_TABS = [
