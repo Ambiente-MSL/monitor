@@ -1414,6 +1414,98 @@ export default function AdsDashboard() {
                 ))}
               </div>
             </section>
+
+            {/* Performance por Objetivo - Pie Chart */}
+            <section className="ig-growth-clean">
+              <header className="ig-card-header">
+                <div>
+                  <h3>Performance por Objetivo</h3>
+                  <p className="ig-card-subtitle">Distribuição de investimento</p>
+                </div>
+              </header>
+
+              <div className="ig-chart-area">
+                {objectivePerformance.length === 0 ? (
+                  <div style={{ padding: "16px", fontSize: "13px", color: "#6b7280" }}>
+                    Não encontramos campanhas com objetivo configurado para este período e conta selecionada.
+                  </div>
+                ) : (
+                  <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Pie
+                          data={objectivePerformance}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, value }) => `${name}: ${value}%`}
+                          outerRadius={100}
+                          fill="#8884d8"
+                          dataKey="value"
+                          onMouseEnter={(_, index) => setActiveCampaignIndex(index)}
+                          onMouseLeave={() => setActiveCampaignIndex(-1)}
+                        >
+                          {objectivePerformance.map((entry, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={entry.color}
+                              opacity={activeCampaignIndex === -1 || activeCampaignIndex === index ? 1 : 0.5}
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          content={({ active, payload }) => {
+                            if (!active || !payload?.length) return null;
+                            return (
+                              <div className="ig-follower-tooltip">
+                                <div className="ig-follower-tooltip__label">{payload[0].payload.name}</div>
+                                <div className="ig-follower-tooltip__date">{payload[0].value}%</div>
+                              </div>
+                            );
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+
+                    {/* Legenda personalizada */}
+                    <div style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: '12px',
+                      justifyContent: 'center',
+                      marginTop: '16px',
+                      padding: '0 16px'
+                    }}>
+                      {objectivePerformance.map((entry, index) => (
+                        <div
+                          key={`legend-${index}`}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            fontSize: '12px',
+                            cursor: 'pointer',
+                            opacity: activeCampaignIndex === -1 || activeCampaignIndex === index ? 1 : 0.5,
+                            transition: 'opacity 0.2s ease'
+                          }}
+                          onMouseEnter={() => setActiveCampaignIndex(index)}
+                          onMouseLeave={() => setActiveCampaignIndex(-1)}
+                        >
+                          <span style={{
+                            width: '12px',
+                            height: '12px',
+                            borderRadius: '3px',
+                            background: entry.color
+                          }}></span>
+                          <span style={{ color: '#374151', fontWeight: 500 }}>{entry.name}</span>
+                          <span style={{ color: '#6b7280' }}>({entry.value}%)</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </section>
           </div>
 
           {/* Right Column - Charts */}
@@ -1803,80 +1895,6 @@ export default function AdsDashboard() {
                     ))}
                   </tbody>
                 </table>
-              </div>
-            </section>
-
-            {/* 5. Campaign Performance by Objective - VISÃO ESTRATÉGICA */}
-            <section className="ig-growth-clean">
-              <header className="ig-card-header">
-                <div>
-                  <h3>Performance por Objetivo</h3>
-                  <p className="ig-card-subtitle">Distribuição de investimento</p>
-                </div>
-              </header>
-
-              <div className="ig-chart-area">
-                {objectivePerformance.length === 0 ? (
-                  <div style={{ padding: "16px", fontSize: "13px", color: "#6b7280" }}>
-                    Não encontramos campanhas com objetivo configurado para este período e conta selecionada.
-                  </div>
-                ) : (
-                  <div style={{ width: '100%' }}>
-                    <ResponsiveContainer
-                      width="100%"
-                      height={Math.max(220, objectivePerformance.length * 42)}
-                    >
-                      <BarChart
-                        data={objectivePerformance}
-                        margin={{ top: 16, right: 16, bottom: 16, left: 80 }}
-                        layout="vertical"
-                      >
-                        <CartesianGrid stroke="#e5e7eb" strokeDasharray="4 8" horizontal={false} />
-                        <XAxis
-                          type="number"
-                          tick={{ fill: "#9ca3af", fontSize: 12 }}
-                          axisLine={false}
-                          tickLine={false}
-                          tickFormatter={(value) => `${value}%`}
-                        />
-                        <YAxis
-                          type="category"
-                          dataKey="name"
-                          tick={{ fill: "#9ca3af", fontSize: 12 }}
-                          axisLine={false}
-                          tickLine={false}
-                          width={80}
-                        />
-                        <Tooltip
-                          content={({ active, payload }) => {
-                            if (!active || !payload?.length) return null;
-                            return (
-                              <div className="ig-follower-tooltip">
-                                <div className="ig-follower-tooltip__label">{payload[0].payload.name}</div>
-                                <div className="ig-follower-tooltip__date">{payload[0].value}%</div>
-                              </div>
-                            );
-                          }}
-                        />
-                        <Bar
-                          dataKey="value"
-                          radius={[0, 8, 8, 0]}
-                          barSize={26}
-                          onMouseEnter={(_, index) => setActiveCampaignIndex(index)}
-                          onMouseLeave={() => setActiveCampaignIndex(-1)}
-                        >
-                          {objectivePerformance.map((entry, index) => (
-                            <Cell
-                              key={`cell-${index}`}
-                              fill={entry.color}
-                              opacity={activeCampaignIndex === -1 || activeCampaignIndex === index ? 1 : 0.5}
-                            />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                )}
               </div>
             </section>
 
