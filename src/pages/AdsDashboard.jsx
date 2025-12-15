@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link, useLocation, useOutletContext } from "react-router-dom";
 import { differenceInCalendarDays, endOfDay, startOfDay, subDays } from "date-fns";
+
+const API_BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 import {
   ResponsiveContainer,
   AreaChart,
@@ -306,6 +308,7 @@ export default function AdsDashboard() {
   const [adsData, setAdsData] = useState(null);
   const [adsError, setAdsError] = useState("");
   const [adsLoading, setAdsLoading] = useState(false);
+  const [instagramProfileData, setInstagramProfileData] = useState(null);
   const adAccountId = useMemo(() => {
     if (!selectedAccount) return "";
     if (selectedAccount.adAccountId) return selectedAccount.adAccountId;
@@ -439,6 +442,31 @@ export default function AdsDashboard() {
       cancelled = true;
     };
   }, [adAccountId, apiFetch, sinceDate, untilDate]);
+
+  // Fetch Instagram profile picture
+  useEffect(() => {
+    const fetchInstagramProfile = async () => {
+      if (!selectedAccount?.instagramUserId) return;
+
+      try {
+        const params = new URLSearchParams({ igUserId: selectedAccount.instagramUserId, limit: "1" });
+        const url = `${API_BASE_URL}/api/instagram/posts?${params.toString()}`;
+        const resp = await fetch(url);
+        const json = await resp.json();
+
+        if (json.account) {
+          setInstagramProfileData({
+            username: json.account.username || json.account.name,
+            profilePicture: json.account.profile_picture_url,
+          });
+        }
+      } catch (err) {
+        console.warn(`Falha ao carregar foto de perfil do Instagram`, err);
+      }
+    };
+
+    fetchInstagramProfile();
+  }, [selectedAccount?.instagramUserId]);
 
   const formatNumber = (num) => {
     if (typeof num !== "number") return num;
@@ -774,7 +802,7 @@ export default function AdsDashboard() {
           gap: '16px',
           marginBottom: '24px'
         }}>
-          {/* Foto de Perfil */}
+          {/* Foto de Perfil do Instagram */}
           <div style={{
             width: '48px',
             height: '48px',
@@ -784,9 +812,9 @@ export default function AdsDashboard() {
             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
             flexShrink: 0
           }}>
-            {selectedAccount?.profilePictureUrl || selectedAccount?.pagePictureUrl ? (
+            {instagramProfileData?.profilePicture ? (
               <img
-                src={selectedAccount.profilePictureUrl || selectedAccount.pagePictureUrl}
+                src={instagramProfileData.profilePicture}
                 alt={selectedAccount.label || 'Perfil'}
                 style={{
                   width: '100%',
@@ -803,7 +831,7 @@ export default function AdsDashboard() {
               width: '100%',
               height: '100%',
               background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-              display: selectedAccount?.profilePictureUrl || selectedAccount?.pagePictureUrl ? 'none' : 'flex',
+              display: instagramProfileData?.profilePicture ? 'none' : 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               color: 'white',
@@ -821,7 +849,7 @@ export default function AdsDashboard() {
               <p style={{
                 margin: '4px 0 0 0',
                 fontSize: '14px',
-                color: '#6b7280',
+                color: 'white',
                 fontWeight: 500
               }}>
                 {selectedAccount.label}
@@ -1032,75 +1060,210 @@ export default function AdsDashboard() {
 
               <div className="ig-profile-vertical__divider" />
 
-              {/* Gender Distribution Donut */}
+              {/* Mapa do Brasil - Investimento por Região */}
               <div
                 className="ig-profile-vertical__engagement"
-                style={{ minHeight: regionChartHeight + 120 }}
+                style={{ minHeight: 500 }}
               >
                 <h4>Investimento por região</h4>
                 {spendByRegion.length ? (
                   <>
-                    <div
-                      className="ig-profile-vertical__engagement-chart"
-                      style={{ height: regionChartHeight, alignItems: "flex-start" }}
-                    >
-                      <ResponsiveContainer width="100%" height={regionChartHeight}>
-                        <BarChart
-                          data={spendByRegion}
-                          layout="vertical"
-                          margin={{ top: 8, right: 16, left: 0, bottom: 8 }}
-                          barSize={18}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                          <XAxis
-                            type="number"
-                            tickFormatter={formatCurrency}
-                            axisLine={false}
-                            tickLine={false}
-                          />
-                          <YAxis
-                            type="category"
-                            dataKey="name"
-                            width={120}
-                            axisLine={false}
-                            tickLine={false}
-                          />
-                          <Tooltip
-                            cursor={{ fill: "rgba(99,102,241,0.08)" }}
-                            formatter={(value, _name, props) => [
-                              formatCurrency(value),
-                              "Investimento",
-                              props?.payload ? (
-                                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                                  <span>Alcance: {formatNumber(props.payload.reach)}</span>
-                                  <span>Impressões: {formatNumber(props.payload.impressions)}</span>
-                                </div>
-                              ) : null,
-                            ]}
-                          />
-                          <Bar dataKey="value" radius={[6, 6, 6, 6]}>
-                            {spendByRegion.map((_, index) => (
-                              <Cell key={index} fill={IG_DONUT_COLORS[index % IG_DONUT_COLORS.length]} />
-                            ))}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className="ig-engagement-legend" style={{ marginTop: "8px", gap: "10px" }}>
-                      {spendByRegion.slice(0, 6).map((slice, index) => (
-                        <div key={slice.name} className="ig-engagement-legend__item" style={{ fontSize: "14px" }}>
-                          <span
-                            className="ig-engagement-legend__swatch"
-                            style={{
-                              backgroundColor: IG_DONUT_COLORS[index % IG_DONUT_COLORS.length],
-                              width: "12px",
-                              height: "12px",
-                            }}
-                          />
-                          <span className="ig-engagement-legend__label">{slice.name}</span>
-                          <span className="ig-engagement-legend__value">{formatCurrency(slice.value)}</span>
+                    {/* Container do Mapa e Legenda */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 240px', gap: '20px', marginTop: '16px' }}>
+                      {/* Mapa do Brasil SVG */}
+                      <div style={{ position: 'relative', width: '100%', minHeight: '400px' }}>
+                        <svg viewBox="0 0 500 550" style={{ width: '100%', height: 'auto', maxHeight: '450px' }}>
+                          {/* Região Norte */}
+                          <path d="M150,80 L180,60 L220,70 L240,50 L260,60 L270,90 L250,110 L230,100 L200,120 L170,110 Z"
+                            fill={spendByRegion.find(r => r.name.toLowerCase().includes('norte') || r.name === 'Norte')? '#6366f1' : '#e5e7eb'}
+                            stroke="#fff" strokeWidth="2" opacity="0.85">
+                            <title>Norte</title>
+                          </path>
+
+                          {/* Região Nordeste */}
+                          <path d="M270,90 L300,80 L330,90 L350,110 L360,140 L340,160 L320,150 L300,130 L280,140 L260,120 Z"
+                            fill={spendByRegion.find(r => r.name.toLowerCase().includes('nordeste') || r.name === 'Nordeste')? '#8b5cf6' : '#e5e7eb'}
+                            stroke="#fff" strokeWidth="2" opacity="0.85">
+                            <title>Nordeste</title>
+                          </path>
+
+                          {/* Região Centro-Oeste */}
+                          <path d="M170,180 L200,160 L230,170 L250,190 L240,220 L210,230 L180,210 Z"
+                            fill={spendByRegion.find(r => r.name.toLowerCase().includes('centro') || r.name === 'Centro-Oeste')? '#ec4899' : '#e5e7eb'}
+                            stroke="#fff" strokeWidth="2" opacity="0.85">
+                            <title>Centro-Oeste</title>
+                          </path>
+
+                          {/* Região Sudeste */}
+                          <path d="M230,240 L260,230 L280,250 L290,280 L270,300 L240,290 L220,270 Z"
+                            fill={spendByRegion.find(r => r.name.toLowerCase().includes('sudeste') || r.name === 'Sudeste')? '#f59e0b' : '#e5e7eb'}
+                            stroke="#fff" strokeWidth="2" opacity="0.85">
+                            <title>Sudeste</title>
+                          </path>
+
+                          {/* Região Sul */}
+                          <path d="M180,310 L210,300 L240,310 L250,340 L230,360 L200,350 L170,330 Z"
+                            fill={spendByRegion.find(r => r.name.toLowerCase().includes('sul') || r.name === 'Sul')? '#10b981' : '#e5e7eb'}
+                            stroke="#fff" strokeWidth="2" opacity="0.85">
+                            <title>Sul</title>
+                          </path>
+
+                          {/* Mapa do Brasil mais detalhado */}
+                          <g transform="translate(100, 30)">
+                            {/* Acre */}
+                            <path id="AC" d="M50,150 L70,140 L80,150 L75,165 L60,170 L50,160 Z"
+                              fill={spendByRegion.find(r => r.name === 'Acre' || r.name === 'AC')? '#6366f1' : '#f3f4f6'}
+                              stroke="#9ca3af" strokeWidth="0.5" opacity="0.9" />
+
+                            {/* Amazonas */}
+                            <path id="AM" d="M80,150 L120,130 L150,140 L160,160 L140,180 L100,170 L75,165 Z"
+                              fill={spendByRegion.find(r => r.name === 'Amazonas' || r.name === 'AM')? '#6366f1' : '#f3f4f6'}
+                              stroke="#9ca3af" strokeWidth="0.5" opacity="0.9" />
+
+                            {/* Roraima */}
+                            <path id="RR" d="M120,100 L140,90 L155,100 L150,120 L130,125 L120,110 Z"
+                              fill={spendByRegion.find(r => r.name === 'Roraima' || r.name === 'RR')? '#6366f1' : '#f3f4f6'}
+                              stroke="#9ca3af" strokeWidth="0.5" opacity="0.9" />
+
+                            {/* Pará */}
+                            <path id="PA" d="M160,160 L200,150 L230,160 L240,180 L220,200 L180,195 L160,185 Z"
+                              fill={spendByRegion.find(r => r.name === 'Pará' || r.name === 'PA')? '#6366f1' : '#f3f4f6'}
+                              stroke="#9ca3af" strokeWidth="0.5" opacity="0.9" />
+
+                            {/* Maranhão */}
+                            <path id="MA" d="M240,180 L270,175 L285,190 L280,210 L260,215 L245,205 Z"
+                              fill={spendByRegion.find(r => r.name === 'Maranhão' || r.name === 'MA')? '#8b5cf6' : '#f3f4f6'}
+                              stroke="#9ca3af" strokeWidth="0.5" opacity="0.9" />
+
+                            {/* Piauí */}
+                            <path id="PI" d="M280,210 L295,205 L305,220 L300,235 L285,238 L275,225 Z"
+                              fill={spendByRegion.find(r => r.name === 'Piauí' || r.name === 'PI')? '#8b5cf6' : '#f3f4f6'}
+                              stroke="#9ca3af" strokeWidth="0.5" opacity="0.9" />
+
+                            {/* Ceará */}
+                            <path id="CE" d="M295,205 L315,198 L325,210 L320,225 L305,220 Z"
+                              fill={spendByRegion.find(r => r.name === 'Ceará' || r.name === 'CE')? '#8b5cf6' : '#f3f4f6'}
+                              stroke="#9ca3af" strokeWidth="0.5" opacity="0.9" />
+
+                            {/* Rio Grande do Norte */}
+                            <path id="RN" d="M325,210 L340,208 L345,218 L340,225 L325,223 Z"
+                              fill={spendByRegion.find(r => r.name === 'Rio Grande do Norte' || r.name === 'RN')? '#8b5cf6' : '#f3f4f6'}
+                              stroke="#9ca3af" strokeWidth="0.5" opacity="0.9" />
+
+                            {/* Paraíba */}
+                            <path id="PB" d="M340,225 L350,224 L353,232 L348,238 L338,236 Z"
+                              fill={spendByRegion.find(r => r.name === 'Paraíba' || r.name === 'PB')? '#8b5cf6' : '#f3f4f6'}
+                              stroke="#9ca3af" strokeWidth="0.5" opacity="0.9" />
+
+                            {/* Pernambuco */}
+                            <path id="PE" d="M320,238 L345,235 L355,248 L345,258 L325,255 Z"
+                              fill={spendByRegion.find(r => r.name === 'Pernambuco' || r.name === 'PE')? '#8b5cf6' : '#f3f4f6'}
+                              stroke="#9ca3af" strokeWidth="0.5" opacity="0.9" />
+
+                            {/* Bahia */}
+                            <path id="BA" d="M260,245 L300,240 L325,255 L330,280 L310,300 L280,295 L265,275 Z"
+                              fill={spendByRegion.find(r => r.name === 'Bahia' || r.name === 'BA')? '#8b5cf6' : '#f3f4f6'}
+                              stroke="#9ca3af" strokeWidth="0.5" opacity="0.9" />
+
+                            {/* Mato Grosso */}
+                            <path id="MT" d="M140,220 L180,210 L200,230 L195,260 L165,265 L145,245 Z"
+                              fill={spendByRegion.find(r => r.name === 'Mato Grosso' || r.name === 'MT')? '#ec4899' : '#f3f4f6'}
+                              stroke="#9ca3af" strokeWidth="0.5" opacity="0.9" />
+
+                            {/* Goiás */}
+                            <path id="GO" d="M200,260 L230,255 L245,275 L240,295 L215,295 L200,280 Z"
+                              fill={spendByRegion.find(r => r.name === 'Goiás' || r.name === 'GO')? '#ec4899' : '#f3f4f6'}
+                              stroke="#9ca3af" strokeWidth="0.5" opacity="0.9" />
+
+                            {/* Mato Grosso do Sul */}
+                            <path id="MS" d="M165,280 L195,275 L210,295 L205,320 L180,320 L170,300 Z"
+                              fill={spendByRegion.find(r => r.name === 'Mato Grosso do Sul' || r.name === 'MS')? '#ec4899' : '#f3f4f6'}
+                              stroke="#9ca3af" strokeWidth="0.5" opacity="0.9" />
+
+                            {/* São Paulo */}
+                            <path id="SP" d="M215,310 L245,305 L260,325 L250,345 L225,340 L210,325 Z"
+                              fill={spendByRegion.find(r => r.name === 'São Paulo' || r.name === 'SP')? '#f59e0b' : '#f3f4f6'}
+                              stroke="#9ca3af" strokeWidth="0.5" opacity="0.9" />
+
+                            {/* Rio de Janeiro */}
+                            <path id="RJ" d="M260,325 L275,323 L280,335 L272,345 L260,343 Z"
+                              fill={spendByRegion.find(r => r.name === 'Rio de Janeiro' || r.name === 'RJ')? '#f59e0b' : '#f3f4f6'}
+                              stroke="#9ca3af" strokeWidth="0.5" opacity="0.9" />
+
+                            {/* Minas Gerais */}
+                            <path id="MG" d="M240,275 L280,270 L300,285 L295,310 L270,315 L245,305 Z"
+                              fill={spendByRegion.find(r => r.name === 'Minas Gerais' || r.name === 'MG')? '#f59e0b' : '#f3f4f6'}
+                              stroke="#9ca3af" strokeWidth="0.5" opacity="0.9" />
+
+                            {/* Paraná */}
+                            <path id="PR" d="M205,345 L235,340 L245,360 L230,375 L205,370 Z"
+                              fill={spendByRegion.find(r => r.name === 'Paraná' || r.name === 'PR')? '#10b981' : '#f3f4f6'}
+                              stroke="#9ca3af" strokeWidth="0.5" opacity="0.9" />
+
+                            {/* Santa Catarina */}
+                            <path id="SC" d="M205,375 L230,372 L240,385 L225,395 L205,390 Z"
+                              fill={spendByRegion.find(r => r.name === 'Santa Catarina' || r.name === 'SC')? '#10b981' : '#f3f4f6'}
+                              stroke="#9ca3af" strokeWidth="0.5" opacity="0.9" />
+
+                            {/* Rio Grande do Sul */}
+                            <path id="RS" d="M180,390 L210,385 L225,405 L215,430 L185,425 L175,410 Z"
+                              fill={spendByRegion.find(r => r.name === 'Rio Grande do Sul' || r.name === 'RS')? '#10b981' : '#f3f4f6'}
+                              stroke="#9ca3af" strokeWidth="0.5" opacity="0.9" />
+                          </g>
+                        </svg>
+                      </div>
+
+                      {/* Legenda */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div style={{
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          color: '#6b7280',
+                          marginBottom: '8px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px'
+                        }}>
+                          Regiões
                         </div>
-                      ))}
+                        {spendByRegion.slice(0, 5).map((region, index) => {
+                          const colors = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'];
+                          return (
+                            <div key={region.name} style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '10px',
+                              padding: '10px 12px',
+                              borderRadius: '10px',
+                              background: `${colors[index]}08`,
+                              border: `1px solid ${colors[index]}20`,
+                              transition: 'all 0.2s ease'
+                            }}>
+                              <div style={{
+                                width: '16px',
+                                height: '16px',
+                                borderRadius: '4px',
+                                background: colors[index],
+                                flexShrink: 0
+                              }} />
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{
+                                  fontSize: '13px',
+                                  fontWeight: 600,
+                                  color: '#111827',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap'
+                                }}>
+                                  {region.name}
+                                </div>
+                                <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>
+                                  {formatCurrency(region.value)}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   </>
                 ) : (
