@@ -1617,9 +1617,8 @@ export default function AdsDashboard() {
                             <stop offset="100%" stopColor="#8b5cf6" />
                           </linearGradient>
                           <linearGradient id="spendBarActive" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#f472b6" />
-                            <stop offset="45%" stopColor="#d946ef" />
-                            <stop offset="100%" stopColor="#6366f1" />
+                            <stop offset="0%" stopColor="#6366f1" />
+                            <stop offset="100%" stopColor="#8b5cf6" />
                           </linearGradient>
                         </defs>
                         <CartesianGrid stroke="#e5e7eb" strokeDasharray="4 8" vertical={false} />
