@@ -791,6 +791,27 @@ export default function AdsDashboard() {
     });
   }, [adsData, spendSeries, totals.impressions, totals.reach, totals.spend]);
 
+  const topCreatives = useMemo(() => {
+    if (Array.isArray(adsData?.creatives) && adsData.creatives.length) {
+      return [...adsData.creatives]
+        .map((creative) => ({
+          id: creative.id || creative.ad_id,
+          name: creative.name || creative.ad_name || creative.ad_id || "Anúncio",
+          campaign: creative.campaign_name || creative.campaign || "",
+          impressions: Number(creative.impressions || 0),
+          reach: Number(creative.reach || 0),
+          clicks: Number(creative.clicks || 0),
+          ctr: Number.isFinite(creative.ctr) ? creative.ctr : Number(creative.ctr || 0),
+          spend: Number(creative.spend || 0),
+          cpc: Number.isFinite(creative.cpc) ? creative.cpc : Number(creative.cpc || 0),
+          conversions: Number(creative.conversions || 0),
+          cpa: Number.isFinite(creative.cpa) ? creative.cpa : null,
+        }))
+        .sort((a, b) => b.spend - a.spend)
+        .slice(0, 8);
+    }
+    return [];
+  }, [adsData?.creatives]);
   const highlightedSpendIndex = activeSpendBar >= 0 ? activeSpendBar : peakSpendPoint?.index ?? -1;
   const highlightedSpendPoint = highlightedSpendIndex >= 0 ? spendSeries[highlightedSpendIndex] : null;
 
@@ -1788,6 +1809,89 @@ export default function AdsDashboard() {
                     )}
                   </ComposedChart>
                 </ResponsiveContainer>
+              </div>
+            </section>
+
+            {/* 2.5 Top Anúncios - Ranking de criativos */}
+            <section className="ig-growth-clean">
+              <header className="ig-card-header">
+                <div>
+                  <h3>Top anúncios</h3>
+                  <p className="ig-card-subtitle">Criativos com melhor desempenho no período selecionado</p>
+                </div>
+              </header>
+
+              <div style={{ marginTop: "16px", overflowX: "auto" }}>
+                {topCreatives.length ? (
+                  <table
+                    style={{
+                      width: "100%",
+                      borderCollapse: "separate",
+                      borderSpacing: "0 8px",
+                      minWidth: "720px",
+                    }}
+                  >
+                    <thead>
+                      <tr
+                        style={{
+                          background: "transparent",
+                          fontSize: "11px",
+                          fontWeight: "600",
+                          color: "#6b7280",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                        }}
+                      >
+                        <th style={{ textAlign: "left", padding: "8px 12px", width: "28%" }}>Anúncio</th>
+                        <th style={{ textAlign: "left", padding: "8px 12px", width: "24%" }}>Campanha</th>
+                        <th style={{ textAlign: "right", padding: "8px 12px", width: "10%" }}>Impressões</th>
+                        <th style={{ textAlign: "right", padding: "8px 12px", width: "10%" }}>Cliques</th>
+                        <th style={{ textAlign: "right", padding: "8px 12px", width: "8%" }}>CTR</th>
+                        <th style={{ textAlign: "right", padding: "8px 12px", width: "10%" }}>Investimento</th>
+                        <th style={{ textAlign: "right", padding: "8px 12px", width: "10%" }}>CPA</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {topCreatives.map((item) => (
+                        <tr
+                          key={item.id || item.name}
+                          style={{
+                            background: "white",
+                            boxShadow: "0 8px 24px rgba(0,0,0,0.04)",
+                            borderRadius: "12px",
+                          }}
+                        >
+                          <td style={{ padding: "14px 12px", borderTopLeftRadius: "12px", borderBottomLeftRadius: "12px" }}>
+                            <div style={{ fontWeight: 700, color: "#111827", fontSize: "14px" }}>{item.name}</div>
+                            {item.campaign ? (
+                              <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>{item.campaign}</div>
+                            ) : null}
+                          </td>
+                          <td style={{ padding: "14px 12px", color: "#374151", fontSize: "13px" }}>{item.campaign || "—"}</td>
+                          <td style={{ padding: "14px 12px", textAlign: "right", fontWeight: 600, color: "#111827" }}>
+                            {formatNumber(item.impressions)}
+                          </td>
+                          <td style={{ padding: "14px 12px", textAlign: "right", fontWeight: 600, color: "#111827" }}>
+                            {formatNumber(item.clicks)}
+                          </td>
+                          <td style={{ padding: "14px 12px", textAlign: "right", fontWeight: 700, color: "#0ea5e9" }}>
+                            {item.ctr != null ? `${formatPercentage(item.ctr)}%` : "—"}
+                          </td>
+                          <td style={{ padding: "14px 12px", textAlign: "right", fontWeight: 700, color: "#111827" }}>
+                            {formatCurrency(item.spend)}
+                          </td>
+                          <td style={{ padding: "14px 12px", textAlign: "right", fontWeight: 700, color: "#10b981" }}>
+                            {Number.isFinite(item.cpa) ? formatCurrency(item.cpa) : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="ig-empty-state" style={{ padding: "20px" }}>
+                    Sem criativos registrados para o período/conta selecionados.
+                  </div>
+                )}
               </div>
             </section>
 
