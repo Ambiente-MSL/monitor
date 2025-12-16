@@ -529,13 +529,62 @@ export default function AdsDashboard() {
   };
 
   const videoSummary = adsData?.video_summary || {};
-  const videoViews3s = Number(videoSummary.video_views_3s ?? 0);
-  const videoViews10s = Number(videoSummary.video_views_10s ?? 0);
-  const videoViews15s = Number(videoSummary.video_views_15s ?? videoSummary.thruplays ?? 0);
-  const videoViews30s = Number(videoSummary.video_views_30s ?? 0);
+  const videoFromActions = useMemo(() => {
+    const fallback = { views3s: null, views10s: null, views15s: null, views30s: null, avgTime: null, pct: {} };
+    actions.forEach((action) => {
+      const type = (action?.type || "").toString().toLowerCase();
+      const value = Number(action?.value || 0);
+      if (!type) return;
+      if (type === "video_view" || type === "video_views") {
+        fallback.views3s = (fallback.views3s || 0) + value;
+      }
+      if (type === "video_3_sec_watched_actions" || type === "video_view_3s") {
+        fallback.views3s = (fallback.views3s || 0) + value;
+      } else if (type === "video_10_sec_watched_actions" || type === "video_view_10s") {
+        fallback.views10s = (fallback.views10s || 0) + value;
+      } else if (["thruplay", "video_15_sec_watched_actions", "video_play_actions"].includes(type)) {
+        fallback.views15s = (fallback.views15s || 0) + value;
+      } else if (type === "video_30_sec_watched_actions" || type === "video_view_30s") {
+        fallback.views30s = (fallback.views30s || 0) + value;
+      } else if (type === "video_avg_time_watched_actions") {
+        fallback.avgTime = value;
+      } else if (type === "video_p25_watched_actions" || type === "video_view_25p") {
+        fallback.pct.p25 = (fallback.pct.p25 || 0) + value;
+      } else if (type === "video_p50_watched_actions" || type === "video_view_50p") {
+        fallback.pct.p50 = (fallback.pct.p50 || 0) + value;
+      } else if (type === "video_p75_watched_actions" || type === "video_view_75p") {
+        fallback.pct.p75 = (fallback.pct.p75 || 0) + value;
+      } else if (type === "video_p95_watched_actions" || type === "video_view_95p") {
+        fallback.pct.p95 = (fallback.pct.p95 || 0) + value;
+      }
+    });
+    return fallback;
+  }, [actions]);
+
+  const videoViews3s = Number(videoSummary.video_views_3s ?? videoFromActions.views3s ?? 0);
+  const videoViews10s = Number(videoSummary.video_views_10s ?? videoFromActions.views10s ?? 0);
+  const videoViews15s = Number(videoSummary.video_views_15s ?? videoSummary.thruplays ?? videoFromActions.views15s ?? 0);
+  const videoViews30s = Number(videoSummary.video_views_30s ?? videoFromActions.views30s ?? 0);
   const videoAvgTime = Number(
-    videoSummary.video_avg_time_watched != null ? videoSummary.video_avg_time_watched : NaN,
+    videoSummary.video_avg_time_watched != null
+      ? videoSummary.video_avg_time_watched
+      : videoFromActions.avgTime != null
+        ? videoFromActions.avgTime
+        : NaN,
   );
+  const videoDropOff = useMemo(() => {
+    if (Array.isArray(videoSummary.drop_off_points) && videoSummary.drop_off_points.length) {
+      return videoSummary.drop_off_points;
+    }
+    const pct = videoFromActions.pct || {};
+    const entries = [
+      { bucket: "25%", views: Number(pct.p25 || 0) },
+      { bucket: "50%", views: Number(pct.p50 || 0) },
+      { bucket: "75%", views: Number(pct.p75 || 0) },
+      { bucket: "95%", views: Number(pct.p95 || 0) },
+    ].filter((item) => item.views > 0);
+    return entries;
+  }, [videoSummary.drop_off_points, videoFromActions.pct]);
 
   const videoViewSeries = useMemo(() => {
     const base = [
@@ -551,8 +600,11 @@ export default function AdsDashboard() {
   }, [videoViews10s, videoViews15s, videoViews30s, videoViews3s]);
 
   const hasVideoMetrics = useMemo(
-    () => videoViewSeries.some((item) => Number.isFinite(item.value) && item.value > 0) || Number.isFinite(videoAvgTime),
-    [videoAvgTime, videoViewSeries],
+    () =>
+      videoViewSeries.some((item) => Number.isFinite(item.value) && item.value > 0)
+      || Number.isFinite(videoAvgTime)
+      || (videoDropOff && videoDropOff.length > 0),
+    [videoAvgTime, videoDropOff, videoViewSeries],
   );
 
   // manter compatibilidade com seções que ainda usam o nome antigo
@@ -1362,6 +1414,39 @@ export default function AdsDashboard() {
                           <div className="ig-overview-stat__label">Tempo médio assistido</div>
                         </div>
                       </div>
+                      {videoDropOff?.length ? (
+                        <div
+                          style={{
+                            background: "white",
+                            border: "1px solid #e5e7eb",
+                            borderRadius: "12px",
+                            padding: "12px",
+                            display: "grid",
+                            gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+                            gap: "8px",
+                          }}
+                        >
+                          {videoDropOff.map((item) => (
+                            <div
+                              key={item.bucket}
+                              style={{
+                                background: "linear-gradient(135deg, rgba(99,102,241,0.06), rgba(14,165,233,0.08))",
+                                border: "1px solid rgba(99,102,241,0.15)",
+                                borderRadius: "10px",
+                                padding: "10px",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "4px",
+                              }}
+                            >
+                              <span style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>Queda {item.bucket}</span>
+                              <span style={{ fontSize: 18, fontWeight: 700, color: "#0ea5e9" }}>
+                                {formatNumber(item.views || 0)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
                     </div>
                   ) : (
                     <div className="ig-empty-state">Sem dados de vídeo para o período/conta selecionados</div>

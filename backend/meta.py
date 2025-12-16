@@ -1817,6 +1817,8 @@ def ads_highlights(act_id: str, since_str: str, until_str: str):
     # buckets de video
     v3 = v10 = v15 = v30 = 0.0
     vavg = 0.0
+    v_total = 0.0
+    v_pct: Dict[str, float] = {"p25": 0.0, "p50": 0.0, "p75": 0.0, "p95": 0.0}
     conversion_types = (
         "offsite_conversion",
         "onsite_conversion.purchase",
@@ -1853,16 +1855,28 @@ def ads_highlights(act_id: str, since_str: str, until_str: str):
             if "page_follow" in action_type:
                 followers += value
             # capturar ações típicas de vídeo
-            if action_type == "video_3_sec_watched_actions":
+            normalized_action = (action_type or "").lower()
+            if normalized_action in {"video_view", "video_views"}:
+                v_total += value
                 v3 += value
-            elif action_type == "video_10_sec_watched_actions":
+            if normalized_action in {"video_3_sec_watched_actions", "video_view_3s"}:
+                v3 += value
+            elif normalized_action in {"video_10_sec_watched_actions", "video_view_10s"}:
                 v10 += value
-            elif action_type in ("thruplay", "video_15_sec_watched_actions"):
+            elif normalized_action in {"thruplay", "video_15_sec_watched_actions", "video_play_actions"}:
                 v15 += value
-            elif action_type == "video_30_sec_watched_actions":
+            elif normalized_action in {"video_30_sec_watched_actions", "video_view_30s"}:
                 v30 += value
-            elif action_type == "video_avg_time_watched_actions":
+            elif normalized_action == "video_avg_time_watched_actions":
                 vavg += value
+            elif normalized_action in {"video_p25_watched_actions", "video_view_25p"}:
+                v_pct["p25"] += value
+            elif normalized_action in {"video_p50_watched_actions", "video_view_50p"}:
+                v_pct["p50"] += value
+            elif normalized_action in {"video_p75_watched_actions", "video_view_75p"}:
+                v_pct["p75"] += value
+            elif normalized_action in {"video_p95_watched_actions", "video_view_95p"}:
+                v_pct["p95"] += value
 
         campaign_entry = {
             "id": row.get("campaign_id") or row.get("campaign_name"),
@@ -1981,19 +1995,24 @@ def ads_highlights(act_id: str, since_str: str, until_str: str):
         creatives = []
 
     # resumo de vídeo
+    v3_final = int(v3 or v_total)
     video_summary = {
-        "video_views_3s": int(v3),
+        "video_views_3s": v3_final,
         "video_views_10s": int(v10),
         "video_views_15s": int(v15),
         "video_views_30s": int(v30),
         "thruplays": int(v15),
         "video_avg_time_watched": float(vavg) if vavg > 0 else None,
-        "video_completion_rate": round((v15 / v3) * 100.0, 2) if v3 > 0 else None,
+        "video_completion_rate": round((v15 / v3_final) * 100.0, 2) if v3_final > 0 else None,
         "drop_off_points": [
-            {"bucket": "0-3s", "views": int(v3)},
-            {"bucket": "3-10s", "views": int(v10)},
-            {"bucket": "10-15s", "views": int(v15)},
-            {"bucket": "15-30s", "views": int(v30)},
+          {"bucket": "0-3s", "views": int(v3_final)},
+          {"bucket": "3-10s", "views": int(v10)},
+          {"bucket": "10-15s", "views": int(v15)},
+          {"bucket": "15-30s", "views": int(v30)},
+          {"bucket": "25%", "views": int(v_pct["p25"])},
+          {"bucket": "50%", "views": int(v_pct["p50"])},
+          {"bucket": "75%", "views": int(v_pct["p75"])},
+          {"bucket": "95%", "views": int(v_pct["p95"])},
         ],
     }
 
