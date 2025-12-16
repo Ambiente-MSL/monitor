@@ -1968,6 +1968,7 @@ def ads_highlights(act_id: str, since_str: str, until_str: str):
             ctr = float(row.get("ctr", 0) or 0)
             cpc = float(row.get("cpc", 0) or 0)
             ad_conversions = 0.0
+            ad_followers = 0.0
             for action in row.get("actions") or []:
                 action_type = action.get("action_type")
                 if not action_type:
@@ -1975,6 +1976,8 @@ def ads_highlights(act_id: str, since_str: str, until_str: str):
                 value = float(action.get("value", 0) or 0)
                 if any(keyword in action_type for keyword in conversion_types):
                     ad_conversions += value
+                if "page_follow" in action_type:
+                    ad_followers += value
             creatives.append(
                 {
                     "id": row.get("ad_id"),
@@ -1987,6 +1990,8 @@ def ads_highlights(act_id: str, since_str: str, until_str: str):
                     "cpc": cpc,
                     "conversions": int(round(ad_conversions)),
                     "cpa": (spend / ad_conversions) if ad_conversions else None,
+                    "followers": int(round(ad_followers)),
+                    "followers_gained": int(round(ad_followers)),
                 }
             )
     except MetaAPIError:

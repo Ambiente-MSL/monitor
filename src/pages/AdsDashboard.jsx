@@ -806,6 +806,8 @@ export default function AdsDashboard() {
           cpc: Number.isFinite(creative.cpc) ? creative.cpc : Number(creative.cpc || 0),
           conversions: Number(creative.conversions || 0),
           cpa: Number.isFinite(creative.cpa) ? creative.cpa : null,
+          followers: Number(creative.followers || creative.followers_gained || creative.new_followers || 0),
+          previewUrl: creative.preview_url || creative.thumbnail_url || creative.image_url,
         }))
         .sort((a, b) => b.spend - a.spend)
         .slice(0, 8);
@@ -1843,10 +1845,11 @@ export default function AdsDashboard() {
                         }}
                       >
                         <th style={{ textAlign: "left", padding: "8px 12px", width: "28%" }}>Anúncio</th>
-                        <th style={{ textAlign: "left", padding: "8px 12px", width: "24%" }}>Campanha</th>
+                        <th style={{ textAlign: "left", padding: "8px 12px", width: "22%" }}>Campanha</th>
                         <th style={{ textAlign: "right", padding: "8px 12px", width: "10%" }}>Impressões</th>
                         <th style={{ textAlign: "right", padding: "8px 12px", width: "10%" }}>Cliques</th>
                         <th style={{ textAlign: "right", padding: "8px 12px", width: "8%" }}>CTR</th>
+                        <th style={{ textAlign: "right", padding: "8px 12px", width: "10%" }}>Seguidores</th>
                         <th style={{ textAlign: "right", padding: "8px 12px", width: "10%" }}>Investimento</th>
                         <th style={{ textAlign: "right", padding: "8px 12px", width: "10%" }}>CPA</th>
                       </tr>
@@ -1862,10 +1865,44 @@ export default function AdsDashboard() {
                           }}
                         >
                           <td style={{ padding: "14px 12px", borderTopLeftRadius: "12px", borderBottomLeftRadius: "12px" }}>
-                            <div style={{ fontWeight: 700, color: "#111827", fontSize: "14px" }}>{item.name}</div>
-                            {item.campaign ? (
-                              <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>{item.campaign}</div>
-                            ) : null}
+                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                              <div
+                                style={{
+                                  width: 48,
+                                  height: 48,
+                                  borderRadius: 10,
+                                  overflow: "hidden",
+                                  background: "linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)",
+                                  boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                                  flexShrink: 0,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  color: "#fff",
+                                  fontWeight: 700,
+                                }}
+                              >
+                                {item.previewUrl ? (
+                                  <img
+                                    src={item.previewUrl}
+                                    alt={item.name}
+                                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                  />
+                                ) : (
+                                  (item.name || "A").slice(0, 1).toUpperCase()
+                                )}
+                              </div>
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ fontWeight: 700, color: "#111827", fontSize: "14px", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                  {item.name}
+                                </div>
+                                {item.campaign ? (
+                                  <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                    {item.campaign}
+                                  </div>
+                                ) : null}
+                              </div>
+                            </div>
                           </td>
                           <td style={{ padding: "14px 12px", color: "#374151", fontSize: "13px" }}>{item.campaign || "—"}</td>
                           <td style={{ padding: "14px 12px", textAlign: "right", fontWeight: 600, color: "#111827" }}>
@@ -1876,6 +1913,9 @@ export default function AdsDashboard() {
                           </td>
                           <td style={{ padding: "14px 12px", textAlign: "right", fontWeight: 700, color: "#0ea5e9" }}>
                             {item.ctr != null ? `${formatPercentage(item.ctr)}%` : "—"}
+                          </td>
+                          <td style={{ padding: "14px 12px", textAlign: "right", fontWeight: 700, color: "#10b981" }}>
+                            {formatNumber(item.followers || 0)}
                           </td>
                           <td style={{ padding: "14px 12px", textAlign: "right", fontWeight: 700, color: "#111827" }}>
                             {formatCurrency(item.spend)}
