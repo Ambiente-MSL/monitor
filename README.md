@@ -102,3 +102,11 @@ git pull
 docker compose build --pull
 docker compose up -d
 docker compose ps
+
+
+## Performance (carregamento rápido)
+
+- O cache em Postgres é mantido por um scheduler. Em produção, rode o serviço `worker` do `docker-compose.yml` (ele executa `python scheduler_runner.py`).
+- O backend pode iniciar o scheduler internamente via `META_SYNC_AUTOSTART=1` (não recomendado com múltiplos workers). No `docker-compose.yml` o recomendado é `META_SYNC_AUTOSTART=0` e manter o scheduler no `worker`.
+- Para alinhar o prewarm do cache ao mesmo range do frontend, defina `CACHE_WARM_TZ=America/Sao_Paulo` (ou o fuso usado pelos usuários).
+- Para evitar que a primeira carga do Instagram force ingestão/Meta API, faça backfill de histórico: `python backend/jobs/backfill_instagram.py --ensure-standard` (ou ajuste `--days`).

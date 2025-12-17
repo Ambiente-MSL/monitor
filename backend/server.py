@@ -1909,20 +1909,17 @@ def build_instagram_metrics_from_db(ig_id: str, since_ts: int, until_ts: int) ->
     since_date = _unix_to_date(since_ts)
     until_date = _unix_to_date(until_ts)
 
-    _ensure_instagram_daily_metrics(ig_id, since_date, until_date)
-
     period_days = (until_date - since_date).days + 1
     previous_since = since_date - timedelta(days=period_days)
     previous_until = since_date - timedelta(days=1)
-    if previous_since <= previous_until:
-        _ensure_instagram_daily_metrics(ig_id, previous_since, previous_until)
-
     current_data = _load_metrics_map(ig_id, since_date, until_date)
     if not current_data:
         return None
     previous_data = _load_metrics_map(ig_id, previous_since, previous_until) if previous_since <= previous_until else {}
     coverage = _coverage_summary(current_data, since_date, until_date)
     if coverage["covered_days"] == 0:
+        return None
+    if os.getenv("INSTAGRAM_METRICS_REQUIRE_FULL_COVERAGE", "1") != "0" and not coverage.get("has_full_coverage"):
         return None
 
     reach_total = _sum_metric(current_data, "reach")
@@ -2107,7 +2104,9 @@ def build_instagram_metrics_from_db(ig_id: str, since_ts: int, until_ts: int) ->
         },
     ]
 
-    top_posts_payload = _fetch_top_posts_live(ig_id, since_ts, until_ts)
+    # Evita chamadas sincronas à Meta API no endpoint de métricas (isso derruba a performance).
+    # O frontend já carrega posts via /api/instagram/posts quando necessário.
+    top_posts_payload = {"reach": [], "engagement": [], "saves": []}
 
     response = {
         "since": since_ts,
@@ -2678,19 +2677,14 @@ def facebook_metrics():
     except ValueError as err:
         return jsonify({"error": str(err)}), 400
 
-    payload_obj = dict(payload)
-    if not payload_obj.get("reach_timeseries") and since is not None and until is not None:
-        try:
-            refreshed = fetch_facebook_metrics(page_id, since, until, None)
-            if refreshed:
-                payload_obj = dict(refreshed)
-                if isinstance(meta, dict):
-                    meta = dict(meta)
-                    meta["refreshed_missing_reach_timeseries"] = True
-        except Exception:
-            pass
-
+    payload_obj = dict(payload or {})
     _enrich_facebook_metrics_payload(payload_obj)
+
+    # Normaliza reach_timeseries sem forçar nova chamada à Meta API (evita bypass do cache).
+    if not payload_obj.get("reach_timeseries"):
+        page_overview = payload_obj.get("page_overview") or {}
+        if isinstance(page_overview, dict) and isinstance(page_overview.get("reach_timeseries"), list):
+            payload_obj["reach_timeseries"] = page_overview.get("reach_timeseries")
     response = dict(payload_obj)
     response["cache"] = meta
     return jsonify(response)
@@ -2725,8 +2719,16 @@ def facebook_followers():
         return jsonify({"error": "META_PAGE_ID is not configured"}), 500
     since, until = unix_range(request.args)
     try:
-        payload = fetch_facebook_metrics(page_id, since, until, None)
+        payload, meta = get_cached_payload(
+            "facebook_metrics",
+            page_id,
+            since,
+            until,
+            fetcher=fetch_facebook_metrics,
+            platform="facebook",
+        )
     except MetaAPIError as err:
+        mark_cache_error("facebook_metrics", page_id, since, until, None, err.args[0], platform="facebook")
         return meta_error_response(err)
     except ValueError as err:
         return jsonify({"error": str(err)}), 400
@@ -2755,6 +2757,7 @@ def facebook_followers():
         "until": payload.get("until") or until,
         "followers": followers_metric,
     }
+    response["cache"] = meta
     return jsonify(response)
 
 
@@ -2769,8 +2772,16 @@ def facebook_reach():
         return jsonify({"error": "META_PAGE_ID is not configured"}), 500
     since, until = unix_range(request.args)
     try:
-        payload = fetch_facebook_metrics(page_id, since, until, None)
+        payload, meta = get_cached_payload(
+            "facebook_metrics",
+            page_id,
+            since,
+            until,
+            fetcher=fetch_facebook_metrics,
+            platform="facebook",
+        )
     except MetaAPIError as err:
+        mark_cache_error("facebook_metrics", page_id, since, until, None, err.args[0], platform="facebook")
         return meta_error_response(err)
     except ValueError as err:
         return jsonify({"error": str(err)}), 400
@@ -2788,6 +2799,7 @@ def facebook_reach():
         "until": payload.get("until") or until,
         "reach": reach_metric,
     }
+    response["cache"] = meta
     return jsonify(response)
 
 

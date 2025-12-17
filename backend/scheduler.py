@@ -1,7 +1,7 @@
 import logging
 import os
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List, Optional, Set
 from zoneinfo import ZoneInfo
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -24,6 +24,8 @@ DEFAULT_INGEST_LOOKBACK_DAYS = int(os.getenv("INSTAGRAM_INGEST_LOOKBACK_DAYS", "
 DEFAULT_WARM_ENABLED = os.getenv("CACHE_WARM_ENABLED", "1") != "0"
 DEFAULT_WARM_LOOKBACK_DAYS = int(os.getenv("CACHE_WARM_LOOKBACK_DAYS", "7") or "7")
 DEFAULT_WARM_MAX_ACCOUNTS = int(os.getenv("CACHE_WARM_MAX_ACCOUNTS", "50") or "50")
+DEFAULT_WARM_IG_POSTS_LIMIT = int(os.getenv("INSTAGRAM_POSTS_LIMIT", "20") or "20")
+DEFAULT_WARM_FB_POSTS_LIMIT = int(os.getenv("FACEBOOK_POSTS_LIMIT", "8") or "8")
 DEFAULT_CACHE_RETENTION_DAYS = int(os.getenv("CACHE_RETENTION_DAYS", "365") or "365")
 
 
@@ -127,6 +129,7 @@ class MetaSyncScheduler:
                 id="prewarm_dashboards",
                 max_instances=1,
                 coalesce=True,
+                next_run_time=datetime.now(timezone.utc),
             )
 
         self._scheduler.start()
@@ -256,12 +259,22 @@ class MetaSyncScheduler:
 
     def _range_unix(self, days: int) -> tuple[int, int]:
         """
-        Retorna (since, until) em unix segundos para o intervalo de dias finalizado ontem.
+        Retorna (since, until) em unix segundos para o intervalo de dias finalizado ontem,
+        respeitando o timezone local (por padrao o mesmo do ingest).
         """
-        now_utc = datetime.now(timezone.utc)
-        until_dt = (now_utc - timedelta(days=1)).replace(hour=23, minute=59, second=59, microsecond=0)
-        since_dt = until_dt - timedelta(days=days - 1)
-        return int(since_dt.timestamp()), int(until_dt.timestamp())
+        tz_name = os.getenv("CACHE_WARM_TZ") or self._ingest_timezone
+        tz = self._resolve_timezone(tz_name)
+
+        today_local = datetime.now(tz).date()
+        until_date = today_local - timedelta(days=1)
+        since_date = until_date - timedelta(days=days - 1)
+
+        since_local = datetime.combine(since_date, datetime.min.time(), tzinfo=tz)
+        until_local = datetime.combine(until_date, datetime.max.time().replace(microsecond=0), tzinfo=tz)
+
+        since_utc = since_local.astimezone(timezone.utc)
+        until_utc = until_local.astimezone(timezone.utc)
+        return int(since_utc.timestamp()), int(until_utc.timestamp())
 
     def _warm_all_accounts(self) -> None:
         accounts = self._discover_accounts()
@@ -273,15 +286,25 @@ class MetaSyncScheduler:
         warmed = 0
         errors = 0
 
-        def _warm(resource: str, owner_id: str, platform: str) -> None:
+        ig_posts_limit = max(1, min(int(DEFAULT_WARM_IG_POSTS_LIMIT), 25))
+        fb_posts_limit = max(1, min(int(DEFAULT_WARM_FB_POSTS_LIMIT), 25))
+
+        def _warm(
+            resource: str,
+            owner_id: str,
+            platform: str,
+            since_ts_arg: Optional[int],
+            until_ts_arg: Optional[int],
+            extra: Optional[Dict[str, Any]] = None,
+        ) -> None:
             nonlocal warmed, errors
             try:
                 get_cached_payload(
                     resource,
                     owner_id,
-                    since_ts,
-                    until_ts,
-                    extra=None,
+                    since_ts_arg,
+                    until_ts_arg,
+                    extra=extra,
                     force=False,
                     refresh_reason="prewarm_scheduler",
                     platform=platform,
@@ -292,13 +315,29 @@ class MetaSyncScheduler:
                 logger.warning("Falha ao pré-aquecer %s/%s: %s", resource, owner_id, err)
 
         for ig_id in list(accounts["instagram"])[: self._warm_max_accounts]:
-            _warm("instagram_metrics", ig_id, "instagram")
+            _warm("instagram_metrics", ig_id, "instagram", since_ts, until_ts)
+            _warm(
+                "instagram_posts",
+                ig_id,
+                "instagram",
+                None,
+                None,
+                extra={"limit": ig_posts_limit},
+            )
 
         for page_id in list(accounts["facebook"])[: self._warm_max_accounts]:
-            _warm("facebook_metrics", page_id, "facebook")
+            _warm("facebook_metrics", page_id, "facebook", since_ts, until_ts)
+            _warm(
+                "facebook_posts",
+                page_id,
+                "facebook",
+                since_ts,
+                until_ts,
+                extra={"limit": fb_posts_limit},
+            )
 
         for ad_id in list(accounts["ads"])[: self._warm_max_accounts]:
-            _warm("ads_highlights", ad_id, "ads")
+            _warm("ads_highlights", ad_id, "ads", since_ts, until_ts)
 
         logger.info(
             "Pré-aquecimento concluído: %s chamadas (erros: %s) | contas IG: %s, FB: %s, Ads: %s | range %s - %s",
