@@ -1257,7 +1257,7 @@ useEffect(() => {
             </section>
 
             {/* Card de Performance de Conteúdo */}
-            <section className="ig-growth-clean fb-content-performance">
+            <section className="ig-growth-clean fb-content-performance" style={{ display: "none" }}>
               <header className="ig-card-header">
                 <div>
                   <h3>Performance de Conteúdo</h3>
