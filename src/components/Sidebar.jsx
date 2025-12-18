@@ -8,25 +8,23 @@ import {
   PanelLeft,
   Settings,
   Shield,
-  TrendingUp,
 } from 'lucide-react';
 import logo from '../assets/logo-msl.svg';
 import { useAuth } from '../context/AuthContext';
 
 const DASHBOARD_ITEMS = [
-  { to: '/', icon: LayoutDashboard, label: 'Visão geral', end: true, iconClass: 'icon-overview' },
-  { to: '/facebook', icon: Facebook, label: 'Facebook', iconClass: 'icon-facebook' },
-  { to: '/instagram', icon: Instagram, label: 'Instagram', iconClass: 'icon-instagram' },
-  { to: '/ads', icon: TrendingUp, label: 'Ads', iconClass: 'icon-ads' },
+  { to: '/', icon: LayoutDashboard, label: 'Visão geral', end: true },
+  { to: '/facebook', icon: Facebook, label: 'Facebook' },
+  { to: '/instagram', icon: Instagram, label: 'Instagram' },
 ];
 
 const ADMIN_ITEMS = [
-  { to: '/relatorios', icon: BarChart3, label: 'Relatórios', iconClass: 'icon-reports' },
-  { to: '/configuracoes', icon: Settings, label: 'Configurações', iconClass: 'icon-settings' },
-  { to: '/admin', icon: Shield, label: 'Admin', iconClass: 'icon-admin' },
+  { to: '/relatorios', icon: BarChart3, label: 'Relatórios' },
+  { to: '/configuracoes', icon: Settings, label: 'Configurações' },
+  { to: '/admin', icon: Shield, label: 'Admin' },
 ];
 
-const NavItem = ({ to, icon: Icon, label, end, iconClass }) => {
+const NavItem = ({ to, icon: Icon, label, end }) => {
   const { search } = useLocation();
   const destination = search ? { pathname: to, search } : to;
 
@@ -40,7 +38,7 @@ const NavItem = ({ to, icon: Icon, label, end, iconClass }) => {
         `sidebar__nav-item${isActive ? ' sidebar__nav-item--active' : ''}`
       }
     >
-      <Icon size={18} strokeWidth={1.6} className={iconClass} />
+      <Icon size={18} strokeWidth={1.6} />
       <span>{label}</span>
     </NavLink>
   );

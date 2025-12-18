@@ -524,43 +524,6 @@ body.theme-light {
   filter: none;
 }
 
-/* Colored icons */
-.icon-instagram {
-  color: #E1306C !important;
-}
-
-.icon-facebook {
-  color: #1877F2 !important;
-}
-
-.icon-ads {
-  color: #0066CC !important;
-}
-
-.icon-reports {
-  color: #10B981 !important;
-}
-
-.sidebar__nav-item:hover .icon-instagram,
-.sidebar__nav-item--active .icon-instagram {
-  color: #E1306C !important;
-}
-
-.sidebar__nav-item:hover .icon-facebook,
-.sidebar__nav-item--active .icon-facebook {
-  color: #1877F2 !important;
-}
-
-.sidebar__nav-item:hover .icon-ads,
-.sidebar__nav-item--active .icon-ads {
-  color: #0066CC !important;
-}
-
-.sidebar__nav-item:hover .icon-reports,
-.sidebar__nav-item--active .icon-reports {
-  color: #10B981 !important;
-}
-
 
 .sidebar__footer {
   margin-top: auto;
@@ -9128,6 +9091,25 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Colored icons for Navigation Hero */
+.hero-icon-instagram {
+  color: #E1306C !important;
+}
+
+.hero-icon-facebook {
+  color: #1877F2 !important;
+}
+
+.hero-icon-ads {
+  color: #0066CC !important;
+}
+
+.hero-icon-reports {
+  color: #10B981 !important;
+}
+
+/* Settings and Admin keep default colors */
 
 /* Título */
 .ig-clean-title {
