@@ -2837,24 +2837,20 @@ body:has(.facebook-dashboard--clean) .topbar__account .account-dropdown__item-na
   font-weight: 500;
 }
 
-/* Admin Dashboard - Remover espaços em branco no topo */
+/* Admin Dashboard - Manter alinhamento consistente com outras páginas */
 .admin-dashboard--clean {
-  margin: 0 !important;
-  padding: 0 !important;
+  margin: 0;
+  padding: 0;
 }
 
 .admin-dashboard--clean .ig-clean-container {
-  margin: 0 !important;
-  padding: 0 !important;
+  margin: 0 auto;
+  padding: 24px 24px 32px;
+  max-width: 1400px;
 }
 
 .admin-dashboard--clean .ig-clean-header {
-  margin-top: 0 !important;
-}
-
-body:has(.admin-dashboard--clean) {
-  padding-top: 0 !important;
-  margin-top: 0 !important;
+  margin-top: 0;
 }
 
 .filter-button {
@@ -9093,19 +9089,31 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 }
 
 /* Colored icons for Navigation Hero */
-.hero-icon-instagram {
+.hero-icon-instagram,
+.ig-clean-tab .hero-icon-instagram,
+.ig-clean-tab:hover .hero-icon-instagram,
+.ig-clean-tab--active .hero-icon-instagram {
   color: #E1306C !important;
 }
 
-.hero-icon-facebook {
+.hero-icon-facebook,
+.ig-clean-tab .hero-icon-facebook,
+.ig-clean-tab:hover .hero-icon-facebook,
+.ig-clean-tab--active .hero-icon-facebook {
   color: #1877F2 !important;
 }
 
-.hero-icon-ads {
+.hero-icon-ads,
+.ig-clean-tab .hero-icon-ads,
+.ig-clean-tab:hover .hero-icon-ads,
+.ig-clean-tab--active .hero-icon-ads {
   color: #0066CC !important;
 }
 
-.hero-icon-reports {
+.hero-icon-reports,
+.ig-clean-tab .hero-icon-reports,
+.ig-clean-tab:hover .hero-icon-reports,
+.ig-clean-tab--active .hero-icon-reports {
   color: #10B981 !important;
 }
 

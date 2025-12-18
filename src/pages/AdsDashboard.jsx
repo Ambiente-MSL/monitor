@@ -45,12 +45,12 @@ const API_BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 
 // Hero Tabs
 const HERO_TABS = [
-  { id: "instagram", label: "Instagram", href: "/instagram", icon: InstagramIcon },
-  { id: "facebook", label: "Facebook", href: "/facebook", icon: Facebook },
-  { id: "ads", label: "Ads", href: "/ads", icon: BarChart3 },
-  { id: "reports", label: "Relatórios", href: "/relatorios", icon: FileText },
-  { id: "settings", label: "Configurações", href: "/configuracoes", icon: Settings },
-  { id: "admin", label: "Admin", href: "/admin", icon: Shield },
+  { id: "instagram", label: "Instagram", href: "/instagram", icon: InstagramIcon, iconClass: "hero-icon-instagram" },
+  { id: "facebook", label: "Facebook", href: "/facebook", icon: Facebook, iconClass: "hero-icon-facebook" },
+  { id: "ads", label: "Ads", href: "/ads", icon: BarChart3, iconClass: "hero-icon-ads" },
+  { id: "reports", label: "Relatórios", href: "/relatorios", icon: FileText, iconClass: "hero-icon-reports" },
+  { id: "settings", label: "Configurações", href: "/configuracoes", icon: Settings, iconClass: "hero-icon-settings" },
+  { id: "admin", label: "Admin", href: "/admin", icon: Shield, iconClass: "hero-icon-admin" },
 ];
 
 const MOCK_SPEND_SERIES = [
@@ -854,7 +854,7 @@ export default function AdsDashboard() {
                   to={linkTarget}
                   className={`ig-clean-tab${isActive ? " ig-clean-tab--active" : ""}`}
                 >
-                  <Icon size={18} />
+                  <Icon size={18} className={tab.iconClass} />
                   <span>{tab.label}</span>
                 </Link>
               ) : (
@@ -864,7 +864,7 @@ export default function AdsDashboard() {
                   className={`ig-clean-tab${isActive ? " ig-clean-tab--active" : ""}`}
                   disabled={!tab.href}
                 >
-                  <Icon size={18} />
+                  <Icon size={18} className={tab.iconClass} />
                   <span>{tab.label}</span>
                 </button>
               );

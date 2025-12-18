@@ -4,12 +4,12 @@ import { Shield, UserCog, AlertCircle, CheckCircle, BarChart3, FileText, Setting
 import { useAuth } from '../context/AuthContext';
 
 const HERO_TABS = [
-  { id: "instagram", label: "Instagram", href: "/instagram", icon: InstagramIcon },
-  { id: "facebook", label: "Facebook", href: "/facebook", icon: Facebook },
-  { id: "ads", label: "Ads", href: "/ads", icon: BarChart3 },
-  { id: "reports", label: "Relatórios", href: "/relatorios", icon: FileText },
-  { id: "settings", label: "Configurações", href: "/configuracoes", icon: Settings },
-  { id: "admin", label: "Admin", href: "/admin", icon: Shield },
+  { id: "instagram", label: "Instagram", href: "/instagram", icon: InstagramIcon, iconClass: "hero-icon-instagram" },
+  { id: "facebook", label: "Facebook", href: "/facebook", icon: Facebook, iconClass: "hero-icon-facebook" },
+  { id: "ads", label: "Ads", href: "/ads", icon: BarChart3, iconClass: "hero-icon-ads" },
+  { id: "reports", label: "Relatórios", href: "/relatorios", icon: FileText, iconClass: "hero-icon-reports" },
+  { id: "settings", label: "Configurações", href: "/configuracoes", icon: Settings, iconClass: "hero-icon-settings" },
+  { id: "admin", label: "Admin", href: "/admin", icon: Shield, iconClass: "hero-icon-admin" },
 ];
 
 export default function Admin() {
@@ -152,7 +152,7 @@ export default function Admin() {
   if (role !== 'admin') {
     return (
       <div className="admin-dashboard admin-dashboard--clean">
-        <div className="ig-clean-container" style={{ padding: 0 }}>
+        <div className="ig-clean-container">
           {/* Header com Logo Admin e Tabs */}
           <div className="ig-clean-header">
             <div className="ig-clean-header__brand">
@@ -175,7 +175,7 @@ export default function Admin() {
                     to={linkTarget}
                     className={`ig-clean-tab${isActive ? " ig-clean-tab--active" : ""}`}
                   >
-                    <Icon size={18} />
+                    <Icon size={18} className={tab.iconClass} />
                     <span>{tab.label}</span>
                   </Link>
                 ) : null;
@@ -204,7 +204,7 @@ export default function Admin() {
 
   return (
     <div className="admin-dashboard admin-dashboard--clean">
-      <div className="ig-clean-container" style={{ padding: 0 }}>
+      <div className="ig-clean-container">
         {/* Header com Logo Admin e Tabs */}
         <div className="ig-clean-header">
           <div className="ig-clean-header__brand">
@@ -227,7 +227,7 @@ export default function Admin() {
                   to={linkTarget}
                   className={`ig-clean-tab${isActive ? " ig-clean-tab--active" : ""}`}
                 >
-                  <Icon size={18} />
+                  <Icon size={18} className={tab.iconClass} />
                   <span>{tab.label}</span>
                 </Link>
               ) : null;
