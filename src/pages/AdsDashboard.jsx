@@ -272,6 +272,8 @@ const ADS_TOPBAR_PRESETS = [
   { id: "7d", label: "7 dias", days: 7 },
   { id: "1m", label: "1 mês", days: 30 },
   { id: "3m", label: "3 meses", days: 90 },
+  { id: "6m", label: "6 meses", days: 180 },
+  { id: "1y", label: "1 ano", days: 365 },
 ];
 
 const DEFAULT_ADS_RANGE_DAYS = 7;
