@@ -965,7 +965,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
         const friendlyMessage = rawMessage.includes("<") ? "Não foi possível carregar os posts (erro 502)." : rawMessage;
         setPosts([]);
         setAccountInfo(null);
-        setPostsError(friendlyMessage || "Não foi possível carregar os posts.");
+        setPostsError(friendlyMessage || "Não foi possível carregar os posts!.");
       } finally {
         if (!cancelled) {
           setLoadingPosts(false);
