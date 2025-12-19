@@ -533,7 +533,16 @@ export default function AdsDashboard() {
 
   const videoSummary = adsData?.video_summary || {};
   const videoFromActions = useMemo(() => {
-    const fallback = { views3s: null, views10s: null, views15s: null, views30s: null, avgTime: null, pct: {} };
+    const fallback = {
+      views3s: null,
+      views10s: null,
+      views15s: null,
+      views30s: null,
+      avgTime: null,
+      pct: {},
+      thruplay: 0,
+      video_play: 0
+    };
     actions.forEach((action) => {
       const type = (action?.type || "").toString().toLowerCase();
       const value = Number(action?.value || 0);
@@ -545,8 +554,11 @@ export default function AdsDashboard() {
         fallback.views3s = (fallback.views3s || 0) + value;
       } else if (type === "video_10_sec_watched_actions" || type === "video_view_10s") {
         fallback.views10s = (fallback.views10s || 0) + value;
-      } else if (["thruplay", "video_15_sec_watched_actions", "video_play_actions"].includes(type)) {
+      } else if (["thruplay", "video_15_sec_watched_actions"].includes(type)) {
         fallback.views15s = (fallback.views15s || 0) + value;
+        fallback.thruplay = (fallback.thruplay || 0) + value;
+      } else if (type === "video_play_actions" || type === "video_play") {
+        fallback.video_play = (fallback.video_play || 0) + value;
       } else if (type === "video_30_sec_watched_actions" || type === "video_view_30s") {
         fallback.views30s = (fallback.views30s || 0) + value;
       } else if (type === "video_avg_time_watched_actions") {
@@ -557,8 +569,8 @@ export default function AdsDashboard() {
         fallback.pct.p50 = (fallback.pct.p50 || 0) + value;
       } else if (type === "video_p75_watched_actions" || type === "video_view_75p") {
         fallback.pct.p75 = (fallback.pct.p75 || 0) + value;
-      } else if (type === "video_p95_watched_actions" || type === "video_view_95p") {
-        fallback.pct.p95 = (fallback.pct.p95 || 0) + value;
+      } else if (type === "video_p100_watched_actions" || type === "video_view_100p") {
+        fallback.pct.p100 = (fallback.pct.p100 || 0) + value;
       }
     });
     return fallback;
@@ -575,16 +587,23 @@ export default function AdsDashboard() {
         ? videoFromActions.avgTime
         : NaN,
   );
+
+  // Novas métricas de vídeo
+  const videoThruPlays = Number(videoSummary.thruplays ?? videoFromActions.thruplay ?? 0);
+  const videoPlays = Number(videoSummary.video_play_actions ?? videoFromActions.video_play ?? 0);
+  const totalSpendValue = Number(totals.spend || 0);
+  const costPerThruPlay = videoThruPlays > 0 ? (totalSpendValue / videoThruPlays) : 0;
+  const thruPlayRate = videoPlays > 0 ? ((videoThruPlays / videoPlays) * 100) : 0;
   const videoDropOff = useMemo(() => {
     if (Array.isArray(videoSummary.drop_off_points) && videoSummary.drop_off_points.length) {
       return videoSummary.drop_off_points;
     }
     const pct = videoFromActions.pct || {};
     const entries = [
-      { bucket: "25%", views: Number(pct.p25 || 0) },
-      { bucket: "50%", views: Number(pct.p50 || 0) },
-      { bucket: "75%", views: Number(pct.p75 || 0) },
-      { bucket: "95%", views: Number(pct.p95 || 0) },
+      { bucket: "25%", quartil: "25%", views: Number(pct.p25 || 0), percentage: 25 },
+      { bucket: "50%", quartil: "50%", views: Number(pct.p50 || 0), percentage: 50 },
+      { bucket: "75%", quartil: "75%", views: Number(pct.p75 || 0), percentage: 75 },
+      { bucket: "100%", quartil: "100%", views: Number(pct.p100 || 0), percentage: 100 },
     ].filter((item) => item.views > 0);
     return entries;
   }, [videoSummary.drop_off_points, videoFromActions.pct]);
@@ -1139,42 +1158,225 @@ export default function AdsDashboard() {
               <div className="ig-profile-vertical__divider" />
 
               <div className="ig-profile-vertical__engagement" style={{ position: "relative" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                  <h4 style={{ margin: 0 }}>Views de vídeos pagos</h4>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 14,
+                      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      boxShadow: "0 4px 12px rgba(102, 126, 234, 0.3)"
+                    }}>
+                      <Activity size={24} color="white" />
+                    </div>
+                    <div>
+                      <h4 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>📹 Performance de Vídeos</h4>
+                      <p style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>ThruPlay, retenção e engajamento</p>
+                    </div>
+                  </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#6b7280", fontSize: 12 }}>
                     <Info size={14} />
-                    <span>Dados de todos os vídeos em anúncios pagos</span>
+                    <span>Anúncios pagos no período</span>
                   </div>
                 </div>
 
-                <div
-                  style={{
-                    padding: "12px",
-                    borderRadius: "14px",
-                    background: "linear-gradient(135deg, rgba(59,130,246,0.08), rgba(14,165,233,0.12))",
-                    border: "1px solid rgba(59,130,246,0.15)",
-                  }}
-                >
-                  {adsLoading ? (
-                    <div className="ig-empty-state">Carregando...</div>
-                  ) : hasVideoMetrics ? (
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "12px" }}>
-                      <div style={{ height: 220 }}>
+                {adsLoading ? (
+                  <div className="ig-empty-state">Carregando...</div>
+                ) : hasVideoMetrics ? (
+                  <div style={{ display: "grid", gap: 20 }}>
+                    {/* KPIs Principais - ThruPlay */}
+                    <div style={{
+                      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                      borderRadius: 16,
+                      padding: 24,
+                      color: "white",
+                      boxShadow: "0 8px 24px rgba(102, 126, 234, 0.25)"
+                    }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 20 }}>
+                        {/* ThruPlay % */}
+                        <div>
+                          <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8, fontWeight: 600 }}>
+                            Taxa de ThruPlay
+                          </div>
+                          <div style={{ fontSize: 36, fontWeight: 800, marginBottom: 4 }}>
+                            {thruPlayRate.toFixed(1)}%
+                          </div>
+                          <div style={{ fontSize: 12, opacity: 0.8 }}>
+                            {formatNumber(videoThruPlays)} de {formatNumber(videoPlays)} visualizações
+                          </div>
+                        </div>
+
+                        {/* Custo por ThruPlay */}
+                        <div>
+                          <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8, fontWeight: 600 }}>
+                            Custo por ThruPlay
+                          </div>
+                          <div style={{ fontSize: 36, fontWeight: 800, marginBottom: 4 }}>
+                            {formatCurrency(costPerThruPlay)}
+                          </div>
+                          <div style={{ fontSize: 12, opacity: 0.8 }}>
+                            {formatNumber(videoThruPlays)} ThruPlays
+                          </div>
+                        </div>
+
+                        {/* Tempo médio */}
+                        <div>
+                          <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8, fontWeight: 600 }}>
+                            Tempo médio assistido
+                          </div>
+                          <div style={{ fontSize: 36, fontWeight: 800, marginBottom: 4 }}>
+                            {formatDuration(videoAvgTime)}
+                          </div>
+                          <div style={{ fontSize: 12, opacity: 0.8 }}>
+                            Por visualização
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Gráfico de Retenção por Quartil */}
+                    {videoDropOff?.length ? (
+                      <div style={{
+                        background: "white",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: 16,
+                        padding: 20,
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.04)"
+                      }}>
+                        <h5 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700, color: "#111827" }}>
+                          📊 Retenção por Quartil
+                        </h5>
+
+                        <div style={{ height: 280 }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart
+                              data={videoDropOff}
+                              margin={{ top: 20, right: 30, bottom: 20, left: 20 }}
+                            >
+                              <defs>
+                                <linearGradient id="retentionGradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="#667eea" stopOpacity={1} />
+                                  <stop offset="100%" stopColor="#764ba2" stopOpacity={0.8} />
+                                </linearGradient>
+                              </defs>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                              <XAxis
+                                dataKey="quartil"
+                                tick={{ fill: "#6b7280", fontSize: 12, fontWeight: 600 }}
+                                axisLine={{ stroke: "#e5e7eb" }}
+                                tickLine={false}
+                                label={{ value: "Quartil de retenção", position: "insideBottom", offset: -10, style: { fill: "#9ca3af", fontSize: 12 } }}
+                              />
+                              <YAxis
+                                tick={{ fill: "#6b7280", fontSize: 12 }}
+                                axisLine={false}
+                                tickLine={false}
+                                tickFormatter={(value) => formatNumber(value)}
+                                label={{ value: "Visualizações", angle: -90, position: "insideLeft", style: { fill: "#9ca3af", fontSize: 12 } }}
+                              />
+                              <Tooltip
+                                cursor={{ fill: "rgba(102, 126, 234, 0.1)" }}
+                                content={({ active, payload }) => {
+                                  if (!active || !payload?.length) return null;
+                                  const item = payload[0]?.payload;
+                                  const total = videoPlays > 0 ? videoPlays : 1;
+                                  const retention = ((item?.views / total) * 100).toFixed(1);
+                                  return (
+                                    <div className="ig-tooltip" style={{ minWidth: 200 }}>
+                                      <span className="ig-tooltip__title">Quartil {item?.quartil}</span>
+                                      <div className="ig-tooltip__row">
+                                        <span>Visualizações</span>
+                                        <strong>{formatNumber(item?.views || 0)}</strong>
+                                      </div>
+                                      <div className="ig-tooltip__row">
+                                        <span>Retenção</span>
+                                        <strong style={{ color: "#667eea" }}>{retention}%</strong>
+                                      </div>
+                                    </div>
+                                  );
+                                }}
+                              />
+                              <Bar
+                                dataKey="views"
+                                fill="url(#retentionGradient)"
+                                radius={[8, 8, 0, 0]}
+                                maxBarSize={80}
+                              >
+                                {videoDropOff.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} />
+                                ))}
+                              </Bar>
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+
+                        {/* Legenda visual de retenção */}
+                        <div style={{
+                          marginTop: 20,
+                          padding: 16,
+                          background: "linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05))",
+                          borderRadius: 12,
+                          display: "grid",
+                          gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+                          gap: 12
+                        }}>
+                          {videoDropOff.map((item, idx) => {
+                            const total = videoPlays > 0 ? videoPlays : 1;
+                            const retention = ((item.views / total) * 100).toFixed(1);
+                            const colors = ["#10b981", "#f59e0b", "#f97316", "#ef4444"];
+                            return (
+                              <div key={idx} style={{
+                                textAlign: "center",
+                                padding: 12,
+                                background: "white",
+                                borderRadius: 10,
+                                border: `2px solid ${colors[idx]}30`
+                              }}>
+                                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600, marginBottom: 4 }}>
+                                  {item.quartil}
+                                </div>
+                                <div style={{ fontSize: 20, fontWeight: 800, color: colors[idx], marginBottom: 2 }}>
+                                  {retention}%
+                                </div>
+                                <div style={{ fontSize: 10, color: "#9ca3af" }}>
+                                  {formatNumber(item.views)} views
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {/* Views por duração */}
+                    <div style={{
+                      background: "white",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: 16,
+                      padding: 20,
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.04)"
+                    }}>
+                      <h5 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700, color: "#111827" }}>
+                        ⏱️ Views por duração
+                      </h5>
+                      <div style={{ height: 200 }}>
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart
                             data={videoViewSeries}
                             layout="vertical"
-                            margin={{ top: 10, right: 20, bottom: 10, left: 30 }}
-                            barCategoryGap={14}
+                            margin={{ top: 10, right: 30, bottom: 10, left: 50 }}
                           >
                             <defs>
-                              <linearGradient id="adsVideoBar" x1="0" y1="0" x2="1" y2="0">
+                              <linearGradient id="durationGradient" x1="0" y1="0" x2="1" y2="0">
                                 <stop offset="0%" stopColor="#0ea5e9" />
                                 <stop offset="50%" stopColor="#6366f1" />
                                 <stop offset="100%" stopColor="#a855f7" />
                               </linearGradient>
                             </defs>
-                            <CartesianGrid strokeDasharray="3 6" horizontal={false} stroke="#e5e7eb" />
+                            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
                             <XAxis
                               type="number"
                               tick={{ fill: "#6b7280", fontSize: 11 }}
@@ -1185,8 +1387,8 @@ export default function AdsDashboard() {
                             <YAxis
                               type="category"
                               dataKey="label"
-                              width={32}
-                              tick={{ fill: "#111827", fontWeight: 700, fontSize: 12 }}
+                              width={45}
+                              tick={{ fill: "#111827", fontWeight: 700, fontSize: 13 }}
                               axisLine={false}
                               tickLine={false}
                             />
@@ -1197,7 +1399,7 @@ export default function AdsDashboard() {
                                 const item = payload[0]?.payload;
                                 return (
                                   <div className="ig-tooltip">
-                                    <span className="ig-tooltip__title">{`Views ${item?.label}`}</span>
+                                    <span className="ig-tooltip__title">Views {item?.label}</span>
                                     <div className="ig-tooltip__row">
                                       <span>Total</span>
                                       <strong>{formatNumber(item?.value || 0)}</strong>
@@ -1206,65 +1408,29 @@ export default function AdsDashboard() {
                                 );
                               }}
                             />
-                            <Bar dataKey="value" radius={[6, 6, 6, 6]} fill="url(#adsVideoBar)" />
+                            <Bar dataKey="value" radius={[0, 8, 8, 0]} fill="url(#durationGradient)" maxBarSize={35} />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
-
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "10px" }}>
-                        <div
-                          className="ig-overview-stat"
-                          style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "12px", padding: "12px" }}
-                        >
-                          <div className="ig-overview-stat__value">{formatNumber(videoViews15s)}</div>
-                          <div className="ig-overview-stat__label">Views 15s (thruplays)</div>
-                        </div>
-                        <div
-                          className="ig-overview-stat"
-                          style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "12px", padding: "12px" }}
-                        >
-                          <div className="ig-overview-stat__value">{formatDuration(videoAvgTime)}</div>
-                          <div className="ig-overview-stat__label">Tempo médio assistido</div>
-                        </div>
-                      </div>
-                      {videoDropOff?.length ? (
-                        <div
-                          style={{
-                            background: "white",
-                            border: "1px solid #e5e7eb",
-                            borderRadius: "12px",
-                            padding: "12px",
-                            display: "grid",
-                            gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
-                            gap: "8px",
-                          }}
-                        >
-                          {videoDropOff.map((item) => (
-                            <div
-                              key={item.bucket}
-                              style={{
-                                background: "linear-gradient(135deg, rgba(99,102,241,0.06), rgba(14,165,233,0.08))",
-                                border: "1px solid rgba(99,102,241,0.15)",
-                                borderRadius: "10px",
-                                padding: "10px",
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: "4px",
-                              }}
-                            >
-                              <span style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>Queda {item.bucket}</span>
-                              <span style={{ fontSize: 18, fontWeight: 700, color: "#0ea5e9" }}>
-                                {formatNumber(item.views || 0)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : null}
                     </div>
-                  ) : (
-                    <div className="ig-empty-state">Sem dados de vídeo para o período/conta selecionados</div>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <div style={{
+                    padding: 48,
+                    textAlign: "center",
+                    background: "linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05))",
+                    borderRadius: 16,
+                    border: "2px dashed rgba(102, 126, 234, 0.2)"
+                  }}>
+                    <Activity size={48} color="#667eea" style={{ opacity: 0.5, marginBottom: 16 }} />
+                    <div style={{ fontSize: 16, fontWeight: 600, color: "#6b7280", marginBottom: 8 }}>
+                      Sem dados de vídeo
+                    </div>
+                    <div style={{ fontSize: 13, color: "#9ca3af" }}>
+                      Nenhum anúncio de vídeo encontrado para o período/conta selecionados
+                    </div>
+                  </div>
+                )}
               </div>
             </section>
 
