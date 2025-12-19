@@ -40,6 +40,7 @@ import { useAccounts } from "../context/AccountsContext";
 import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import { useAuth } from "../context/AuthContext";
 import useQueryState from "../hooks/useQueryState";
+import BrazilMap from "../components/BrazilMap";
 
 const API_BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 
@@ -1620,7 +1621,7 @@ export default function AdsDashboard() {
                     gap: '32px',
                     alignItems: 'start'
                   }}>
-                    {/* Mapa do Brasil SVG - Maior e mais centrado */}
+                    {/* Mapa do Brasil com escala de cores */}
                     <div style={{
                       position: 'relative',
                       width: '100%',
@@ -1632,199 +1633,12 @@ export default function AdsDashboard() {
                       borderRadius: '16px',
                       border: '1px solid #e5e7eb'
                     }}>
-                      <svg viewBox="0 0 500 600" style={{ width: '100%', height: 'auto', maxWidth: '600px' }}>
-                        {/* Mapa do Brasil detalhado */}
-                        <g transform="translate(50, 20)">
-                          {/* Acre */}
-                          <path id="AC" d="M50,150 L70,140 L80,150 L75,165 L60,170 L50,160 Z"
-                            fill={spendByRegion.find(r => r.name === 'Acre' || r.name === 'AC')? '#6366f1' : '#f3f4f6'}
-                            stroke="#9ca3af" strokeWidth="1" opacity="0.9">
-                            <title>Acre - {formatCurrency(spendByRegion.find(r => r.name === 'Acre' || r.name === 'AC')?.value || 0)}</title>
-                          </path>
-
-                          {/* Amazonas */}
-                          <path id="AM" d="M80,150 L120,130 L150,140 L160,160 L140,180 L100,170 L75,165 Z"
-                            fill={spendByRegion.find(r => r.name === 'Amazonas' || r.name === 'AM')? '#6366f1' : '#f3f4f6'}
-                            stroke="#9ca3af" strokeWidth="1" opacity="0.9">
-                            <title>Amazonas - {formatCurrency(spendByRegion.find(r => r.name === 'Amazonas' || r.name === 'AM')?.value || 0)}</title>
-                          </path>
-
-                          {/* Roraima */}
-                          <path id="RR" d="M120,100 L140,90 L155,100 L150,120 L130,125 L120,110 Z"
-                            fill={spendByRegion.find(r => r.name === 'Roraima' || r.name === 'RR')? '#6366f1' : '#f3f4f6'}
-                            stroke="#9ca3af" strokeWidth="1" opacity="0.9">
-                            <title>Roraima - {formatCurrency(spendByRegion.find(r => r.name === 'Roraima' || r.name === 'RR')?.value || 0)}</title>
-                          </path>
-
-                          {/* Pará */}
-                          <path id="PA" d="M160,160 L200,150 L230,160 L240,180 L220,200 L180,195 L160,185 Z"
-                            fill={spendByRegion.find(r => r.name === 'Pará' || r.name === 'PA')? '#6366f1' : '#f3f4f6'}
-                            stroke="#9ca3af" strokeWidth="1" opacity="0.9">
-                            <title>Pará - {formatCurrency(spendByRegion.find(r => r.name === 'Pará' || r.name === 'PA')?.value || 0)}</title>
-                          </path>
-
-                          {/* Amapá */}
-                          <path id="AP" d="M230,135 L245,130 L255,145 L250,160 L235,158 Z"
-                            fill={spendByRegion.find(r => r.name === 'Amapá' || r.name === 'AP')? '#6366f1' : '#f3f4f6'}
-                            stroke="#9ca3af" strokeWidth="1" opacity="0.9">
-                            <title>Amapá - {formatCurrency(spendByRegion.find(r => r.name === 'Amapá' || r.name === 'AP')?.value || 0)}</title>
-                          </path>
-
-                          {/* Tocantins */}
-                          <path id="TO" d="M220,200 L240,195 L250,210 L245,230 L225,230 L215,215 Z"
-                            fill={spendByRegion.find(r => r.name === 'Tocantins' || r.name === 'TO')? '#6366f1' : '#f3f4f6'}
-                            stroke="#9ca3af" strokeWidth="1" opacity="0.9">
-                            <title>Tocantins - {formatCurrency(spendByRegion.find(r => r.name === 'Tocantins' || r.name === 'TO')?.value || 0)}</title>
-                          </path>
-
-                          {/* Maranhão */}
-                          <path id="MA" d="M240,180 L270,175 L285,190 L280,210 L260,215 L245,205 Z"
-                            fill={spendByRegion.find(r => r.name === 'Maranhão' || r.name === 'MA')? '#8b5cf6' : '#f3f4f6'}
-                            stroke="#9ca3af" strokeWidth="1" opacity="0.9">
-                            <title>Maranhão - {formatCurrency(spendByRegion.find(r => r.name === 'Maranhão' || r.name === 'MA')?.value || 0)}</title>
-                          </path>
-
-                          {/* Piauí */}
-                          <path id="PI" d="M280,210 L295,205 L305,220 L300,235 L285,238 L275,225 Z"
-                            fill={spendByRegion.find(r => r.name === 'Piauí' || r.name === 'PI')? '#8b5cf6' : '#f3f4f6'}
-                            stroke="#9ca3af" strokeWidth="1" opacity="0.9">
-                            <title>Piauí - {formatCurrency(spendByRegion.find(r => r.name === 'Piauí' || r.name === 'PI')?.value || 0)}</title>
-                          </path>
-
-                          {/* Ceará */}
-                          <path id="CE" d="M295,205 L315,198 L325,210 L320,225 L305,220 Z"
-                            fill={spendByRegion.find(r => r.name === 'Ceará' || r.name === 'CE')? '#8b5cf6' : '#f3f4f6'}
-                            stroke="#9ca3af" strokeWidth="1" opacity="0.9">
-                            <title>Ceará - {formatCurrency(spendByRegion.find(r => r.name === 'Ceará' || r.name === 'CE')?.value || 0)}</title>
-                          </path>
-
-                          {/* Rio Grande do Norte */}
-                          <path id="RN" d="M325,210 L340,208 L345,218 L340,225 L325,223 Z"
-                            fill={spendByRegion.find(r => r.name === 'Rio Grande do Norte' || r.name === 'RN')? '#8b5cf6' : '#f3f4f6'}
-                            stroke="#9ca3af" strokeWidth="1" opacity="0.9">
-                            <title>Rio Grande do Norte - {formatCurrency(spendByRegion.find(r => r.name === 'Rio Grande do Norte' || r.name === 'RN')?.value || 0)}</title>
-                          </path>
-
-                          {/* Paraíba */}
-                          <path id="PB" d="M340,225 L350,224 L353,232 L348,238 L338,236 Z"
-                            fill={spendByRegion.find(r => r.name === 'Paraíba' || r.name === 'PB')? '#8b5cf6' : '#f3f4f6'}
-                            stroke="#9ca3af" strokeWidth="1" opacity="0.9">
-                            <title>Paraíba - {formatCurrency(spendByRegion.find(r => r.name === 'Paraíba' || r.name === 'PB')?.value || 0)}</title>
-                          </path>
-
-                          {/* Pernambuco */}
-                          <path id="PE" d="M320,238 L345,235 L355,248 L345,258 L325,255 Z"
-                            fill={spendByRegion.find(r => r.name === 'Pernambuco' || r.name === 'PE')? '#8b5cf6' : '#f3f4f6'}
-                            stroke="#9ca3af" strokeWidth="1" opacity="0.9">
-                            <title>Pernambuco - {formatCurrency(spendByRegion.find(r => r.name === 'Pernambuco' || r.name === 'PE')?.value || 0)}</title>
-                          </path>
-
-                          {/* Alagoas */}
-                          <path id="AL" d="M345,258 L355,257 L358,265 L352,271 L343,268 Z"
-                            fill={spendByRegion.find(r => r.name === 'Alagoas' || r.name === 'AL')? '#8b5cf6' : '#f3f4f6'}
-                            stroke="#9ca3af" strokeWidth="1" opacity="0.9">
-                            <title>Alagoas - {formatCurrency(spendByRegion.find(r => r.name === 'Alagoas' || r.name === 'AL')?.value || 0)}</title>
-                          </path>
-
-                          {/* Sergipe */}
-                          <path id="SE" d="M335,265 L345,263 L348,272 L342,277 L333,274 Z"
-                            fill={spendByRegion.find(r => r.name === 'Sergipe' || r.name === 'SE')? '#8b5cf6' : '#f3f4f6'}
-                            stroke="#9ca3af" strokeWidth="1" opacity="0.9">
-                            <title>Sergipe - {formatCurrency(spendByRegion.find(r => r.name === 'Sergipe' || r.name === 'SE')?.value || 0)}</title>
-                          </path>
-
-                          {/* Bahia */}
-                          <path id="BA" d="M260,245 L300,240 L325,255 L330,280 L310,300 L280,295 L265,275 Z"
-                            fill={spendByRegion.find(r => r.name === 'Bahia' || r.name === 'BA')? '#8b5cf6' : '#f3f4f6'}
-                            stroke="#9ca3af" strokeWidth="1" opacity="0.9">
-                            <title>Bahia - {formatCurrency(spendByRegion.find(r => r.name === 'Bahia' || r.name === 'BA')?.value || 0)}</title>
-                          </path>
-
-                          {/* Mato Grosso */}
-                          <path id="MT" d="M140,220 L180,210 L200,230 L195,260 L165,265 L145,245 Z"
-                            fill={spendByRegion.find(r => r.name === 'Mato Grosso' || r.name === 'MT')? '#ec4899' : '#f3f4f6'}
-                            stroke="#9ca3af" strokeWidth="1" opacity="0.9">
-                            <title>Mato Grosso - {formatCurrency(spendByRegion.find(r => r.name === 'Mato Grosso' || r.name === 'MT')?.value || 0)}</title>
-                          </path>
-
-                          {/* Goiás */}
-                          <path id="GO" d="M200,260 L230,255 L245,275 L240,295 L215,295 L200,280 Z"
-                            fill={spendByRegion.find(r => r.name === 'Goiás' || r.name === 'GO')? '#ec4899' : '#f3f4f6'}
-                            stroke="#9ca3af" strokeWidth="1" opacity="0.9">
-                            <title>Goiás - {formatCurrency(spendByRegion.find(r => r.name === 'Goiás' || r.name === 'GO')?.value || 0)}</title>
-                          </path>
-
-                          {/* Distrito Federal */}
-                          <path id="DF" d="M225,275 L235,273 L237,280 L233,285 L225,283 Z"
-                            fill={spendByRegion.find(r => r.name === 'Distrito Federal' || r.name === 'DF')? '#ec4899' : '#f3f4f6'}
-                            stroke="#9ca3af" strokeWidth="1" opacity="0.9">
-                            <title>Distrito Federal - {formatCurrency(spendByRegion.find(r => r.name === 'Distrito Federal' || r.name === 'DF')?.value || 0)}</title>
-                          </path>
-
-                          {/* Mato Grosso do Sul */}
-                          <path id="MS" d="M165,280 L195,275 L210,295 L205,320 L180,320 L170,300 Z"
-                            fill={spendByRegion.find(r => r.name === 'Mato Grosso do Sul' || r.name === 'MS')? '#ec4899' : '#f3f4f6'}
-                            stroke="#9ca3af" strokeWidth="1" opacity="0.9">
-                            <title>Mato Grosso do Sul - {formatCurrency(spendByRegion.find(r => r.name === 'Mato Grosso do Sul' || r.name === 'MS')?.value || 0)}</title>
-                          </path>
-
-                          {/* São Paulo */}
-                          <path id="SP" d="M215,310 L245,305 L260,325 L250,345 L225,340 L210,325 Z"
-                            fill={spendByRegion.find(r => r.name === 'São Paulo' || r.name === 'SP')? '#f59e0b' : '#f3f4f6'}
-                            stroke="#9ca3af" strokeWidth="1" opacity="0.9">
-                            <title>São Paulo - {formatCurrency(spendByRegion.find(r => r.name === 'São Paulo' || r.name === 'SP')?.value || 0)}</title>
-                          </path>
-
-                          {/* Rio de Janeiro */}
-                          <path id="RJ" d="M260,325 L275,323 L280,335 L272,345 L260,343 Z"
-                            fill={spendByRegion.find(r => r.name === 'Rio de Janeiro' || r.name === 'RJ')? '#f59e0b' : '#f3f4f6'}
-                            stroke="#9ca3af" strokeWidth="1" opacity="0.9">
-                            <title>Rio de Janeiro - {formatCurrency(spendByRegion.find(r => r.name === 'Rio de Janeiro' || r.name === 'RJ')?.value || 0)}</title>
-                          </path>
-
-                          {/* Espírito Santo */}
-                          <path id="ES" d="M280,295 L295,293 L300,305 L295,315 L280,313 Z"
-                            fill={spendByRegion.find(r => r.name === 'Espírito Santo' || r.name === 'ES')? '#f59e0b' : '#f3f4f6'}
-                            stroke="#9ca3af" strokeWidth="1" opacity="0.9">
-                            <title>Espírito Santo - {formatCurrency(spendByRegion.find(r => r.name === 'Espírito Santo' || r.name === 'ES')?.value || 0)}</title>
-                          </path>
-
-                          {/* Minas Gerais */}
-                          <path id="MG" d="M240,275 L280,270 L300,285 L295,310 L270,315 L245,305 Z"
-                            fill={spendByRegion.find(r => r.name === 'Minas Gerais' || r.name === 'MG')? '#f59e0b' : '#f3f4f6'}
-                            stroke="#9ca3af" strokeWidth="1" opacity="0.9">
-                            <title>Minas Gerais - {formatCurrency(spendByRegion.find(r => r.name === 'Minas Gerais' || r.name === 'MG')?.value || 0)}</title>
-                          </path>
-
-                          {/* Paraná */}
-                          <path id="PR" d="M205,345 L235,340 L245,360 L230,375 L205,370 Z"
-                            fill={spendByRegion.find(r => r.name === 'Paraná' || r.name === 'PR')? '#10b981' : '#f3f4f6'}
-                            stroke="#9ca3af" strokeWidth="1" opacity="0.9">
-                            <title>Paraná - {formatCurrency(spendByRegion.find(r => r.name === 'Paraná' || r.name === 'PR')?.value || 0)}</title>
-                          </path>
-
-                          {/* Santa Catarina */}
-                          <path id="SC" d="M205,375 L230,372 L240,385 L225,395 L205,390 Z"
-                            fill={spendByRegion.find(r => r.name === 'Santa Catarina' || r.name === 'SC')? '#10b981' : '#f3f4f6'}
-                            stroke="#9ca3af" strokeWidth="1" opacity="0.9">
-                            <title>Santa Catarina - {formatCurrency(spendByRegion.find(r => r.name === 'Santa Catarina' || r.name === 'SC')?.value || 0)}</title>
-                          </path>
-
-                          {/* Rio Grande do Sul */}
-                          <path id="RS" d="M180,390 L210,385 L225,405 L215,430 L185,425 L175,410 Z"
-                            fill={spendByRegion.find(r => r.name === 'Rio Grande do Sul' || r.name === 'RS')? '#10b981' : '#f3f4f6'}
-                            stroke="#9ca3af" strokeWidth="1" opacity="0.9">
-                            <title>Rio Grande do Sul - {formatCurrency(spendByRegion.find(r => r.name === 'Rio Grande do Sul' || r.name === 'RS')?.value || 0)}</title>
-                          </path>
-
-                          {/* Rondônia */}
-                          <path id="RO" d="M80,175 L100,170 L110,185 L105,200 L85,200 L78,190 Z"
-                            fill={spendByRegion.find(r => r.name === 'Rondônia' || r.name === 'RO')? '#6366f1' : '#f3f4f6'}
-                            stroke="#9ca3af" strokeWidth="1" opacity="0.9">
-                            <title>Rondônia - {formatCurrency(spendByRegion.find(r => r.name === 'Rondônia' || r.name === 'RO')?.value || 0)}</title>
-                          </path>
-                        </g>
-                      </svg>
+                      <BrazilMap
+                        data={spendByRegion}
+                        colorScale="#6366f1"
+                        emptyColor="#f3f4f6"
+                        strokeColor="#9ca3af"
+                      />
                     </div>
 
                     {/* Legenda das Regiões */}
