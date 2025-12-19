@@ -1949,6 +1949,116 @@ def ads_highlights(act_id: str, since_str: str, until_str: str):
         spend_by_region = []
 
     # detalhes por anúncio (criativos)
+    def _pick_first_url(*candidates: Any) -> Optional[str]:
+        for candidate in candidates:
+            if isinstance(candidate, str) and candidate.strip():
+                return candidate
+        return None
+
+    def _preview_from_story_node(node: Any) -> Optional[str]:
+        if not isinstance(node, dict):
+            return None
+        direct = _pick_first_url(
+            node.get("image_url"),
+            node.get("picture"),
+            node.get("url"),
+            node.get("thumbnail_url"),
+        )
+        if direct:
+            return direct
+        attachments = node.get("child_attachments") or node.get("attachments") or []
+        if isinstance(attachments, list):
+            for child in attachments:
+                if not isinstance(child, dict):
+                    continue
+                candidate = _pick_first_url(
+                    child.get("image_url"),
+                    child.get("picture"),
+                    child.get("url"),
+                    child.get("thumbnail_url"),
+                )
+                if candidate:
+                    return candidate
+        return None
+
+    def _preview_from_story_spec(spec: Any) -> Optional[str]:
+        if not isinstance(spec, dict):
+            return None
+        for key in ("link_data", "video_data", "photo_data", "template_data", "story_data"):
+            preview = _preview_from_story_node(spec.get(key))
+            if preview:
+                return preview
+        return None
+
+    def _preview_from_asset_feed(feed: Any) -> Optional[str]:
+        if not isinstance(feed, dict):
+            return None
+        for bucket in ("images", "videos"):
+            items = feed.get(bucket) or []
+            if not isinstance(items, list):
+                continue
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                candidate = _pick_first_url(
+                    item.get("thumbnail_url"),
+                    item.get("image_url"),
+                    item.get("url"),
+                )
+                if candidate:
+                    return candidate
+        return None
+
+    def _extract_creative_preview(creative: Any) -> Optional[str]:
+        if not isinstance(creative, dict):
+            return None
+        direct = _pick_first_url(
+            creative.get("thumbnail_url"),
+            creative.get("image_url"),
+        )
+        if direct:
+            return direct
+        preview = _preview_from_story_spec(creative.get("object_story_spec"))
+        if preview:
+            return preview
+        preview = _preview_from_asset_feed(creative.get("asset_feed_spec"))
+        if preview:
+            return preview
+        return None
+
+    def _chunked(values: Sequence[str], size: int):
+        for i in range(0, len(values), size):
+            yield values[i : i + size]
+
+    def _fetch_ad_previews(ad_ids: Sequence[str], limit: int = 24) -> Dict[str, str]:
+        if not ad_ids:
+            return {}
+        seen: set = set()
+        ordered: List[str] = []
+        for ad_id in ad_ids:
+            if not ad_id:
+                continue
+            ad_str = str(ad_id)
+            if ad_str in seen:
+                continue
+            seen.add(ad_str)
+            ordered.append(ad_str)
+        if limit and len(ordered) > limit:
+            ordered = ordered[:limit]
+        previews: Dict[str, str] = {}
+        fields = "creative{thumbnail_url,image_url,object_story_spec,asset_feed_spec}"
+        for chunk in _chunked(ordered, 50):
+            resp = gget("/", {"ids": ",".join(chunk), "fields": fields})
+            if not isinstance(resp, dict):
+                continue
+            for ad_id, payload in resp.items():
+                if not isinstance(payload, dict):
+                    continue
+                preview = _extract_creative_preview(payload.get("creative"))
+                if preview:
+                    previews[str(ad_id)] = preview
+        return previews
+
     creatives: List[Dict[str, Any]] = []
     try:
         ads_res = gget(
@@ -1994,6 +2104,24 @@ def ads_highlights(act_id: str, since_str: str, until_str: str):
                     "followers_gained": int(round(ad_followers)),
                 }
             )
+        preview_map: Dict[str, str] = {}
+        try:
+            ranked_ids = [
+                item.get("id")
+                for item in sorted(creatives, key=lambda entry: entry.get("spend", 0), reverse=True)
+                if item.get("id")
+            ]
+            preview_map = _fetch_ad_previews(ranked_ids)
+        except MetaAPIError:
+            preview_map = {}
+        except Exception:
+            preview_map = {}
+        if preview_map:
+            for creative in creatives:
+                creative_id = creative.get("id")
+                preview = preview_map.get(str(creative_id))
+                if preview:
+                    creative["preview_url"] = preview
     except MetaAPIError:
         creatives = []
     except Exception:
