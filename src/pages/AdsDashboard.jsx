@@ -15,6 +15,7 @@ import {
   Pie,
   Cell,
   ComposedChart,
+  LineChart,
   Line,
   ReferenceLine,
   ReferenceDot,
