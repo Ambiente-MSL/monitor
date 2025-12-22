@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import Topbar from './components/Topbar';
 import { useAuth } from './context/AuthContext';
@@ -82,7 +82,18 @@ export default function App() {
             return hidden ? null : <Topbar {...rest} />;
           })()}
           <div className="app-main__body">
-            <Outlet context={{ setTopbarConfig, resetTopbarConfig }} />
+            <Suspense
+              fallback={
+                <div className="auth-screen">
+                  <div className="auth-card auth-card--compact">
+                    <h2 className="auth-heading">Carregando...</h2>
+                    <p className="auth-subtext">Preparando conteúdo.</p>
+                  </div>
+                </div>
+              }
+            >
+              <Outlet context={{ setTopbarConfig, resetTopbarConfig }} />
+            </Suspense>
           </div>
         </div>
       </main>

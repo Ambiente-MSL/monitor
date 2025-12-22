@@ -1,5 +1,5 @@
-/* Lato (Google Fonts) */
-@import url('https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap');
+/* Lato (Google Fonts) - Apenas pesos 400 e 700 para reduzir tamanho */
+/* Pesos intermediários (500, 600) serão mapeados via font-synthesis */
 
 :root {
   --font-sans: "Lato", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;

@@ -1,13 +1,16 @@
+import { lazy } from 'react';
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import App from './App';
-import FacebookDashboard from './pages/FacebookDashboard';
-import InstagramDashboard from './pages/InstagramDashboard';
-import AdsDashboard from './pages/AdsDashboard';
-import Reports from './pages/Reports';
-import Settings from './pages/Settings';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Admin from './pages/Admin';
+
+// Lazy load páginas para reduzir bundle inicial
+const FacebookDashboard = lazy(() => import('./pages/FacebookDashboard'));
+const InstagramDashboard = lazy(() => import('./pages/InstagramDashboard'));
+const AdsDashboard = lazy(() => import('./pages/AdsDashboard'));
+const Reports = lazy(() => import('./pages/Reports'));
+const Settings = lazy(() => import('./pages/Settings'));
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const Admin = lazy(() => import('./pages/Admin'));
 
 const router = createBrowserRouter([
   { path: '/login', element: <Login /> },
