@@ -12,6 +12,7 @@ import {
 import {
   ResponsiveContainer,
   Area,
+  AreaChart,
   CartesianGrid,
   XAxis,
   YAxis,
@@ -2505,7 +2506,7 @@ const profileViewsMetric = metricsByKey.video_views || metricsByKey.profile_view
         <h2 className="ig-clean-title">Visão Geral</h2>
 
         {/* Grid Principal */}
-          <div className="ig-clean-grid">
+          <div className="ig-clean-grid" style={showDetailedView ? { display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' } : {}}>
           <div className="ig-clean-grid__left">
             <section className="ig-profile-vertical">
               <div
@@ -2845,6 +2846,7 @@ const profileViewsMetric = metricsByKey.video_views || metricsByKey.profile_view
             </section>
           </div>
 
+          {!showDetailedView && (
           <div className="ig-clean-grid__right">
             {/* Card de Crescimento do Perfil */}
             <section className="ig-growth-clean">
@@ -3607,6 +3609,225 @@ const profileViewsMetric = metricsByKey.video_views || metricsByKey.profile_view
         </div>
 
       </div>
+      )}
+
+      {showDetailedView && (
+        <div style={{
+          background: 'white',
+          borderRadius: '20px',
+          padding: '32px',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          height: 'fit-content',
+          position: 'sticky',
+          top: '24px'
+        }}>
+          {/* Botão de fechar */}
+          <button
+            onClick={() => setShowDetailedView(false)}
+            style={{
+              position: 'absolute',
+              top: '20px',
+              right: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '36px',
+              height: '36px',
+              borderRadius: '10px',
+              background: 'rgba(99, 102, 241, 0.1)',
+              border: '1px solid rgba(99, 102, 241, 0.2)',
+              color: '#6366f1',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              zIndex: 10
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'rgba(99, 102, 241, 0.2)';
+              e.currentTarget.style.transform = 'rotate(90deg)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'rgba(99, 102, 241, 0.1)';
+              e.currentTarget.style.transform = 'rotate(0deg)';
+            }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+
+          {/* Header */}
+          <div style={{ marginBottom: '32px', paddingRight: '40px' }}>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '8px 16px',
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+              marginBottom: '16px'
+            }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: 'white', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Visualizações</span>
+            </div>
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '28px', fontWeight: 800, color: '#111827' }}>
+              Análise Detalhada
+            </h3>
+            <p style={{ margin: 0, fontSize: '14px', color: '#6b7280', lineHeight: 1.6 }}>
+              Acompanhe as visualizações dos seus conteúdos (Reels, Feed e Stories) com insights detalhados
+            </p>
+          </div>
+
+          {/* KPIs Principais */}
+          <div style={{
+            display: 'grid',
+            gap: '16px',
+            marginBottom: '32px'
+          }}>
+            <div style={{
+              padding: '20px',
+              borderRadius: '16px',
+              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%)',
+              border: '1px solid rgba(99, 102, 241, 0.15)'
+            }}>
+              <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600, marginBottom: '8px' }}>
+                Total de Visualizações
+              </div>
+              <div style={{
+                fontSize: '36px',
+                fontWeight: 800,
+                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent'
+              }}>
+                {formatNumber(profileViewsTotal ?? null)}
+              </div>
+              {typeof profileViewsDeltaPct === "number" && (
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  marginTop: '12px',
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  background: profileViewsDeltaPct >= 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                  color: profileViewsDeltaPct >= 0 ? '#059669' : '#dc2626',
+                  fontSize: '12px',
+                  fontWeight: 600
+                }}>
+                  {profileViewsDeltaPct >= 0 ? '▲' : '▼'}
+                  <span>{Math.abs(profileViewsDeltaPct)}% vs. período anterior</span>
+                </div>
+              )}
+            </div>
+
+            <div style={{
+              padding: '18px',
+              borderRadius: '14px',
+              background: 'rgba(99, 102, 241, 0.05)',
+              border: '1px solid rgba(99, 102, 241, 0.1)'
+            }}>
+              <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 600, marginBottom: '6px' }}>
+                Visitantes únicos
+              </div>
+              <div style={{ fontSize: '28px', fontWeight: 700, color: '#6366f1' }}>
+                {formatNumber(profileVisitorsTotals?.total ?? null)}
+              </div>
+            </div>
+
+            <div style={{
+              padding: '18px',
+              borderRadius: '14px',
+              background: 'rgba(139, 92, 246, 0.05)',
+              border: '1px solid rgba(139, 92, 246, 0.1)'
+            }}>
+              <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 600, marginBottom: '6px' }}>
+                Média diária
+              </div>
+              <div style={{ fontSize: '28px', fontWeight: 700, color: '#8b5cf6' }}>
+                {profileViewsAverage != null ? formatNumber(Math.round(profileViewsAverage)) : '--'}
+              </div>
+            </div>
+
+            <div style={{
+              padding: '18px',
+              borderRadius: '14px',
+              background: 'rgba(168, 85, 247, 0.05)',
+              border: '1px solid rgba(168, 85, 247, 0.1)'
+            }}>
+              <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 600, marginBottom: '6px' }}>
+                Pico diário
+              </div>
+              <div style={{ fontSize: '28px', fontWeight: 700, color: '#a855f7' }}>
+                {profileViewsPeak != null ? formatNumber(profileViewsPeak) : '--'}
+              </div>
+            </div>
+          </div>
+
+          {/* Gráfico de tendência */}
+          <div style={{
+            padding: '24px',
+            borderRadius: '16px',
+            background: '#f9fafb',
+            border: '1px solid #e5e7eb'
+          }}>
+            <h4 style={{ margin: '0 0 20px 0', fontSize: '16px', fontWeight: 700, color: '#111827' }}>
+              📊 Tendência de Visualizações
+            </h4>
+            {profileViewsChartData.length ? (
+              <div style={{ height: 280 }}>
+                <ResponsiveContainer>
+                  <AreaChart data={profileViewsChartData}>
+                    <defs>
+                      <linearGradient id="detailedViewsGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fontSize: 11, fill: '#6b7280' }}
+                      axisLine={{ stroke: '#e5e7eb' }}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 11, fill: '#6b7280' }}
+                      axisLine={{ stroke: '#e5e7eb' }}
+                      tickLine={false}
+                      tickFormatter={(value) => formatNumber(value)}
+                    />
+                    <Tooltip
+                      formatter={(value) => formatNumber(value)}
+                      contentStyle={{
+                        background: 'white',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        fontSize: '12px'
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="value"
+                      stroke="#6366f1"
+                      strokeWidth={2}
+                      fill="url(#detailedViewsGradient)"
+                      animationDuration={800}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#9ca3af' }}>
+                Sem dados de visualizações
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       </div>
 
       {/* Palavras-chave e Hashtags - Largura Total */}
