@@ -1827,6 +1827,58 @@ def ads_highlights(act_id: str, since_str: str, until_str: str):
         "complete_registration",
     )
 
+    def _parse_video_actions(actions: Any) -> Dict[str, Any]:
+        metrics = {
+            "views_3s": 0.0,
+            "views_10s": 0.0,
+            "views_15s": 0.0,
+            "views_30s": 0.0,
+            "thruplays": 0.0,
+            "video_play": 0.0,
+            "avg_time": None,
+            "p25": 0.0,
+            "p50": 0.0,
+            "p75": 0.0,
+            "p95": 0.0,
+        }
+        if not actions:
+            return metrics
+        for action in actions:
+            if not isinstance(action, dict):
+                continue
+            action_type = action.get("action_type")
+            if not action_type:
+                continue
+            normalized = str(action_type).lower()
+            try:
+                value = float(action.get("value", 0) or 0)
+            except (TypeError, ValueError):
+                value = 0.0
+            if normalized in {"video_view", "video_views"}:
+                metrics["views_3s"] += value
+            if normalized in {"video_3_sec_watched_actions", "video_view_3s"}:
+                metrics["views_3s"] += value
+            elif normalized in {"video_10_sec_watched_actions", "video_view_10s"}:
+                metrics["views_10s"] += value
+            elif normalized in {"thruplay", "video_15_sec_watched_actions"}:
+                metrics["views_15s"] += value
+                metrics["thruplays"] += value
+            elif normalized in {"video_30_sec_watched_actions", "video_view_30s"}:
+                metrics["views_30s"] += value
+            elif normalized in {"video_play_actions", "video_play"}:
+                metrics["video_play"] += value
+            elif normalized == "video_avg_time_watched_actions":
+                metrics["avg_time"] = value
+            elif normalized in {"video_p25_watched_actions", "video_view_25p"}:
+                metrics["p25"] += value
+            elif normalized in {"video_p50_watched_actions", "video_view_50p"}:
+                metrics["p50"] += value
+            elif normalized in {"video_p75_watched_actions", "video_view_75p"}:
+                metrics["p75"] += value
+            elif normalized in {"video_p95_watched_actions", "video_view_95p"}:
+                metrics["p95"] += value
+        return metrics
+
     for row in res.get("data", []):
         spend = float(row.get("spend", 0) or 0)
         impressions = int(row.get("impressions", 0) or 0)
@@ -1948,6 +2000,10 @@ def ads_highlights(act_id: str, since_str: str, until_str: str):
     except Exception:
         spend_by_region = []
 
+    video_ads: List[Dict[str, Any]] = []
+    video_ads_summary: Optional[Dict[str, Any]] = None
+    video_ads_timeseries: List[Dict[str, Any]] = []
+
     # detalhes por anúncio (criativos)
     def _pick_first_url(*candidates: Any) -> Optional[str]:
         for candidate in candidates:
@@ -2059,6 +2115,17 @@ def ads_highlights(act_id: str, since_str: str, until_str: str):
                     previews[str(ad_id)] = preview
         return previews
 
+    video_ads_totals = {
+        "views_3s": 0.0,
+        "views_10s": 0.0,
+        "views_15s": 0.0,
+        "views_30s": 0.0,
+        "thruplays": 0.0,
+        "video_play": 0.0,
+    }
+    video_ads_with_views = 0
+    video_avg_time_total = 0.0
+    video_avg_time_count = 0
     creatives: List[Dict[str, Any]] = []
     try:
         ads_res = gget(
@@ -2079,7 +2146,8 @@ def ads_highlights(act_id: str, since_str: str, until_str: str):
             cpc = float(row.get("cpc", 0) or 0)
             ad_conversions = 0.0
             ad_followers = 0.0
-            for action in row.get("actions") or []:
+            actions = row.get("actions") or []
+            for action in actions:
                 action_type = action.get("action_type")
                 if not action_type:
                     continue
@@ -2088,6 +2156,38 @@ def ads_highlights(act_id: str, since_str: str, until_str: str):
                     ad_conversions += value
                 if "page_follow" in action_type:
                     ad_followers += value
+            video_metrics = _parse_video_actions(actions)
+            has_video_metrics = any(
+                video_metrics[key] > 0
+                for key in ("views_3s", "views_10s", "views_15s", "views_30s", "thruplays", "video_play")
+            )
+            if has_video_metrics or video_metrics.get("avg_time") is not None:
+                ad_id = row.get("ad_id")
+                ad_name = row.get("ad_name") or ad_id or "Anuncio"
+                video_ads.append(
+                    {
+                        "ad_id": ad_id,
+                        "ad_name": ad_name,
+                        "views_3s": int(round(video_metrics["views_3s"])),
+                        "views_10s": int(round(video_metrics["views_10s"])),
+                        "views_15s": int(round(video_metrics["views_15s"])),
+                        "views_30s": int(round(video_metrics["views_30s"])),
+                        "thruplays": int(round(video_metrics["thruplays"])),
+                        "video_play": int(round(video_metrics["video_play"])),
+                        "avg_watch_time": video_metrics.get("avg_time"),
+                    }
+                )
+                video_ads_totals["views_3s"] += video_metrics["views_3s"]
+                video_ads_totals["views_10s"] += video_metrics["views_10s"]
+                video_ads_totals["views_15s"] += video_metrics["views_15s"]
+                video_ads_totals["views_30s"] += video_metrics["views_30s"]
+                video_ads_totals["thruplays"] += video_metrics["thruplays"]
+                video_ads_totals["video_play"] += video_metrics["video_play"]
+                if video_metrics.get("avg_time") is not None:
+                    video_avg_time_total += float(video_metrics["avg_time"])
+                    video_avg_time_count += 1
+                if has_video_metrics:
+                    video_ads_with_views += 1
             creatives.append(
                 {
                     "id": row.get("ad_id"),
@@ -2104,6 +2204,22 @@ def ads_highlights(act_id: str, since_str: str, until_str: str):
                     "followers_gained": int(round(ad_followers)),
                 }
             )
+        if video_ads:
+            avg_views = video_ads_totals["views_3s"] / video_ads_with_views if video_ads_with_views else 0
+            video_ads_summary = {
+                "views_3s": int(round(video_ads_totals["views_3s"])),
+                "views_10s": int(round(video_ads_totals["views_10s"])),
+                "views_15s": int(round(video_ads_totals["views_15s"])),
+                "views_30s": int(round(video_ads_totals["views_30s"])),
+                "thruplays": int(round(video_ads_totals["thruplays"])),
+                "video_play": int(round(video_ads_totals["video_play"])),
+                "avg_views_3s": round(avg_views, 2),
+                "avg_watch_time": (
+                    (video_avg_time_total / video_avg_time_count) if video_avg_time_count else None
+                ),
+                "ads_total": len(video_ads),
+                "ads_with_views": video_ads_with_views,
+            }
         preview_map: Dict[str, str] = {}
         try:
             ranked_ids = [
@@ -2124,8 +2240,50 @@ def ads_highlights(act_id: str, since_str: str, until_str: str):
                     creative["preview_url"] = preview
     except MetaAPIError:
         creatives = []
+        video_ads = []
+        video_ads_summary = None
     except Exception:
         creatives = []
+        video_ads = []
+        video_ads_summary = None
+
+    try:
+        series_res = gget(
+            f"/{act_id}/insights",
+            {
+                "fields": "ad_id,ad_name,actions,date_start,date_stop",
+                "time_range[since]": since_str,
+                "time_range[until]": until_str,
+                "level": "ad",
+                "time_increment": 1,
+                "limit": 500,
+            },
+        )
+        series_map: Dict[str, Dict[str, Any]] = {}
+        for row in series_res.get("data", []):
+            ad_id = row.get("ad_id")
+            if not ad_id:
+                continue
+            ad_name = row.get("ad_name") or ad_id
+            date_value = row.get("date_start") or row.get("date_stop")
+            if not date_value:
+                continue
+            metrics = _parse_video_actions(row.get("actions") or [])
+            views_3s = metrics.get("views_3s") or 0
+            bucket = series_map.setdefault(ad_id, {"ad_id": ad_id, "ad_name": ad_name, "series": {}})
+            series_bucket = bucket["series"]
+            series_bucket[date_value] = series_bucket.get(date_value, 0) + views_3s
+        for bucket in series_map.values():
+            series_bucket = bucket["series"]
+            bucket["series"] = [
+                {"date": date_key, "views_3s": int(round(value))}
+                for date_key, value in sorted(series_bucket.items())
+            ]
+        video_ads_timeseries = list(series_map.values())
+    except MetaAPIError:
+        video_ads_timeseries = []
+    except Exception:
+        video_ads_timeseries = []
 
     # resumo de vídeo
     v3_final = int(v3 or v_total)
@@ -2270,6 +2428,9 @@ def ads_highlights(act_id: str, since_str: str, until_str: str):
         "actions": actions_summary,
         "demographics": demographics,
         "video_summary": video_summary,  # NOVO
+        "video_ads_summary": video_ads_summary,
+        "video_ads": video_ads,
+        "video_ads_timeseries": video_ads_timeseries,
         "spend_series": spend_series,
         "campaigns": top_campaigns,
         "creatives": creatives,

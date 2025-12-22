@@ -268,6 +268,7 @@ const MOCK_CAMPAIGN_PERFORMANCE = [
 ];
 
 const IG_DONUT_COLORS = ["#6366f1", "#f97316", "#a855f7", "#c084fc", "#d8b4fe"];
+const VIDEO_ADS_GROWTH_COLORS = ["#6366f1", "#10b981", "#f97316", "#ec4899"];
 
 const ADS_TOPBAR_PRESETS = [
   { id: "7d", label: "7 dias", days: 7 },
@@ -276,6 +277,8 @@ const ADS_TOPBAR_PRESETS = [
   { id: "6m", label: "6 meses", days: 180 },
   { id: "1y", label: "1 ano", days: 365 },
 ];
+
+const ADS_SHORT_DATE_FORMATTER = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" });
 
 const DEFAULT_ADS_RANGE_DAYS = 7;
 
@@ -498,6 +501,13 @@ export default function AdsDashboard() {
     return `${mins}m ${secs}s`;
   };
 
+  const formatShortDate = (value) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return ADS_SHORT_DATE_FORMATTER.format(date);
+  };
+
   const totals = adsData?.totals || {};
   const averages = adsData?.averages || {};
   const actions = Array.isArray(adsData?.actions) ? adsData.actions : [];
@@ -532,6 +542,10 @@ export default function AdsDashboard() {
   };
 
   const videoSummary = adsData?.video_summary || {};
+  const videoAdsSummary = adsData?.video_ads_summary || null;
+  const videoAds = Array.isArray(adsData?.video_ads) ? adsData.video_ads : [];
+  const videoAdsTimeseries = Array.isArray(adsData?.video_ads_timeseries) ? adsData.video_ads_timeseries : [];
+  const useAdLevelVideoTotals = (videoAdsSummary?.ads_with_views ?? 0) > 0;
   const videoFromActions = useMemo(() => {
     const fallback = {
       views3s: null,
@@ -576,21 +590,49 @@ export default function AdsDashboard() {
     return fallback;
   }, [actions]);
 
-  const videoViews3s = Number(videoSummary.video_views_3s ?? videoFromActions.views3s ?? 0);
-  const videoViews10s = Number(videoSummary.video_views_10s ?? videoFromActions.views10s ?? 0);
-  const videoViews15s = Number(videoSummary.video_views_15s ?? videoSummary.thruplays ?? videoFromActions.views15s ?? 0);
-  const videoViews30s = Number(videoSummary.video_views_30s ?? videoFromActions.views30s ?? 0);
+  const videoViews3s = Number(
+    useAdLevelVideoTotals
+      ? (videoAdsSummary?.views_3s ?? 0)
+      : (videoSummary.video_views_3s ?? videoFromActions.views3s ?? 0),
+  );
+  const videoViews10s = Number(
+    useAdLevelVideoTotals
+      ? (videoAdsSummary?.views_10s ?? 0)
+      : (videoSummary.video_views_10s ?? videoFromActions.views10s ?? 0),
+  );
+  const videoViews15s = Number(
+    useAdLevelVideoTotals
+      ? (videoAdsSummary?.views_15s ?? 0)
+      : (videoSummary.video_views_15s ?? videoSummary.thruplays ?? videoFromActions.views15s ?? 0),
+  );
+  const videoViews30s = Number(
+    useAdLevelVideoTotals
+      ? (videoAdsSummary?.views_30s ?? 0)
+      : (videoSummary.video_views_30s ?? videoFromActions.views30s ?? 0),
+  );
+  const adAvgWatchTime = videoAdsSummary?.avg_watch_time;
   const videoAvgTime = Number(
-    videoSummary.video_avg_time_watched != null
-      ? videoSummary.video_avg_time_watched
-      : videoFromActions.avgTime != null
-        ? videoFromActions.avgTime
-        : NaN,
+    useAdLevelVideoTotals && adAvgWatchTime != null
+      ? adAvgWatchTime
+      : videoSummary.video_avg_time_watched != null
+        ? videoSummary.video_avg_time_watched
+        : videoFromActions.avgTime != null
+          ? videoFromActions.avgTime
+          : NaN,
   );
 
   // Novas métricas de vídeo
-  const videoThruPlays = Number(videoSummary.thruplays ?? videoFromActions.thruplay ?? 0);
-  const videoPlays = Number(videoSummary.video_play_actions ?? videoFromActions.video_play ?? 0);
+  const videoThruPlays = Number(
+    useAdLevelVideoTotals
+      ? (videoAdsSummary?.thruplays ?? 0)
+      : (videoSummary.thruplays ?? videoFromActions.thruplay ?? 0),
+  );
+  const adVideoPlays = useAdLevelVideoTotals ? Number(videoAdsSummary?.video_play ?? 0) : 0;
+  const videoPlays = Number(
+    adVideoPlays > 0
+      ? adVideoPlays
+      : (videoSummary.video_play_actions ?? videoFromActions.video_play ?? 0),
+  );
   const totalSpendValue = Number(totals.spend || 0);
   const costPerThruPlay = videoThruPlays > 0 ? (totalSpendValue / videoThruPlays) : 0;
   const thruPlayRate = videoPlays > 0 ? ((videoThruPlays / videoPlays) * 100) : 0;
@@ -607,6 +649,66 @@ export default function AdsDashboard() {
     ].filter((item) => item.views > 0);
     return entries;
   }, [videoSummary.drop_off_points, videoFromActions.pct]);
+
+  const avgVideoViews = useMemo(() => {
+    if (videoAdsSummary && Number.isFinite(videoAdsSummary.avg_views_3s)) {
+      return Number(videoAdsSummary.avg_views_3s);
+    }
+    if (!videoAds.length) return 0;
+    const total = videoAds.reduce((sum, ad) => sum + Number(ad?.views_3s || 0), 0);
+    const count = videoAds.reduce((sum, ad) => sum + (Number(ad?.views_3s || 0) > 0 ? 1 : 0), 0);
+    return count ? total / count : 0;
+  }, [videoAds, videoAdsSummary]);
+
+  const videoAdsGrowth = useMemo(() => {
+    if (!videoAdsTimeseries.length) return { data: [], lines: [] };
+    const ranked = videoAdsTimeseries
+      .map((entry) => {
+        const series = Array.isArray(entry?.series) ? entry.series : [];
+        const total = series.reduce((sum, point) => sum + Number(point?.views_3s || 0), 0);
+        return {
+          id: entry?.ad_id || entry?.adId || entry?.id,
+          name: entry?.ad_name || entry?.adName || entry?.name,
+          series,
+          total,
+        };
+      })
+      .filter((entry) => entry.id);
+    ranked.sort((a, b) => b.total - a.total);
+    const topAds = ranked.filter((entry) => entry.total > 0).slice(0, 3);
+    if (!topAds.length) return { data: [], lines: [] };
+    const dateSet = new Set();
+    const seriesMap = new Map();
+    topAds.forEach((entry) => {
+      const dateMap = new Map();
+      entry.series.forEach((point) => {
+        const date = point?.date;
+        if (!date) return;
+        const value = Number(point?.views_3s || 0);
+        if (!Number.isFinite(value)) return;
+        dateMap.set(date, (dateMap.get(date) || 0) + value);
+        dateSet.add(date);
+      });
+      seriesMap.set(entry.id, dateMap);
+    });
+    const dates = Array.from(dateSet).sort();
+    const data = dates.map((date) => {
+      const row = { date };
+      topAds.forEach((entry) => {
+        const dateMap = seriesMap.get(entry.id);
+        row[entry.id] = dateMap ? dateMap.get(date) || 0 : 0;
+      });
+      return row;
+    });
+    const lines = topAds.map((entry, index) => ({
+      key: entry.id,
+      name: entry.name || entry.id,
+      color: VIDEO_ADS_GROWTH_COLORS[index % VIDEO_ADS_GROWTH_COLORS.length],
+    }));
+    return { data, lines };
+  }, [videoAdsTimeseries]);
+
+  const avgVideoViewsDisplay = avgVideoViews > 0 ? formatNumber(Math.round(avgVideoViews)) : "--";
 
   const videoViewSeries = useMemo(() => {
     const base = [
@@ -625,8 +727,10 @@ export default function AdsDashboard() {
     () =>
       videoViewSeries.some((item) => Number.isFinite(item.value) && item.value > 0)
       || Number.isFinite(videoAvgTime)
-      || (videoDropOff && videoDropOff.length > 0),
-    [videoAvgTime, videoDropOff, videoViewSeries],
+      || (videoDropOff && videoDropOff.length > 0)
+      || videoAdsGrowth.data.length > 0
+      || avgVideoViews > 0,
+    [videoAvgTime, videoDropOff, videoViewSeries, videoAdsGrowth.data.length, avgVideoViews],
   );
 
   // manter compatibilidade com seções que ainda usam o nome antigo
@@ -1237,6 +1341,26 @@ export default function AdsDashboard() {
                       </div>
                     </div>
 
+                    <div style={{
+                      background: "white",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: 16,
+                      padding: 20,
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.04)"
+                    }}>
+                      <h5 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700, color: "#111827" }}>
+                        Media de views por anuncio
+                      </h5>
+                      <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+                        <div style={{ fontSize: 36, fontWeight: 800, color: "#111827" }}>
+                          {avgVideoViewsDisplay}
+                        </div>
+                        <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>
+                          Media de visualizacoes (3s)
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Gráfico de Retenção por Quartil */}
                     {videoDropOff?.length ? (
                       <div style={{
@@ -1413,6 +1537,74 @@ export default function AdsDashboard() {
                         </ResponsiveContainer>
                       </div>
                     </div>
+
+                    <div style={{
+                      background: "white",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: 16,
+                      padding: 20,
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.04)"
+                    }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+                        <h5 style={{ margin: "0", fontSize: 16, fontWeight: 700, color: "#111827" }}>
+                          Crescimento por anuncio
+                        </h5>
+                        {videoAdsGrowth.lines.length ? (
+                          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", fontSize: 11, color: "#6b7280" }}>
+                            {videoAdsGrowth.lines.map((line) => (
+                              <div key={line.key} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                <span style={{ width: 10, height: 10, borderRadius: "50%", background: line.color }} />
+                                <span style={{ maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                  {line.name}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                      {videoAdsGrowth.data.length ? (
+                        <div style={{ height: 240 }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={videoAdsGrowth.data} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
+                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                              <XAxis
+                                dataKey="date"
+                                tick={{ fill: "#6b7280", fontSize: 11 }}
+                                axisLine={false}
+                                tickLine={false}
+                                tickFormatter={formatShortDate}
+                              />
+                              <YAxis
+                                tick={{ fill: "#6b7280", fontSize: 11 }}
+                                axisLine={false}
+                                tickLine={false}
+                                tickFormatter={(value) => formatNumber(value)}
+                              />
+                              <Tooltip
+                                cursor={{ stroke: "rgba(99,102,241,0.2)" }}
+                                formatter={(value) => formatNumber(value)}
+                                labelFormatter={formatShortDate}
+                              />
+                              {videoAdsGrowth.lines.map((line) => (
+                                <Line
+                                  key={line.key}
+                                  type="monotone"
+                                  dataKey={line.key}
+                                  stroke={line.color}
+                                  strokeWidth={2}
+                                  dot={false}
+                                />
+                              ))}
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      ) : (
+                        <div style={{ padding: 24, textAlign: "center", color: "#9ca3af" }}>
+                          Sem dados de crescimento por anuncio
+                        </div>
+                      )}
+                    </div>
+
                   </div>
                 ) : (
                   <div style={{
