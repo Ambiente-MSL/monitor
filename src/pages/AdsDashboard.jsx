@@ -1939,21 +1939,22 @@ export default function AdsDashboard() {
                           }}
                         >
                           <td style={{ padding: "14px 12px", borderTopLeftRadius: "12px", borderBottomLeftRadius: "12px" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                               <div
                                 style={{
-                                  width: 48,
-                                  height: 48,
-                                  borderRadius: 10,
+                                  width: 80,
+                                  height: 80,
+                                  borderRadius: 12,
                                   overflow: "hidden",
                                   background: "linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)",
-                                  boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                                  boxShadow: "0 6px 16px rgba(0,0,0,0.12)",
                                   flexShrink: 0,
                                   display: "flex",
                                   alignItems: "center",
                                   justifyContent: "center",
                                   color: "#fff",
                                   fontWeight: 700,
+                                  fontSize: "24px",
                                 }}
                               >
                                 {item.previewUrl ? (
@@ -1966,12 +1967,12 @@ export default function AdsDashboard() {
                                   (item.name || "A").slice(0, 1).toUpperCase()
                                 )}
                               </div>
-                              <div style={{ minWidth: 0 }}>
-                                <div style={{ fontWeight: 700, color: "#111827", fontSize: "14px", overflow: "hidden", textOverflow: "ellipsis" }}>
+                              <div style={{ minWidth: 0, flex: 1 }}>
+                                <div style={{ fontWeight: 700, color: "#111827", fontSize: "15px", overflow: "hidden", textOverflow: "ellipsis", marginBottom: "6px" }}>
                                   {item.name}
                                 </div>
                                 {item.campaign ? (
-                                  <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                  <div style={{ fontSize: "13px", color: "#6b7280", overflow: "hidden", textOverflow: "ellipsis" }}>
                                     {item.campaign}
                                   </div>
                                 ) : null}
