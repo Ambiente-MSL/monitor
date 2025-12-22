@@ -622,21 +622,13 @@ export default function AdsDashboard() {
           : NaN,
   );
 
-  // Novas métricas de vídeo
-  const videoThruPlays = Number(
-    useAdLevelVideoTotals
-      ? (videoAdsSummary?.thruplays ?? 0)
-      : (videoSummary.thruplays ?? videoFromActions.thruplay ?? 0),
-  );
+  // Métricas de vídeo
   const adVideoPlays = useAdLevelVideoTotals ? Number(videoAdsSummary?.video_play ?? 0) : 0;
   const videoPlays = Number(
     adVideoPlays > 0
       ? adVideoPlays
       : (videoSummary.video_play_actions ?? videoFromActions.video_play ?? 0),
   );
-  const totalSpendValue = Number(totals.spend || 0);
-  const costPerThruPlay = videoThruPlays > 0 ? (totalSpendValue / videoThruPlays) : 0;
-  const thruPlayRate = videoPlays > 0 ? ((videoThruPlays / videoPlays) * 100) : 0;
   const videoDropOff = useMemo(() => {
     if (Array.isArray(videoSummary.drop_off_points) && videoSummary.drop_off_points.length) {
       return videoSummary.drop_off_points;
@@ -1279,7 +1271,7 @@ export default function AdsDashboard() {
                     </div>
                     <div>
                       <h4 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>📹 Performance de Vídeos</h4>
-                      <p style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>ThruPlay, retenção e engajamento</p>
+                      <p style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>Visualizações, retenção e engajamento</p>
                     </div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#6b7280", fontSize: 12 }}>
@@ -1292,75 +1284,171 @@ export default function AdsDashboard() {
                   <div className="ig-empty-state">Carregando...</div>
                 ) : hasVideoMetrics ? (
                   <div style={{ display: "grid", gap: 20 }}>
-                    {/* KPIs Principais - ThruPlay */}
+                    {/* Cards de Visualizações - Estilo Instagram Professional */}
                     <div style={{
-                      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                      borderRadius: 16,
-                      padding: 24,
-                      color: "white",
-                      boxShadow: "0 8px 24px rgba(102, 126, 234, 0.25)"
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+                      gap: 16
                     }}>
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 20 }}>
-                        {/* ThruPlay % */}
-                        <div>
-                          <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8, fontWeight: 600 }}>
-                            Taxa de ThruPlay
-                          </div>
-                          <div style={{ fontSize: 36, fontWeight: 800, marginBottom: 4 }}>
-                            {thruPlayRate.toFixed(1)}%
-                          </div>
-                          <div style={{ fontSize: 12, opacity: 0.8 }}>
-                            {formatNumber(videoThruPlays)} de {formatNumber(videoPlays)} visualizações
-                          </div>
+                      {/* Card 3s */}
+                      <div style={{
+                        background: "white",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: 16,
+                        padding: 20,
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                        position: "relative",
+                        overflow: "hidden"
+                      }}>
+                        <div style={{
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          height: 4,
+                          background: "linear-gradient(90deg, #0ea5e9, #06b6d4)"
+                        }} />
+                        <div style={{ fontSize: 13, color: "#6b7280", fontWeight: 600, marginBottom: 8 }}>
+                          Visualizações de 3s
                         </div>
-
-                        {/* Custo por ThruPlay */}
-                        <div>
-                          <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8, fontWeight: 600 }}>
-                            Custo por ThruPlay
-                          </div>
-                          <div style={{ fontSize: 36, fontWeight: 800, marginBottom: 4 }}>
-                            {formatCurrency(costPerThruPlay)}
-                          </div>
-                          <div style={{ fontSize: 12, opacity: 0.8 }}>
-                            {formatNumber(videoThruPlays)} ThruPlays
-                          </div>
+                        <div style={{ fontSize: 32, fontWeight: 800, color: "#111827", marginBottom: 4 }}>
+                          {formatNumber(videoViews3s)}
                         </div>
+                        <div style={{ fontSize: 12, color: "#9ca3af" }}>
+                          Alcance inicial
+                        </div>
+                      </div>
 
-                        {/* Tempo médio */}
-                        <div>
-                          <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8, fontWeight: 600 }}>
-                            Tempo médio assistido
-                          </div>
-                          <div style={{ fontSize: 36, fontWeight: 800, marginBottom: 4 }}>
-                            {formatDuration(videoAvgTime)}
-                          </div>
-                          <div style={{ fontSize: 12, opacity: 0.8 }}>
-                            Por visualização
-                          </div>
+                      {/* Card 10s */}
+                      <div style={{
+                        background: "white",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: 16,
+                        padding: 20,
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                        position: "relative",
+                        overflow: "hidden"
+                      }}>
+                        <div style={{
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          height: 4,
+                          background: "linear-gradient(90deg, #6366f1, #8b5cf6)"
+                        }} />
+                        <div style={{ fontSize: 13, color: "#6b7280", fontWeight: 600, marginBottom: 8 }}>
+                          Visualizações de 10s
+                        </div>
+                        <div style={{ fontSize: 32, fontWeight: 800, color: "#111827", marginBottom: 4 }}>
+                          {formatNumber(videoViews10s)}
+                        </div>
+                        <div style={{ fontSize: 12, color: "#9ca3af" }}>
+                          {videoViews3s > 0 ? `${((videoViews10s / videoViews3s) * 100).toFixed(1)}% retidos` : "--"}
+                        </div>
+                      </div>
+
+                      {/* Card 15s */}
+                      <div style={{
+                        background: "white",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: 16,
+                        padding: 20,
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                        position: "relative",
+                        overflow: "hidden"
+                      }}>
+                        <div style={{
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          height: 4,
+                          background: "linear-gradient(90deg, #a855f7, #c084fc)"
+                        }} />
+                        <div style={{ fontSize: 13, color: "#6b7280", fontWeight: 600, marginBottom: 8 }}>
+                          Visualizações de 15s
+                        </div>
+                        <div style={{ fontSize: 32, fontWeight: 800, color: "#111827", marginBottom: 4 }}>
+                          {formatNumber(videoViews15s)}
+                        </div>
+                        <div style={{ fontSize: 12, color: "#9ca3af" }}>
+                          {videoViews3s > 0 ? `${((videoViews15s / videoViews3s) * 100).toFixed(1)}% retidos` : "--"}
+                        </div>
+                      </div>
+
+                      {/* Card 30s */}
+                      <div style={{
+                        background: "white",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: 16,
+                        padding: 20,
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                        position: "relative",
+                        overflow: "hidden"
+                      }}>
+                        <div style={{
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          height: 4,
+                          background: "linear-gradient(90deg, #ec4899, #f472b6)"
+                        }} />
+                        <div style={{ fontSize: 13, color: "#6b7280", fontWeight: 600, marginBottom: 8 }}>
+                          Visualizações de 30s
+                        </div>
+                        <div style={{ fontSize: 32, fontWeight: 800, color: "#111827", marginBottom: 4 }}>
+                          {formatNumber(videoViews30s)}
+                        </div>
+                        <div style={{ fontSize: 12, color: "#9ca3af" }}>
+                          {videoViews3s > 0 ? `${((videoViews30s / videoViews3s) * 100).toFixed(1)}% retidos` : "--"}
                         </div>
                       </div>
                     </div>
 
-                    <div style={{
-                      background: "white",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: 16,
-                      padding: 20,
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.04)"
-                    }}>
-                      <h5 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700, color: "#111827" }}>
-                        Media de views por anuncio
-                      </h5>
-                      <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-                        <div style={{ fontSize: 36, fontWeight: 800, color: "#111827" }}>
-                          {avgVideoViewsDisplay}
-                        </div>
-                        <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>
-                          Media de visualizacoes (3s)
+                    {/* Card de Tempo Médio */}
+                    {Number.isFinite(videoAvgTime) && videoAvgTime > 0 && (
+                      <div style={{
+                        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                        borderRadius: 16,
+                        padding: 24,
+                        color: "white",
+                        boxShadow: "0 8px 24px rgba(102, 126, 234, 0.25)"
+                      }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
+                          <div>
+                            <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8, fontWeight: 600 }}>
+                              ⏱️ Tempo Médio Assistido
+                            </div>
+                            <div style={{ fontSize: 48, fontWeight: 800, marginBottom: 4 }}>
+                              {formatDuration(videoAvgTime)}
+                            </div>
+                            <div style={{ fontSize: 12, opacity: 0.8 }}>
+                              Por visualização de vídeo
+                            </div>
+                          </div>
+                          {avgVideoViews > 0 && (
+                            <div style={{
+                              background: "rgba(255,255,255,0.15)",
+                              borderRadius: 12,
+                              padding: 16,
+                              backdropFilter: "blur(10px)"
+                            }}>
+                              <div style={{ fontSize: 11, opacity: 0.9, marginBottom: 4, fontWeight: 600 }}>
+                                Média por Anúncio
+                              </div>
+                              <div style={{ fontSize: 24, fontWeight: 700 }}>
+                                {avgVideoViewsDisplay}
+                              </div>
+                              <div style={{ fontSize: 10, opacity: 0.8 }}>
+                                views (3s)
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </div>
+                    )}
 
                     {/* Gráfico de Retenção por Quartil */}
                     {videoDropOff?.length ? (
