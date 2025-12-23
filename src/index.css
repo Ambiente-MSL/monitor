@@ -985,7 +985,7 @@ body.theme-light {
   font-weight: 600;
   height: 40px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
@@ -2355,6 +2355,8 @@ body.theme-light {
   padding: 0;
   margin: 0;
   overflow: hidden;
+  padding-top: 0 !important;
+  margin-top: 0 !important;
 }
 
 /* Presets Sidebar */
@@ -2401,6 +2403,8 @@ body.theme-light {
   overflow: hidden;
   padding: 0;
   margin: 0;
+  padding-top: 0 !important;
+  margin-top: 0 !important;
 }
 
 /* Footer */
@@ -2479,12 +2483,26 @@ body.theme-light {
   width: 100% !important;
   margin: 0 !important;
   padding: 0 !important;
+  padding-top: 0 !important;
+  margin-top: 0 !important;
 }
 
 .rdrMonth {
-  padding: 8px 16px 12px 16px !important;
+  padding: 4px 16px 12px 16px !important;
   width: 100% !important;
   margin: 0 !important;
+  margin-top: 0 !important;
+  padding-top: 4px !important;
+}
+
+.date-range-dropdown-new .rdrCalendarWrapper {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+.date-range-dropdown-new .rdrMonth {
+  margin-top: 0 !important;
+  padding-top: 4px !important;
 }
 
 .rdrMonthAndYearWrapper {
