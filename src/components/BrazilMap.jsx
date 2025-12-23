@@ -181,12 +181,15 @@ const BrazilMap = ({ data = [], colorScale = '#6366f1', emptyColor = '#f3f4f6', 
   };
 
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+    <div style={{ width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
       <svg
         viewBox="0 0 500 600"
-        style={{ width: '100%', height: 'auto', maxHeight: '600px' }}
+        style={{ width: '100%', height: 'auto', maxHeight: '600px', filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.08))' }}
         xmlns="http://www.w3.org/2000/svg"
       >
+        {/* Fundo do mapa */}
+        <rect x="0" y="0" width="500" height="600" fill="transparent" />
+
         {Object.entries(statePaths).map(([code, path]) => {
           const stateData = normalizedData[code];
           const fillColor = stateData ? getColorForValue(stateData.value) : emptyColor;
@@ -200,7 +203,9 @@ const BrazilMap = ({ data = [], colorScale = '#6366f1', emptyColor = '#f3f4f6', 
                 d={path}
                 fill={fillColor}
                 stroke={strokeColor}
-                strokeWidth="1.5"
+                strokeWidth="2"
+                strokeLinejoin="round"
+                strokeLinecap="round"
                 opacity={1}
                 style={{
                   transition: 'all 0.3s ease',
@@ -210,11 +215,13 @@ const BrazilMap = ({ data = [], colorScale = '#6366f1', emptyColor = '#f3f4f6', 
                   if (hasData) {
                     e.target.style.strokeWidth = '3';
                     e.target.style.filter = 'brightness(1.1)';
+                    e.target.style.stroke = '#374151';
                   }
                 }}
                 onMouseLeave={(e) => {
-                  e.target.style.strokeWidth = '1.5';
+                  e.target.style.strokeWidth = '2';
                   e.target.style.filter = 'brightness(1)';
+                  e.target.style.stroke = strokeColor;
                 }}
               >
                 <title>
@@ -227,12 +234,12 @@ const BrazilMap = ({ data = [], colorScale = '#6366f1', emptyColor = '#f3f4f6', 
               <text
                 x={labelPos.x}
                 y={labelPos.y}
-                fontSize="10"
-                fontWeight="600"
+                fontSize="11"
+                fontWeight="700"
                 fill={hasData ? '#1f2937' : '#9ca3af'}
                 textAnchor="middle"
                 pointerEvents="none"
-                style={{ userSelect: 'none' }}
+                style={{ userSelect: 'none', textShadow: '0 1px 2px rgba(255,255,255,0.8)' }}
               >
                 {code}
               </text>

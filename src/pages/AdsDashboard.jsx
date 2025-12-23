@@ -1978,72 +1978,76 @@ export default function AdsDashboard() {
                     <div style={{
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '12px'
+                      background: 'white',
+                      borderRadius: '12px',
+                      padding: '20px',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
                     }}>
                       <div style={{
                         fontSize: '13px',
                         fontWeight: 700,
                         color: '#374151',
-                        marginBottom: '8px',
+                        marginBottom: '16px',
                         textTransform: 'uppercase',
-                        letterSpacing: '1px',
-                        paddingBottom: '12px',
-                        borderBottom: '2px solid #e5e7eb'
+                        letterSpacing: '1px'
                       }}>
                         Regiões do Brasil
                       </div>
                       {spendByRegion.slice(0, 10).map((region, index) => {
                         const colors = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#0ea5e9', '#f97316', '#84cc16', '#a855f7', '#06b6d4'];
+                        const isLast = index === Math.min(9, spendByRegion.length - 1);
                         return (
-                          <div key={region.name} style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '12px',
-                            padding: '12px 14px',
-                            borderRadius: '12px',
-                            background: `${colors[index % colors.length]}08`,
-                            border: `1.5px solid ${colors[index % colors.length]}25`,
-                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                            cursor: 'pointer'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'translateX(4px)';
-                            e.currentTarget.style.boxShadow = `0 4px 12px ${colors[index % colors.length]}30`;
-                            e.currentTarget.style.borderColor = colors[index % colors.length];
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'translateX(0)';
-                            e.currentTarget.style.boxShadow = 'none';
-                            e.currentTarget.style.borderColor = `${colors[index % colors.length]}25`;
-                          }}>
+                          <div key={region.name}>
                             <div style={{
-                              width: '20px',
-                              height: '20px',
-                              borderRadius: '6px',
-                              background: colors[index % colors.length],
-                              flexShrink: 0,
-                              boxShadow: `0 2px 8px ${colors[index % colors.length]}40`
-                            }} />
-                            <div style={{ flex: 1, minWidth: 0 }}>
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '12px',
+                              padding: '12px 0',
+                              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                              cursor: 'pointer'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.transform = 'translateX(4px)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.transform = 'translateX(0)';
+                            }}>
                               <div style={{
-                                fontSize: '14px',
-                                fontWeight: 600,
-                                color: '#111827',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                                marginBottom: '2px'
-                              }}>
-                                {region.name}
-                              </div>
-                              <div style={{
-                                fontSize: '13px',
-                                color: colors[index % colors.length],
-                                fontWeight: 700
-                              }}>
-                                {formatCurrency(region.value)}
+                                width: '12px',
+                                height: '12px',
+                                borderRadius: '3px',
+                                background: colors[index % colors.length],
+                                flexShrink: 0,
+                                boxShadow: `0 2px 6px ${colors[index % colors.length]}40`
+                              }} />
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{
+                                  fontSize: '14px',
+                                  fontWeight: 600,
+                                  color: '#111827',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                  marginBottom: '2px'
+                                }}>
+                                  {region.name}
+                                </div>
+                                <div style={{
+                                  fontSize: '13px',
+                                  color: '#6b7280',
+                                  fontWeight: 600
+                                }}>
+                                  {formatCurrency(region.value)}
+                                </div>
                               </div>
                             </div>
+                            {!isLast && (
+                              <div style={{
+                                height: '1px',
+                                background: '#e5e7eb',
+                                margin: '0'
+                              }} />
+                            )}
                           </div>
                         );
                       })}
