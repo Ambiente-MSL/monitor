@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link, useLocation, useOutletContext } from "react-router-dom";
-import { differenceInCalendarDays, endOfDay, startOfDay, subDays } from "date-fns";
+import { differenceInCalendarDays, endOfDay, format, startOfDay, subDays } from "date-fns";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -429,8 +429,8 @@ export default function AdsDashboard() {
       try {
         const params = new URLSearchParams();
         params.set("actId", actParam);
-        if (sinceDate) params.set("since", startOfDay(sinceDate).toISOString());
-        if (untilDate) params.set("until", endOfDay(untilDate).toISOString());
+        if (sinceDate) params.set("since", format(startOfDay(sinceDate), "yyyy-MM-dd"));
+        if (untilDate) params.set("until", format(startOfDay(untilDate), "yyyy-MM-dd"));
         const resp = await apiFetch(`/api/ads/highlights?${params.toString()}`);
         if (cancelled) return;
         setAdsData(resp || {});
