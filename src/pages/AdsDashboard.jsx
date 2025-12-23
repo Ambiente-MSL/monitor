@@ -41,8 +41,6 @@ import { useAccounts } from "../context/AccountsContext";
 import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import { useAuth } from "../context/AuthContext";
 import useQueryState from "../hooks/useQueryState";
-import BrazilMap from "../components/BrazilMap";
-import CearaMap from "../components/CearaMap";
 
 const API_BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 
@@ -479,6 +477,12 @@ export default function AdsDashboard() {
     return ADS_SHORT_DATE_FORMATTER.format(date);
   };
 
+  const formatCityLabel = (value) => {
+    if (!value) return "";
+    const text = String(value);
+    return text.length > 18 ? `${text.slice(0, 16)}...` : text;
+  };
+
   const totals = adsData?.totals || {};
   const averages = adsData?.averages || {};
   const actions = Array.isArray(adsData?.actions) ? adsData.actions : [];
@@ -705,19 +709,27 @@ export default function AdsDashboard() {
     return MOCK_SPEND_SERIES;
   }, [adsData]);
 
-  const spendByRegion = useMemo(() => {
-    if (Array.isArray(adsData?.spend_by_region)) {
-      return adsData.spend_by_region
-        .filter((item) => Number(item?.spend) > 0 && item?.name)
-        .map((item) => ({
-          name: item.name,
-          value: Number(item.spend) || 0,
-          reach: Number(item.reach) || 0,
-          impressions: Number(item.impressions) || 0,
-        }));
-    }
-    return [];
-  }, [adsData]);
+  const spendByCity = useMemo(() => {
+    const source = Array.isArray(adsData?.spend_by_city)
+      ? adsData.spend_by_city
+      : Array.isArray(adsData?.spend_by_region)
+        ? adsData.spend_by_region
+        : [];
+    if (!source.length) return [];
+    return source
+      .filter((item) => Number(item?.spend) > 0 && item?.name)
+      .map((item) => ({
+        name: item.name,
+        value: Number(item.spend) || 0,
+        reach: Number(item.reach) || 0,
+        impressions: Number(item.impressions) || 0,
+      }))
+      .sort((a, b) => b.value - a.value);
+  }, [adsData?.spend_by_city, adsData?.spend_by_region]);
+
+  const topCities = useMemo(() => spendByCity.slice(0, 10), [spendByCity]);
+  const topCitiesHeight = useMemo(() => Math.max(220, topCities.length * 32), [topCities.length]);
+  const allCitiesHeight = useMemo(() => Math.max(240, spendByCity.length * 28), [spendByCity.length]);
 
   const audienceAgeGenderData = useMemo(() => {
     const raw = Array.isArray(adsData?.demographics?.byAgeGender)
@@ -859,15 +871,6 @@ export default function AdsDashboard() {
       percent: totalReach > 0 ? Math.round((Number(segment.reach || 0) / totalReach) * 100) : 0,
     }));
   }, [adsData?.demographics?.topSegments, adsData?.demographics?.byAgeGender]);
-
-  const regionChartHeight = useMemo(() => {
-    if (!spendByRegion.length) return 200;
-    const base = 180;
-    const perItem = 32;
-    const padding = 60;
-    const max = 420;
-    return Math.min(max, Math.max(base, spendByRegion.length * perItem + padding));
-  }, [spendByRegion.length]);
 
   const peakSpendPoint = useMemo(() => {
     const series = spendSeries;
@@ -2008,142 +2011,121 @@ export default function AdsDashboard() {
               </div>
             </section>
 
-            {/* 2.3 Investimento por região - Mapa do Brasil/Ceará */}
+            {/* 2.3 Investimento por cidade */}
             <section className="ig-growth-clean">
               <header className="ig-card-header">
                 <div>
-                  <h3>Investimento por região</h3>
-                  <p className="ig-card-subtitle">Distribuição geográfica dos investimentos em anúncios</p>
+                  <h3>Investimento por cidade</h3>
+                  <p className="ig-card-subtitle">Distribuição dos investimentos por município</p>
                 </div>
               </header>
 
               <div style={{ marginTop: '24px' }}>
-                {spendByRegion.length ? (
+                {spendByCity.length ? (
                   <div style={{
                     display: 'grid',
-                    gridTemplateColumns: '2fr 1fr',
-                    gap: '32px',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                    gap: '24px',
                     alignItems: 'start'
                   }}>
-                    {/* Mapa do Brasil ou Ceará com escala de cores */}
                     <div style={{
-                      position: 'relative',
-                      width: '100%',
-                      display: 'flex',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      padding: '20px',
-                      background: 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%)',
-                      borderRadius: '16px',
-                      border: '1px solid #e5e7eb'
-                    }}>
-                      {/* Detectar se é Ceará para usar mapa específico */}
-                      {(() => {
-                        const isCeara = spendByRegion.some(region =>
-                          ['Fortaleza', 'Caucaia', 'Juazeiro do Norte', 'Sobral', 'Maracanaú', 'Crato'].some(city =>
-                            region.name.toLowerCase().includes(city.toLowerCase())
-                          )
-                        );
-
-                        return isCeara ? (
-                          <CearaMap
-                            data={spendByRegion}
-                            colorScale="#6366f1"
-                            emptyColor="#f3f4f6"
-                            strokeColor="#9ca3af"
-                          />
-                        ) : (
-                          <BrazilMap
-                            data={spendByRegion}
-                            colorScale="#6366f1"
-                            emptyColor="#f3f4f6"
-                            strokeColor="#9ca3af"
-                          />
-                        );
-                      })()}
-                    </div>
-
-                    {/* Legenda das Regiões */}
-                    <div style={{
-                      display: 'flex',
-                      flexDirection: 'column',
                       background: 'white',
                       borderRadius: '12px',
                       padding: '20px',
+                      border: '1px solid #e5e7eb',
                       boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
                     }}>
-                      <div style={{
-                        fontSize: '13px',
-                        fontWeight: 700,
-                        color: '#374151',
-                        marginBottom: '16px',
-                        textTransform: 'uppercase',
-                        letterSpacing: '1px'
-                      }}>
-                        Regiões do Brasil
+                      <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                        Top cidades
+                      </h4>
+                      <ResponsiveContainer width="100%" height={topCitiesHeight}>
+                        <BarChart data={topCities} layout="vertical" margin={{ left: 0, right: 10, top: 0, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
+                          <XAxis
+                            type="number"
+                            tick={{ fill: '#6b7280', fontSize: 11 }}
+                            axisLine={false}
+                            tickLine={false}
+                            tickFormatter={(value) => `R$ ${formatNumber(value)}`}
+                          />
+                          <YAxis
+                            type="category"
+                            dataKey="name"
+                            tick={{ fill: '#374151', fontSize: 12, fontWeight: 600 }}
+                            width={110}
+                            axisLine={false}
+                            tickLine={false}
+                            tickFormatter={formatCityLabel}
+                          />
+                          <Tooltip
+                            cursor={{ fill: 'rgba(99, 102, 241, 0.08)' }}
+                            formatter={(value) => formatCurrency(Number(value))}
+                            labelFormatter={(label) => String(label)}
+                            contentStyle={{
+                              backgroundColor: 'white',
+                              border: '1px solid #e5e7eb',
+                              borderRadius: '8px',
+                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                              fontSize: '12px'
+                            }}
+                          />
+                          <Bar dataKey="value" fill="#6366f1" radius={[0, 6, 6, 0]} barSize={14} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    <div style={{
+                      background: 'white',
+                      borderRadius: '12px',
+                      padding: '20px',
+                      border: '1px solid #e5e7eb',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
+                    }}>
+                      <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                        Todas as cidades
+                      </h4>
+                      <div style={{ maxHeight: 360, overflowY: 'auto', paddingRight: '8px' }}>
+                        <div style={{ height: allCitiesHeight }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={spendByCity} layout="vertical" margin={{ left: 0, right: 10, top: 0, bottom: 0 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
+                              <XAxis
+                                type="number"
+                                tick={{ fill: '#6b7280', fontSize: 11 }}
+                                axisLine={false}
+                                tickLine={false}
+                                tickFormatter={(value) => `R$ ${formatNumber(value)}`}
+                              />
+                              <YAxis
+                                type="category"
+                                dataKey="name"
+                                tick={{ fill: '#374151', fontSize: 11, fontWeight: 600 }}
+                                width={120}
+                                axisLine={false}
+                                tickLine={false}
+                                tickFormatter={formatCityLabel}
+                              />
+                              <Tooltip
+                                cursor={{ fill: 'rgba(99, 102, 241, 0.08)' }}
+                                formatter={(value) => formatCurrency(Number(value))}
+                                labelFormatter={(label) => String(label)}
+                                contentStyle={{
+                                  backgroundColor: 'white',
+                                  border: '1px solid #e5e7eb',
+                                  borderRadius: '8px',
+                                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                                  fontSize: '12px'
+                                }}
+                              />
+                              <Bar dataKey="value" fill="#8b5cf6" radius={[0, 6, 6, 0]} barSize={12} />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
                       </div>
-                      {spendByRegion.slice(0, 10).map((region, index) => {
-                        const colors = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#0ea5e9', '#f97316', '#84cc16', '#a855f7', '#06b6d4'];
-                        const isLast = index === Math.min(9, spendByRegion.length - 1);
-                        return (
-                          <div key={region.name}>
-                            <div style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '12px',
-                              padding: '12px 0',
-                              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                              cursor: 'pointer'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.transform = 'translateX(4px)';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.transform = 'translateX(0)';
-                            }}>
-                              <div style={{
-                                width: '12px',
-                                height: '12px',
-                                borderRadius: '3px',
-                                background: colors[index % colors.length],
-                                flexShrink: 0,
-                                boxShadow: `0 2px 6px ${colors[index % colors.length]}40`
-                              }} />
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{
-                                  fontSize: '14px',
-                                  fontWeight: 600,
-                                  color: '#111827',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  whiteSpace: 'nowrap',
-                                  marginBottom: '2px'
-                                }}>
-                                  {region.name}
-                                </div>
-                                <div style={{
-                                  fontSize: '13px',
-                                  color: '#6b7280',
-                                  fontWeight: 600
-                                }}>
-                                  {formatCurrency(region.value)}
-                                </div>
-                              </div>
-                            </div>
-                            {!isLast && (
-                              <div style={{
-                                height: '1px',
-                                background: '#e5e7eb',
-                                margin: '0'
-                              }} />
-                            )}
-                          </div>
-                        );
-                      })}
                     </div>
                   </div>
                 ) : (
-                  <div className="ig-empty-state">Sem dados regionais para o período.</div>
+                  <div className="ig-empty-state">Sem dados por cidade no período.</div>
                 )}
               </div>
             </section>

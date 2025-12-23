@@ -2000,6 +2000,46 @@ def ads_highlights(act_id: str, since_str: str, until_str: str):
     except Exception:
         spend_by_region = []
 
+    # Distribuição geográfica (spend por cidade)
+    spend_by_city: List[Dict[str, Any]] = []
+    try:
+        city_res = gget(
+            f"/{act_id}/insights",
+            {
+                "fields": "spend,impressions,reach",
+                "time_range[since]": since_str,
+                "time_range[until]": until_str,
+                "level": "account",
+                "breakdowns": "city",
+                "limit": 5000,
+            },
+        )
+        city_totals: Dict[str, Dict[str, float]] = {}
+        for row in city_res.get("data", []):
+            city = row.get("city") or row.get("region") or row.get("country") or "Desconhecido"
+            spend = float(row.get("spend", 0) or 0)
+            impressions = float(row.get("impressions", 0) or 0)
+            reach = float(row.get("reach", 0) or 0)
+            entry = city_totals.setdefault(city, {"spend": 0.0, "impressions": 0.0, "reach": 0.0})
+            entry["spend"] += spend
+            entry["impressions"] += impressions
+            entry["reach"] += reach
+        spend_by_city = [
+            {
+                "name": city,
+                "spend": round(values["spend"], 2),
+                "impressions": int(values["impressions"]),
+                "reach": int(values["reach"]),
+            }
+            for city, values in city_totals.items()
+            if values["spend"] > 0
+        ]
+        spend_by_city.sort(key=lambda item: item["spend"], reverse=True)
+    except MetaAPIError:
+        spend_by_city = []
+    except Exception:
+        spend_by_city = []
+
     video_ads: List[Dict[str, Any]] = []
     video_ads_summary: Optional[Dict[str, Any]] = None
     video_ads_timeseries: List[Dict[str, Any]] = []
@@ -2450,4 +2490,5 @@ def ads_highlights(act_id: str, since_str: str, until_str: str):
         "campaigns": top_campaigns,
         "creatives": creatives,
         "spend_by_region": spend_by_region,
+        "spend_by_city": spend_by_city,
     }
