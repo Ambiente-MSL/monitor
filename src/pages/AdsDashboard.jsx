@@ -42,6 +42,7 @@ import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import { useAuth } from "../context/AuthContext";
 import useQueryState from "../hooks/useQueryState";
 import BrazilMap from "../components/BrazilMap";
+import CearaMap from "../components/CearaMap";
 
 const API_BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 
@@ -2007,7 +2008,7 @@ export default function AdsDashboard() {
               </div>
             </section>
 
-            {/* 2.3 Investimento por região - Mapa do Brasil */}
+            {/* 2.3 Investimento por região - Mapa do Brasil/Ceará */}
             <section className="ig-growth-clean">
               <header className="ig-card-header">
                 <div>
@@ -2024,7 +2025,7 @@ export default function AdsDashboard() {
                     gap: '32px',
                     alignItems: 'start'
                   }}>
-                    {/* Mapa do Brasil com escala de cores */}
+                    {/* Mapa do Brasil ou Ceará com escala de cores */}
                     <div style={{
                       position: 'relative',
                       width: '100%',
@@ -2036,12 +2037,30 @@ export default function AdsDashboard() {
                       borderRadius: '16px',
                       border: '1px solid #e5e7eb'
                     }}>
-                      <BrazilMap
-                        data={spendByRegion}
-                        colorScale="#6366f1"
-                        emptyColor="#f3f4f6"
-                        strokeColor="#9ca3af"
-                      />
+                      {/* Detectar se é Ceará para usar mapa específico */}
+                      {(() => {
+                        const isCeara = spendByRegion.some(region =>
+                          ['Fortaleza', 'Caucaia', 'Juazeiro do Norte', 'Sobral', 'Maracanaú', 'Crato'].some(city =>
+                            region.name.toLowerCase().includes(city.toLowerCase())
+                          )
+                        );
+
+                        return isCeara ? (
+                          <CearaMap
+                            data={spendByRegion}
+                            colorScale="#6366f1"
+                            emptyColor="#f3f4f6"
+                            strokeColor="#9ca3af"
+                          />
+                        ) : (
+                          <BrazilMap
+                            data={spendByRegion}
+                            colorScale="#6366f1"
+                            emptyColor="#f3f4f6"
+                            strokeColor="#9ca3af"
+                          />
+                        );
+                      })()}
                     </div>
 
                     {/* Legenda das Regiões */}
