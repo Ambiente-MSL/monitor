@@ -10287,6 +10287,13 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   margin-bottom: 24px;
 }
 
+.ig-audience-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
 .ig-card-white {
   background: white;
   border-radius: 16px;
@@ -10925,6 +10932,10 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   }
 
   .ig-clean-grid-triple {
+    grid-template-columns: 1fr;
+  }
+
+  .ig-audience-grid {
     grid-template-columns: 1fr;
   }
 }

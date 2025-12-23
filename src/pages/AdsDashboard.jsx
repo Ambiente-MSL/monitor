@@ -806,6 +806,45 @@ export default function AdsDashboard() {
     }));
   }, [adsData?.spend_by_region]);
 
+  const audienceGenderReachData = useMemo(() => {
+    if (!Array.isArray(adsData?.demographics?.byGender)) return [];
+    const palette = {
+      Masculino: "#6366f1",
+      Feminino: "#ec4899",
+      Indefinido: "#94a3b8",
+    };
+    const order = ["Masculino", "Feminino", "Indefinido"];
+    const normalize = (value) => {
+      const text = String(value || "").toLowerCase();
+      if (text.startsWith("m")) return "Masculino";
+      if (text.startsWith("f")) return "Feminino";
+      return "Indefinido";
+    };
+    const data = adsData.demographics.byGender
+      .map((item) => {
+        const key = normalize(item.segment || item.gender);
+        const label = key === "Masculino" ? "Homens" : key === "Feminino" ? "Mulheres" : "Indefinido";
+        return {
+          key,
+          label,
+          value: Math.round(Number(item.reach || 0)),
+          color: palette[key] || "#94a3b8",
+        };
+      })
+      .filter((item) => item.value > 0);
+
+    data.sort((a, b) => {
+      const ai = order.indexOf(a.key);
+      const bi = order.indexOf(b.key);
+      if (ai === -1 && bi === -1) return a.label.localeCompare(b.label);
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    });
+
+    return data;
+  }, [adsData?.demographics?.byGender]);
+
   const audienceTopSegments = useMemo(() => {
     if (!Array.isArray(adsData?.demographics?.topSegments)) return [];
     const segments = adsData.demographics.topSegments;
@@ -915,45 +954,6 @@ export default function AdsDashboard() {
   }, [adsData]);
 
   // Gera série temporal de impressões e alcance baseada nos dados reais
-  const followersPerCampaign = useMemo(() => {
-    if (Array.isArray(adsData?.campaigns)) {
-      const normalized = adsData.campaigns
-        .map((campaign) => {
-          const rawFollowers = campaign.followers_gained
-            ?? campaign.followers
-            ?? campaign.new_followers
-            ?? campaign.followersAdded
-            ?? campaign.followers_delta;
-          const followersValue = Number(rawFollowers);
-          return {
-            id: campaign.id || campaign.campaign_id || campaign.name,
-            name: campaign.name || campaign.campaign_name || "Campanha",
-            followers: Number.isFinite(followersValue) ? followersValue : 0,
-          };
-        })
-        .filter((item) => item.id);
-
-      if (normalized.some((item) => item.followers > 0)) {
-        return normalized
-          .filter((item) => item.followers > 0)
-          .sort((a, b) => b.followers - a.followers);
-      }
-      return [];
-    }
-
-    return [];
-  }, [adsData]);
-
-  const followersPerCampaignTotal = useMemo(
-    () => followersPerCampaign.reduce((sum, item) => sum + Number(item.followers || 0), 0),
-    [followersPerCampaign]
-  );
-
-  const maxFollowersPerCampaign = useMemo(
-    () => followersPerCampaign.reduce((max, item) => Math.max(max, Number(item.followers || 0)), 0),
-    [followersPerCampaign]
-  );
-
   const performanceSeries = useMemo(() => {
     // Se não temos dados reais, usa o mock
     if (!adsData || !spendSeries.length) {
@@ -2454,7 +2454,7 @@ export default function AdsDashboard() {
                 </div>
               </header>
 
-              <div style={{ marginTop: '16px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+              <div className="ig-audience-grid">
                 {/* Gráfico Idade x Gênero */}
                 <div style={{
                   background: 'rgba(255, 255, 255, 0.9)',
@@ -2539,6 +2539,68 @@ export default function AdsDashboard() {
                   )}
                 </div>
 
+                {/* Gráfico Alcance por gênero */}
+                <div style={{
+                  background: 'rgba(255, 255, 255, 0.9)',
+                  border: '1px solid rgba(0, 0, 0, 0.08)',
+                  borderRadius: '12px',
+                  padding: '20px'
+                }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '16px' }}>
+                    Alcance Homens x Mulheres
+                  </h4>
+                  {audienceGenderReachData.length === 0 ? (
+                    <div
+                      className="ig-empty-state"
+                      style={{ minHeight: 180, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}
+                    >
+                      Sem dados de alcance por gênero.
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={200}>
+                      <BarChart
+                        data={audienceGenderReachData}
+                        layout="vertical"
+                        margin={{ left: 0, right: 10, top: 5, bottom: 5 }}
+                        barGap={6}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
+                        <XAxis
+                          type="number"
+                          tick={{ fill: '#6b7280', fontSize: 11 }}
+                          axisLine={false}
+                          tickLine={false}
+                          tickFormatter={(value) => formatNumber(value)}
+                        />
+                        <YAxis
+                          type="category"
+                          dataKey="label"
+                          tick={{ fill: '#374151', fontSize: 12, fontWeight: 600 }}
+                          width={70}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <Tooltip
+                          cursor={{ fill: 'rgba(99, 102, 241, 0.08)' }}
+                          formatter={(value) => formatNumber(Number(value))}
+                          contentStyle={{
+                            backgroundColor: 'white',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                            fontSize: '12px'
+                          }}
+                        />
+                        <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={14}>
+                          {audienceGenderReachData.map((entry, index) => (
+                            <Cell key={`${entry.label}-${index}`} fill={entry.color} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+
                 {/* Gráfico Localização */}
                 <div style={{
                   background: 'rgba(255, 255, 255, 0.9)',
@@ -2599,108 +2661,6 @@ export default function AdsDashboard() {
                         ))}
                       </div>
                     </>
-                  )}
-                </div>
-
-                {/* Seguidores ganhos por campanha */}
-                <div style={{
-                  background: 'rgba(255, 255, 255, 0.9)',
-                  border: '1px solid rgba(0, 0, 0, 0.08)',
-                  borderRadius: '12px',
-                  padding: '20px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '12px'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
-                    <div>
-                      <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '4px' }}>
-                        Seguidores ganhos por campanha
-                      </h4>
-                      <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>
-                        Crescimento atribuido ao periodo filtrado
-                      </p>
-                    </div>
-                    <div style={{
-                      padding: '10px 12px',
-                      borderRadius: '10px',
-                      background: 'linear-gradient(135deg, #0ea5e9 0%, #6366f1 50%, #a855f7 100%)',
-                      color: '#ffffff',
-                      fontWeight: 700,
-                      fontSize: '12px',
-                      boxShadow: '0 6px 16px rgba(99, 102, 241, 0.2)',
-                      whiteSpace: 'nowrap'
-                    }}>
-                      {formatNumber(followersPerCampaignTotal || 0)} seguidores
-                    </div>
-                  </div>
-
-                  {followersPerCampaign.length === 0 ? (
-                    <div
-                      className="ig-empty-state"
-                      style={{ minHeight: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}
-                    >
-                      Sem dados de seguidores para o periodo/conta selecionados.
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      {followersPerCampaign.slice(0, 6).map((campaign, index) => {
-                        const followersValue = Number(campaign.followers || 0);
-                        const barWidth = maxFollowersPerCampaign > 0
-                          ? Math.min(100, (followersValue / maxFollowersPerCampaign) * 100)
-                          : 0;
-                        const percentShare = followersPerCampaignTotal > 0
-                          ? Math.round((followersValue / followersPerCampaignTotal) * 100)
-                          : 0;
-
-                        return (
-                          <div key={campaign.id || index} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                                <span style={{
-                                  width: '22px',
-                                  height: '22px',
-                                  borderRadius: '6px',
-                                  background: '#eef2ff',
-                                  color: '#4338ca',
-                                  fontWeight: 700,
-                                  fontSize: '12px',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  flexShrink: 0
-                                }}>
-                                  {index + 1}
-                                </span>
-                                <span style={{
-                                  fontSize: '13px',
-                                  color: '#111827',
-                                  fontWeight: 600,
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  whiteSpace: 'nowrap'
-                                }}>
-                                  {campaign.name}
-                                </span>
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
-                                <span style={{ fontWeight: 700, color: '#0f172a' }}>{formatNumber(followersValue)}</span>
-                                <span style={{ color: '#6b7280', fontWeight: 600 }}>+{percentShare}%</span>
-                              </div>
-                            </div>
-                            <div style={{ height: '8px', background: '#f3f4f6', borderRadius: '999px', overflow: 'hidden' }}>
-                              <div style={{
-                                width: `${barWidth}%`,
-                                height: '100%',
-                                background: 'linear-gradient(90deg, #0ea5e9 0%, #6366f1 50%, #a855f7 100%)',
-                                borderRadius: '999px',
-                                transition: 'width 0.4s ease'
-                              }} />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
                   )}
                 </div>
 
