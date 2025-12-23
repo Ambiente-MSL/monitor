@@ -2961,12 +2961,12 @@ body.theme-light {
 .topbar__account .account-dropdown__list {
   right: 0;
   left: auto;
-  background: rgba(42, 42, 46, 0.98);
+  background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(139, 92, 246, 0.3);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5),
-              0 0 0 1px rgba(255, 255, 255, 0.05) inset,
-              0 1px 0 rgba(255, 255, 255, 0.1) inset;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15),
+              0 0 0 1px rgba(255, 255, 255, 0.5) inset,
+              0 1px 0 rgba(255, 255, 255, 0.8) inset;
   border-radius: 16px;
   animation: dropdownFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1100 !important;
@@ -2974,7 +2974,7 @@ body.theme-light {
 }
 
 .topbar__account .account-dropdown__item {
-  color: rgba(255, 255, 255, 0.95) !important;
+  color: #1f2937 !important;
   border-radius: 10px;
   position: relative;
   overflow: hidden;
@@ -2995,10 +2995,10 @@ body.theme-light {
 }
 
 .topbar__account .account-dropdown__item:hover {
-  background: rgba(139, 92, 246, 0.15);
-  color: #ffffff;
+  background: rgba(139, 92, 246, 0.1);
+  color: #1f2937;
   transform: translateX(2px);
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
 }
 
 .topbar__account .account-dropdown__item:hover::before {
@@ -3006,10 +3006,10 @@ body.theme-light {
 }
 
 .topbar__account .account-dropdown__item--active {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(236, 72, 153, 0.25));
-  color: #ffffff;
-  border: 1px solid rgba(139, 92, 246, 0.4);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(236, 72, 153, 0.15));
+  color: #1f2937;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 .topbar__account .account-dropdown__item--active::before {
@@ -3017,7 +3017,7 @@ body.theme-light {
 }
 
 .topbar__account .account-dropdown__item-name {
-  color: rgba(255, 255, 255, 0.95) !important;
+  color: #1f2937 !important;
   font-weight: 500;
   position: relative;
   z-index: 2;
@@ -3090,7 +3090,7 @@ body:has(.facebook-dashboard--clean) .topbar__account .account-dropdown__item-na
 
 .admin-dashboard--clean .ig-clean-container {
   margin: 0 auto;
-  padding: 24px 24px 32px;
+  padding: 0 24px 32px;
   max-width: 1400px;
 }
 
