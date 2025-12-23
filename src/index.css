@@ -2317,11 +2317,22 @@ body.theme-light {
 @keyframes dropdownFadeIn {
   from {
     opacity: 0;
-    transform: translateY(-12px) scale(0.88);
+    transform: translateY(-8px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(0.92);
+    transform: translateY(0);
+  }
+}
+
+@keyframes accountDropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -2968,9 +2979,9 @@ body.theme-light {
               0 0 0 1px rgba(255, 255, 255, 0.5) inset,
               0 1px 0 rgba(255, 255, 255, 0.8) inset;
   border-radius: 16px;
-  animation: dropdownFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: accountDropdownFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1100 !important;
-  min-width: 220px;
+  width: 240px;
 }
 
 .topbar__account .account-dropdown__item {
