@@ -201,7 +201,7 @@ const BrazilMap = ({ data = [], colorScale = '#6366f1', emptyColor = '#f3f4f6', 
                 fill={fillColor}
                 stroke={strokeColor}
                 strokeWidth="1.5"
-                opacity={hasData ? 1 : 0.5}
+                opacity={1}
                 style={{
                   transition: 'all 0.3s ease',
                   cursor: hasData ? 'pointer' : 'default'
