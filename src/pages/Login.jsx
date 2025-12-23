@@ -15,7 +15,7 @@ const translateError = (rawMessage) => {
     return 'Credenciais inválidas. Verifique os dados informados.';
   }
   if (normalized.includes('email') && normalized.includes('required')) {
-    return 'Informe o e-mail e senha para continuar.';
+    return 'Informe o e-mail e senha para continuar!';
   }
   if (normalized.includes('network')) {
     return 'Falha de rede ao conectar. Tente novamente em instantes.';
