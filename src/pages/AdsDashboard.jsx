@@ -206,37 +206,6 @@ const MOCK_CREATIVES = [
   },
 ];
 
-const MOCK_AGE_GENDER_DATA = [
-  { age: "18-24", male: 850, female: 1200 },
-  { age: "25-34", male: 1500, female: 1800 },
-  { age: "35-44", male: 1100, female: 950 },
-  { age: "45-54", male: 600, female: 700 },
-  { age: "55+", male: 400, female: 500 },
-];
-
-const MOCK_LOCATION_DATA = [
-  { name: "São Paulo", value: 2800, color: "#6366f1" },
-  { name: "Rio de Janeiro", value: 1900, color: "#8b5cf6" },
-  { name: "Brasília", value: 1200, color: "#a855f7" },
-  { name: "Belo Horizonte", value: 950, color: "#c084fc" },
-  { name: "Outros", value: 1150, color: "#d8b4fe" },
-];
-
-const MOCK_PLACEMENT_DATA = [
-  { name: "Feed Instagram", value: 3200, percent: 40 },
-  { name: "Stories Instagram", value: 2400, percent: 30 },
-  { name: "Feed Facebook", value: 1600, percent: 20 },
-  { name: "Reels", value: 800, percent: 10 },
-];
-
-const MOCK_FOLLOWERS_PER_CAMPAIGN = [
-  { id: "1", name: "Campanha Verao 2025", followers: 1250 },
-  { id: "2", name: "Lancamento Produto X", followers: 980 },
-  { id: "3", name: "Promocao Relampago", followers: 760 },
-  { id: "4", name: "Engajamento Stories", followers: 540 },
-  { id: "5", name: "Campanha Retargeting", followers: 420 },
-];
-
 const MOCK_INSIGHTS = [
   {
     id: "i1",
@@ -749,6 +718,108 @@ export default function AdsDashboard() {
     return [];
   }, [adsData]);
 
+  const audienceAgeGenderData = useMemo(() => {
+    const raw = Array.isArray(adsData?.demographics?.byAgeGender)
+      ? adsData.demographics.byAgeGender
+      : Array.isArray(adsData?.demographics?.topSegments)
+        ? adsData.demographics.topSegments
+        : [];
+
+    if (!raw.length) return [];
+
+    const normalizeGender = (value) => {
+      const text = String(value || "").toLowerCase();
+      if (text.startsWith("m")) return "male";
+      if (text.startsWith("f")) return "female";
+      return "unknown";
+    };
+
+    const bucket = new Map();
+    raw.forEach((item) => {
+      const age = item.age || item.segment || "Desconhecido";
+      const gender = normalizeGender(item.gender || item.segment);
+      const reach = Number(item.reach || 0);
+      const current = bucket.get(age) || { age, male: 0, female: 0, unknown: 0 };
+      current[gender] += reach;
+      bucket.set(age, current);
+    });
+
+    const data = Array.from(bucket.values()).map((entry) => ({
+      age: entry.age,
+      male: Math.round(entry.male || 0),
+      female: Math.round(entry.female || 0),
+      unknown: Math.round(entry.unknown || 0),
+    }));
+
+    const ageOrder = ["13-17", "18-24", "25-34", "35-44", "45-54", "55-64", "65+"];
+    data.sort((a, b) => {
+      const ai = ageOrder.indexOf(a.age);
+      const bi = ageOrder.indexOf(b.age);
+      if (ai === -1 && bi === -1) return String(a.age).localeCompare(String(b.age));
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    });
+
+    return data;
+  }, [adsData?.demographics?.byAgeGender, adsData?.demographics?.topSegments]);
+
+  const hasAudienceAgeGender = useMemo(
+    () => audienceAgeGenderData.some((item) => item.male > 0 || item.female > 0 || item.unknown > 0),
+    [audienceAgeGenderData],
+  );
+
+  const hasUnknownAudienceGender = useMemo(
+    () => audienceAgeGenderData.some((item) => item.unknown > 0),
+    [audienceAgeGenderData],
+  );
+
+  const audienceLocationData = useMemo(() => {
+    if (!Array.isArray(adsData?.spend_by_region)) return [];
+    const palette = ["#6366f1", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#0ea5e9", "#f97316", "#84cc16"];
+    const raw = adsData.spend_by_region
+      .map((item) => {
+        const reachValue = Number(item.reach || 0);
+        const impressionsValue = Number(item.impressions || 0);
+        const value = reachValue > 0 ? reachValue : impressionsValue;
+        return {
+          name: item.name || "Desconhecido",
+          value,
+        };
+      })
+      .filter((item) => item.value > 0);
+
+    if (!raw.length) return [];
+
+    raw.sort((a, b) => b.value - a.value);
+    const maxItems = 5;
+    const top = raw.slice(0, maxItems);
+    const rest = raw.slice(maxItems);
+    const restValue = rest.reduce((sum, item) => sum + item.value, 0);
+    if (restValue > 0) {
+      top.push({ name: "Outros", value: restValue });
+    }
+
+    return top.map((item, index) => ({
+      ...item,
+      color: palette[index % palette.length],
+    }));
+  }, [adsData?.spend_by_region]);
+
+  const audienceTopSegments = useMemo(() => {
+    if (!Array.isArray(adsData?.demographics?.topSegments)) return [];
+    const segments = adsData.demographics.topSegments;
+    if (!segments.length) return [];
+    const totalReach = Array.isArray(adsData?.demographics?.byAgeGender)
+      ? adsData.demographics.byAgeGender.reduce((sum, item) => sum + Number(item.reach || 0), 0)
+      : segments.reduce((sum, item) => sum + Number(item.reach || 0), 0);
+    return segments.map((segment) => ({
+      name: `${segment.age || "N/A"} / ${segment.gender || "Indefinido"}`,
+      value: Number(segment.reach || 0),
+      percent: totalReach > 0 ? Math.round((Number(segment.reach || 0) / totalReach) * 100) : 0,
+    }));
+  }, [adsData?.demographics?.topSegments, adsData?.demographics?.byAgeGender]);
+
   const regionChartHeight = useMemo(() => {
     if (!spendByRegion.length) return 200;
     const base = 180;
@@ -870,8 +941,7 @@ export default function AdsDashboard() {
       return [];
     }
 
-    if (adsData) return [];
-    return MOCK_FOLLOWERS_PER_CAMPAIGN;
+    return [];
   }, [adsData]);
 
   const followersPerCampaignTotal = useMemo(
@@ -2372,15 +2442,15 @@ export default function AdsDashboard() {
               </div>
             </section>
 
-            {/* 8. SEGMENTAÇÃO E PÚBLICO - DEMOGRAFIA COMPLETA */}
+            {/* 8. AUDIÊNCIA - DEMOGRAFIA COMPLETA */}
             <section className="ig-growth-clean">
               <header className="ig-card-header">
                 <div>
                   <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ fontSize: '20px' }}>🧭</span>
-                    Segmentação e público
+                    Audiência
                   </h3>
-                  <p className="ig-card-subtitle">Distribuição demográfica e comportamental</p>
+                  <p className="ig-card-subtitle">Distribuição demográfica e de alcance</p>
                 </div>
               </header>
 
@@ -2395,58 +2465,78 @@ export default function AdsDashboard() {
                   <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '16px' }}>
                     Idade × Gênero
                   </h4>
-                  <div style={{ width: '100%', overflowX: 'auto', overflowY: 'hidden' }}>
-                    <div style={{ minWidth: Math.max(MOCK_AGE_GENDER_DATA.length * 60, 100) + '%' }}>
-                      <ResponsiveContainer width="100%" height={220}>
-                        <BarChart
-                          data={MOCK_AGE_GENDER_DATA}
-                          layout="vertical"
-                          margin={{ left: 0, right: 10, top: 5, bottom: 5 }}
-                          barGap={4}
-                          barCategoryGap="20%"
-                        >
-                          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
-                          <XAxis
-                            type="number"
-                            tick={{ fill: '#6b7280', fontSize: 11 }}
-                            axisLine={false}
-                            tickLine={false}
-                          />
-                          <YAxis
-                            type="category"
-                            dataKey="age"
-                            tick={{ fill: '#374151', fontSize: 12, fontWeight: 600 }}
-                            width={50}
-                            axisLine={false}
-                            tickLine={false}
-                          />
-                          <Tooltip
-                            cursor={{ fill: 'rgba(99, 102, 241, 0.08)' }}
-                            formatter={(value) => Number(value).toLocaleString("pt-BR")}
-                            contentStyle={{
-                              backgroundColor: 'white',
-                              border: '1px solid #e5e7eb',
-                              borderRadius: '8px',
-                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                              fontSize: '12px'
-                            }}
-                          />
-                          <Bar dataKey="male" fill="#6366f1" radius={[0, 6, 6, 0]} barSize={12} name="Homens" />
-                          <Bar dataKey="female" fill="#ec4899" radius={[0, 6, 6, 0]} barSize={12} name="Mulheres" />
-                        </BarChart>
-                      </ResponsiveContainer>
+                  {hasAudienceAgeGender ? (
+                    <>
+                      <div style={{ width: '100%', overflowX: 'auto', overflowY: 'hidden' }}>
+                        <div style={{ minWidth: Math.max(audienceAgeGenderData.length * 60, 100) + '%' }}>
+                          <ResponsiveContainer width="100%" height={220}>
+                            <BarChart
+                              data={audienceAgeGenderData}
+                              layout="vertical"
+                              margin={{ left: 0, right: 10, top: 5, bottom: 5 }}
+                              barGap={4}
+                              barCategoryGap="20%"
+                            >
+                              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
+                              <XAxis
+                                type="number"
+                                tick={{ fill: '#6b7280', fontSize: 11 }}
+                                axisLine={false}
+                                tickLine={false}
+                              />
+                              <YAxis
+                                type="category"
+                                dataKey="age"
+                                tick={{ fill: '#374151', fontSize: 12, fontWeight: 600 }}
+                                width={50}
+                                axisLine={false}
+                                tickLine={false}
+                              />
+                              <Tooltip
+                                cursor={{ fill: 'rgba(99, 102, 241, 0.08)' }}
+                                formatter={(value) => formatNumber(Number(value))}
+                                contentStyle={{
+                                  backgroundColor: 'white',
+                                  border: '1px solid #e5e7eb',
+                                  borderRadius: '8px',
+                                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                                  fontSize: '12px'
+                                }}
+                              />
+                              <Bar dataKey="male" fill="#6366f1" radius={[0, 6, 6, 0]} barSize={12} name="Homens" />
+                              <Bar dataKey="female" fill="#ec4899" radius={[0, 6, 6, 0]} barSize={12} name="Mulheres" />
+                              {hasUnknownAudienceGender && (
+                                <Bar dataKey="unknown" fill="#94a3b8" radius={[0, 6, 6, 0]} barSize={12} name="Indefinido" />
+                              )}
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '8px', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
+                          <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#6366f1' }}></span>
+                          <span style={{ color: '#6b7280', fontWeight: 500 }}>Homens</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
+                          <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#ec4899' }}></span>
+                          <span style={{ color: '#6b7280', fontWeight: 500 }}>Mulheres</span>
+                        </div>
+                        {hasUnknownAudienceGender && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
+                            <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#94a3b8' }}></span>
+                            <span style={{ color: '#6b7280', fontWeight: 500 }}>Indefinido</span>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div
+                      className="ig-empty-state"
+                      style={{ minHeight: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}
+                    >
+                      Sem dados de audiência por idade e gênero.
                     </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
-                      <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#6366f1' }}></span>
-                      <span style={{ color: '#6b7280', fontWeight: 500 }}>Homens</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
-                      <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#ec4899' }}></span>
-                      <span style={{ color: '#6b7280', fontWeight: 500 }}>Mulheres</span>
-                    </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Gráfico Localização */}
@@ -2457,48 +2547,59 @@ export default function AdsDashboard() {
                   padding: '20px'
                 }}>
                   <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '16px' }}>
-                    Localização
+                    Localização (alcance)
                   </h4>
-                  <ResponsiveContainer width="100%" height={180}>
-                    <PieChart>
-                      <Pie
-                        data={MOCK_LOCATION_DATA}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={70}
-                        paddingAngle={4}
-                        dataKey="value"
-                      >
-                        {MOCK_LOCATION_DATA.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
+                  {audienceLocationData.length === 0 ? (
+                    <div
+                      className="ig-empty-state"
+                      style={{ minHeight: 180, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}
+                    >
+                      Sem dados de localização no período.
+                    </div>
+                  ) : (
+                    <>
+                      <ResponsiveContainer width="100%" height={180}>
+                        <PieChart>
+                          <Pie
+                            data={audienceLocationData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={50}
+                            outerRadius={70}
+                            paddingAngle={4}
+                            dataKey="value"
+                          >
+                            {audienceLocationData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            formatter={(value) => formatNumber(Number(value))}
+                            contentStyle={{
+                              backgroundColor: 'white',
+                              border: '1px solid #e5e7eb',
+                              borderRadius: '8px',
+                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                              fontSize: '12px'
+                            }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '12px' }}>
+                        {audienceLocationData.map((item) => (
+                          <div key={item.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: item.color }}></span>
+                              <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500 }}>{item.name}</span>
+                            </div>
+                            <span style={{ fontSize: '12px', color: '#111827', fontWeight: 600 }}>
+                              {formatNumber(item.value)}
+                            </span>
+                          </div>
                         ))}
-                      </Pie>
-                      <Tooltip
-                        formatter={(value) => Number(value).toLocaleString("pt-BR")}
-                        contentStyle={{
-                          backgroundColor: 'white',
-                          border: '1px solid #e5e7eb',
-                          borderRadius: '8px',
-                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                          fontSize: '12px'
-                        }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '12px' }}>
-                    {MOCK_LOCATION_DATA.map((item) => (
-                      <div key={item.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: item.color }}></span>
-                          <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500 }}>{item.name}</span>
-                        </div>
-                        <span style={{ fontSize: '12px', color: '#111827', fontWeight: 600 }}>
-                          {formatNumber(item.value)}
-                        </span>
                       </div>
-                    ))}
-                  </div>
+                    </>
+                  )}
                 </div>
 
                 {/* Seguidores ganhos por campanha */}
@@ -2603,7 +2704,7 @@ export default function AdsDashboard() {
                   )}
                 </div>
 
-                {/* Gráfico Posicionamento */}
+                {/* Top segmentos de audiência */}
                 <div style={{
                   background: 'rgba(255, 255, 255, 0.9)',
                   border: '1px solid rgba(0, 0, 0, 0.08)',
@@ -2611,41 +2712,50 @@ export default function AdsDashboard() {
                   padding: '20px'
                 }}>
                   <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '16px' }}>
-                    Posicionamento
+                    Top segmentos da audiência
                   </h4>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {MOCK_PLACEMENT_DATA.map((placement) => (
-                      <div key={placement.name}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                          <span style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>
-                            {placement.name}
-                          </span>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ fontSize: '12px', fontWeight: '700', color: '#6366f1' }}>
-                              {placement.percent}%
+                  {audienceTopSegments.length === 0 ? (
+                    <div
+                      className="ig-empty-state"
+                      style={{ minHeight: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}
+                    >
+                      Sem dados de segmentos para o período.
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {audienceTopSegments.map((segment) => (
+                        <div key={segment.name}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                            <span style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>
+                              {segment.name}
                             </span>
-                            <span style={{ fontSize: '12px', color: '#6b7280' }}>
-                              ({formatNumber(placement.value)})
-                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontSize: '12px', fontWeight: '700', color: '#6366f1' }}>
+                                {segment.percent}%
+                              </span>
+                              <span style={{ fontSize: '12px', color: '#6b7280' }}>
+                                ({formatNumber(segment.value)})
+                              </span>
+                            </div>
+                          </div>
+                          <div style={{
+                            height: '8px',
+                            background: '#e5e7eb',
+                            borderRadius: '4px',
+                            overflow: 'hidden'
+                          }}>
+                            <div style={{
+                              width: `${segment.percent}%`,
+                              height: '100%',
+                              background: 'linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%)',
+                              borderRadius: '4px',
+                              transition: 'width 0.6s ease'
+                            }} />
                           </div>
                         </div>
-                        <div style={{
-                          height: '8px',
-                          background: '#e5e7eb',
-                          borderRadius: '4px',
-                          overflow: 'hidden'
-                        }}>
-                          <div style={{
-                            width: `${placement.percent}%`,
-                            height: '100%',
-                            background: 'linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%)',
-                            borderRadius: '4px',
-                            transition: 'width 0.6s ease'
-                          }} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </section>

@@ -2393,6 +2393,20 @@ def ads_highlights(act_id: str, since_str: str, until_str: str):
         combo_entry["impressions"] += impressions
         combo_entry["spend"] += spend
 
+    age_order = ["13-17", "18-24", "25-34", "35-44", "45-54", "55-64", "65+"]
+    age_order_index = {age: idx for idx, age in enumerate(age_order)}
+    gender_order = {"Masculino": 0, "Feminino": 1, "Indefinido": 2}
+
+    def combo_sort_key(item):
+        age = item.get("age") or ""
+        gender = item.get("gender") or "Indefinido"
+        return (
+            age_order_index.get(age, len(age_order_index)),
+            gender_order.get(gender, len(gender_order)),
+            age,
+            gender,
+        )
+
     demographics = {
         "byGender": [
             {"segment": key, **values}
@@ -2402,6 +2416,7 @@ def ads_highlights(act_id: str, since_str: str, until_str: str):
             {"segment": key, **values}
             for key, values in sorted(age_totals.items(), key=lambda item: item[1]["reach"], reverse=True)
         ],
+        "byAgeGender": sorted(combo_totals.values(), key=combo_sort_key),
         "topSegments": sorted(combo_totals.values(), key=lambda item: item["reach"], reverse=True)[:5],
     }
 
