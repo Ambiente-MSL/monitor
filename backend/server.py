@@ -2921,6 +2921,27 @@ def instagram_metrics():
     if not ig:
         return jsonify({"error": "META_IG_USER_ID is not configured"}), 500
     since, until = unix_range(request.args)
+    force_refresh = request.args.get("force")
+    force_refresh_flag = str(force_refresh).lower() in ("1", "true", "yes", "y")
+
+    def _extract_reach_total(payload_obj):
+        for metric in payload_obj.get("metrics") or []:
+            if isinstance(metric, dict) and metric.get("key") == "reach":
+                try:
+                    return float(metric.get("value") or 0)
+                except (TypeError, ValueError):
+                    return 0.0
+        return 0.0
+
+    def _ensure_reach_timeseries(payload_obj):
+        if payload_obj.get("reach_timeseries"):
+            return
+        for metric in payload_obj.get("metrics") or []:
+            if isinstance(metric, dict) and metric.get("key") == "reach":
+                series = metric.get("timeseries")
+                if isinstance(series, list) and series:
+                    payload_obj["reach_timeseries"] = series
+                return
 
     try:
         db_payload = build_instagram_metrics_from_db(ig, since, until)
@@ -2928,7 +2949,9 @@ def instagram_metrics():
         logger.exception("Falha ao montar métricas via %s", IG_METRICS_TABLE, exc_info=err)
         db_payload = None
     if db_payload:
-        return jsonify(db_payload)
+        payload_obj = dict(db_payload)
+        _ensure_reach_timeseries(payload_obj)
+        return jsonify(payload_obj)
 
     try:
         payload, meta = get_cached_payload(
@@ -2938,6 +2961,8 @@ def instagram_metrics():
             until,
             fetcher=fetch_instagram_metrics,
             platform=DEFAULT_CACHE_PLATFORM,
+            force=force_refresh_flag,
+            refresh_reason="forced" if force_refresh_flag else None,
         )
     except MetaAPIError as err:
         mark_cache_error("instagram_metrics", ig, since, until, None, err.args[0], platform=DEFAULT_CACHE_PLATFORM)
@@ -2981,9 +3006,35 @@ def instagram_metrics():
             return jsonify(response)
         return jsonify({"error": str(err)}), 500
 
-    response = dict(payload)
-    response["cache"] = meta
-    return jsonify(response)
+    payload_obj = dict(payload) if isinstance(payload, dict) else {"payload": payload}
+    _ensure_reach_timeseries(payload_obj)
+
+    # Alguns caches antigos podem ter alcance total mas sem série diária.
+    # Para garantir o gráfico "Crescimento do perfil", força refresh quando necessário.
+    if (
+        not force_refresh_flag
+        and not payload_obj.get("reach_timeseries")
+        and _extract_reach_total(payload_obj) > 0
+    ):
+        try:
+            refreshed_payload, refreshed_meta = get_cached_payload(
+                "instagram_metrics",
+                ig,
+                since,
+                until,
+                fetcher=fetch_instagram_metrics,
+                platform=DEFAULT_CACHE_PLATFORM,
+                force=True,
+                refresh_reason="missing_reach_timeseries",
+            )
+            payload_obj = dict(refreshed_payload) if isinstance(refreshed_payload, dict) else {"payload": refreshed_payload}
+            meta = refreshed_meta
+            _ensure_reach_timeseries(payload_obj)
+        except Exception as refresh_err:  # noqa: BLE001
+            logger.warning("Falha ao forçar refresh para completar reach_timeseries: %s", refresh_err)
+
+    payload_obj["cache"] = meta
+    return jsonify(payload_obj)
 
 @app.get("/api/instagram/organic")
 def instagram_organic():

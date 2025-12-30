@@ -685,24 +685,41 @@ def ig_window(ig_user_id: str, since: int, until: int) -> Dict[str, Any]:
     if period_days > MAX_DAYS_PER_CALL:
         return _ig_window_chunked(ig_user_id, since, until, MAX_DAYS_PER_CALL)
 
-    account_metrics = "reach,profile_views,website_clicks,accounts_engaged"
-
+    # Meta API (v22+) passou a exigir `metric_type=total_value` para algumas métricas.
+    # Para não perder o reach diário (usado no gráfico), busca o `reach` em uma chamada isolada.
     try:
-        insights_response = gget(
+        reach_response = gget(
             f"/{ig_user_id}/insights",
             {
-                "metric": account_metrics,
+                "metric": "reach",
                 "period": "day",
                 "since": since,
                 "until": until,
             },
         )
     except MetaAPIError as err:
-        logger.warning("Falha ao buscar insights de conta: %s", err)
-        insights_response = {"data": []}
+        logger.warning("Falha ao buscar reach diário: %s", err)
+        reach_response = {"data": []}
 
-    reach_timeseries = extract_time_series(insights_response, "reach")
-    profile_views_timeseries = extract_time_series(insights_response, "profile_views")
+    reach_timeseries = extract_time_series(reach_response, "reach")
+
+    try:
+        totals_response = gget(
+            f"/{ig_user_id}/insights",
+            {
+                "metric": "profile_views,website_clicks,accounts_engaged",
+                "period": "day",
+                "metric_type": "total_value",
+                "since": since,
+                "until": until,
+            },
+        )
+    except MetaAPIError as err:
+        logger.warning("Falha ao buscar totais de conta: %s", err)
+        totals_response = {"data": []}
+
+    # Em versões recentes, algumas métricas deixam de ter série diária; mantém compatibilidade.
+    profile_views_timeseries: List[Dict[str, Any]] = []
 
     def sum_series(series: List[Dict[str, Any]]) -> int:
         return sum(int(entry.get("value") or 0) for entry in series)
@@ -710,15 +727,22 @@ def ig_window(ig_user_id: str, since: int, until: int) -> Dict[str, Any]:
     reach = sum_series(reach_timeseries)
     profile_views = sum_series(profile_views_timeseries)
 
-    def get_metric_total(response: Dict[str, Any], metric_name: str) -> int:
+    def get_total_value(response: Dict[str, Any], metric_name: str) -> int:
         for item in response.get("data", []):
-            if item.get("name") == metric_name:
-                values = item.get("values") or []
-                return sum(int((v.get("value") or 0)) for v in values if isinstance(v, dict))
+            if item.get("name") != metric_name:
+                continue
+            total_value = item.get("total_value")
+            if isinstance(total_value, dict):
+                return int(total_value.get("value") or 0)
+            try:
+                return int(total_value or 0)
+            except (TypeError, ValueError):
+                return 0
         return 0
 
-    website_clicks = get_metric_total(insights_response, "website_clicks")
-    accounts_engaged = get_metric_total(insights_response, "accounts_engaged")
+    profile_views = get_total_value(totals_response, "profile_views")
+    website_clicks = get_total_value(totals_response, "website_clicks")
+    accounts_engaged = get_total_value(totals_response, "accounts_engaged")
 
     try:
         interactions_response = gget(
@@ -776,9 +800,9 @@ def ig_window(ig_user_id: str, since: int, until: int) -> Dict[str, Any]:
                 media_product_type = (media.get("media_product_type") or "").upper()
                 is_video_type = media_type in {"VIDEO", "REEL", "IGTV"} or media_product_type in {"REELS", "VIDEO", "IGTV"}
 
-                metrics_list = ["reach", "shares", "saved", "likes", "comments", "impressions"]
+                metrics_list = ["reach", "shares", "saved", "likes", "comments"]
                 if is_video_type:
-                    metrics_list.extend(["plays", "video_views"])
+                    metrics_list.append("video_views")
 
                 try:
                     media_insights = gget(
@@ -795,7 +819,7 @@ def ig_window(ig_user_id: str, since: int, until: int) -> Dict[str, Any]:
                     try:
                         fallback_insights = gget(
                             f"/{media_id}/insights",
-                            {"metric": "reach,shares,saved,likes,comments,impressions"},
+                            {"metric": "reach,shares,saved,likes,comments"},
                         )
                         for item in fallback_insights.get("data", []):
                             name = (item.get("name") or "").lower()
@@ -809,14 +833,13 @@ def ig_window(ig_user_id: str, since: int, until: int) -> Dict[str, Any]:
                 shares = insights_map.get("shares") or 0
                 saves = insights_map.get("saved") or insights_map.get("saves") or 0
                 reach_value = insights_map.get("reach") or 0
-                impressions_value = insights_map.get("impressions") or 0
                 video_views_value = 0
                 if is_video_type:
-                    video_views_value = insights_map.get("plays") or insights_map.get("video_views") or insights_map.get("views") or 0
+                    video_views_value = insights_map.get("video_views") or insights_map.get("views") or 0
                     if not video_views_value:
-                        video_views_value = impressions_value or reach_value or 0
+                        video_views_value = reach_value or 0
                 else:
-                    video_views_value = impressions_value or reach_value or 0
+                    video_views_value = reach_value or 0
                 video_views_value = int(video_views_value or 0)
 
                 sum_likes += likes
@@ -866,11 +889,13 @@ def ig_window(ig_user_id: str, since: int, until: int) -> Dict[str, Any]:
 
     if reach == 0:
         reach = sum(p.get("reach") or 0 for p in post_details)
-        if reach_by_date:
-            reach_timeseries = [
-                {"date": key, "value": value}
-                for key, value in sorted(reach_by_date.items())
-            ]
+    if not reach_timeseries and reach_by_date:
+        reach_timeseries = [
+            {"date": key, "value": value}
+            for key, value in sorted(reach_by_date.items())
+        ]
+        if reach == 0:
+            reach = sum(reach_by_date.values())
     video_views_timeseries = [
         {"date": key, "value": value}
         for key, value in sorted(video_views_by_date.items())
