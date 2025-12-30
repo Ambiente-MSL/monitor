@@ -81,18 +81,6 @@ const DEFAULT_AUDIENCE_TYPE = [
   { name: "Seguidores", value: 65 },
 ];
 
-const DEFAULT_PROFILE_REACH_SERIES = [
-  { dateKey: "2025-01-29", label: "29/01", value: 12000 },
-  { dateKey: "2025-01-30", label: "30/01", value: 28000 },
-  { dateKey: "2025-01-31", label: "31/01", value: 78000 },
-  { dateKey: "2025-02-01", label: "01/02", value: 36000 },
-  { dateKey: "2025-02-02", label: "02/02", value: 42000 },
-  { dateKey: "2025-02-03", label: "03/02", value: 48000 },
-  { dateKey: "2025-02-04", label: "04/02", value: 32000 },
-  { dateKey: "2025-02-05", label: "05/02", value: 89000 },
-  { dateKey: "2025-02-06", label: "06/02", value: 27000 },
-];
-
 // const HEATMAP_WEEK_LABELS = ["Sem 1", "Sem 2", "Sem 3", "Sem 4", "Sem 5", "Sem 6"];
 // const HEATMAP_DAY_LABELS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sab", "Dom"];
 // const DEFAULT_HEATMAP_MATRIX = HEATMAP_DAY_LABELS.map((day, dayIndex) => ({
@@ -1200,26 +1188,15 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
 
   const profileReachData = useMemo(() => {
     if (metricsLoading) return [];
-    const data = normalizedReachSeries.length
-      ? normalizedReachSeries
-      : metricsError
-        ? []
-        : DEFAULT_PROFILE_REACH_SERIES;
-
-    // Limitar a 7 pontos de dados para melhor visualização
-    if (data.length <= 7) return data;
-
-    // Se houver mais de 7 pontos, distribuir uniformemente
-    const step = Math.floor(data.length / 7);
-    const sampledData = [];
-
-    for (let i = 0; i < 7; i++) {
-      const index = i === 6 ? data.length - 1 : i * step;
-      sampledData.push(data[index]);
-    }
-
-    return sampledData;
+    if (metricsError) return [];
+    return normalizedReachSeries;
   }, [metricsError, metricsLoading, normalizedReachSeries]);
+
+  const reachXAxisInterval = useMemo(() => {
+    if (profileReachData.length <= 7) return 0;
+    // Mostrar ~7 ticks no eixo X, mas mantendo a série completa no gráfico.
+    return Math.max(0, Math.ceil(profileReachData.length / 7) - 1);
+  }, [profileReachData.length]);
 
   const profileReachTotal = useMemo(() => normalizedReachSeries.reduce(
     (acc, entry) => acc + (Number.isFinite(entry.value) ? entry.value : 0),
@@ -2805,7 +2782,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                         fontSize={12}
                         tickLine={false}
                         axisLine={{ stroke: '#e5e7eb' }}
-                        interval={0}
+                        interval={reachXAxisInterval}
                         angle={0}
                         tickFormatter={(value) => {
                           if (!value) return '';
