@@ -2751,8 +2751,9 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             </section>
           </div>
 
-          {!showDetailedView && (
           <div className="ig-clean-grid__right">
+            {!showDetailedView && (
+              <>
             {/* Card de Crescimento do Perfil */}
             <section className="ig-growth-clean">
               <header className="ig-card-header">
@@ -3512,11 +3513,10 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             </div>
           </section>
         </div>
+              </>
+            )}
 
-      </div>
-      )}
-
-      {showDetailedView && (
+            {showDetailedView && (
         <div style={{
           background: 'white',
           borderRadius: '20px',
@@ -3732,8 +3732,9 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             )}
           </div>
         </div>
-      )}
-      </div>
+            )}
+          </div>
+        </div>
 
       {/* Palavras-chave e Hashtags - Largura Total */}
       <div className="ig-analytics-grid ig-analytics-grid--pair">
