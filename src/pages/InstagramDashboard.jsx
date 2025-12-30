@@ -98,21 +98,6 @@ const buildWeeklyPattern = (values) => {
   }));
 };
 
-const FOLLOWER_GROWTH_SERIES = [
-  { label: "Jan", value: 28000 },
-  { label: "Fev", value: 58000 },
-  { label: "Mar", value: 12000 },
-  { label: "Abr", value: 36000 },
-  { label: "Mai", value: 58000 },
-  { label: "Jun", value: 18000 },
-  { label: "Jul", value: 28000 },
-  { label: "Ago", value: 88000 },
-  { label: "Set", value: 26000 },
-  { label: "Out", value: 34000 },
-  { label: "Nov", value: 9000 },
-  { label: "Dez", value: 52000 },
-];
-
 const FALLBACK_CALENDAR_MONTH_OPTIONS = [
   { value: "2025-08", label: "Agosto 2025", year: 2025, month: 7 },
   { value: "2025-09", label: "Setembro 2025", year: 2025, month: 8 },
@@ -1474,13 +1459,8 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
   const followerGrowthChartData = useMemo(() => {
     if (metricsLoading) return [];
     if (followerGrowthSeriesSorted.length) {
-      const MAX_POINTS = 64;
-      const seriesToUse = followerGrowthSeriesSorted.length > MAX_POINTS
-        ? followerGrowthSeriesSorted.slice(followerGrowthSeriesSorted.length - MAX_POINTS)
-        : followerGrowthSeriesSorted;
-
       let previousValue = null;
-      return seriesToUse.map((entry, index) => {
+      return followerGrowthSeriesSorted.map((entry, index) => {
         const dateKey = entry.date || null;
         const parsedDate = dateKey ? new Date(`${dateKey}T00:00:00`) : null;
         const validDate = parsedDate && !Number.isNaN(parsedDate.getTime()) ? parsedDate : null;
@@ -1506,13 +1486,22 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
     }
 
     if (metricsError) return [];
-
-    return FOLLOWER_GROWTH_SERIES.map((entry, index) => ({
-      label: entry.label || `${index + 1}`,
-      value: Math.max(0, extractNumber(entry.value, 0)),
-      tooltipDate: entry.label || `#${index + 1}`,
-    }));
+    return [];
   }, [followerGrowthSeriesSorted, metricsError, metricsLoading]);
+
+  const followerGrowthBarSize = useMemo(() => {
+    const length = followerGrowthChartData.length;
+    if (length <= 15) return 36;
+    if (length <= 30) return 18;
+    return undefined;
+  }, [followerGrowthChartData.length]);
+
+  const followerGrowthBarCategoryGap = useMemo(() => {
+    const length = followerGrowthChartData.length;
+    if (length > 120) return "5%";
+    if (length > 60) return "10%";
+    return "35%";
+  }, [followerGrowthChartData.length]);
 
   const followerGrowthDomain = useMemo(() => {
     if (!followerGrowthChartData.length) return [0, "auto"];
@@ -2922,7 +2911,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               <header className="ig-card-header">
                 <div>
                   <h3>Crescimento de Seguidores</h3>
-                <p className="ig-card-subtitle">Evolução mensal</p>
+                <p className="ig-card-subtitle">Ganho diário</p>
                 </div>
               </header>
 
@@ -2934,7 +2923,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     <BarChart
                       data={followerGrowthChartData}
                       margin={{ top: 16, right: 16, bottom: followerGrowthChartData.length > 15 ? 70 : 32, left: 0 }}
-                      barCategoryGap="35%"
+                      barCategoryGap={followerGrowthBarCategoryGap}
                     >
                         <defs>
                           <linearGradient id="igFollowerGrowthBar" x1="0" y1="0" x2="0" y2="1">
@@ -3015,7 +3004,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                         <Bar
                           dataKey="value"
                           radius={[12, 12, 0, 0]}
-                          barSize={followerGrowthChartData.length > 15 ? 30 : 36}
+                          barSize={followerGrowthBarSize}
                           minPointSize={6}
                           onMouseEnter={(_, index) => setActiveFollowerGrowthBar(index)}
                           onMouseLeave={() => setActiveFollowerGrowthBar(-1)}
@@ -3036,7 +3025,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                             stroke="#c084fc"
                             fill="transparent"
                             startIndex={0}
-                            endIndex={Math.min(14, followerGrowthChartData.length - 1)}
+                            endIndex={followerGrowthChartData.length - 1}
                             travellerWidth={14}
                             y={280}
                           >
