@@ -234,6 +234,7 @@ WORDCLOUD_DEFAULT_TOP = 120
 WORDCLOUD_MAX_TOP = 250
 WORDCLOUD_MAX_RANGE_DAYS = 365
 COMMENTS_INGEST_DEFAULT_DAYS = 30
+WORDCLOUD_MIN_TOKEN_LEN = 3
 WORDCLOUD_STOPWORDS = {
     "a", "as", "o", "os", "um", "uma", "uns", "umas",
     "de", "do", "da", "dos", "das", "em", "no", "na", "nos", "nas",
@@ -246,6 +247,7 @@ WORDCLOUD_STOPWORDS = {
     "ja", "foi", "era", "sao", "sou", "estou", "esta", "estao", "tem", "ter", "ser",
     "vai", "vao", "vou", "fui", "sido", "havia", "haviam",
     "bem", "mal", "sim", "nao", "opa", "ola", "oi", "alguem", "ninguem",
+    "se", "so", "ta", "vc", "vcs", "ces",
     "the", "and", "for", "with", "you", "your", "yours", "from", "this", "that", "was", "are", "were", "been", "have", "has",
     "to", "of", "in", "on", "at", "by", "or", "an", "is", "be", "it", "its", "we", "us", "our", "ours", "they", "them", "their", "theirs",
     "https", "http", "www"
@@ -351,6 +353,21 @@ def strip_accents(text: str) -> str:
     return "".join(ch for ch in normalized if unicodedata.category(ch) != "Mn")
 
 
+def sanitize_wordcloud_token(token: str) -> Optional[str]:
+    if not token:
+        return None
+    candidate = str(token).strip().lower()
+    if not candidate:
+        return None
+    cleaned = "".join(ch for ch in candidate if ch.isalpha())
+    if len(cleaned) < WORDCLOUD_MIN_TOKEN_LEN:
+        return None
+    base = strip_accents(cleaned)
+    if cleaned in WORDCLOUD_STOPWORDS or base in WORDCLOUD_STOPWORDS:
+        return None
+    return cleaned
+
+
 def tokenize_wordcloud_text(text: str) -> List[str]:
     if not text:
         return []
@@ -367,13 +384,9 @@ def tokenize_wordcloud_text(text: str) -> List[str]:
             continue
         if token.startswith("#"):
             token = token[1:]
-        cleaned = "".join(ch for ch in token if ch.isalpha())
-        if len(cleaned) < 2:
-            continue
-        base = strip_accents(cleaned)
-        if cleaned in WORDCLOUD_STOPWORDS or base in WORDCLOUD_STOPWORDS:
-            continue
-        words.append(cleaned)
+        sanitized = sanitize_wordcloud_token(token)
+        if sanitized:
+            words.append(sanitized)
     return words
 
 
@@ -445,7 +458,10 @@ def fetch_daily_wordcloud(
         if isinstance(freq_payload, dict):
             for word, value in freq_payload.items():
                 try:
-                    counter[word] += int(value or 0)
+                    sanitized = sanitize_wordcloud_token(word)
+                    if not sanitized:
+                        continue
+                    counter[sanitized] += int(value or 0)
                 except Exception:
                     continue
 
