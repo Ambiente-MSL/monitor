@@ -794,7 +794,7 @@ def ig_window(ig_user_id: str, since: int, until: int) -> Dict[str, Any]:
                     try:
                         fallback_insights = gget(
                             f"/{media_id}/insights",
-                            {"metric": "reach,shares,saved,likes,comments"},
+                            {"metric": "reach,shares,saved,likes,comments,impressions"},
                         )
                         for item in fallback_insights.get("data", []):
                             name = (item.get("name") or "").lower()
@@ -808,11 +808,14 @@ def ig_window(ig_user_id: str, since: int, until: int) -> Dict[str, Any]:
                 shares = insights_map.get("shares") or 0
                 saves = insights_map.get("saved") or insights_map.get("saves") or 0
                 reach_value = insights_map.get("reach") or 0
+                impressions_value = insights_map.get("impressions") or 0
                 video_views_value = 0
                 if is_video_type:
                     video_views_value = insights_map.get("plays") or insights_map.get("video_views") or insights_map.get("views") or 0
-                if not video_views_value and media_type == "STORY":
-                    video_views_value = insights_map.get("impressions") or insights_map.get("reach") or 0
+                    if not video_views_value:
+                        video_views_value = impressions_value or reach_value or 0
+                else:
+                    video_views_value = impressions_value or reach_value or 0
                 video_views_value = int(video_views_value or 0)
 
                 sum_likes += likes

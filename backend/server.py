@@ -2030,6 +2030,31 @@ def build_instagram_metrics_from_db(ig_id: str, since_ts: int, until_ts: int) ->
         if entry.get("value") is not None
     ]
 
+    def _sum_timeseries(series: Sequence[Dict[str, Any]]) -> int:
+        total = 0
+        for entry in series or []:
+            if not isinstance(entry, dict):
+                continue
+            try:
+                total += int(entry.get("value") or 0)
+            except (TypeError, ValueError):
+                continue
+        return total
+
+    resolved_video_views_total = video_views_total
+    resolved_video_views_previous = video_views_previous
+    resolved_video_views_timeseries = video_views_timeseries
+
+    # Fallback: quando video_views estiver zerado/ausente mas há alcance (dataset antigo ou métrica indisponível),
+    # usa reach como proxy para não retornar "0" na UI.
+    if resolved_video_views_total in (None, 0) and _sum_timeseries(video_views_timeseries) > 0:
+        resolved_video_views_total = float(_sum_timeseries(video_views_timeseries))
+    if resolved_video_views_total in (None, 0) and reach_total not in (None, 0):
+        resolved_video_views_total = reach_total
+        resolved_video_views_previous = reach_previous
+        if reach_timeseries:
+            resolved_video_views_timeseries = reach_timeseries
+
     metrics_payload = [
         {
             "key": "followers_total",
@@ -2047,9 +2072,12 @@ def build_instagram_metrics_from_db(ig_id: str, since_ts: int, until_ts: int) ->
         {
             "key": "video_views",
             "label": "VISUALIZACOES",
-            "value": _as_int(video_views_total if video_views_total is not None else profile_views_total),
-            "deltaPct": _percentage_delta(video_views_total if video_views_total is not None else profile_views_total, video_views_previous if video_views_total is not None else profile_views_previous),
-            "timeseries": video_views_timeseries or profile_views_timeseries,
+            "value": _as_int(resolved_video_views_total if resolved_video_views_total is not None else profile_views_total),
+            "deltaPct": _percentage_delta(
+                resolved_video_views_total if resolved_video_views_total is not None else profile_views_total,
+                resolved_video_views_previous if resolved_video_views_total is not None else profile_views_previous,
+            ),
+            "timeseries": resolved_video_views_timeseries or profile_views_timeseries,
         },
         {
             "key": "profile_views",
@@ -2118,7 +2146,7 @@ def build_instagram_metrics_from_db(ig_id: str, since_ts: int, until_ts: int) ->
         "top_posts": top_posts_payload,
         "reach_timeseries": reach_timeseries,
         "profile_views_timeseries": profile_views_timeseries,
-        "video_views_timeseries": video_views_timeseries or profile_views_timeseries,
+        "video_views_timeseries": resolved_video_views_timeseries or profile_views_timeseries,
         "coverage": coverage,
     }
     rollups = _load_instagram_rollups(ig_id, until_date)

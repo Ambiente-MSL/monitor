@@ -572,6 +572,10 @@ export default function InstagramDashboard() {
   // Estado para contador de comentários da wordcloud
   const [commentsCount, setCommentsCount] = useState(null);
 
+  useEffect(() => {
+    setCommentsCount(null);
+  }, [accountSnapshotKey, sinceIso, untilIso]);
+
   // Estado para controlar visualização detalhada
   const [showDetailedView, setShowDetailedView] = useState(false);
 
@@ -712,44 +716,6 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
   );
 
   useEffect(() => {
-    const cachedMetrics = getDashboardCache(metricsCacheKey);
-    if (cachedMetrics) {
-      setMetrics(Array.isArray(cachedMetrics.metrics) ? cachedMetrics.metrics : []);
-      setFollowerSeries(Array.isArray(cachedMetrics.followerSeries) ? cachedMetrics.followerSeries : []);
-      setFollowerCounts(cachedMetrics.followerCounts ?? null);
-      setReachCacheSeries(Array.isArray(cachedMetrics.reachSeries) ? cachedMetrics.reachSeries : []);
-      const cachedViewsSeries = Array.isArray(cachedMetrics.videoViewsSeries)
-        ? cachedMetrics.videoViewsSeries
-        : Array.isArray(cachedMetrics.profileViewsSeries)
-          ? cachedMetrics.profileViewsSeries
-          : [];
-      setProfileViewsSeries(cachedViewsSeries);
-      setProfileVisitorsBreakdown(cachedMetrics.profileVisitorsBreakdown ?? null);
-      setMetricsError("");
-      setMetricsLoading(false);
-    } else {
-      setMetrics([]);
-      setFollowerSeries([]);
-      setFollowerCounts(null);
-      setReachCacheSeries([]);
-      setProfileViewsSeries([]);
-      setProfileVisitorsBreakdown(null);
-      setOverviewSnapshot(null);
-    }
-
-    const cachedPosts = getDashboardCache(postsCacheKey);
-    if (cachedPosts) {
-      setPosts(Array.isArray(cachedPosts.posts) ? cachedPosts.posts : []);
-      setAccountInfo(cachedPosts.accountInfo || null);
-      setPostsError("");
-      setLoadingPosts(false);
-    } else {
-      setPosts([]);
-      setAccountInfo(null);
-    }
-  }, [metricsCacheKey, postsCacheKey]);
-
-  useEffect(() => {
     if (!accountConfig?.instagramUserId) {
       setMetrics([]);
       setFollowerSeries([]);
@@ -796,6 +762,8 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
       setFollowerSeries([]);
       setFollowerCounts(null);
       setReachCacheSeries([]);
+      setProfileViewsSeries([]);
+      setProfileVisitorsBreakdown(null);
       try {
         const params = new URLSearchParams();
         params.set("since", toUnixSeconds(startOfDay(effectiveSince)));
@@ -875,6 +843,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
       setPosts([]);
       setAccountInfo(null);
       setPostsError("Conta do Instagram não configurada.");
+      setLoadingPosts(false);
       return undefined;
     }
 
@@ -887,15 +856,20 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
       return undefined;
     }
 
+    setPosts([]);
+    setAccountInfo(null);
+
+    const controller = new AbortController();
     let cancelled = false;
-    const loadPosts = async () => {
+
+    (async () => {
       setLoadingPosts(true);
       setPostsError("");
       try {
         const params = new URLSearchParams({ igUserId: accountConfig.instagramUserId, limit: "20" });
         if (sinceParam) params.set("since", sinceParam);
         if (untilParam) params.set("until", untilParam);
-        const resp = await apiFetch(`/api/instagram/posts?${params.toString()}`);
+        const resp = await apiFetch(`/api/instagram/posts?${params.toString()}`, { signal: controller.signal });
         if (cancelled) return;
         const normalizedPosts = Array.isArray(resp?.posts) ? resp.posts : [];
         const account = resp?.account || null;
@@ -903,7 +877,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
         setAccountInfo(account);
         setDashboardCache(postsCacheKey, { posts: normalizedPosts, accountInfo: account });
       } catch (err) {
-        if (cancelled) return;
+        if (cancelled || err?.name === "AbortError") return;
         const rawMessage = err?.message || "";
         const friendlyMessage = rawMessage.includes("<") ? "Não foi possível carregar os posts (erro 502)." : rawMessage;
         setPosts([]);
@@ -914,20 +888,20 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
           setLoadingPosts(false);
         }
       }
-    };
+    })();
 
-    loadPosts();
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, [accountConfig?.instagramUserId, apiFetch, sinceParam, untilParam, postsCacheKey]);
 
 const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
-const reachMetric = metricsByKey.reach;
-const followersMetric = metricsByKey.followers_total;
-const followerGrowthMetric = metricsByKey.follower_growth;
-const engagementRateMetric = metricsByKey.engagement_rate;
-const profileViewsMetric = metricsByKey.video_views || metricsByKey.profile_views;
+ const reachMetric = metricsByKey.reach;
+ const followersMetric = metricsByKey.followers_total;
+ const followerGrowthMetric = metricsByKey.follower_growth;
+ const engagementRateMetric = metricsByKey.engagement_rate;
+ const profileViewsMetric = metricsByKey.video_views || metricsByKey.profile_views;
 
   const reachMetricValue = useMemo(() => extractNumber(reachMetric?.value, null), [reachMetric?.value]);
   const timelineReachSeries = useMemo(() => seriesFromMetric(reachMetric), [reachMetric]);
