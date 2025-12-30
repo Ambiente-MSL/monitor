@@ -744,6 +744,7 @@ def ig_window(ig_user_id: str, since: int, until: int) -> Dict[str, Any]:
     sum_likes = sum_comments = sum_shares = sum_saves = 0
     sum_video_views = 0
     video_views_by_date: Dict[str, int] = {}
+    reach_by_date: Dict[str, int] = {}
     post_details: List[Dict[str, Any]] = []
 
     try:
@@ -824,7 +825,7 @@ def ig_window(ig_user_id: str, since: int, until: int) -> Dict[str, Any]:
                 sum_saves += saves
                 sum_video_views += video_views_value
 
-                if video_views_value and timestamp_iso:
+                if (video_views_value or reach_value) and timestamp_iso:
                     date_key = None
                     try:
                         dt = datetime.fromisoformat(timestamp_iso.replace("Z", "+00:00"))
@@ -832,7 +833,10 @@ def ig_window(ig_user_id: str, since: int, until: int) -> Dict[str, Any]:
                     except ValueError:
                         date_key = timestamp_iso[:10]
                     if date_key:
-                        video_views_by_date[date_key] = video_views_by_date.get(date_key, 0) + video_views_value
+                        if video_views_value:
+                            video_views_by_date[date_key] = video_views_by_date.get(date_key, 0) + video_views_value
+                        if reach_value:
+                            reach_by_date[date_key] = reach_by_date.get(date_key, 0) + int(reach_value or 0)
 
                 post_details.append({
                     "id": media_id,
@@ -862,6 +866,11 @@ def ig_window(ig_user_id: str, since: int, until: int) -> Dict[str, Any]:
 
     if reach == 0:
         reach = sum(p.get("reach") or 0 for p in post_details)
+        if reach_by_date:
+            reach_timeseries = [
+                {"date": key, "value": value}
+                for key, value in sorted(reach_by_date.items())
+            ]
     video_views_timeseries = [
         {"date": key, "value": value}
         for key, value in sorted(video_views_by_date.items())

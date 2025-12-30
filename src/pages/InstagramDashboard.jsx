@@ -719,6 +719,17 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
 
     const cachedMetrics = getDashboardCache(metricsCacheKey);
     if (cachedMetrics) {
+      const cachedMetricsList = Array.isArray(cachedMetrics.metrics) ? cachedMetrics.metrics : [];
+      const cachedReachMetric = cachedMetricsList.find((metric) => metric?.key === "reach");
+      const cachedReachValue = extractNumber(cachedReachMetric?.value, null);
+      const cachedReachSeries = Array.isArray(cachedMetrics.reachSeries) ? cachedMetrics.reachSeries : [];
+      const cachedReachMetricSeries = Array.isArray(cachedReachMetric?.timeseries) ? cachedReachMetric.timeseries : [];
+      const hasReachTimeseries = cachedReachSeries.length > 0 || cachedReachMetricSeries.length > 0;
+      // Cache antigo/limitado pode ter o total de alcance, mas sem série diária.
+      // Nesse caso, força re-fetch para preencher o gráfico com dados reais.
+      const shouldBypassCacheForReach = cachedReachValue != null && cachedReachValue > 0 && !hasReachTimeseries;
+
+      if (!shouldBypassCacheForReach) {
       setMetrics(Array.isArray(cachedMetrics.metrics) ? cachedMetrics.metrics : []);
       setFollowerSeries(Array.isArray(cachedMetrics.followerSeries) ? cachedMetrics.followerSeries : []);
       setFollowerCounts(cachedMetrics.followerCounts ?? null);
@@ -733,6 +744,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
       setMetricsError("");
       setMetricsLoading(false);
       return undefined;
+      }
     }
 
     const preset = IG_TOPBAR_PRESETS.find((item) => item.id === "7d") || IG_TOPBAR_PRESETS[0];
