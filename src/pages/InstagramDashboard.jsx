@@ -1,4 +1,4 @@
-Ôªøimport { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { Link, useLocation, useOutletContext } from "react-router-dom";
 import { useRef } from "react";
 import {
@@ -65,7 +65,7 @@ const STOP_WORDS = new Set([
 
 const IG_TOPBAR_PRESETS = [
   { id: "7d", label: "7 dias", days: 7 },
-  { id: "1m", label: "1 m√™s", days: 30 },
+  { id: "1m", label: "1 mÍs", days: 30 },
   { id: "3m", label: "3 meses", days: 90 },
   { id: "6m", label: "6 meses", days: 180 },
   { id: "1y", label: "1 ano", days: 365 },
@@ -79,7 +79,7 @@ const DEFAULT_GENDER_STATS = [
 ];
 
 const DEFAULT_AUDIENCE_TYPE = [
-  { name: "N√£o Seguidores", value: 35 },
+  { name: "N„o Seguidores", value: 35 },
   { name: "Seguidores", value: 65 },
 ];
 
@@ -111,8 +111,8 @@ const HERO_TABS = [
   { id: "instagram", label: "Instagram", href: "/instagram", icon: InstagramIcon, iconClass: "hero-icon-instagram" },
   { id: "facebook", label: "Facebook", href: "/facebook", icon: Facebook, iconClass: "hero-icon-facebook" },
   { id: "ads", label: "Ads", href: "/ads", icon: BarChart3, iconClass: "hero-icon-ads" },
-  { id: "reports", label: "Relat√≥rios", href: "/relatorios", icon: FileText, iconClass: "hero-icon-reports" },
-  { id: "settings", label: "Configura√ß√µes", href: "/configuracoes", icon: Settings, iconClass: "hero-icon-settings" },
+  { id: "reports", label: "RelatÛrios", href: "/relatorios", icon: FileText, iconClass: "hero-icon-reports" },
+  { id: "settings", label: "ConfiguraÁıes", href: "/configuracoes", icon: Settings, iconClass: "hero-icon-settings" },
   { id: "admin", label: "Admin", href: "/admin", icon: Shield, iconClass: "hero-icon-admin" },
 ];
 
@@ -440,7 +440,7 @@ const buildHashtagFrequency = (posts) => {
 const IG_DONUT_COLORS = ["#8b5cf6", "#f97316", "#ec4899", "#14b8a6"];
 const IG_CONTENT_LABEL = {
   IMAGE: "Imagem",
-  VIDEO: "V√≠deo",
+  VIDEO: "VÌdeo",
   CAROUSEL: "Carrossel",
 };
 
@@ -573,14 +573,14 @@ export default function InstagramDashboard() {
   const sinceIso = useMemo(() => toUtcDateString(sinceDate), [sinceDate]);
   const untilIso = useMemo(() => toUtcDateString(untilDate), [untilDate]);
 
-  // Estado para contador de coment√°rios da wordcloud
+  // Estado para contador de coment·rios da wordcloud
   const [commentsCount, setCommentsCount] = useState(null);
 
   useEffect(() => {
     setCommentsCount(null);
   }, [accountSnapshotKey]);
 
-  // Estado para controlar visualiza√ß√£o detalhada
+  // Estado para controlar visualizaÁ„o detalhada
   const [showDetailedView, setShowDetailedView] = useState(false);
   const [showInteractionsDetail, setShowInteractionsDetail] = useState(false);
   const [interactionsTab, setInteractionsTab] = useState('reels'); // reels, posts, stories
@@ -751,7 +751,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
       setMetricsLoading(false);
       setMetricsFetching(false);
       setMetricsNotice("");
-      setMetricsError("Conta do Instagram n√£o configurada.");
+      setMetricsError("Conta do Instagram n„o configurada.");
       return;
     }
 
@@ -764,8 +764,8 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
       const cachedReachSeries = Array.isArray(cachedMetrics.reachSeries) ? cachedMetrics.reachSeries : [];
       const cachedReachMetricSeries = Array.isArray(cachedReachMetric?.timeseries) ? cachedReachMetric.timeseries : [];
       const hasReachTimeseries = cachedReachSeries.length > 0 || cachedReachMetricSeries.length > 0;
-      // Cache antigo/limitado pode ter o total de alcance, mas sem s√©rie di√°ria.
-      // Nesse caso, for√ßa re-fetch para preencher o gr√°fico com dados reais.
+      // Cache antigo/limitado pode ter o total de alcance, mas sem sÈrie di·ria.
+      // Nesse caso, forÁa re-fetch para preencher o gr·fico com dados reais.
       const shouldBypassCacheForReach = cachedReachValue != null && cachedReachValue > 0 && !hasReachTimeseries;
 
       setMetrics(Array.isArray(cachedMetrics.metrics) ? cachedMetrics.metrics : []);
@@ -842,7 +842,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
         const text = await resp.text();
         const json = safeParseJson(text) || {};
         if (!resp.ok) {
-          const error = new Error(describeApiError(json, "Falha ao carregar m√©tricas do Instagram."));
+          const error = new Error(describeApiError(json, "Falha ao carregar mÈtricas do Instagram."));
           error.status = resp.status;
           throw error;
         }
@@ -875,8 +875,8 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
       setMetricsLoading(false);
       setMetricsNotice(
         shouldRefreshForReach
-          ? "Atualizando s√©rie di√°ria de alcance‚Ä¶"
-          : "Atualizando m√©tricas do per√≠odo selecionado (exibindo dados anteriores at√© carregar)‚Ä¶",
+          ? "Atualizando sÈrie di·ria de alcanceÖ"
+          : "Atualizando mÈtricas do perÌodo selecionado (exibindo dados anteriores atÈ carregar)Ö",
       );
     }
 
@@ -888,7 +888,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
       trackTimeout(setTimeout(() => {
         if (cancelled || metricsRequestIdRef.current !== requestId) return;
         setMetricsLoading(false);
-        setMetricsNotice("Atualizando m√©tricas‚Ä¶ isso pode levar alguns segundos na primeira vez.");
+        setMetricsNotice("Atualizando mÈtricasÖ isso pode levar alguns segundos na primeira vez.");
       }, SOFT_LOADING_MS));
     }
 
@@ -940,9 +940,9 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
       } catch (err) {
         if (cancelled || metricsRequestIdRef.current !== requestId) return;
         if (err?.name === "AbortError") {
-          setMetricsError("Tempo esgotado ao carregar m√©tricas do Instagram.");
+          setMetricsError("Tempo esgotado ao carregar mÈtricas do Instagram.");
         } else {
-          setMetricsError(err?.message || "N√£o foi poss√≠vel atualizar.");
+          setMetricsError(err?.message || "N„o foi possÌvel atualizar.");
         }
         setMetricsNotice("");
 
@@ -979,7 +979,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
     if (!accountConfig?.instagramUserId) {
       setPosts([]);
       setAccountInfo(null);
-      setPostsError("Conta do Instagram n√£o configurada.");
+      setPostsError("Conta do Instagram n„o configurada.");
       setLoadingPosts(false);
       setPostsFetching(false);
       setPostsNotice("");
@@ -1042,7 +1042,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
         const text = await resp.text();
         const json = safeParseJson(text) || {};
         if (!resp.ok) {
-          const error = new Error(describeApiError(json, "N√£o foi poss√≠vel carregar os posts."));
+          const error = new Error(describeApiError(json, "N„o foi possÌvel carregar os posts."));
           error.status = resp.status;
           throw error;
         }
@@ -1068,7 +1068,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
       setPostsNotice("");
     } else {
       setLoadingPosts(false);
-      setPostsNotice("Atualizando posts do per√≠odo selecionado (exibindo dados anteriores at√© carregar)‚Ä¶");
+      setPostsNotice("Atualizando posts do perÌodo selecionado (exibindo dados anteriores atÈ carregar)Ö");
     }
 
     setPostsFetching(true);
@@ -1078,7 +1078,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
       trackTimeout(setTimeout(() => {
         if (cancelled || postsRequestIdRef.current !== requestId) return;
         setLoadingPosts(false);
-        setPostsNotice("Atualizando posts‚Ä¶ isso pode levar alguns segundos na primeira vez.");
+        setPostsNotice("Atualizando postsÖ isso pode levar alguns segundos na primeira vez.");
       }, SOFT_LOADING_MS));
     }
 
@@ -1098,7 +1098,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
         if (err?.name === "AbortError") {
           setPostsError("Tempo esgotado ao carregar os posts do Instagram.");
         } else {
-          setPostsError(err?.message || "N√£o foi poss√≠vel carregar os posts.");
+          setPostsError(err?.message || "N„o foi possÌvel carregar os posts.");
         }
         setPostsNotice("");
 
@@ -1317,7 +1317,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
     });
   }, [posts, sinceDate, untilDate]);
 
-  // Calcula total de seguidores ganhos no per√≠odo filtrado
+  // Calcula total de seguidores ganhos no perÌodo filtrado
   const followersDelta = useMemo(() => {
     if (metricsLoading) return null;
     const sumPositiveDiff = (series) => {
@@ -1497,7 +1497,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
 
   const reachXAxisInterval = useMemo(() => {
     if (profileReachData.length <= 7) return 0;
-    // Mostrar ~7 ticks no eixo X, mas mantendo a s√©rie completa no gr√°fico.
+    // Mostrar ~7 ticks no eixo X, mas mantendo a sÈrie completa no gr·fico.
     return Math.max(0, Math.ceil(profileReachData.length / 7) - 1);
   }, [profileReachData.length]);
 
@@ -1732,7 +1732,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
         date,
         count,
         level,
-        tooltip: `${count} ${count === 1 ? "publica√ß√£o" : "publica√ß√µes"}`,
+        tooltip: `${count} ${count === 1 ? "publicaÁ„o" : "publicaÁıes"}`,
       };
     });
 
@@ -1903,14 +1903,14 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
       : DEFAULT_GENDER_STATS
   ), [genderDistribution]);
 
-  // S√©rie de dados para o gr√°fico de Audi√™ncia (Seguidores vs N√£o Seguidores)
+  // SÈrie de dados para o gr·fico de AudiÍncia (Seguidores vs N„o Seguidores)
   const audienceTypeSeries = useMemo(() => {
     // Tenta calcular a partir dos dados reais de alcance
     const reachValue = extractNumber(reachMetric?.value, 0);
     const followersValue = extractNumber(followersMetric?.value, 0);
 
     if (reachValue > 0 && followersValue > 0) {
-      // Estima percentual de n√£o seguidores baseado no alcance vs seguidores
+      // Estima percentual de n„o seguidores baseado no alcance vs seguidores
       const nonFollowerReachEstimate = Math.max(0, reachValue - followersValue);
       const totalReach = reachValue;
 
@@ -1918,7 +1918,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
       const followerPct = 100 - nonFollowerPct;
 
       return [
-        { name: "N√£o Seguidores", value: Math.round(nonFollowerPct * 10) / 10 },
+        { name: "N„o Seguidores", value: Math.round(nonFollowerPct * 10) / 10 },
         { name: "Seguidores", value: Math.round(followerPct * 10) / 10 },
       ];
     }
@@ -1959,7 +1959,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
       } catch (err) {
         if (cancelled) return;
         setCoverImage(null);
-        setCoverError(err?.message || "N√£o foi poss√≠vel carregar a capa.");
+        setCoverError(err?.message || "N„o foi possÌvel carregar a capa.");
       } finally {
         if (!cancelled) {
           setCoverLoading(false);
@@ -2002,7 +2002,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
         });
         setCoverImage(response?.cover?.url || response?.cover?.storage_url || dataUrl);
       } catch (err) {
-        setCoverError(err?.message || "N√£o foi poss√≠vel salvar a capa.");
+        setCoverError(err?.message || "N„o foi possÌvel salvar a capa.");
       } finally {
         setCoverLoading(false);
       }
@@ -2019,18 +2019,18 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
       });
       setCoverImage(null);
     } catch (err) {
-      setCoverError(err?.message || "N√£o foi poss√≠vel remover a capa.");
+      setCoverError(err?.message || "N„o foi possÌvel remover a capa.");
     } finally {
       setCoverLoading(false);
     }
   }, [accountId, apiFetch]);
 
-  // Renderiza√ß√£o da visualiza√ß√£o detalhada
-  if (showDetailedView) {
+  // RenderizaÁ„o da visualizaÁ„o detalhada de InteraÁıes
+  if (showInteractionsDetail) {
     return (
       <div className="instagram-dashboard instagram-dashboard--clean">
         <div className="ig-clean-container">
-          {/* Degrad√™ de fundo do Instagram */}
+          {/* DegradÍ de fundo do Instagram */}
           <div className="ig-hero-gradient" aria-hidden="true" />
 
           {/* Header com Logo Instagram */}
@@ -2043,11 +2043,415 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             </div>
           </div>
 
-          {/* Hero com navega√ß√£o */}
+          {/* Hero com navegaÁ„o - Tema Rosa para InteraÁıes */}
+          <div className="ig-hero" style={{ marginTop: '20px', marginBottom: '32px' }}>
+            <div className="ig-hero__background" style={{ background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)' }} />
+            <div className="ig-hero__content">
+              {/* NavegaÁ„o de volta */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <button
+                  onClick={() => setShowInteractionsDetail(false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 20px',
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: 'white',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12" />
+                    <polyline points="12 19 5 12 12 5" />
+                  </svg>
+                  Voltar ao Dashboard
+                </button>
+              </div>
+
+              {/* TÌtulo e MÈtrica Principal */}
+              <div style={{ marginTop: '24px' }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  marginBottom: '16px'
+                }}>
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '12px',
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <Heart size={24} color="white" fill="white" />
+                  </div>
+                  <span style={{ fontSize: '14px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>InteraÁıes</span>
+                </div>
+                <h2 style={{
+                  margin: 0,
+                  fontSize: '36px',
+                  fontWeight: 700,
+                  color: 'white',
+                  marginBottom: '12px'
+                }}>
+                  An·lise Detalhada de Engajamento
+                </h2>
+                <p style={{ margin: 0, fontSize: '15px', color: 'rgba(255, 255, 255, 0.9)', lineHeight: 1.6, maxWidth: '600px' }}>
+                  Acompanhe as interaÁıes do seu p˙blico atravÈs de curtidas, coment·rios, salvamentos, compartilhamentos e reposts em diferentes tipos de conte˙do.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Grid de MÈtricas Resumidas */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+            gap: '20px',
+            marginBottom: '32px'
+          }}>
+            {/* Total de InteraÁıes */}
+            <div className="ig-card-white" style={{
+              padding: '24px',
+              textAlign: 'center',
+              borderRadius: '16px',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+              background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.05) 0%, rgba(244, 114, 182, 0.05) 100%)',
+              border: '1px solid rgba(236, 72, 153, 0.1)'
+            }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                margin: '0 auto 16px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <Heart size={24} color="white" fill="white" />
+              </div>
+              <div style={{ fontSize: '36px', fontWeight: 800, color: '#ec4899', marginBottom: '8px' }}>
+                {formatNumber(45832)}
+              </div>
+              <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Total de InteraÁıes</div>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                marginTop: '12px',
+                fontSize: '13px',
+                color: '#10b981',
+                fontWeight: 600
+              }}>
+                <TrendingUp size={16} />
+                <span>+12.5%</span>
+              </div>
+            </div>
+
+            {/* Pico de InteraÁıes */}
+            <div className="ig-card-white" style={{
+              padding: '24px',
+              textAlign: 'center',
+              borderRadius: '16px',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)'
+            }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                margin: '0 auto 16px',
+                borderRadius: '50%',
+                background: '#fef2f2'
+              }} />
+              <div style={{ fontSize: '36px', fontWeight: 800, color: '#ec4899', marginBottom: '8px', position: 'relative' }}>
+                {formatNumber(3847)}
+              </div>
+              <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Pico de InteraÁıes (1 dia)</div>
+            </div>
+          </div>
+
+          {/* Tabs de NavegaÁ„o */}
+          <div style={{
+            display: 'flex',
+            gap: '12px',
+            marginBottom: '28px',
+            borderBottom: '2px solid #e5e7eb',
+            overflowX: 'auto'
+          }}>
+            {[
+              { id: 'reels', label: 'Reels', icon: '??' },
+              { id: 'posts', label: 'Posts', icon: '??' },
+              { id: 'stories', label: 'Stories', icon: '?' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setInteractionsTab(tab.id)}
+                style={{
+                  padding: '14px 24px',
+                  background: interactionsTab === tab.id ? '#fce7f3' : 'transparent',
+                  border: 'none',
+                  borderBottom: interactionsTab === tab.id ? '3px solid #ec4899' : '3px solid transparent',
+                  cursor: 'pointer',
+                  fontSize: '15px',
+                  fontWeight: interactionsTab === tab.id ? 700 : 500,
+                  color: interactionsTab === tab.id ? '#ec4899' : '#6b7280',
+                  transition: 'all 0.2s',
+                  whiteSpace: 'nowrap',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  marginBottom: '-2px'
+                }}
+                onMouseEnter={(e) => {
+                  if (interactionsTab !== tab.id) {
+                    e.currentTarget.style.background = '#f9fafb';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (interactionsTab !== tab.id) {
+                    e.currentTarget.style.background = 'transparent';
+                  }
+                }}
+              >
+                <span style={{ fontSize: '18px' }}>{tab.icon}</span>
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* MÈtricas Detalhadas por Tipo */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: '20px',
+            marginBottom: '32px'
+          }}>
+            <div className="ig-card-white" style={{
+              padding: '24px',
+              borderRadius: '12px',
+              border: '1px solid #fecaca',
+              background: '#fef2f2'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                <Heart size={22} color="#ef4444" fill="#ef4444" />
+                <span style={{ fontSize: '14px', color: '#6b7280', fontWeight: 600 }}>Curtidas</span>
+              </div>
+              <div style={{ fontSize: '32px', fontWeight: 700, color: '#ef4444' }}>
+                {formatNumber(18650)}
+              </div>
+            </div>
+
+            <div className="ig-card-white" style={{
+              padding: '24px',
+              borderRadius: '12px',
+              border: '1px solid #bfdbfe',
+              background: '#eff6ff'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                <MessageCircle size={22} color="#3b82f6" />
+                <span style={{ fontSize: '14px', color: '#6b7280', fontWeight: 600 }}>Coment·rios</span>
+              </div>
+              <div style={{ fontSize: '32px', fontWeight: 700, color: '#3b82f6' }}>
+                {formatNumber(4832)}
+              </div>
+            </div>
+
+            <div className="ig-card-white" style={{
+              padding: '24px',
+              borderRadius: '12px',
+              border: '1px solid #fde047',
+              background: '#fefce8'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                <Bookmark size={22} color="#eab308" />
+                <span style={{ fontSize: '14px', color: '#6b7280', fontWeight: 600 }}>Salvamentos</span>
+              </div>
+              <div style={{ fontSize: '32px', fontWeight: 700, color: '#eab308' }}>
+                {formatNumber(2156)}
+              </div>
+            </div>
+
+            <div className="ig-card-white" style={{
+              padding: '24px',
+              borderRadius: '12px',
+              border: '1px solid #86efac',
+              background: '#f0fdf4'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                <Share2 size={22} color="#22c55e" />
+                <span style={{ fontSize: '14px', color: '#6b7280', fontWeight: 600 }}>Compartilhamentos</span>
+              </div>
+              <div style={{ fontSize: '32px', fontWeight: 700, color: '#22c55e' }}>
+                {formatNumber(892)}
+              </div>
+            </div>
+
+            <div className="ig-card-white" style={{
+              padding: '24px',
+              borderRadius: '12px',
+              border: '1px solid #c4b5fd',
+              background: '#f5f3ff'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 1l4 4-4 4" />
+                  <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+                  <path d="M7 23l-4-4 4-4" />
+                  <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+                </svg>
+                <span style={{ fontSize: '14px', color: '#6b7280', fontWeight: 600 }}>Reposts</span>
+              </div>
+              <div style={{ fontSize: '32px', fontWeight: 700, color: '#8b5cf6' }}>
+                {formatNumber(302)}
+              </div>
+            </div>
+          </div>
+
+          {/* Top Content por Curtidas */}
+          <section className="ig-card-white" style={{
+            padding: '28px',
+            borderRadius: '20px',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
+            border: '1px solid rgba(0, 0, 0, 0.05)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '10px',
+                background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                </svg>
+              </div>
+              <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
+                {interactionsTab === 'reels' ? 'Top Reels por Curtidas' : interactionsTab === 'posts' ? 'Top Posts por Curtidas' : 'Top Stories por Curtidas'}
+              </h3>
+            </div>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+              gap: '20px'
+            }}>
+              {[
+                { id: 1, caption: 'Confira nossa nova coleÁ„o de produtos! ? DisponÌvel agora na loja', likes: 12450, comments: 834, saves: 1203, shares: 456, thumbnail: '??' },
+                { id: 2, caption: 'Dica do dia: Como aumentar o engajamento no Instagram ??', likes: 10230, comments: 645, saves: 892, shares: 324, thumbnail: '??' },
+                { id: 3, caption: 'Bastidores da nossa ˙ltima produÁ„o ?? Foi incrÌvel!', likes: 8650, comments: 423, saves: 567, shares: 234, thumbnail: '??' },
+              ].map(item => (
+                <div key={item.id} style={{
+                  background: 'white',
+                  borderRadius: '16px',
+                  padding: '20px',
+                  border: '1px solid #e5e7eb',
+                  transition: 'all 0.2s',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.12)';
+                  e.currentTarget.style.transform = 'translateY(-4px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = 'none';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+                >
+                  <div style={{
+                    fontSize: '64px',
+                    textAlign: 'center',
+                    marginBottom: '16px',
+                    background: '#f9fafb',
+                    borderRadius: '12px',
+                    padding: '32px',
+                    border: '2px dashed #e5e7eb'
+                  }}>
+                    {item.thumbnail}
+                  </div>
+                  <div style={{
+                    fontSize: '15px',
+                    color: '#374151',
+                    marginBottom: '16px',
+                    fontWeight: 500,
+                    lineHeight: 1.5,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    minHeight: '45px'
+                  }}>
+                    {item.caption}
+                  </div>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(4, 1fr)',
+                    gap: '12px',
+                    paddingTop: '16px',
+                    borderTop: '1px solid #e5e7eb'
+                  }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <Heart size={16} color="#ef4444" fill="#ef4444" style={{ marginBottom: '6px' }} />
+                      <div style={{ fontSize: '15px', fontWeight: 700, color: '#111827' }}>{formatNumber(item.likes)}</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <MessageCircle size={16} color="#3b82f6" style={{ marginBottom: '6px' }} />
+                      <div style={{ fontSize: '15px', fontWeight: 700, color: '#111827' }}>{formatNumber(item.comments)}</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <Bookmark size={16} color="#eab308" style={{ marginBottom: '6px' }} />
+                      <div style={{ fontSize: '15px', fontWeight: 700, color: '#111827' }}>{formatNumber(item.saves)}</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <Share2 size={16} color="#22c55e" style={{ marginBottom: '6px' }} />
+                      <div style={{ fontSize: '15px', fontWeight: 700, color: '#111827' }}>{formatNumber(item.shares)}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      </div>
+    );
+  }
+
+  // RenderizaÁ„o da visualizaÁ„o detalhada de VisualizaÁıes
+  if (showDetailedView) {
+    return (
+      <div className="instagram-dashboard instagram-dashboard--clean">
+        <div className="ig-clean-container">
+          {/* DegradÍ de fundo do Instagram */}
+          <div className="ig-hero-gradient" aria-hidden="true" />
+
+          {/* Header com Logo Instagram */}
+          <div className="ig-clean-header" style={{ marginBottom: '24px' }}>
+            <div className="ig-clean-header__brand">
+              <div className="ig-clean-header__logo">
+                <InstagramIcon size={32} />
+              </div>
+              <h1>Instagram</h1>
+            </div>
+          </div>
+
+          {/* Hero com navegaÁ„o */}
           <div className="ig-hero" style={{ marginTop: '20px', marginBottom: '32px' }}>
             <div className="ig-hero__background" />
             <div className="ig-hero__content">
-              {/* Navega√ß√£o de volta */}
+              {/* NavegaÁ„o de volta */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <button
                   onClick={() => setShowDetailedView(false)}
@@ -2082,7 +2486,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 </button>
               </div>
 
-              {/* T√≠tulo da se√ß√£o */}
+              {/* TÌtulo da seÁ„o */}
               <div>
                 <div style={{
                   display: 'inline-flex',
@@ -2099,7 +2503,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                     <circle cx="12" cy="12" r="3" />
                   </svg>
-                  <span style={{ fontSize: '14px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Visualiza√ß√µes</span>
+                  <span style={{ fontSize: '14px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>VisualizaÁıes</span>
                 </div>
                 <h2 style={{
                   margin: 0,
@@ -2108,7 +2512,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   color: 'white',
                   lineHeight: 1.2
                 }}>
-                  An√°lise Detalhada
+                  An·lise Detalhada
                 </h2>
                 <p style={{
                   margin: '8px 0 0 0',
@@ -2116,11 +2520,11 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   color: 'rgba(255, 255, 255, 0.9)',
                   fontWeight: 400
                 }}>
-                  Acompanhe as visualiza√ß√µes dos seus conte√∫dos (Reels, Feed e Stories) com insights detalhados
+                  Acompanhe as visualizaÁıes dos seus conte˙dos (Reels, Feed e Stories) com insights detalhados
                 </p>
               </div>
 
-              {/* Cards de KPI r√°pido na hero */}
+              {/* Cards de KPI r·pido na hero */}
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
@@ -2138,7 +2542,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     {formatNumber(profileViewsTotal ?? null)}
                   </div>
                   <div style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.85)', fontWeight: 500 }}>
-                    Total de Visualiza√ß√µes
+                    Total de VisualizaÁıes
                   </div>
                 </div>
                 <div style={{
@@ -2152,7 +2556,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     {profileViewsAverage != null ? formatNumber(Math.round(profileViewsAverage)) : '--'}
                   </div>
                   <div style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.85)', fontWeight: 500 }}>
-                    M√©dia Di√°ria
+                    MÈdia Di·ria
                   </div>
                 </div>
                 <div style={{
@@ -2166,21 +2570,21 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     {profileViewsPeak != null ? formatNumber(profileViewsPeak) : '--'}
                   </div>
                   <div style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.85)', fontWeight: 500 }}>
-                    Pico de Visualiza√ß√µes
+                    Pico de VisualizaÁıes
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Layout em coluna √∫nica */}
+          {/* Layout em coluna ˙nica */}
           <div style={{
             padding: '0 24px 24px',
             minHeight: 'calc(100vh - 200px)'
           }}>
-            {/* Conte√∫do principal */}
+            {/* Conte˙do principal */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '1400px', margin: '0 auto' }}>
-              {/* Card de gr√°fico de visualiza√ß√µes - Design melhorado */}
+              {/* Card de gr·fico de visualizaÁıes - Design melhorado */}
               <section className="ig-card-white" style={{
                 padding: '28px',
                 background: 'white',
@@ -2204,7 +2608,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     </svg>
                   </div>
                   <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
-                    Tend√™ncia de Visualiza√ß√µes
+                    TendÍncia de VisualizaÁıes
                   </h3>
                 </div>
                 {profileViewsChartData.length ? (
@@ -2249,11 +2653,11 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     </ResponsiveContainer>
                   </div>
                 ) : (
-                  <div className="ig-empty-state" style={{ height: 300 }}>Sem dados de visualiza√ß√µes.</div>
+                  <div className="ig-empty-state" style={{ height: 300 }}>Sem dados de visualizaÁıes.</div>
                 )}
               </section>
 
-              {/* Cards de m√©tricas detalhadas - Design aprimorado */}
+              {/* Cards de mÈtricas detalhadas - Design aprimorado */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
                 <div className="ig-card-white" style={{
                   padding: '24px',
@@ -2276,7 +2680,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   <div style={{ fontSize: '36px', fontWeight: 800, color: '#6366f1', marginBottom: '8px', position: 'relative' }}>
                     {formatNumber(profileViewsTotal ?? null)}
                   </div>
-                  <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Total de Visualiza√ß√µes</div>
+                  <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Total de VisualizaÁıes</div>
                 </div>
                 <div className="ig-card-white" style={{
                   padding: '24px',
@@ -2322,11 +2726,11 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   <div style={{ fontSize: '36px', fontWeight: 800, color: '#f59e0b', marginBottom: '8px', position: 'relative' }}>
                     {formatNumber(profileVisitorsTotals?.total ?? null)}
                   </div>
-                  <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Visitantes √önicos</div>
+                  <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Visitantes ⁄nicos</div>
                 </div>
               </div>
 
-              {/* Gr√°fico Donut - Seguidores vs N√£o Seguidores */}
+              {/* Gr·fico Donut - Seguidores vs N„o Seguidores */}
               <section className="ig-card-white" style={{
                 padding: '28px',
                 borderRadius: '20px',
@@ -2351,7 +2755,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     </svg>
                   </div>
                   <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
-                    Visualiza√ß√µes por Audi√™ncia
+                    VisualizaÁıes por AudiÍncia
                   </h3>
                 </div>
                 <div style={{ height: 300, position: 'relative' }}>
@@ -2360,7 +2764,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                       <Pie
                         data={[
                           { name: 'Seguidores', value: profileVisitorsTotals?.followers || 35, fill: '#6366f1' },
-                          { name: 'N√£o Seguidores', value: profileVisitorsTotals?.nonFollowers || 65, fill: '#ec4899' }
+                          { name: 'N„o Seguidores', value: profileVisitorsTotals?.nonFollowers || 65, fill: '#ec4899' }
                         ]}
                         cx="50%"
                         cy="50%"
@@ -2371,7 +2775,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                       >
                         {[
                           { name: 'Seguidores', value: profileVisitorsTotals?.followers || 35, fill: '#6366f1' },
-                          { name: 'N√£o Seguidores', value: profileVisitorsTotals?.nonFollowers || 65, fill: '#ec4899' }
+                          { name: 'N„o Seguidores', value: profileVisitorsTotals?.nonFollowers || 65, fill: '#ec4899' }
                         ].map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.fill} />
                         ))}
@@ -2411,12 +2815,12 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#ec4899' }} />
-                    <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>N√£o Seguidores</span>
+                    <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>N„o Seguidores</span>
                   </div>
                 </div>
               </section>
 
-              {/* Gr√°fico de Barras - Visualiza√ß√µes por Tipo de Conte√∫do */}
+              {/* Gr·fico de Barras - VisualizaÁıes por Tipo de Conte˙do */}
               <section className="ig-card-white" style={{
                 padding: '28px',
                 borderRadius: '20px',
@@ -2440,7 +2844,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     </svg>
                   </div>
                   <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
-                    Visualiza√ß√µes por Tipo de Conte√∫do
+                    VisualizaÁıes por Tipo de Conte˙do
                   </h3>
                 </div>
                 <div style={{ height: 280 }}>
@@ -2479,7 +2883,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 </div>
               </section>
 
-              {/* Top Posts com Visualiza√ß√µes - Carousel Horizontal */}
+              {/* Top Posts com VisualizaÁıes - Carousel Horizontal */}
               <section className="ig-card-white" style={{
                 padding: '28px',
                 borderRadius: '20px',
@@ -2501,7 +2905,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     </svg>
                   </div>
                   <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
-                    Top Posts por Visualiza√ß√µes
+                    Top Posts por VisualizaÁıes
                   </h3>
                 </div>
                 <div style={{
@@ -2592,7 +2996,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                               {formatNumber(reach || 0)}
                             </div>
                             <div style={{ fontSize: '11px', opacity: 0.9, marginTop: '2px' }}>
-                              visualiza√ß√µes
+                              visualizaÁıes
                             </div>
                           </div>
                         </div>
@@ -2614,7 +3018,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                       </div>
                     );
                   }) : (
-                    <div className="ig-empty-state">Sem posts dispon√≠veis.</div>
+                    <div className="ig-empty-state">Sem posts disponÌveis.</div>
                   )}
                 </div>
               </section>
@@ -2662,7 +3066,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
       {metricsNotice && <div className="alert">{metricsNotice}</div>}
       {postsNotice && <div className="alert">{postsNotice}</div>}
       {!metricsNotice && !postsNotice && (metricsFetching || postsFetching) ? (
-        <div className="alert">Atualizando dados‚Ä¶</div>
+        <div className="alert">Atualizando dadosÖ</div>
       ) : null}
 
       {/* Container Limpo (fundo branco) */}
@@ -2708,7 +3112,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
           </nav>
         </div>
 
-        <h2 className="ig-clean-title">Vis√£o Geral</h2>
+        <h2 className="ig-clean-title">Vis„o Geral</h2>
 
         {/* Grid Principal */}
           <div className="ig-clean-grid" style={showDetailedView ? { display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' } : {}}>
@@ -2752,7 +3156,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 {!coverImage && (
                   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#6b7280" }}>
                     <InstagramIcon size={32} />
-                    <span style={{ fontWeight: 600 }}>Capa n√£o configurada</span>
+                    <span style={{ fontWeight: 600 }}>Capa n„o configurada</span>
                   </div>
                 )}
                 {coverImage && (
@@ -2894,7 +3298,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 <div className="ig-profile-vertical__divider" />
 
                 <div className="ig-profile-vertical__engagement">
-                  <h4>Engajamento por Conte√∫do</h4>
+                  <h4>Engajamento por Conte˙do</h4>
                   {contentBreakdown.length ? (
                     <>
                       <div className="ig-profile-vertical__engagement-chart">
@@ -2941,7 +3345,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
 
                       <div className="ig-engagement-mini-grid">
                         <div className="ig-engagement-mini-card ig-engagement-mini-card--teal">
-                          <span className="ig-engagement-mini-card__label">Melhor hor√°rio para postar</span>
+                          <span className="ig-engagement-mini-card__label">Melhor hor·rio para postar</span>
                           <span className="ig-engagement-mini-card__value">{bestTimes.bestTimeRange || "--"}</span>
                         </div>
                         <div className="ig-engagement-mini-card ig-engagement-mini-card--pink">
@@ -2949,7 +3353,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                           <span className="ig-engagement-mini-card__value">{bestTimes.bestDay || "--"}</span>
                         </div>
                       </div>
-                      <p className="ig-best-time-caption">*Baseado nas publica√ß√µes dos √∫ltimos 30 dias</p>
+                      <p className="ig-best-time-caption">*Baseado nas publicaÁıes dos ˙ltimos 30 dias</p>
                     </>
                   ) : (
                     <div className="ig-empty-state">Sem dados</div>
@@ -3035,7 +3439,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                                   </span>
                                 </div>
                                 <div className="ig-top-post-compact__caption">
-                                  {truncate(post.caption || "Aqui vai o texto da legenda que post est√° sendo apresentado se n√£o tiver espa√ßo...", 120)}
+                                  {truncate(post.caption || "Aqui vai o texto da legenda que post est· sendo apresentado se n„o tiver espaÁo...", 120)}
                                 </div>
                               </div>
                             </div>
@@ -3043,7 +3447,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                         );
                       })
                     ) : (
-                      <div className="ig-empty-state">Nenhum post dispon√≠vel</div>
+                      <div className="ig-empty-state">Nenhum post disponÌvel</div>
                     )}
                   </div>
                 </div>
@@ -3139,7 +3543,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                           if (!active || !payload?.length) return null;
                           const [{ payload: item, value }] = payload;
                           const numericValue = Number(value ?? item?.value ?? 0);
-                          const label = item?.label ?? "Per√≠odo";
+                          const label = item?.label ?? "PerÌodo";
                           const isPeak =
                             !!peakReachPoint &&
                             item?.dateKey === peakReachPoint.dateKey &&
@@ -3148,12 +3552,12 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                             <div className="ig-tooltip">
                               <span className="ig-tooltip__title">{label}</span>
                               <div className="ig-tooltip__row">
-                                <span>Contas alcan√ßadas</span>
+                                <span>Contas alcanÁadas</span>
                                 <strong>{numericValue.toLocaleString("pt-BR")}</strong>
                               </div>
                               {isPeak ? (
                                 <div style={{ marginTop: 6, fontSize: 12, color: '#6b7280' }}>
-                                  Pico do per√≠odo
+                                  Pico do perÌodo
                                 </div>
                               ) : null}
                             </div>
@@ -3212,7 +3616,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     </ComposedChart>
                   </ResponsiveContainer>
                 ) : (
-                <div className="ig-empty-state">Sem dados dispon√≠veis</div>
+                <div className="ig-empty-state">Sem dados disponÌveis</div>
                 )}
               </div>
             </section>
@@ -3222,7 +3626,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               <header className="ig-card-header">
                 <div>
                   <h3>Crescimento de Seguidores</h3>
-                <p className="ig-card-subtitle">Ganho di√°rio</p>
+                <p className="ig-card-subtitle">Ganho di·rio</p>
                 </div>
               </header>
 
@@ -3353,9 +3757,9 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               </div>
         </section>
 
-        {/* Novos Cards: Visualiza√ß√µes e Seguidores */}
+        {/* Novos Cards: VisualizaÁıes e Seguidores */}
         <div className="ig-analytics-grid ig-analytics-grid--pair" style={{ marginTop: '24px' }}>
-          {/* Card de Visualiza√ß√µes - Estilo Aprimorado */}
+          {/* Card de VisualizaÁıes - Estilo Aprimorado */}
           <section className="ig-card-white ig-analytics-card" style={{ position: 'relative', overflow: 'hidden' }}>
 
             <div className="ig-analytics-card__header" style={{
@@ -3382,8 +3786,8 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   </svg>
                 </div>
                 <div>
-                  <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#111827' }}>Visualiza√ß√µes</h4>
-                  <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '2px', marginBottom: 0 }}>Total de reprodu√ß√µes (Reels, Feed e Stories)</p>
+                  <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#111827' }}>VisualizaÁıes</h4>
+                  <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '2px', marginBottom: 0 }}>Total de reproduÁıes (Reels, Feed e Stories)</p>
                 </div>
               </div>
               <button
@@ -3434,7 +3838,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   {formatNumber(profileViewsTotal ?? null)}
                 </div>
                 <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '20px', fontWeight: 500 }}>
-                  visualiza√ß√µes no per√≠odo
+                  visualizaÁıes no perÌodo
                 </div>
                 {typeof profileViewsDeltaPct === "number" && (
                   <div
@@ -3453,11 +3857,11 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     }}
                   >
                     {profileViewsDeltaPct >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-                    <span>{profileViewsDeltaPct >= 0 ? '+' : ''}{profileViewsDeltaPct}% vs. per√≠odo anterior</span>
+                    <span>{profileViewsDeltaPct >= 0 ? '+' : ''}{profileViewsDeltaPct}% vs. perÌodo anterior</span>
                   </div>
                 )}
 
-                {/* Grid de m√©tricas secund√°rias */}
+                {/* Grid de mÈtricas secund·rias */}
                 <div style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(3, 1fr)',
@@ -3473,7 +3877,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     <div style={{ fontSize: '22px', fontWeight: 700, color: '#6366f1' }}>
                       {formatNumber(profileVisitorsTotals?.total ?? null)}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px', fontWeight: 500 }}>Visitantes √∫nicos</div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px', fontWeight: 500 }}>Visitantes ˙nicos</div>
                   </div>
                   <div style={{
                     padding: '16px 12px',
@@ -3484,7 +3888,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     <div style={{ fontSize: '22px', fontWeight: 700, color: '#8b5cf6' }}>
                       {profileViewsAverage != null ? formatNumber(Math.round(profileViewsAverage)) : '--'}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px', fontWeight: 500 }}>M√©dia di√°ria</div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px', fontWeight: 500 }}>MÈdia di·ria</div>
                   </div>
                   <div style={{
                     padding: '16px 12px',
@@ -3495,14 +3899,14 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     <div style={{ fontSize: '22px', fontWeight: 700, color: '#a855f7' }}>
                       {profileViewsPeak != null ? formatNumber(profileViewsPeak) : '--'}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px', fontWeight: 500 }}>Pico di√°rio</div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px', fontWeight: 500 }}>Pico di·rio</div>
                   </div>
                 </div>
               </div>
             </div>
           </section>
 
-          {/* Card de Intera√ß√µes */}
+          {/* Card de InteraÁıes */}
           <section className="ig-card-white ig-analytics-card" style={{ position: 'relative', overflow: 'hidden' }}>
             <div className="ig-analytics-card__header" style={{
               display: 'flex',
@@ -3530,8 +3934,8 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   <Heart size={20} color="white" fill="white" />
                 </div>
                 <div>
-                  <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#111827' }}>Intera√ß√µes</h4>
-                  <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '2px', marginBottom: 0 }}>Total de engajamento do p√∫blico</p>
+                  <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#111827' }}>InteraÁıes</h4>
+                  <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '2px', marginBottom: 0 }}>Total de engajamento do p˙blico</p>
                 </div>
               </div>
               <button
@@ -3567,7 +3971,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   {formatNumber(45832)}
                 </div>
                 <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '28px' }}>
-                  Total de intera√ß√µes no per√≠odo
+                  Total de interaÁıes no perÌodo
                 </div>
                 <div style={{
                   display: 'grid',
@@ -3595,7 +3999,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     <div style={{ fontSize: '20px', fontWeight: 700, color: '#3b82f6', marginBottom: '4px' }}>
                       {formatNumber(8234)}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>Coment√°rios</div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>Coment·rios</div>
                   </div>
                   <div style={{
                     padding: '14px',
@@ -3629,9 +4033,9 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
           <section className="ig-card-white ig-analytics-card" style={{ gridColumn: 'span 2' }}>
             <div className="ig-analytics-card__header">
               <div>
-                <h4>√öltimos 5 posts</h4>
+                <h4>⁄ltimos 5 posts</h4>
                 <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
-                  Publica√ß√µes mais recentes no per√≠odo filtrado
+                  PublicaÁıes mais recentes no perÌodo filtrado
                 </p>
               </div>
             </div>
@@ -3648,8 +4052,8 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
         <div className="ig-analytics-grid ig-analytics-grid--pair">
           <section className="ig-card-white ig-analytics-card">
             <div className="ig-analytics-card__header">
-              <h4>Audi√™ncia</h4>
-              <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>Seguidores vs N√£o Seguidores</p>
+              <h4>AudiÍncia</h4>
+              <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>Seguidores vs N„o Seguidores</p>
             </div>
             <div className="ig-analytics-card__body">
               <ResponsiveContainer width="100%" height={240}>
@@ -3696,7 +4100,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
           <section className="ig-card-white ig-analytics-card">
             <div className="ig-analytics-card__header">
               <div>
-                <h4>Quantidade de publica√ß√µes por dia</h4>
+                <h4>Quantidade de publicaÁıes por dia</h4>
                 <span className="ig-calendar__month">{postCalendar.title}</span>
               </div>
               <select
@@ -3720,7 +4124,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   <span className="ig-calendar__weekday">Qua</span>
                   <span className="ig-calendar__weekday">Qui</span>
                   <span className="ig-calendar__weekday">Sex</span>
-                  <span className="ig-calendar__weekday">S√°b</span>
+                  <span className="ig-calendar__weekday">S·b</span>
                 </div>
                 <div className="ig-calendar__grid">
                   {Array.from({ length: postCalendar.leadingEmpty }, (_, index) => (
@@ -3919,7 +4323,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
           position: 'sticky',
           top: '24px'
         }}>
-          {/* Bot√£o de fechar */}
+          {/* Bot„o de fechar */}
           <button
             onClick={() => setShowDetailedView(false)}
             style={{
@@ -3969,13 +4373,13 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                 <circle cx="12" cy="12" r="3" />
               </svg>
-              <span style={{ fontSize: '13px', fontWeight: 600, color: 'white', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Visualiza√ß√µes</span>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: 'white', textTransform: 'uppercase', letterSpacing: '0.5px' }}>VisualizaÁıes</span>
             </div>
             <h3 style={{ margin: '0 0 8px 0', fontSize: '28px', fontWeight: 800, color: '#111827' }}>
-              An√°lise Detalhada
+              An·lise Detalhada
             </h3>
             <p style={{ margin: 0, fontSize: '14px', color: '#6b7280', lineHeight: 1.6 }}>
-              Acompanhe as visualiza√ß√µes dos seus conte√∫dos (Reels, Feed e Stories) com insights detalhados
+              Acompanhe as visualizaÁıes dos seus conte˙dos (Reels, Feed e Stories) com insights detalhados
             </p>
           </div>
 
@@ -3992,7 +4396,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               border: '1px solid rgba(99, 102, 241, 0.15)'
             }}>
               <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600, marginBottom: '8px' }}>
-                Total de Visualiza√ß√µes
+                Total de VisualizaÁıes
               </div>
               <div style={{
                 fontSize: '36px',
@@ -4016,8 +4420,8 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   fontSize: '12px',
                   fontWeight: 600
                 }}>
-                  {profileViewsDeltaPct >= 0 ? '‚ñ≤' : '‚ñº'}
-                  <span>{Math.abs(profileViewsDeltaPct)}% vs. per√≠odo anterior</span>
+                  {profileViewsDeltaPct >= 0 ? '?' : '?'}
+                  <span>{Math.abs(profileViewsDeltaPct)}% vs. perÌodo anterior</span>
                 </div>
               )}
             </div>
@@ -4029,7 +4433,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               border: '1px solid rgba(99, 102, 241, 0.1)'
             }}>
               <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 600, marginBottom: '6px' }}>
-                Visitantes √∫nicos
+                Visitantes ˙nicos
               </div>
               <div style={{ fontSize: '28px', fontWeight: 700, color: '#6366f1' }}>
                 {formatNumber(profileVisitorsTotals?.total ?? null)}
@@ -4043,7 +4447,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               border: '1px solid rgba(139, 92, 246, 0.1)'
             }}>
               <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 600, marginBottom: '6px' }}>
-                M√©dia di√°ria
+                MÈdia di·ria
               </div>
               <div style={{ fontSize: '28px', fontWeight: 700, color: '#8b5cf6' }}>
                 {profileViewsAverage != null ? formatNumber(Math.round(profileViewsAverage)) : '--'}
@@ -4057,7 +4461,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               border: '1px solid rgba(168, 85, 247, 0.1)'
             }}>
               <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 600, marginBottom: '6px' }}>
-                Pico di√°rio
+                Pico di·rio
               </div>
               <div style={{ fontSize: '28px', fontWeight: 700, color: '#a855f7' }}>
                 {profileViewsPeak != null ? formatNumber(profileViewsPeak) : '--'}
@@ -4065,7 +4469,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             </div>
           </div>
 
-          {/* Gr√°fico de tend√™ncia */}
+          {/* Gr·fico de tendÍncia */}
           <div style={{
             padding: '24px',
             borderRadius: '16px',
@@ -4073,7 +4477,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             border: '1px solid #e5e7eb'
           }}>
             <h4 style={{ margin: '0 0 20px 0', fontSize: '16px', fontWeight: 700, color: '#111827' }}>
-              üìä Tend√™ncia de Visualiza√ß√µes
+              ?? TendÍncia de VisualizaÁıes
             </h4>
             {profileViewsChartData.length ? (
               <div style={{ height: 280 }}>
@@ -4120,7 +4524,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               </div>
             ) : (
               <div style={{ padding: '40px', textAlign: 'center', color: '#9ca3af' }}>
-                Sem dados de visualiza√ß√µes
+                Sem dados de visualizaÁıes
               </div>
             )}
           </div>
@@ -4150,7 +4554,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                 </svg>
-                <span>{commentsCount.toLocaleString('pt-BR')} coment√°rio{commentsCount !== 1 ? 's' : ''} analisado{commentsCount !== 1 ? 's' : ''}</span>
+                <span>{commentsCount.toLocaleString('pt-BR')} coment·rio{commentsCount !== 1 ? 's' : ''} analisado{commentsCount !== 1 ? 's' : ''}</span>
               </div>
             )}
           </div>
@@ -4178,7 +4582,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 <YAxis type="category" dataKey="name" tick={{ fill: '#111827' }} fontSize={12} width={100} />
                 <Tooltip
                   cursor={{ fill: 'rgba(236, 72, 153, 0.1)' }}
-                  formatter={(value) => [String(value), "Ocorr√™ncias"]}
+                  formatter={(value) => [String(value), "OcorrÍncias"]}
                 />
                 <Bar dataKey="value" fill="#ec4899" radius={[0, 6, 6, 0]} />
               </BarChart>
@@ -4201,7 +4605,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
                   <XAxis type="number" tick={{ fill: '#111827' }} allowDecimals={false} />
                   <YAxis type="category" dataKey="name" width={140} tick={{ fill: '#111827' }} />
-                  <Tooltip formatter={(value) => [String(value), "Ocorr√™ncias"]} />
+                  <Tooltip formatter={(value) => [String(value), "OcorrÍncias"]} />
                   <Bar dataKey="value" fill="#ec4899" radius={[0, 6, 6, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -4224,357 +4628,6 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
         </div>
       </div>
       </div>
-
-      {/* Modal Detalhado de Intera√ß√µes */}
-      {showInteractionsDetail && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.5)',
-          backdropFilter: 'blur(4px)',
-          zIndex: 9999,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '20px',
-          overflow: 'auto'
-        }}>
-          <div style={{
-            background: 'white',
-            borderRadius: '20px',
-            maxWidth: '1200px',
-            width: '100%',
-            maxHeight: '90vh',
-            overflow: 'auto',
-            position: 'relative',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
-          }}>
-            {/* Header */}
-            <div style={{
-              padding: '32px',
-              background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
-              borderRadius: '20px 20px 0 0',
-              position: 'relative'
-            }}>
-              <button
-                onClick={() => setShowInteractionsDetail(false)}
-                style={{
-                  position: 'absolute',
-                  top: '20px',
-                  right: '20px',
-                  background: 'rgba(255, 255, 255, 0.2)',
-                  border: 'none',
-                  borderRadius: '8px',
-                  color: 'white',
-                  cursor: 'pointer',
-                  padding: '8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'all 0.2s'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                marginBottom: '16px'
-              }}>
-                <Heart size={28} color="white" fill="white" />
-                <span style={{ fontSize: '14px', fontWeight: 600, color: 'white', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Intera√ß√µes
-                </span>
-              </div>
-              <h2 style={{
-                margin: 0,
-                fontSize: '36px',
-                fontWeight: 700,
-                color: 'white',
-                marginBottom: '8px'
-              }}>
-                An√°lise Detalhada
-              </h2>
-              <p style={{ margin: 0, fontSize: '14px', color: 'rgba(255, 255, 255, 0.9)', lineHeight: 1.6 }}>
-                Acompanhe o engajamento do seu p√∫blico em diferentes tipos de conte√∫do
-              </p>
-            </div>
-
-            {/* Body */}
-            <div style={{ padding: '32px' }}>
-              {/* Resumo Geral */}
-              <div style={{
-                padding: '24px',
-                borderRadius: '16px',
-                background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.08) 0%, rgba(244, 114, 182, 0.08) 100%)',
-                border: '1px solid rgba(236, 72, 153, 0.15)',
-                marginBottom: '32px'
-              }}>
-                <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600, marginBottom: '12px', textAlign: 'center' }}>
-                  Total de Intera√ß√µes no Per√≠odo
-                </div>
-                <div style={{
-                  fontSize: '48px',
-                  fontWeight: 800,
-                  background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  textAlign: 'center',
-                  marginBottom: '8px'
-                }}>
-                  {formatNumber(45832)}
-                </div>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  fontSize: '13px',
-                  color: '#10b981',
-                  fontWeight: 600
-                }}>
-                  <TrendingUp size={16} />
-                  <span>+12.5% vs per√≠odo anterior</span>
-                </div>
-              </div>
-
-              {/* Tabs */}
-              <div style={{
-                display: 'flex',
-                gap: '12px',
-                marginBottom: '28px',
-                borderBottom: '2px solid #e5e7eb',
-                overflowX: 'auto'
-              }}>
-                {[
-                  { id: 'reels', label: 'Reels', icon: 'üé¨' },
-                  { id: 'posts', label: 'Posts', icon: 'üì∏' },
-                  { id: 'stories', label: 'Stories', icon: '‚≠ê' }
-                ].map(tab => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setInteractionsTab(tab.id)}
-                    style={{
-                      padding: '14px 24px',
-                      background: interactionsTab === tab.id ? '#fce7f3' : 'transparent',
-                      border: 'none',
-                      borderBottom: interactionsTab === tab.id ? '2px solid #ec4899' : '2px solid transparent',
-                      cursor: 'pointer',
-                      fontSize: '15px',
-                      fontWeight: interactionsTab === tab.id ? 700 : 500,
-                      color: interactionsTab === tab.id ? '#ec4899' : '#6b7280',
-                      transition: 'all 0.2s',
-                      whiteSpace: 'nowrap',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      marginBottom: '-2px'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (interactionsTab !== tab.id) {
-                        e.currentTarget.style.background = '#f9fafb';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (interactionsTab !== tab.id) {
-                        e.currentTarget.style.background = 'transparent';
-                      }
-                    }}
-                  >
-                    <span style={{ fontSize: '18px' }}>{tab.icon}</span>
-                    <span>{tab.label}</span>
-                  </button>
-                ))}
-              </div>
-
-              {/* M√©tricas por Tipo */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                gap: '16px',
-                marginBottom: '32px'
-              }}>
-                <div style={{
-                  padding: '20px',
-                  background: '#fef2f2',
-                  borderRadius: '12px',
-                  border: '1px solid #fecaca'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                    <Heart size={20} color="#ef4444" fill="#ef4444" />
-                    <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Curtidas</span>
-                  </div>
-                  <div style={{ fontSize: '28px', fontWeight: 700, color: '#ef4444' }}>
-                    {formatNumber(18650)}
-                  </div>
-                </div>
-
-                <div style={{
-                  padding: '20px',
-                  background: '#eff6ff',
-                  borderRadius: '12px',
-                  border: '1px solid #bfdbfe'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                    <MessageCircle size={20} color="#3b82f6" />
-                    <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Coment√°rios</span>
-                  </div>
-                  <div style={{ fontSize: '28px', fontWeight: 700, color: '#3b82f6' }}>
-                    {formatNumber(4832)}
-                  </div>
-                </div>
-
-                <div style={{
-                  padding: '20px',
-                  background: '#fefce8',
-                  borderRadius: '12px',
-                  border: '1px solid #fde047'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                    <Bookmark size={20} color="#eab308" />
-                    <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Salvamentos</span>
-                  </div>
-                  <div style={{ fontSize: '28px', fontWeight: 700, color: '#eab308' }}>
-                    {formatNumber(2156)}
-                  </div>
-                </div>
-
-                <div style={{
-                  padding: '20px',
-                  background: '#f0fdf4',
-                  borderRadius: '12px',
-                  border: '1px solid #86efac'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                    <Share2 size={20} color="#22c55e" />
-                    <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Compartilhamentos</span>
-                  </div>
-                  <div style={{ fontSize: '28px', fontWeight: 700, color: '#22c55e' }}>
-                    {formatNumber(892)}
-                  </div>
-                </div>
-
-                <div style={{
-                  padding: '20px',
-                  background: '#f5f3ff',
-                  borderRadius: '12px',
-                  border: '1px solid #c4b5fd'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17 1l4 4-4 4" />
-                      <path d="M3 11V9a4 4 0 0 1 4-4h14" />
-                      <path d="M7 23l-4-4 4-4" />
-                      <path d="M21 13v2a4 4 0 0 1-4 4H3" />
-                    </svg>
-                    <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Reposts</span>
-                  </div>
-                  <div style={{ fontSize: '28px', fontWeight: 700, color: '#8b5cf6' }}>
-                    {formatNumber(302)}
-                  </div>
-                </div>
-              </div>
-
-              {/* Principais Reels */}
-              <div style={{
-                padding: '24px',
-                background: '#f9fafb',
-                borderRadius: '16px',
-                border: '1px solid #e5e7eb'
-              }}>
-                <h4 style={{ margin: '0 0 20px 0', fontSize: '17px', fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '20px' }}>üèÜ</span>
-                  {interactionsTab === 'reels' ? 'Top Reels por Curtidas' : interactionsTab === 'posts' ? 'Top Posts por Curtidas' : 'Top Stories por Curtidas'}
-                </h4>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                  gap: '16px'
-                }}>
-                  {[
-                    { id: 1, caption: 'Confira nossa nova cole√ß√£o! ‚ú®', likes: 12450, comments: 834, saves: 1203, thumbnail: 'üì±' },
-                    { id: 2, caption: 'Dica do dia: Como aumentar engajamento', likes: 10230, comments: 645, saves: 892, thumbnail: 'üí°' },
-                    { id: 3, caption: 'Bastidores da produ√ß√£o üé¨', likes: 8650, comments: 423, saves: 567, thumbnail: 'üé•' },
-                  ].map(reel => (
-                    <div key={reel.id} style={{
-                      background: 'white',
-                      borderRadius: '12px',
-                      padding: '16px',
-                      border: '1px solid #e5e7eb',
-                      transition: 'all 0.2s',
-                      cursor: 'pointer'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.boxShadow = 'none';
-                      e.currentTarget.style.transform = 'translateY(0)';
-                    }}
-                    >
-                      <div style={{
-                        fontSize: '48px',
-                        textAlign: 'center',
-                        marginBottom: '12px',
-                        background: '#f3f4f6',
-                        borderRadius: '8px',
-                        padding: '20px'
-                      }}>
-                        {reel.thumbnail}
-                      </div>
-                      <div style={{
-                        fontSize: '14px',
-                        color: '#374151',
-                        marginBottom: '12px',
-                        fontWeight: 500,
-                        lineHeight: 1.4,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical'
-                      }}>
-                        {reel.caption}
-                      </div>
-                      <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: '1fr 1fr 1fr',
-                        gap: '8px',
-                        paddingTop: '12px',
-                        borderTop: '1px solid #e5e7eb'
-                      }}>
-                        <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>‚ù§Ô∏è</div>
-                          <div style={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>{formatNumber(reel.likes)}</div>
-                        </div>
-                        <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>üí¨</div>
-                          <div style={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>{formatNumber(reel.comments)}</div>
-                        </div>
-                        <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>üîñ</div>
-                          <div style={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>{formatNumber(reel.saves)}</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
