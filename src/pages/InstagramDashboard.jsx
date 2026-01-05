@@ -449,11 +449,36 @@ const BubbleTooltip = ({ active, payload, suffix = "" }) => {
   const item = payload[0];
   const label = item?.name || item?.payload?.name || "";
   const value = Number(item?.value ?? item?.payload?.value ?? 0);
+  const color = item?.payload?.fill || item?.fill || "#6366f1";
 
   return (
-    <div className="ig-bubble-tooltip">
-      <span>{label}</span>
-      <strong>{`${value.toLocaleString("pt-BR")}${suffix}`}</strong>
+    <div
+      style={{
+        background: "rgba(17, 24, 39, 0.95)",
+        backdropFilter: "blur(8px)",
+        padding: "12px 16px",
+        borderRadius: "10px",
+        border: "1px solid rgba(255, 255, 255, 0.1)",
+        boxShadow: "0 8px 24px rgba(0, 0, 0, 0.3)",
+        minWidth: "140px",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+        <div
+          style={{
+            width: "12px",
+            height: "12px",
+            borderRadius: "50%",
+            background: color,
+            boxShadow: `0 0 8px ${color}`,
+          }}
+        />
+        <span style={{ fontSize: "13px", color: "#9ca3af", fontWeight: 500 }}>{label}</span>
+      </div>
+      <div style={{ fontSize: "20px", fontWeight: 700, color: "#fff", letterSpacing: "-0.02em" }}>
+        {value.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+        {suffix}
+      </div>
     </div>
   );
 };

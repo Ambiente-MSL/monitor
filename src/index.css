@@ -7505,21 +7505,20 @@ td.posts-table__metric + td.posts-table__metric {
 /* ========== Posts Table Compact Component ========== */
 .posts-table-compact {
   width: 100%;
-  height: 100%;
+  height: auto;
   display: flex;
   flex-direction: column;
   background: transparent;
   border-radius: var(--radius);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .posts-table-compact__scroll {
   width: 100%;
   overflow-x: auto;
-  overflow-y: auto;
+  overflow-y: visible;
   scrollbar-width: thin;
   scrollbar-color: rgba(103, 123, 170, 0.3) transparent;
-  max-height: 680px;
 }
 
 .posts-table-compact__scroll::-webkit-scrollbar {
@@ -7550,7 +7549,7 @@ td.posts-table__metric + td.posts-table__metric {
 }
 
 .posts-table-compact__head {
-  background: rgba(18, 32, 44, 0.6);
+  background: #e5e7eb;
   border-bottom: 1px solid rgba(103, 123, 170, 0.2);
   position: sticky;
   top: 0;
@@ -7558,11 +7557,11 @@ td.posts-table__metric + td.posts-table__metric {
 }
 
 .posts-table-compact__th {
-  padding: 12px 16px;
+  padding: 14px 16px;
   text-align: left;
   font-size: 0.75rem;
   font-weight: 700;
-  color: var(--accent);
+  color: #1f2937;
   letter-spacing: 0.03em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -7592,8 +7591,8 @@ td.posts-table__metric + td.posts-table__metric {
 }
 
 .posts-table-compact__th:hover {
-  background: rgba(103, 123, 170, 0.1);
-  color: var(--fg);
+  background: #d1d5db;
+  color: #111827;
 }
 
 .posts-table-compact__th:active {
@@ -7602,11 +7601,11 @@ td.posts-table__metric + td.posts-table__metric {
 
 .posts-table-compact__th--dragging {
   opacity: 0.5;
-  background: rgba(103, 123, 170, 0.2);
+  background: #d1d5db;
 }
 
 .posts-table-compact__th--drag-over {
-  background: rgba(14, 223, 204, 0.2);
+  background: rgba(14, 223, 204, 0.15);
   border-left: 2px solid var(--accent);
   transform: scale(1.02);
 }
@@ -7621,13 +7620,13 @@ td.posts-table__metric + td.posts-table__metric {
 
 .posts-table-compact__th-grip {
   font-size: 10px;
-  opacity: 0.4;
+  opacity: 0.5;
   transition: opacity 0.2s ease;
-  color: var(--accent);
+  color: #6b7280;
 }
 
 .posts-table-compact__th:hover .posts-table-compact__th-grip {
-  opacity: 0.8;
+  opacity: 0.9;
 }
 
 .posts-table-compact__th-label {
@@ -7652,7 +7651,7 @@ td.posts-table__metric + td.posts-table__metric {
 }
 
 .posts-table-compact__td {
-  padding: 20px 16px;
+  padding: 14px 16px;
   color: var(--muted);
   font-size: 0.9rem;
   vertical-align: middle;
@@ -7715,8 +7714,8 @@ td.posts-table__metric + td.posts-table__metric {
 
 .posts-table-compact__preview {
   flex-shrink: 0;
-  width: 70px;
-  height: 70px;
+  width: 60px;
+  height: 60px;
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid rgba(103, 123, 170, 0.2);
@@ -7839,11 +7838,12 @@ td.posts-table__metric + td.posts-table__metric {
 /* ========== Posts Table Integration with Analytics Card ========== */
 .ig-analytics-card .posts-table-compact {
   max-height: none;
-  min-height: 450px;
+  min-height: auto;
 }
 
 .ig-analytics-card .posts-table-compact__scroll {
-  max-height: 680px;
+  max-height: none;
+  overflow-y: visible;
 }
 
 /* Ensure proper padding for table within card */
