@@ -36,6 +36,7 @@ from meta import (
     ig_audience,
     ig_organic_summary,
     ig_recent_posts,
+    ig_recent_posts_insights,
     ig_window,
     gget,
 )
@@ -989,6 +990,24 @@ def fetch_instagram_posts(
             limit = None
     limit = limit or 6
     return ig_recent_posts(ig_id, limit)
+
+
+def fetch_instagram_posts_insights(
+    ig_id: str,
+    since_ts: Optional[int],
+    until_ts: Optional[int],
+    extra: Optional[Dict[str, Any]],
+) -> Dict[str, Any]:
+    if since_ts is None or until_ts is None:
+        raise ValueError("since_ts e until_ts sao obrigatorios para instagram_posts_insights")
+    limit = None
+    if extra and "limit" in extra:
+        try:
+            limit = int(extra["limit"])
+        except (TypeError, ValueError):
+            limit = None
+    limit = limit or 5
+    return ig_recent_posts_insights(ig_id, limit=limit, since_ts=since_ts, until_ts=until_ts)
 
 
 def _extract_posts_in_period(
@@ -3186,6 +3205,48 @@ def instagram_posts():
     return jsonify(response)
 
 
+@app.get("/api/instagram/posts/insights")
+def instagram_posts_insights():
+    ig = request.args.get("igUserId", IG_ID)
+    if not ig:
+        return jsonify({"error": "META_IG_USER_ID is not configured"}), 500
+    since, until = unix_range(request.args)
+    limit_param = request.args.get("limit")
+    try:
+        limit = int(limit_param) if limit_param is not None else 5
+    except ValueError:
+        limit = 5
+    try:
+        payload, meta = get_cached_payload(
+            "instagram_posts_insights",
+            ig,
+            since,
+            until,
+            extra={"limit": limit},
+            fetcher=fetch_instagram_posts_insights,
+            platform=DEFAULT_CACHE_PLATFORM,
+        )
+    except MetaAPIError as err:
+        mark_cache_error(
+            "instagram_posts_insights",
+            ig,
+            since,
+            until,
+            {"limit": limit},
+            err.args[0],
+            platform=DEFAULT_CACHE_PLATFORM,
+        )
+        return meta_error_response(err)
+    except ValueError as err:
+        return jsonify({"error": str(err)}), 400
+    except Exception as err:  # noqa: BLE001
+        logger.exception("Falha inesperada em instagram_posts_insights")
+        return jsonify({"error": str(err)}), 500
+    response = dict(payload)
+    response["cache"] = meta
+    return jsonify(response)
+
+
 def _parse_date_param(value: Optional[str]) -> date:
     if not value:
         raise ValueError("missing")
@@ -3708,6 +3769,12 @@ def manual_refresh():
             owner_id = ig_id
             extra = {"limit": limit_override}
             fetcher = fetch_instagram_posts
+        elif resource == "instagram_posts_insights":
+            owner_id = ig_id
+            since_arg = since_ts
+            until_arg = until_ts
+            extra = {"limit": limit_override}
+            fetcher = fetch_instagram_posts_insights
         elif resource == "ads_highlights":
             owner_id = ad_id
             since_arg = since_ts
@@ -3760,6 +3827,7 @@ register_fetcher("instagram_metrics", fetch_instagram_metrics)
 register_fetcher("instagram_organic", fetch_instagram_organic)
 register_fetcher("instagram_audience", fetch_instagram_audience)
 register_fetcher("instagram_posts", fetch_instagram_posts)
+register_fetcher("instagram_posts_insights", fetch_instagram_posts_insights)
 register_fetcher("ads_highlights", fetch_ads_highlights)
 
 _sync_scheduler: Optional[MetaSyncScheduler] = None

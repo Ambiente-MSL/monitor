@@ -1702,6 +1702,187 @@ def ig_recent_posts(ig_user_id: str, limit: int = 6):
     return result
 
 
+def ig_recent_posts_insights(
+    ig_user_id: str,
+    limit: int = 5,
+    since_ts: Optional[int] = None,
+    until_ts: Optional[int] = None,
+) -> Dict[str, Any]:
+    try:
+        limit_int = int(limit or 5)
+    except (TypeError, ValueError):
+        limit_int = 5
+    limit_sanitized = max(1, min(limit_int, 10))
+    fetch_limit = max(limit_sanitized * 5, 20)
+    fetch_limit = max(1, min(fetch_limit, 50))
+
+    media_fields = (
+        "id,caption,media_type,media_product_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count"
+    )
+    params: Dict[str, Any] = {"limit": fetch_limit, "fields": media_fields}
+    if since_ts is not None:
+        params["since"] = int(since_ts)
+    if until_ts is not None:
+        params["until"] = int(until_ts)
+
+    media_res = gget(f"/{ig_user_id}/media", params)
+
+    def _parse_timestamp_unix(timestamp_iso: Optional[str]) -> Optional[int]:
+        if not timestamp_iso:
+            return None
+        try:
+            timestamp_dt = datetime.fromisoformat(timestamp_iso.replace("Z", "+00:00"))
+            return int(timestamp_dt.timestamp())
+        except ValueError:
+            return None
+
+    def _coerce_numeric(value: Optional[Any]) -> Optional[float]:
+        if value is None:
+            return None
+        if isinstance(value, (int, float)):
+            return float(value)
+        try:
+            return float(str(value))
+        except (TypeError, ValueError):
+            return None
+
+    VIDEO_TYPES = {"VIDEO", "REEL", "IGTV"}
+    posts: List[Dict[str, Any]] = []
+
+    for item in media_res.get("data", []):
+        timestamp_iso = item.get("timestamp")
+        timestamp_unix = _parse_timestamp_unix(timestamp_iso)
+        if since_ts is not None and timestamp_unix is not None and timestamp_unix < since_ts:
+            continue
+        if until_ts is not None and timestamp_unix is not None and timestamp_unix > until_ts:
+            continue
+
+        media_type = (item.get("media_type") or "").upper()
+        media_product_type = (item.get("media_product_type") or "").upper()
+        thumbnail_url = item.get("thumbnail_url")
+        media_url = item.get("media_url")
+        if media_type in VIDEO_TYPES and thumbnail_url:
+            preview_url = thumbnail_url
+        else:
+            preview_url = media_url or thumbnail_url
+
+        posts.append(
+            {
+                "id": item.get("id"),
+                "caption": item.get("caption"),
+                "media_type": item.get("media_type"),
+                "media_product_type": item.get("media_product_type"),
+                "media_url": media_url,
+                "thumbnail_url": thumbnail_url,
+                "preview_url": preview_url,
+                "permalink": item.get("permalink"),
+                "timestamp": timestamp_iso,
+                "timestamp_unix": timestamp_unix,
+                "like_count": item.get("like_count"),
+                "comments_count": item.get("comments_count"),
+            }
+        )
+
+    posts.sort(key=lambda post: post.get("timestamp_unix") or 0, reverse=True)
+    posts = posts[:limit_sanitized]
+
+    def _fetch_media_insights(media_id: str, metrics: Sequence[str]) -> Dict[str, float]:
+        params = {
+            "metric": ",".join(metrics),
+            "period": "lifetime",
+        }
+        try:
+            response = gget(f"/{media_id}/insights", params)
+        except MetaAPIError as err:
+            if len(metrics) > 1:
+                combined: Dict[str, float] = {}
+                for metric in metrics:
+                    combined.update(_fetch_media_insights(media_id, [metric]))
+                return combined
+            logger.debug("Metric %s not supported for media %s: %s", metrics[0], media_id, err)
+            return {}
+        except Exception as err:  # noqa: BLE001
+            logger.warning("Falha ao buscar insights do post %s: %s", media_id, err)
+            return {}
+
+        insight_values: Dict[str, float] = {}
+        for entry in response.get("data", []) or []:
+            name = str(entry.get("name") or "").lower()
+            values = entry.get("values")
+            value = None
+            if isinstance(values, list):
+                for candidate in values:
+                    if isinstance(candidate, dict) and candidate.get("value") is not None:
+                        value = candidate["value"]
+                        break
+            if value is None:
+                value = entry.get("value")
+            if isinstance(value, dict):
+                value = value.get("value")
+            numeric = _coerce_numeric(value)
+            if numeric is None:
+                continue
+            insight_values[name] = numeric
+        return insight_values
+
+    for post in posts:
+        media_id = post.get("id")
+        if not media_id:
+            continue
+        media_type = (post.get("media_type") or "").upper()
+        media_product_type = (post.get("media_product_type") or "").upper()
+        is_video_type = media_type in VIDEO_TYPES or media_product_type in {"REELS", "VIDEO", "IGTV"}
+
+        metrics_list = ["reach", "shares", "saved", "likes", "comments"]
+        if is_video_type:
+            metrics_list.append("video_views")
+
+        insights_map = _fetch_media_insights(media_id, metrics_list)
+        likes = insights_map.get("likes")
+        comments = insights_map.get("comments")
+        shares = insights_map.get("shares")
+        saves = insights_map.get("saved") or insights_map.get("saves")
+        reach_value = insights_map.get("reach")
+        video_views_value = insights_map.get("video_views") or insights_map.get("views")
+
+        likes = int(round(likes)) if likes is not None else int(post.get("like_count") or 0)
+        comments = int(round(comments)) if comments is not None else int(post.get("comments_count") or 0)
+        shares = int(round(shares)) if shares is not None else 0
+        saves = int(round(saves)) if saves is not None else 0
+        reach_value = int(round(reach_value)) if reach_value is not None else 0
+
+        if is_video_type:
+            views = int(round(video_views_value)) if video_views_value is not None else reach_value
+        else:
+            views = reach_value
+
+        interactions = likes + comments + shares + saves
+
+        post.update(
+            {
+                "likes": likes,
+                "comments": comments,
+                "shares": shares,
+                "saves": saves,
+                "reach": reach_value,
+                "views": views,
+                "interactions": interactions,
+                "engagement_rate": round((interactions / reach_value) * 100, 2) if reach_value > 0 else None,
+            }
+        )
+
+    account_fields = "id,username,profile_picture_url,followers_count"
+    try:
+        account = gget(f"/{ig_user_id}", {"fields": account_fields})
+    except MetaAPIError:
+        account = None
+
+    return {
+        "account": account,
+        "posts": posts,
+    }
+
+
 def fb_recent_posts(page_id: str, limit: int = 6, since_ts: Optional[int] = None, until_ts: Optional[int] = None):
     page_token = get_page_access_token(page_id)
     try:
