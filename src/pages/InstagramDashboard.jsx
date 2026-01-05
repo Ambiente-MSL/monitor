@@ -48,6 +48,7 @@ import {
 } from "lucide-react";
 import useQueryState from "../hooks/useQueryState";
 import { useAccounts } from "../context/AccountsContext";
+import PostsTable from "../components/PostsTable";
 import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import WordCloudCard from "../components/WordCloudCard";
 import { useAuth } from "../context/AuthContext";
@@ -239,15 +240,6 @@ const sumInteractions = (post) => {
 const truncate = (text, length = 120) => {
   if (!text) return "";
   return text.length <= length ? text : `${text.slice(0, length - 3)}...`;
-};
-const formatPostDateTime = (value) => {
-  if (!value) return { date: "--", time: "" };
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return { date: "--", time: "" };
-  return {
-    date: date.toLocaleDateString("pt-BR"),
-    time: date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-  };
 };
 const toUtcDateString = (date) => {
   if (!(date instanceof Date) || Number.isNaN(date.getTime())) return undefined;
@@ -3524,137 +3516,21 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
         </div>
 
         <div className="ig-analytics-grid ig-analytics-grid--pair" style={{ marginTop: '24px' }}>
-          <section className="ig-card-white ig-analytics-card" style={{ gridColumn: '1 / -1' }}>
+          <section className="ig-card-white ig-analytics-card" style={{ gridColumn: 'span 2' }}>
             <div className="ig-analytics-card__header">
               <div>
-                <h4>Ultimos 5 posts</h4>
+                <h4>Últimos 5 posts</h4>
                 <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
-                  Publicacoes mais recentes no periodo filtrado
+                  Publicações mais recentes no período filtrado
                 </p>
               </div>
             </div>
-            <div className="ig-analytics-card__body">
-              {recentPostsLoading ? (
-                <div className="table-loading">Carregando publicacoes...</div>
-              ) : recentPostsError ? (
-                <div className="ig-empty-state">{recentPostsError}</div>
-              ) : recentPosts.length ? (
-                <div className="posts-table-container">
-                  <table className="posts-table">
-                    <thead>
-                      <tr>
-                        <th className="posts-table__col--date">Data</th>
-                        <th className="posts-table__col--caption">Publicacao</th>
-                        <th className="posts-table__header--metric posts-table__col--metric">Curtidas</th>
-                        <th className="posts-table__header--metric posts-table__col--metric">Comentarios</th>
-                        <th className="posts-table__header--metric posts-table__col--metric">Salvos</th>
-                        <th className="posts-table__header--metric posts-table__col--metric">Compart.</th>
-                        <th className="posts-table__header--metric posts-table__col--metric">Plays</th>
-                        <th className="posts-table__header--metric posts-table__col--metric">Alcance</th>
-                        <th className="posts-table__header--metric posts-table__col--metric">Total interacoes</th>
-                        <th className="posts-table__header--metric posts-table__col--metric">Engajamento</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {recentPosts.map((post, index) => {
-                        const postUrl = post.permalink || (post.id ? `https://www.instagram.com/p/${post.id}` : null);
-                        const previewUrl = [
-                          post.preview_url,
-                          post.previewUrl,
-                          post.thumbnail_url,
-                          post.thumbnailUrl,
-                          post.media_url,
-                          post.mediaUrl,
-                        ].find((url) => url && !/\\.(mp4|mov)$/i.test(url));
-                        const caption = post.caption || post.text || "Sem legenda";
-                        const { date, time } = formatPostDateTime(
-                          post.timestamp || (post.timestamp_unix ? post.timestamp_unix * 1000 : null),
-                        );
-                        const likes = resolvePostMetric(post, "likes", 0);
-                        const comments = resolvePostMetric(post, "comments", 0);
-                        const shares = resolvePostMetric(post, "shares", 0);
-                        const saves = resolvePostMetric(post, "saves", 0);
-                        const reach = resolvePostMetric(post, "reach", 0);
-                        const plays = extractNumber(post.views ?? post.video_views ?? post.plays ?? null, null);
-                        const interactions = extractNumber(post.interactions, null) ?? likes + comments + shares + saves;
-                        const engagementRate = Number.isFinite(post.engagement_rate)
-                          ? post.engagement_rate
-                          : reach > 0
-                            ? (interactions / reach) * 100
-                            : null;
-                        const engagementLabel = engagementRate != null && Number.isFinite(engagementRate)
-                          ? `${engagementRate.toFixed(2)}%`
-                          : "--";
-
-                        return (
-                          <tr key={post.id || index}>
-                            <td className="posts-table__date">
-                              <div>{date}</div>
-                              {time ? <div style={{ fontSize: '12px', color: '#9ca3af' }}>{time}</div> : null}
-                            </td>
-                            <td className="posts-table__col--caption">
-                              {postUrl ? (
-                                <a
-                                  href={postUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'inherit', textDecoration: 'none' }}
-                                >
-                                  <div className="posts-table__preview">
-                                    {previewUrl ? (
-                                      <img src={previewUrl} alt={caption} />
-                                    ) : (
-                                      <div className="posts-table__placeholder" />
-                                    )}
-                                  </div>
-                                  <div className="posts-table__caption">{truncate(caption, 140)}</div>
-                                </a>
-                              ) : (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                  <div className="posts-table__preview">
-                                    {previewUrl ? (
-                                      <img src={previewUrl} alt={caption} />
-                                    ) : (
-                                      <div className="posts-table__placeholder" />
-                                    )}
-                                  </div>
-                                  <div className="posts-table__caption">{truncate(caption, 140)}</div>
-                                </div>
-                              )}
-                            </td>
-                            <td className="posts-table__metric">
-                              <span className="posts-table__metric-content">{formatNumber(likes)}</span>
-                            </td>
-                            <td className="posts-table__metric">
-                              <span className="posts-table__metric-content">{formatNumber(comments)}</span>
-                            </td>
-                            <td className="posts-table__metric">
-                              <span className="posts-table__metric-content">{formatNumber(saves)}</span>
-                            </td>
-                            <td className="posts-table__metric">
-                              <span className="posts-table__metric-content">{formatNumber(shares)}</span>
-                            </td>
-                            <td className="posts-table__metric">
-                              <span className="posts-table__metric-content">{formatNumber(plays)}</span>
-                            </td>
-                            <td className="posts-table__metric">
-                              <span className="posts-table__metric-content">{formatNumber(reach)}</span>
-                            </td>
-                            <td className="posts-table__metric">
-                              <span className="posts-table__metric-content">{formatNumber(interactions)}</span>
-                            </td>
-                            <td className="posts-table__metric">
-                              <span className="posts-table__metric-content">{engagementLabel}</span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="ig-empty-state">Sem dados disponiveis.</div>
-              )}
+            <div className="ig-analytics-card__body" style={{ padding: 0 }}>
+              <PostsTable
+                posts={recentPosts}
+                loading={recentPostsLoading}
+                error={recentPostsError}
+              />
             </div>
           </section>
         </div>
