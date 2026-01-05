@@ -582,6 +582,8 @@ export default function InstagramDashboard() {
 
   // Estado para controlar visualização detalhada
   const [showDetailedView, setShowDetailedView] = useState(false);
+  const [showInteractionsDetail, setShowInteractionsDetail] = useState(false);
+  const [interactionsTab, setInteractionsTab] = useState('reels'); // reels, posts, stories
 
   const now = useMemo(() => new Date(), []);
   const defaultEnd = useMemo(() => endOfDay(subDays(startOfDay(now), 1)), [now]);
@@ -3411,7 +3413,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   e.currentTarget.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.3)';
                 }}
               >
-                <span>Ver detalhes</span>
+                <span>Ver mais</span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="9 18 15 12 9 6" />
                 </svg>
@@ -3500,39 +3502,122 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             </div>
           </section>
 
-          {/* Card de Seguidores */}
-          <section className="ig-card-white ig-analytics-card">
-            <div className="ig-analytics-card__header">
-              <h4>Seguidores</h4>
-              <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>Dados de crescimento</p>
+          {/* Card de Interações */}
+          <section className="ig-card-white ig-analytics-card" style={{ position: 'relative', overflow: 'hidden' }}>
+            <div className="ig-analytics-card__header" style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              paddingBottom: '16px',
+              borderBottom: '1px solid #e5e7eb'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px'
+              }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <Heart size={20} color="white" fill="white" />
+                </div>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#111827' }}>Interações</h4>
+                  <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '2px', marginBottom: 0 }}>Total de engajamento do público</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowInteractionsDetail(true)}
+                style={{
+                  padding: '8px 14px',
+                  background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  boxShadow: '0 2px 8px rgba(236, 72, 153, 0.25)',
+                  whiteSpace: 'nowrap'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(236, 72, 153, 0.35)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(236, 72, 153, 0.25)';
+                }}
+              >
+                Ver mais
+              </button>
             </div>
             <div className="ig-analytics-card__body">
-              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+              <div style={{ textAlign: 'center', padding: '32px 20px' }}>
                 <div style={{ fontSize: '48px', fontWeight: 700, color: '#ec4899', marginBottom: '8px' }}>
-                  {totalFollowers ? totalFollowers.toLocaleString('pt-BR') : '--'}
+                  {formatNumber(45832)}
                 </div>
-                <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '24px' }}>
-                  total de seguidores
+                <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '28px' }}>
+                  Total de interações no período
                 </div>
-                <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '20px', fontWeight: 600, color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="18 15 12 9 6 15" />
-                      </svg>
-                      <span>+{totalFollowers ? Math.round(totalFollowers * 0.05).toLocaleString('pt-BR') : '--'}</span>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, 1fr)',
+                  gap: '12px',
+                  marginTop: '20px'
+                }}>
+                  <div style={{
+                    padding: '14px',
+                    background: '#fef2f2',
+                    borderRadius: '10px',
+                    textAlign: 'center'
+                  }}>
+                    <div style={{ fontSize: '20px', fontWeight: 700, color: '#ef4444', marginBottom: '4px' }}>
+                      {formatNumber(32450)}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>Novos seguidores</div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>Curtidas</div>
                   </div>
-                  <div style={{ width: '1px', background: '#e5e7eb' }} />
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '20px', fontWeight: 600, color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="6 9 12 15 18 9" />
-                      </svg>
-                      <span>-{totalFollowers ? Math.round(totalFollowers * 0.02).toLocaleString('pt-BR') : '--'}</span>
+                  <div style={{
+                    padding: '14px',
+                    background: '#eff6ff',
+                    borderRadius: '10px',
+                    textAlign: 'center'
+                  }}>
+                    <div style={{ fontSize: '20px', fontWeight: 700, color: '#3b82f6', marginBottom: '4px' }}>
+                      {formatNumber(8234)}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>Deixaram de seguir</div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>Comentários</div>
+                  </div>
+                  <div style={{
+                    padding: '14px',
+                    background: '#fefce8',
+                    borderRadius: '10px',
+                    textAlign: 'center'
+                  }}>
+                    <div style={{ fontSize: '20px', fontWeight: 700, color: '#eab308', marginBottom: '4px' }}>
+                      {formatNumber(3892)}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>Salvamentos</div>
+                  </div>
+                  <div style={{
+                    padding: '14px',
+                    background: '#f0fdf4',
+                    borderRadius: '10px',
+                    textAlign: 'center'
+                  }}>
+                    <div style={{ fontSize: '20px', fontWeight: 700, color: '#22c55e', marginBottom: '4px' }}>
+                      {formatNumber(1256)}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>Compartilhamentos</div>
                   </div>
                 </div>
               </div>
@@ -4139,6 +4224,357 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
         </div>
       </div>
       </div>
+
+      {/* Modal Detalhado de Interações */}
+      {showInteractionsDetail && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          backdropFilter: 'blur(4px)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px',
+          overflow: 'auto'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '20px',
+            maxWidth: '1200px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            position: 'relative',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
+          }}>
+            {/* Header */}
+            <div style={{
+              padding: '32px',
+              background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
+              borderRadius: '20px 20px 0 0',
+              position: 'relative'
+            }}>
+              <button
+                onClick={() => setShowInteractionsDetail(false)}
+                style={{
+                  position: 'absolute',
+                  top: '20px',
+                  right: '20px',
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  border: 'none',
+                  borderRadius: '8px',
+                  color: 'white',
+                  cursor: 'pointer',
+                  padding: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                marginBottom: '16px'
+              }}>
+                <Heart size={28} color="white" fill="white" />
+                <span style={{ fontSize: '14px', fontWeight: 600, color: 'white', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Interações
+                </span>
+              </div>
+              <h2 style={{
+                margin: 0,
+                fontSize: '36px',
+                fontWeight: 700,
+                color: 'white',
+                marginBottom: '8px'
+              }}>
+                Análise Detalhada
+              </h2>
+              <p style={{ margin: 0, fontSize: '14px', color: 'rgba(255, 255, 255, 0.9)', lineHeight: 1.6 }}>
+                Acompanhe o engajamento do seu público em diferentes tipos de conteúdo
+              </p>
+            </div>
+
+            {/* Body */}
+            <div style={{ padding: '32px' }}>
+              {/* Resumo Geral */}
+              <div style={{
+                padding: '24px',
+                borderRadius: '16px',
+                background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.08) 0%, rgba(244, 114, 182, 0.08) 100%)',
+                border: '1px solid rgba(236, 72, 153, 0.15)',
+                marginBottom: '32px'
+              }}>
+                <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600, marginBottom: '12px', textAlign: 'center' }}>
+                  Total de Interações no Período
+                </div>
+                <div style={{
+                  fontSize: '48px',
+                  fontWeight: 800,
+                  background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  textAlign: 'center',
+                  marginBottom: '8px'
+                }}>
+                  {formatNumber(45832)}
+                </div>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  fontSize: '13px',
+                  color: '#10b981',
+                  fontWeight: 600
+                }}>
+                  <TrendingUp size={16} />
+                  <span>+12.5% vs período anterior</span>
+                </div>
+              </div>
+
+              {/* Tabs */}
+              <div style={{
+                display: 'flex',
+                gap: '12px',
+                marginBottom: '28px',
+                borderBottom: '2px solid #e5e7eb',
+                overflowX: 'auto'
+              }}>
+                {[
+                  { id: 'reels', label: 'Reels', icon: '🎬' },
+                  { id: 'posts', label: 'Posts', icon: '📸' },
+                  { id: 'stories', label: 'Stories', icon: '⭐' }
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setInteractionsTab(tab.id)}
+                    style={{
+                      padding: '14px 24px',
+                      background: interactionsTab === tab.id ? '#fce7f3' : 'transparent',
+                      border: 'none',
+                      borderBottom: interactionsTab === tab.id ? '2px solid #ec4899' : '2px solid transparent',
+                      cursor: 'pointer',
+                      fontSize: '15px',
+                      fontWeight: interactionsTab === tab.id ? 700 : 500,
+                      color: interactionsTab === tab.id ? '#ec4899' : '#6b7280',
+                      transition: 'all 0.2s',
+                      whiteSpace: 'nowrap',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      marginBottom: '-2px'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (interactionsTab !== tab.id) {
+                        e.currentTarget.style.background = '#f9fafb';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (interactionsTab !== tab.id) {
+                        e.currentTarget.style.background = 'transparent';
+                      }
+                    }}
+                  >
+                    <span style={{ fontSize: '18px' }}>{tab.icon}</span>
+                    <span>{tab.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Métricas por Tipo */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '16px',
+                marginBottom: '32px'
+              }}>
+                <div style={{
+                  padding: '20px',
+                  background: '#fef2f2',
+                  borderRadius: '12px',
+                  border: '1px solid #fecaca'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                    <Heart size={20} color="#ef4444" fill="#ef4444" />
+                    <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Curtidas</span>
+                  </div>
+                  <div style={{ fontSize: '28px', fontWeight: 700, color: '#ef4444' }}>
+                    {formatNumber(18650)}
+                  </div>
+                </div>
+
+                <div style={{
+                  padding: '20px',
+                  background: '#eff6ff',
+                  borderRadius: '12px',
+                  border: '1px solid #bfdbfe'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                    <MessageCircle size={20} color="#3b82f6" />
+                    <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Comentários</span>
+                  </div>
+                  <div style={{ fontSize: '28px', fontWeight: 700, color: '#3b82f6' }}>
+                    {formatNumber(4832)}
+                  </div>
+                </div>
+
+                <div style={{
+                  padding: '20px',
+                  background: '#fefce8',
+                  borderRadius: '12px',
+                  border: '1px solid #fde047'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                    <Bookmark size={20} color="#eab308" />
+                    <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Salvamentos</span>
+                  </div>
+                  <div style={{ fontSize: '28px', fontWeight: 700, color: '#eab308' }}>
+                    {formatNumber(2156)}
+                  </div>
+                </div>
+
+                <div style={{
+                  padding: '20px',
+                  background: '#f0fdf4',
+                  borderRadius: '12px',
+                  border: '1px solid #86efac'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                    <Share2 size={20} color="#22c55e" />
+                    <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Compartilhamentos</span>
+                  </div>
+                  <div style={{ fontSize: '28px', fontWeight: 700, color: '#22c55e' }}>
+                    {formatNumber(892)}
+                  </div>
+                </div>
+
+                <div style={{
+                  padding: '20px',
+                  background: '#f5f3ff',
+                  borderRadius: '12px',
+                  border: '1px solid #c4b5fd'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17 1l4 4-4 4" />
+                      <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+                      <path d="M7 23l-4-4 4-4" />
+                      <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+                    </svg>
+                    <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Reposts</span>
+                  </div>
+                  <div style={{ fontSize: '28px', fontWeight: 700, color: '#8b5cf6' }}>
+                    {formatNumber(302)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Principais Reels */}
+              <div style={{
+                padding: '24px',
+                background: '#f9fafb',
+                borderRadius: '16px',
+                border: '1px solid #e5e7eb'
+              }}>
+                <h4 style={{ margin: '0 0 20px 0', fontSize: '17px', fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '20px' }}>🏆</span>
+                  {interactionsTab === 'reels' ? 'Top Reels por Curtidas' : interactionsTab === 'posts' ? 'Top Posts por Curtidas' : 'Top Stories por Curtidas'}
+                </h4>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                  gap: '16px'
+                }}>
+                  {[
+                    { id: 1, caption: 'Confira nossa nova coleção! ✨', likes: 12450, comments: 834, saves: 1203, thumbnail: '📱' },
+                    { id: 2, caption: 'Dica do dia: Como aumentar engajamento', likes: 10230, comments: 645, saves: 892, thumbnail: '💡' },
+                    { id: 3, caption: 'Bastidores da produção 🎬', likes: 8650, comments: 423, saves: 567, thumbnail: '🎥' },
+                  ].map(reel => (
+                    <div key={reel.id} style={{
+                      background: 'white',
+                      borderRadius: '12px',
+                      padding: '16px',
+                      border: '1px solid #e5e7eb',
+                      transition: 'all 0.2s',
+                      cursor: 'pointer'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.boxShadow = 'none';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                    }}
+                    >
+                      <div style={{
+                        fontSize: '48px',
+                        textAlign: 'center',
+                        marginBottom: '12px',
+                        background: '#f3f4f6',
+                        borderRadius: '8px',
+                        padding: '20px'
+                      }}>
+                        {reel.thumbnail}
+                      </div>
+                      <div style={{
+                        fontSize: '14px',
+                        color: '#374151',
+                        marginBottom: '12px',
+                        fontWeight: 500,
+                        lineHeight: 1.4,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical'
+                      }}>
+                        {reel.caption}
+                      </div>
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 1fr 1fr',
+                        gap: '8px',
+                        paddingTop: '12px',
+                        borderTop: '1px solid #e5e7eb'
+                      }}>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>❤️</div>
+                          <div style={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>{formatNumber(reel.likes)}</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>💬</div>
+                          <div style={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>{formatNumber(reel.comments)}</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>🔖</div>
+                          <div style={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>{formatNumber(reel.saves)}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

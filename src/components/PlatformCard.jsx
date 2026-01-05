@@ -36,7 +36,7 @@ export default function PlatformCard({
         </div>
         <div className="platform-card__title">
           <h3>{platform}</h3>
-          <span>Ver detalhes</span>
+          <span>Ver mais</span>
         </div>
         <div className="platform-card__arrow">
           <ArrowRight size={20} />
