@@ -3,6 +3,46 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import Topbar from './components/Topbar';
 import { useAuth } from './context/AuthContext';
 
+function DashboardSkeleton() {
+  return (
+    <div className="instagram-dashboard instagram-dashboard--clean" aria-hidden="true">
+      <div className="ig-clean-container">
+        <div className="ig-hero-gradient" />
+        <div className="ig-clean-header">
+          <div className="ig-clean-header__brand">
+            <div className="ig-clean-header__logo">
+              <span className="ig-skeleton" style={{ width: 32, height: 32, borderRadius: 12 }} />
+            </div>
+            <span className="ig-skeleton" style={{ width: 140, height: 22 }} />
+          </div>
+          <div className="ig-clean-tabs">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <span
+                key={`tab-skeleton-${index}`}
+                className="ig-skeleton"
+                style={{ width: 88, height: 26, borderRadius: 999 }}
+              />
+            ))}
+          </div>
+        </div>
+        <div style={{ marginTop: '24px', marginBottom: '16px', maxWidth: '240px' }}>
+          <span className="ig-skeleton" style={{ height: 24 }} />
+        </div>
+        <div className="ig-analytics-grid ig-analytics-grid--pair">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={`metric-skeleton-${index}`} className="ig-card-white ig-analytics-card">
+              <span className="ig-skeleton" style={{ height: 18, marginBottom: '12px', maxWidth: '160px' }} />
+              <span className="ig-skeleton ig-skeleton--stat" />
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop: '24px' }} className="ig-chart-skeleton ig-chart-skeleton--tall" />
+        <div style={{ marginTop: '20px' }} className="ig-chart-skeleton ig-chart-skeleton--compact" />
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const { user, loading } = useAuth();
   const location = useLocation();
@@ -58,18 +98,7 @@ export default function App() {
     return merged;
   }, [defaultTopbarConfig, topbarOverrides]);
 
-  if (loading) {
-    return (
-      <div className="auth-screen">
-        <div className="auth-card auth-card--compact">
-          <h2 className="auth-heading">Carregando dashboard...</h2>
-          <p className="auth-subtext">Estamos preparando seus dados. Aguarde um instante.</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
+  if (!user && !loading) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
@@ -82,18 +111,13 @@ export default function App() {
             return hidden ? null : <Topbar {...rest} />;
           })()}
           <div className="app-main__body">
-            <Suspense
-              fallback={
-                <div className="auth-screen">
-                  <div className="auth-card auth-card--compact">
-                    <h2 className="auth-heading">Carregando...</h2>
-                    <p className="auth-subtext">Preparando conteúdo.</p>
-                  </div>
-                </div>
-              }
-            >
-              <Outlet context={{ setTopbarConfig, resetTopbarConfig }} />
-            </Suspense>
+            {loading && !user ? (
+              <DashboardSkeleton />
+            ) : (
+              <Suspense fallback={<DashboardSkeleton />}>
+                <Outlet context={{ setTopbarConfig, resetTopbarConfig }} />
+              </Suspense>
+            )}
           </div>
         </div>
       </main>
