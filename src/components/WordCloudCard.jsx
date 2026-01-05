@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 
 const WORD_COLORS = ["#a855f7", "#6366f1", "#f97316", "#14b8a6", "#facc15", "#22d3ee", "#34d399", "#f472b6", "#60a5fa"];
@@ -62,6 +62,7 @@ export default function WordCloudCard({
   onCommentsCountRender = null,
 }) {
   const sanitizedBaseUrl = useMemo(() => (apiBaseUrl || "").replace(/\/$/, ""), [apiBaseUrl]);
+  const [loadingSlow, setLoadingSlow] = useState(false);
 
   const requestKey = useMemo(() => {
     if (!igUserId) return null;
@@ -74,9 +75,16 @@ export default function WordCloudCard({
     return sanitizedBaseUrl ? `${sanitizedBaseUrl}${path}` : path;
   }, [igUserId, since, until, top, sanitizedBaseUrl]);
 
-  const { data, error, isLoading } = useSWR(requestKey, fetcher, {
+  useEffect(() => {
+    setLoadingSlow(false);
+  }, [requestKey]);
+
+  const { data, error, isLoading, isValidating } = useSWR(requestKey, fetcher, {
     revalidateOnFocus: false,
     shouldRetryOnError: false,
+    keepPreviousData: true,
+    loadingTimeout: 3000,
+    onLoadingSlow: () => setLoadingSlow(true),
   });
 
   if (!igUserId) {
@@ -88,6 +96,13 @@ export default function WordCloudCard({
   }
 
   if (isLoading) {
+    if (loadingSlow) {
+      return (
+        <div className="flex min-h-[300px] items-center justify-center text-center text-sm text-slate-500">
+          Carregando palavras-chave… isso pode levar alguns segundos na primeira vez.
+        </div>
+      );
+    }
     return <div className="h-[300px] animate-pulse rounded-2xl bg-slate-100" />;
   }
 
@@ -117,6 +132,12 @@ export default function WordCloudCard({
 
   return (
     <div className="flex w-full flex-col gap-3">
+      {isValidating && entries.length ? (
+        <div className="flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-xs font-medium text-slate-600">
+          <span className="inline-flex h-2 w-2 rounded-full bg-indigo-500" />
+          <span>Atualizando palavras-chave…</span>
+        </div>
+      ) : null}
       {showCommentsCount && typeof data.total_comments === "number" ? (
         <div className="flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-xs font-medium text-slate-600">
           <span className="inline-flex h-2 w-2 rounded-full bg-rose-500" />

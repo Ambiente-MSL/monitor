@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useState, useCallback } from "react";
 import { Link, useLocation, useOutletContext } from "react-router-dom";
+import { useRef } from "react";
 import {
   differenceInCalendarDays,
   endOfDay,
@@ -547,7 +548,7 @@ export default function InstagramDashboard() {
 
   useEffect(() => {
     setCommentsCount(null);
-  }, [accountSnapshotKey, sinceIso, untilIso]);
+  }, [accountSnapshotKey]);
 
   // Estado para controlar visualização detalhada
   const [showDetailedView, setShowDetailedView] = useState(false);
@@ -621,10 +622,18 @@ export default function InstagramDashboard() {
   const [metrics, setMetrics] = useState([]);
   const [metricsError, setMetricsError] = useState("");
   const [metricsLoading, setMetricsLoading] = useState(false);
+  const [metricsNotice, setMetricsNotice] = useState("");
+  const [metricsFetching, setMetricsFetching] = useState(false);
+  const metricsRequestIdRef = useRef(0);
+  const lastMetricsAccountKeyRef = useRef("");
 
   const [posts, setPosts] = useState([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [postsError, setPostsError] = useState("");
+  const [postsNotice, setPostsNotice] = useState("");
+  const [postsFetching, setPostsFetching] = useState(false);
+  const postsRequestIdRef = useRef(0);
+  const lastPostsAccountKeyRef = useRef("");
 
   const calendarMonthOptions = useMemo(() => {
     const monthMap = new Map();
@@ -689,6 +698,12 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
   );
 
   useEffect(() => {
+    const currentAccountKey = accountSnapshotKey;
+    const previousAccountKey = lastMetricsAccountKeyRef.current;
+    const isFirstLoadForAccount = !previousAccountKey;
+    const accountChanged = Boolean(previousAccountKey) && previousAccountKey !== currentAccountKey;
+    lastMetricsAccountKeyRef.current = currentAccountKey;
+
     if (!accountConfig?.instagramUserId) {
       setMetrics([]);
       setFollowerSeries([]);
@@ -698,11 +713,14 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
       setProfileVisitorsBreakdown(null);
       setOverviewSnapshot(null);
       setMetricsLoading(false);
+      setMetricsFetching(false);
+      setMetricsNotice("");
       setMetricsError("Conta do Instagram não configurada.");
       return;
     }
 
     const cachedMetrics = getDashboardCache(metricsCacheKey);
+    let shouldRefreshForReach = false;
     if (cachedMetrics) {
       const cachedMetricsList = Array.isArray(cachedMetrics.metrics) ? cachedMetrics.metrics : [];
       const cachedReachMetric = cachedMetricsList.find((metric) => metric?.key === "reach");
@@ -714,7 +732,6 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
       // Nesse caso, força re-fetch para preencher o gráfico com dados reais.
       const shouldBypassCacheForReach = cachedReachValue != null && cachedReachValue > 0 && !hasReachTimeseries;
 
-      if (!shouldBypassCacheForReach) {
       setMetrics(Array.isArray(cachedMetrics.metrics) ? cachedMetrics.metrics : []);
       setFollowerSeries(Array.isArray(cachedMetrics.followerSeries) ? cachedMetrics.followerSeries : []);
       setFollowerCounts(cachedMetrics.followerCounts ?? null);
@@ -727,9 +744,15 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
       setProfileViewsSeries(cachedViewsSeries);
       setProfileVisitorsBreakdown(cachedMetrics.profileVisitorsBreakdown ?? null);
       setMetricsError("");
+      setMetricsNotice("");
+      setMetricsFetching(false);
       setMetricsLoading(false);
-      return undefined;
+
+      if (!shouldBypassCacheForReach) {
+        return undefined;
       }
+
+      shouldRefreshForReach = true;
     }
 
     const preset = IG_TOPBAR_PRESETS.find((item) => item.id === "7d") || IG_TOPBAR_PRESETS[0];
@@ -737,28 +760,107 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
     const effectiveSince = sinceDate || fallbackStart;
     const effectiveUntil = untilDate || defaultEnd;
 
-    const controller = new AbortController();
+    const requestId = (metricsRequestIdRef.current || 0) + 1;
+    metricsRequestIdRef.current = requestId;
+
+    const SOFT_LOADING_MS = 3000;
+    const REQUEST_TIMEOUT_MS = 30000;
+    const MAX_ATTEMPTS = 2;
+    const shouldBlockUi = (isFirstLoadForAccount || accountChanged) && !cachedMetrics;
+
+    const controllers = [];
+    const timeouts = [];
+    const trackTimeout = (handle) => {
+      timeouts.push(handle);
+      return handle;
+    };
+    const clearAllTimeouts = () => {
+      timeouts.forEach((handle) => clearTimeout(handle));
+    };
+    const sleep = (ms) => new Promise((resolve) => {
+      trackTimeout(setTimeout(resolve, ms));
+    });
+
     let cancelled = false;
-    (async () => {
-      setMetricsLoading(true);
-      setMetricsError("");
-      setOverviewSnapshot(null);
+
+    const url = (() => {
+      const params = new URLSearchParams();
+      params.set("since", toUnixSeconds(startOfDay(effectiveSince)));
+      params.set("until", toUnixSeconds(endOfDay(effectiveUntil)));
+      params.set("igUserId", accountConfig.instagramUserId);
+      return `${API_BASE_URL}/api/instagram/metrics?${params.toString()}`;
+    })();
+
+    const fetchMetricsPayload = async (attempt = 0) => {
+      const controller = new AbortController();
+      controllers.push(controller);
+
+      let timedOut = false;
+      const hardTimeout = trackTimeout(setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+      }, REQUEST_TIMEOUT_MS));
+
+      try {
+        const resp = await fetch(url, { signal: controller.signal });
+        const text = await resp.text();
+        const json = safeParseJson(text) || {};
+        if (!resp.ok) {
+          const error = new Error(describeApiError(json, "Falha ao carregar métricas do Instagram."));
+          error.status = resp.status;
+          throw error;
+        }
+        return json;
+      } catch (err) {
+        const status = err?.status;
+        const retryableStatus = status === 429 || status === 502 || status === 503 || status === 504;
+        const shouldRetry = attempt < MAX_ATTEMPTS - 1 && (timedOut || err?.name === "AbortError" || retryableStatus);
+        if (shouldRetry) {
+          await sleep(600);
+          return fetchMetricsPayload(attempt + 1);
+        }
+        throw err;
+      } finally {
+        clearTimeout(hardTimeout);
+      }
+    };
+
+    if (shouldBlockUi) {
       setMetrics([]);
       setFollowerSeries([]);
       setFollowerCounts(null);
       setReachCacheSeries([]);
       setProfileViewsSeries([]);
       setProfileVisitorsBreakdown(null);
+      setOverviewSnapshot(null);
+      setMetricsLoading(true);
+      setMetricsNotice("");
+    } else {
+      setMetricsLoading(false);
+      setMetricsNotice(
+        shouldRefreshForReach
+          ? "Atualizando série diária de alcance…"
+          : "Atualizando métricas do período selecionado (exibindo dados anteriores até carregar)…",
+      );
+    }
+
+    setMetricsFetching(true);
+    setMetricsError("");
+    setOverviewSnapshot(null);
+
+    if (shouldBlockUi) {
+      trackTimeout(setTimeout(() => {
+        if (cancelled || metricsRequestIdRef.current !== requestId) return;
+        setMetricsLoading(false);
+        setMetricsNotice("Atualizando métricas… isso pode levar alguns segundos na primeira vez.");
+      }, SOFT_LOADING_MS));
+    }
+
+    (async () => {
       try {
-        const params = new URLSearchParams();
-        params.set("since", toUnixSeconds(startOfDay(effectiveSince)));
-        params.set("until", toUnixSeconds(endOfDay(effectiveUntil)));
-        params.set("igUserId", accountConfig.instagramUserId);
-        const url = `${API_BASE_URL}/api/instagram/metrics?${params.toString()}`;
-        const resp = await fetch(url, { signal: controller.signal });
-        const json = safeParseJson(await resp.text()) || {};
-        if (!resp.ok) throw new Error(describeApiError(json, "Falha ao carregar metricas do Instagram."));
-        if (cancelled) return;
+        const json = await fetchMetricsPayload(0);
+        if (cancelled || metricsRequestIdRef.current !== requestId) return;
+
         const fetchedMetrics = json.metrics || [];
         const fetchedFollowerSeries = Array.isArray(json.follower_series) ? json.follower_series : [];
         const fetchedFollowerCounts = json.follower_counts || null;
@@ -771,10 +873,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
                 if (!dateRaw) return null;
                 const numericValue = extractNumber(entry.value, null);
                 if (numericValue === null) return null;
-                return {
-                  date: dateRaw,
-                  value: numericValue,
-                };
+                return { date: dateRaw, value: numericValue };
               })
               .filter(Boolean)
             : []
@@ -784,7 +883,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
         const parsedProfileViewsSeries = parseNumericSeries(json.profile_views_timeseries);
         const resolvedViewsSeries = parsedVideoViewsSeries.length ? parsedVideoViewsSeries : parsedProfileViewsSeries;
         const visitorsBreakdown = json.profile_visitors_breakdown || null;
-        if (cancelled) return;
+
         setMetrics(fetchedMetrics);
         setFollowerSeries(fetchedFollowerSeries);
         setFollowerCounts(fetchedFollowerCounts);
@@ -800,35 +899,54 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
           videoViewsSeries: parsedVideoViewsSeries,
           profileVisitorsBreakdown: visitorsBreakdown,
         });
+
+        setMetricsNotice("");
       } catch (err) {
-        if (!cancelled && err.name !== "AbortError") {
+        if (cancelled || metricsRequestIdRef.current !== requestId) return;
+        if (err?.name === "AbortError") {
+          setMetricsError("Tempo esgotado ao carregar métricas do Instagram.");
+        } else {
+          setMetricsError(err?.message || "Não foi possível atualizar.");
+        }
+        setMetricsNotice("");
+
+        if (shouldBlockUi) {
           setMetrics([]);
           setFollowerSeries([]);
           setFollowerCounts(null);
           setReachCacheSeries([]);
           setProfileViewsSeries([]);
           setProfileVisitorsBreakdown(null);
-          setMetricsError(err.message || "Não foi possível atualizar.");
         }
       } finally {
-        if (!cancelled) {
-          setMetricsLoading(false);
-        }
+        if (cancelled || metricsRequestIdRef.current !== requestId) return;
+        clearAllTimeouts();
+        setMetricsFetching(false);
+        setMetricsLoading(false);
       }
     })();
 
     return () => {
       cancelled = true;
-      controller.abort();
+      clearAllTimeouts();
+      controllers.forEach((c) => c.abort());
     };
-  }, [accountConfig?.instagramUserId, sinceDate, untilDate, defaultEnd, sinceParam, untilParam, metricsCacheKey]);
+  }, [accountConfig?.instagramUserId, accountSnapshotKey, sinceDate, untilDate, defaultEnd, sinceParam, untilParam, metricsCacheKey]);
 
   useEffect(() => {
+    const currentAccountKey = accountSnapshotKey;
+    const previousAccountKey = lastPostsAccountKeyRef.current;
+    const isFirstLoadForAccount = !previousAccountKey;
+    const accountChanged = Boolean(previousAccountKey) && previousAccountKey !== currentAccountKey;
+    lastPostsAccountKeyRef.current = currentAccountKey;
+
     if (!accountConfig?.instagramUserId) {
       setPosts([]);
       setAccountInfo(null);
       setPostsError("Conta do Instagram não configurada.");
       setLoadingPosts(false);
+      setPostsFetching(false);
+      setPostsNotice("");
       return undefined;
     }
 
@@ -838,48 +956,134 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
       setAccountInfo(cachedPosts.accountInfo || null);
       setPostsError("");
       setLoadingPosts(false);
+      setPostsFetching(false);
+      setPostsNotice("");
       return undefined;
     }
 
-    setPosts([]);
-    setAccountInfo(null);
+    const requestId = (postsRequestIdRef.current || 0) + 1;
+    postsRequestIdRef.current = requestId;
 
-    const controller = new AbortController();
+    const SOFT_LOADING_MS = 3000;
+    const REQUEST_TIMEOUT_MS = 30000;
+    const MAX_ATTEMPTS = 2;
+    const shouldBlockUi = (isFirstLoadForAccount || accountChanged) && !cachedPosts;
+
+    const controllers = [];
+    const timeouts = [];
+    const trackTimeout = (handle) => {
+      timeouts.push(handle);
+      return handle;
+    };
+    const clearAllTimeouts = () => {
+      timeouts.forEach((handle) => clearTimeout(handle));
+    };
+    const sleep = (ms) => new Promise((resolve) => {
+      trackTimeout(setTimeout(resolve, ms));
+    });
+
     let cancelled = false;
 
-    (async () => {
-      setLoadingPosts(true);
-      setPostsError("");
+    const url = (() => {
+      const params = new URLSearchParams({ igUserId: accountConfig.instagramUserId, limit: "20" });
+      if (sinceParam) params.set("since", sinceParam);
+      if (untilParam) params.set("until", untilParam);
+      return `${API_BASE_URL}/api/instagram/posts?${params.toString()}`;
+    })();
+
+    const fetchPostsPayload = async (attempt = 0) => {
+      const controller = new AbortController();
+      controllers.push(controller);
+
+      let timedOut = false;
+      const hardTimeout = trackTimeout(setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+      }, REQUEST_TIMEOUT_MS));
+
       try {
-        const params = new URLSearchParams({ igUserId: accountConfig.instagramUserId, limit: "20" });
-        if (sinceParam) params.set("since", sinceParam);
-        if (untilParam) params.set("until", untilParam);
-        const resp = await apiFetch(`/api/instagram/posts?${params.toString()}`, { signal: controller.signal });
-        if (cancelled) return;
-        const normalizedPosts = Array.isArray(resp?.posts) ? resp.posts : [];
-        const account = resp?.account || null;
+        const resp = await fetch(url, { signal: controller.signal });
+        const text = await resp.text();
+        const json = safeParseJson(text) || {};
+        if (!resp.ok) {
+          const error = new Error(describeApiError(json, "Não foi possível carregar os posts."));
+          error.status = resp.status;
+          throw error;
+        }
+        return json;
+      } catch (err) {
+        const status = err?.status;
+        const retryableStatus = status === 429 || status === 502 || status === 503 || status === 504;
+        const shouldRetry = attempt < MAX_ATTEMPTS - 1 && (timedOut || err?.name === "AbortError" || retryableStatus);
+        if (shouldRetry) {
+          await sleep(600);
+          return fetchPostsPayload(attempt + 1);
+        }
+        throw err;
+      } finally {
+        clearTimeout(hardTimeout);
+      }
+    };
+
+    if (shouldBlockUi) {
+      setPosts([]);
+      setAccountInfo(null);
+      setLoadingPosts(true);
+      setPostsNotice("");
+    } else {
+      setLoadingPosts(false);
+      setPostsNotice("Atualizando posts do período selecionado (exibindo dados anteriores até carregar)…");
+    }
+
+    setPostsFetching(true);
+    setPostsError("");
+
+    if (shouldBlockUi) {
+      trackTimeout(setTimeout(() => {
+        if (cancelled || postsRequestIdRef.current !== requestId) return;
+        setLoadingPosts(false);
+        setPostsNotice("Atualizando posts… isso pode levar alguns segundos na primeira vez.");
+      }, SOFT_LOADING_MS));
+    }
+
+    (async () => {
+      try {
+        const json = await fetchPostsPayload(0);
+        if (cancelled || postsRequestIdRef.current !== requestId) return;
+
+        const normalizedPosts = Array.isArray(json?.posts) ? json.posts : [];
+        const account = json?.account || null;
         setPosts(normalizedPosts);
         setAccountInfo(account);
         setDashboardCache(postsCacheKey, { posts: normalizedPosts, accountInfo: account });
+        setPostsNotice("");
       } catch (err) {
-        if (cancelled || err?.name === "AbortError") return;
-        const rawMessage = err?.message || "";
-        const friendlyMessage = rawMessage.includes("<") ? "Não foi possível carregar os posts (erro 502)." : rawMessage;
-        setPosts([]);
-        setAccountInfo(null);
-        setPostsError(friendlyMessage || "Não foi possível carregar os posts.");
-      } finally {
-        if (!cancelled) {
-          setLoadingPosts(false);
+        if (cancelled || postsRequestIdRef.current !== requestId) return;
+        if (err?.name === "AbortError") {
+          setPostsError("Tempo esgotado ao carregar os posts do Instagram.");
+        } else {
+          setPostsError(err?.message || "Não foi possível carregar os posts.");
         }
+        setPostsNotice("");
+
+        if (shouldBlockUi) {
+          setPosts([]);
+          setAccountInfo(null);
+        }
+      } finally {
+        if (cancelled || postsRequestIdRef.current !== requestId) return;
+        clearAllTimeouts();
+        setPostsFetching(false);
+        setLoadingPosts(false);
       }
     })();
 
     return () => {
       cancelled = true;
-      controller.abort();
+      clearAllTimeouts();
+      controllers.forEach((c) => c.abort());
     };
-  }, [accountConfig?.instagramUserId, apiFetch, sinceParam, untilParam, postsCacheKey]);
+  }, [accountConfig?.instagramUserId, accountSnapshotKey, sinceParam, untilParam, postsCacheKey]);
 
 const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
  const reachMetric = metricsByKey.reach;
@@ -2353,6 +2557,11 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
     <div className="instagram-dashboard instagram-dashboard--clean">
       {metricsError && <div className="alert alert--error">{metricsError}</div>}
       {postsError && <div className="alert alert--error">{postsError}</div>}
+      {metricsNotice && <div className="alert">{metricsNotice}</div>}
+      {postsNotice && <div className="alert">{postsNotice}</div>}
+      {!metricsNotice && !postsNotice && (metricsFetching || postsFetching) ? (
+        <div className="alert">Atualizando dados…</div>
+      ) : null}
 
       {/* Container Limpo (fundo branco) */}
       <div className="ig-clean-container">
