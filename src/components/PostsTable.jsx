@@ -1,5 +1,4 @@
 import React, { useState, useCallback } from 'react';
-import { ExternalLink } from 'lucide-react';
 
 const PostsTable = ({ posts, loading, error }) => {
   const [columnOrder, setColumnOrder] = useState([
@@ -149,29 +148,36 @@ const PostsTable = ({ posts, loading, error }) => {
 
         return (
           <div className="posts-table__caption-cell">
-            <div className="posts-table__preview">
-              {previewUrl ? (
-                <img src={previewUrl} alt={caption} />
-              ) : (
-                <div className="posts-table__placeholder">
-                  <span>📷</span>
+            {postUrl ? (
+              <a
+                href={postUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="posts-table__preview-link"
+              >
+                <div className="posts-table__preview">
+                  {previewUrl ? (
+                    <img src={previewUrl} alt={caption} />
+                  ) : (
+                    <div className="posts-table__placeholder">
+                      <span>📷</span>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </a>
+            ) : (
+              <div className="posts-table__preview">
+                {previewUrl ? (
+                  <img src={previewUrl} alt={caption} />
+                ) : (
+                  <div className="posts-table__placeholder">
+                    <span>📷</span>
+                  </div>
+                )}
+              </div>
+            )}
             <div className="posts-table__caption-content">
-              <div className="posts-table__caption-text">{truncate(caption, 120)}</div>
-              {postUrl && (
-                <a
-                  href={postUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="posts-table__link-inline"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <ExternalLink size={14} />
-                  Ver post
-                </a>
-              )}
+              <div className="posts-table__caption-text">{truncate(caption, 100)}</div>
             </div>
           </div>
         );

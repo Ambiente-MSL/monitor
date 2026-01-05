@@ -3569,38 +3569,28 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             <div className="ig-analytics-card__body">
               <ResponsiveContainer width="100%" height={240}>
                 <PieChart>
-                  {/* Círculo de seguidores (background) */}
-                  <Pie
-                    data={[{ value: 100 }]}
-                    dataKey="value"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={activeGenderIndex === 1 ? 100 : 90}
-                    innerRadius={0}
-                    fill="#6366f1"
-                    stroke="none"
-                    isAnimationActive={true}
-                    onMouseEnter={() => setActiveGenderIndex(1)}
-                    onMouseLeave={() => setActiveGenderIndex(-1)}
-                  />
-                  {/* Círculo de não seguidores (foreground - overlapping) */}
                   <Pie
                     data={audienceTypeSeries}
                     dataKey="value"
                     nameKey="name"
                     cx="50%"
                     cy="50%"
-                    outerRadius={activeGenderIndex === 0 ? 100 : 90}
                     innerRadius={0}
-                    startAngle={90}
-                    endAngle={90 + (audienceTypeSeries[0]?.value || 0) * 3.6}
-                    fill="#f472b6"
+                    outerRadius={90}
+                    paddingAngle={2}
                     stroke="none"
-                    paddingAngle={0}
                     isAnimationActive={true}
-                    onMouseEnter={() => setActiveGenderIndex(0)}
+                    activeIndex={activeGenderIndex}
+                    activeShape={{
+                      outerRadius: 100,
+                    }}
+                    onMouseEnter={(_, index) => setActiveGenderIndex(index)}
                     onMouseLeave={() => setActiveGenderIndex(-1)}
-                  />
+                  >
+                    {audienceTypeSeries.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={index === 0 ? "#f472b6" : "#6366f1"} />
+                    ))}
+                  </Pie>
                   <Tooltip content={(props) => <BubbleTooltip {...props} suffix="%" />} />
                 </PieChart>
               </ResponsiveContainer>
@@ -3677,7 +3667,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               <h4>Idade</h4>
             </div>
             <div className="ig-analytics-card__body">
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer width="100%" height={220}>
                 <BarChart
                   data={[
                     { age: "13-17", male: 20, female: 30 },
@@ -3687,9 +3677,9 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     { age: "45++", male: 30, female: 25 },
                   ]}
                   layout="vertical"
-                  margin={{ left: 0, right: 20, top: 5, bottom: 5 }}
+                  margin={{ left: 0, right: 20, top: 10, bottom: 10 }}
                   barGap={4}
-                  barCategoryGap="45%"
+                  barCategoryGap="60%"
                 >
                   <defs>
                     <linearGradient id="maleGradient" x1="0" y1="0" x2="1" y2="0">
