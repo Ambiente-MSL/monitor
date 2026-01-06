@@ -268,6 +268,12 @@ const resolvePostViews = (post) => {
   return pickFirstNumber([views, reach], 0);
 };
 
+const resolvePostInteractions = (post) => {
+  const interactions = extractNumber(post?.interactions, null);
+  if (interactions != null) return interactions;
+  return sumInteractions(post);
+};
+
 const sumInteractions = (post) => {
   const likes = resolvePostMetric(post, "likes");
   const comments = resolvePostMetric(post, "comments");
@@ -405,6 +411,14 @@ const classifyViewContentType = (post) => {
   return "POSTS";
 };
 
+const classifyInteractionContentType = (post) => {
+  const mediaProductType = String(post.mediaProductType || post.media_product_type || "").toUpperCase();
+  const mediaType = String(post.mediaType || post.media_type || "").toUpperCase();
+  if (mediaProductType === "REELS" || mediaProductType === "REEL" || mediaType === "REEL") return "reels";
+  if (mediaType === "VIDEO" || mediaProductType === "VIDEO" || mediaProductType === "IGTV" || mediaType === "IGTV") return "videos";
+  return "posts";
+};
+
 const analyzeBestTimes = (posts) => {
   if (!Array.isArray(posts) || posts.length === 0) {
     return {
@@ -508,6 +522,11 @@ const IG_VIEW_TYPE_COLORS = {
   POSTS: "#ec4899",
   STORIES: "#f59e0b",
 };
+const INTERACTIONS_TABS = [
+  { id: "reels", label: "Reels", icon: "R" },
+  { id: "videos", label: "Videos", icon: "V" },
+  { id: "posts", label: "Posts", icon: "P" },
+];
 
 const BubbleTooltip = ({ active, payload, suffix = "" }) => {
   if (!active || !payload?.length) return null;
@@ -648,7 +667,7 @@ export default function InstagramDashboard() {
   // Estado para controlar visualização detalhada
   const [showDetailedView, setShowDetailedView] = useState(false);
   const [showInteractionsDetail, setShowInteractionsDetail] = useState(false);
-  const [interactionsTab, setInteractionsTab] = useState('reels'); // reels, posts, stories
+  const [interactionsTab, setInteractionsTab] = useState('reels'); // reels, videos, posts
 
   const now = useMemo(() => new Date(), []);
   const defaultEnd = useMemo(() => endOfDay(subDays(startOfDay(now), 1)), [now]);
@@ -1259,6 +1278,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
  const followerGrowthMetric = metricsByKey.follower_growth;
  const engagementRateMetric = metricsByKey.engagement_rate;
  const profileViewsMetric = metricsByKey.video_views || metricsByKey.profile_views;
+ const interactionsMetric = metricsByKey.interactions;
 
   const reachMetricValue = useMemo(() => extractNumber(reachMetric?.value, null), [reachMetric?.value]);
   const timelineReachSeries = useMemo(() => seriesFromMetric(reachMetric), [reachMetric]);
@@ -1312,6 +1332,11 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
     if (typeof profileViewsMetric?.deltaPct === "number") return profileViewsMetric.deltaPct;
     return null;
   }, [profileViewsMetric?.deltaPct]);
+  const interactionsMetricValue = useMemo(() => extractNumber(interactionsMetric?.value, null), [interactionsMetric?.value]);
+  const interactionsDeltaPct = useMemo(() => {
+    if (typeof interactionsMetric?.deltaPct === "number") return interactionsMetric.deltaPct;
+    return null;
+  }, [interactionsMetric?.deltaPct]);
   const profileVisitorsTotals = useMemo(() => {
     if (!profileVisitorsBreakdown) return null;
     const followers = extractNumber(profileVisitorsBreakdown.followers ?? profileVisitorsBreakdown.followers, null);
@@ -1330,6 +1355,32 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
       total: finalTotal,
     };
   }, [profileVisitorsBreakdown]);
+  const interactionsBreakdown = useMemo(() => {
+    const breakdown = engagementRateMetric?.breakdown || {};
+    const likes = pickFirstNumber([breakdown.likes, metricsByKey.likes?.value], 0);
+    const comments = pickFirstNumber([breakdown.comments, metricsByKey.comments?.value], 0);
+    const shares = pickFirstNumber([breakdown.shares, metricsByKey.shares?.value], 0);
+    const saves = pickFirstNumber([breakdown.saves, metricsByKey.saves?.value], 0);
+    const totalFromBreakdown = extractNumber(breakdown.total, null);
+    const computedTotal = likes + comments + shares + saves;
+    const total = totalFromBreakdown ?? interactionsMetricValue ?? computedTotal;
+    return {
+      likes,
+      comments,
+      shares,
+      saves,
+      total,
+    };
+  }, [engagementRateMetric?.breakdown, interactionsMetricValue, metricsByKey]);
+  const interactionsDeltaDisplay = useMemo(() => {
+    if (interactionsDeltaPct == null) return null;
+    const sign = interactionsDeltaPct > 0 ? "+" : "";
+    return `${sign}${interactionsDeltaPct}%`;
+  }, [interactionsDeltaPct]);
+  const interactionsDeltaTone = useMemo(() => {
+    if (interactionsDeltaPct == null) return "#6b7280";
+    return interactionsDeltaPct < 0 ? "#ef4444" : "#10b981";
+  }, [interactionsDeltaPct]);
   const profileViewsChartData = useMemo(() => resolvedProfileViewsSeries.map((entry) => {
     const dateLabel = entry.date
       ? new Date(`${entry.date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })
@@ -1382,6 +1433,72 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
       return true;
     });
   }, [posts, sinceDate, untilDate]);
+
+  const interactionPostsSource = useMemo(
+    () => (recentPosts.length ? recentPosts : filteredPosts),
+    [recentPosts, filteredPosts],
+  );
+  const interactionsDailyTotals = useMemo(() => {
+    if (!interactionPostsSource.length) return [];
+    const totals = new Map();
+    interactionPostsSource.forEach((post) => {
+      const dateKey = normalizeDateKey(post.timestamp || post.timestamp_unix);
+      if (!dateKey) return;
+      const value = resolvePostInteractions(post);
+      totals.set(dateKey, (totals.get(dateKey) || 0) + value);
+    });
+    return Array.from(totals.entries()).map(([date, value]) => ({ date, value }));
+  }, [interactionPostsSource]);
+  const interactionsPeak = useMemo(() => {
+    if (!interactionsDailyTotals.length) return null;
+    return interactionsDailyTotals.reduce((maxValue, entry) => (
+      Math.max(maxValue, extractNumber(entry.value, 0))
+    ), 0);
+  }, [interactionsDailyTotals]);
+  const interactionsByTypeTotals = useMemo(() => {
+    const totals = { reels: 0, videos: 0, posts: 0 };
+    interactionPostsSource.forEach((post) => {
+      const type = classifyInteractionContentType(post);
+      totals[type] += resolvePostInteractions(post);
+    });
+    return totals;
+  }, [interactionPostsSource]);
+  const interactionsTabBreakdown = useMemo(() => {
+    const totals = {
+      likes: 0,
+      comments: 0,
+      shares: 0,
+      saves: 0,
+      total: 0,
+    };
+    interactionPostsSource
+      .filter((post) => classifyInteractionContentType(post) === interactionsTab)
+      .forEach((post) => {
+        const likes = resolvePostMetric(post, "likes");
+        const comments = resolvePostMetric(post, "comments");
+        const shares = resolvePostMetric(post, "shares");
+        const saves = resolvePostMetric(post, "saves");
+        totals.likes += likes;
+        totals.comments += comments;
+        totals.shares += shares;
+        totals.saves += saves;
+        totals.total += likes + comments + shares + saves;
+      });
+    return totals;
+  }, [interactionPostsSource, interactionsTab]);
+  const interactionsTabPosts = useMemo(() => {
+    const filtered = interactionPostsSource.filter(
+      (post) => classifyInteractionContentType(post) === interactionsTab,
+    );
+    if (!filtered.length) return [];
+    return [...filtered]
+      .sort((a, b) => resolvePostMetric(b, "likes") - resolvePostMetric(a, "likes"))
+      .slice(0, 6);
+  }, [interactionPostsSource, interactionsTab]);
+  const interactionsTabLabel = useMemo(
+    () => INTERACTIONS_TABS.find((tab) => tab.id === interactionsTab)?.label || interactionsTab,
+    [interactionsTab],
+  );
 
   // Calcula total de seguidores ganhos no período filtrado
   const followersDelta = useMemo(() => {
@@ -2249,7 +2366,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 <Heart size={24} color="white" fill="white" />
               </div>
               <div style={{ fontSize: '36px', fontWeight: 800, color: '#ec4899', marginBottom: '8px' }}>
-                {formatNumber(45832)}
+                {formatNumber(interactionsBreakdown.total)}
               </div>
               <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Total de Interações</div>
               <div style={{
@@ -2259,11 +2376,17 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 gap: '6px',
                 marginTop: '12px',
                 fontSize: '13px',
-                color: '#10b981',
+                color: interactionsDeltaTone,
                 fontWeight: 600
               }}>
-                <TrendingUp size={16} />
-                <span>+12.5%</span>
+                {interactionsDeltaDisplay ? (
+                  <>
+                    {interactionsDeltaPct < 0 ? <TrendingDown size={16} /> : <TrendingUp size={16} />}
+                    <span>{interactionsDeltaDisplay}</span>
+                  </>
+                ) : (
+                  <span>--</span>
+                )}
               </div>
             </div>
 
@@ -2282,7 +2405,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 background: '#fef2f2'
               }} />
               <div style={{ fontSize: '36px', fontWeight: 800, color: '#ec4899', marginBottom: '8px', position: 'relative' }}>
-                {formatNumber(3847)}
+                {interactionsPeak != null ? formatNumber(interactionsPeak) : "--"}
               </div>
               <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Pico de Interações (1 dia)</div>
             </div>
@@ -2296,11 +2419,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             borderBottom: '2px solid #e5e7eb',
             overflowX: 'auto'
           }}>
-            {[
-              { id: 'reels', label: 'Reels', icon: '??' },
-              { id: 'posts', label: 'Posts', icon: '??' },
-              { id: 'stories', label: 'Stories', icon: '?' }
-            ].map(tab => (
+            {INTERACTIONS_TABS.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setInteractionsTab(tab.id)}
@@ -2337,6 +2456,11 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             ))}
           </div>
 
+          <div style={{ marginBottom: '16px', fontSize: '14px', color: '#6b7280', fontWeight: 600 }}>
+            Total de interações em {interactionsTabLabel}:{" "}
+            <span style={{ color: '#111827' }}>{formatNumber(interactionsByTypeTotals[interactionsTab] || 0)}</span>
+          </div>
+
           {/* Métricas Detalhadas por Tipo */}
           <div style={{
             display: 'grid',
@@ -2355,7 +2479,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 <span style={{ fontSize: '14px', color: '#6b7280', fontWeight: 600 }}>Curtidas</span>
               </div>
               <div style={{ fontSize: '32px', fontWeight: 700, color: '#ef4444' }}>
-                {formatNumber(18650)}
+                {formatNumber(interactionsTabBreakdown.likes)}
               </div>
             </div>
 
@@ -2370,7 +2494,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 <span style={{ fontSize: '14px', color: '#6b7280', fontWeight: 600 }}>Comentários</span>
               </div>
               <div style={{ fontSize: '32px', fontWeight: 700, color: '#3b82f6' }}>
-                {formatNumber(4832)}
+                {formatNumber(interactionsTabBreakdown.comments)}
               </div>
             </div>
 
@@ -2385,7 +2509,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 <span style={{ fontSize: '14px', color: '#6b7280', fontWeight: 600 }}>Salvamentos</span>
               </div>
               <div style={{ fontSize: '32px', fontWeight: 700, color: '#eab308' }}>
-                {formatNumber(2156)}
+                {formatNumber(interactionsTabBreakdown.saves)}
               </div>
             </div>
 
@@ -2400,7 +2524,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 <span style={{ fontSize: '14px', color: '#6b7280', fontWeight: 600 }}>Compartilhamentos</span>
               </div>
               <div style={{ fontSize: '32px', fontWeight: 700, color: '#22c55e' }}>
-                {formatNumber(892)}
+                {formatNumber(interactionsTabBreakdown.shares)}
               </div>
             </div>
 
@@ -2420,7 +2544,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 <span style={{ fontSize: '14px', color: '#6b7280', fontWeight: 600 }}>Reposts</span>
               </div>
               <div style={{ fontSize: '32px', fontWeight: 700, color: '#8b5cf6' }}>
-                {formatNumber(302)}
+                {formatNumber(0)}
               </div>
             </div>
           </div>
@@ -2447,7 +2571,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 </svg>
               </div>
               <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
-                {interactionsTab === 'reels' ? 'Top Reels por Curtidas' : interactionsTab === 'posts' ? 'Top Posts por Curtidas' : 'Top Stories por Curtidas'}
+                {interactionsTab === 'reels' ? 'Top Reels por Curtidas' : interactionsTab === 'videos' ? 'Top Videos por Curtidas' : 'Top Posts por Curtidas'}
               </h3>
             </div>
             <div style={{
@@ -2455,80 +2579,113 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
               gap: '20px'
             }}>
-              {[
-                { id: 1, caption: 'Confira nossa nova coleção de produtos! ? Disponível agora na loja', likes: 12450, comments: 834, saves: 1203, shares: 456, thumbnail: '??' },
-                { id: 2, caption: 'Dica do dia: Como aumentar o engajamento no Instagram ??', likes: 10230, comments: 645, saves: 892, shares: 324, thumbnail: '??' },
-                { id: 3, caption: 'Bastidores da nossa última produção ?? Foi incrível!', likes: 8650, comments: 423, saves: 567, shares: 234, thumbnail: '??' },
-              ].map(item => (
-                <div key={item.id} style={{
-                  background: 'white',
-                  borderRadius: '16px',
-                  padding: '20px',
-                  border: '1px solid #e5e7eb',
-                  transition: 'all 0.2s',
-                  cursor: 'pointer'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.12)';
-                  e.currentTarget.style.transform = 'translateY(-4px)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.boxShadow = 'none';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }}
-                >
-                  <div style={{
-                    fontSize: '64px',
-                    textAlign: 'center',
-                    marginBottom: '16px',
-                    background: '#f9fafb',
-                    borderRadius: '12px',
-                    padding: '32px',
-                    border: '2px dashed #e5e7eb'
-                  }}>
-                    {item.thumbnail}
+              {interactionsTabPosts.length ? interactionsTabPosts.map((post) => {
+                const likes = resolvePostMetric(post, "likes");
+                const comments = resolvePostMetric(post, "comments");
+                const saves = resolvePostMetric(post, "saves");
+                const shares = resolvePostMetric(post, "shares");
+                const previewUrl = [
+                  post.previewUrl,
+                  post.preview_url,
+                  post.thumbnailUrl,
+                  post.thumbnail_url,
+                  post.mediaUrl,
+                  post.media_url,
+                ].find((url) => url && !/\.(mp4|mov)$/i.test(url));
+                const postUrl = post.permalink || post.url || `https://www.instagram.com/p/${post.id || ''}`;
+
+                return (
+                  <div key={post.id || post.timestamp} style={{
+                    background: 'white',
+                    borderRadius: '16px',
+                    padding: '20px',
+                    border: '1px solid #e5e7eb',
+                    transition: 'all 0.2s',
+                    cursor: 'pointer'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.12)';
+                    e.currentTarget.style.transform = 'translateY(-4px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = 'none';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                  onClick={() => {
+                    if (postUrl) window.open(postUrl, '_blank', 'noopener,noreferrer');
+                  }}
+                  >
+                    <div style={{
+                      background: '#f9fafb',
+                      borderRadius: '12px',
+                      overflow: 'hidden',
+                      marginBottom: '16px',
+                      border: '1px solid #e5e7eb',
+                      height: '200px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      {previewUrl ? (
+                        <img
+                          src={previewUrl}
+                          alt="Post"
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        <div style={{ color: '#9ca3af' }}>
+                          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                            <circle cx="8.5" cy="8.5" r="1.5" />
+                            <polyline points="21 15 16 10 5 21" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <div style={{
+                      fontSize: '15px',
+                      color: '#374151',
+                      marginBottom: '16px',
+                      fontWeight: 500,
+                      lineHeight: 1.5,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      minHeight: '45px'
+                    }}>
+                      {post.caption || post.text || 'Sem legenda'}
+                    </div>
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(4, 1fr)',
+                      gap: '12px',
+                      paddingTop: '16px',
+                      borderTop: '1px solid #e5e7eb'
+                    }}>
+                      <div style={{ textAlign: 'center' }}>
+                        <Heart size={16} color="#ef4444" fill="#ef4444" style={{ marginBottom: '6px' }} />
+                        <div style={{ fontSize: '15px', fontWeight: 700, color: '#111827' }}>{formatNumber(likes)}</div>
+                      </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <MessageCircle size={16} color="#3b82f6" style={{ marginBottom: '6px' }} />
+                        <div style={{ fontSize: '15px', fontWeight: 700, color: '#111827' }}>{formatNumber(comments)}</div>
+                      </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <Bookmark size={16} color="#eab308" style={{ marginBottom: '6px' }} />
+                        <div style={{ fontSize: '15px', fontWeight: 700, color: '#111827' }}>{formatNumber(saves)}</div>
+                      </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <Share2 size={16} color="#22c55e" style={{ marginBottom: '6px' }} />
+                        <div style={{ fontSize: '15px', fontWeight: 700, color: '#111827' }}>{formatNumber(shares)}</div>
+                      </div>
+                    </div>
                   </div>
-                  <div style={{
-                    fontSize: '15px',
-                    color: '#374151',
-                    marginBottom: '16px',
-                    fontWeight: 500,
-                    lineHeight: 1.5,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                    minHeight: '45px'
-                  }}>
-                    {item.caption}
-                  </div>
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(4, 1fr)',
-                    gap: '12px',
-                    paddingTop: '16px',
-                    borderTop: '1px solid #e5e7eb'
-                  }}>
-                    <div style={{ textAlign: 'center' }}>
-                      <Heart size={16} color="#ef4444" fill="#ef4444" style={{ marginBottom: '6px' }} />
-                      <div style={{ fontSize: '15px', fontWeight: 700, color: '#111827' }}>{formatNumber(item.likes)}</div>
-                    </div>
-                    <div style={{ textAlign: 'center' }}>
-                      <MessageCircle size={16} color="#3b82f6" style={{ marginBottom: '6px' }} />
-                      <div style={{ fontSize: '15px', fontWeight: 700, color: '#111827' }}>{formatNumber(item.comments)}</div>
-                    </div>
-                    <div style={{ textAlign: 'center' }}>
-                      <Bookmark size={16} color="#eab308" style={{ marginBottom: '6px' }} />
-                      <div style={{ fontSize: '15px', fontWeight: 700, color: '#111827' }}>{formatNumber(item.saves)}</div>
-                    </div>
-                    <div style={{ textAlign: 'center' }}>
-                      <Share2 size={16} color="#22c55e" style={{ marginBottom: '6px' }} />
-                      <div style={{ fontSize: '15px', fontWeight: 700, color: '#111827' }}>{formatNumber(item.shares)}</div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              }) : (
+                <div className="ig-empty-state">Sem posts disponiveis.</div>
+              )}
             </div>
           </section>
         </div>
@@ -2715,7 +2872,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     </svg>
                   </div>
                   <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
-                    Tendência de Visualizações
+                    Crescimento de visualizações
                   </h3>
                 </div>
                 {profileViewsChartData.length ? (
@@ -2789,7 +2946,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     </svg>
                   </div>
                   <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
-                    Visualizações por Audiência
+                    Por audiência
                   </h3>
                 </div>
                 <div style={{ height: 300, position: 'relative' }}>
@@ -2878,7 +3035,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     </svg>
                   </div>
                   <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
-                    Visualizações por Tipo de Conteúdo
+                    Por tipo de conteúdo
                   </h3>
                 </div>
                 <div style={{ height: 280 }}>
@@ -2942,7 +3099,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     </svg>
                   </div>
                   <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
-                    Top Posts por Visualizações
+                    Mais visualizados
                   </h3>
                 </div>
                 <div style={{
@@ -3981,7 +4138,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             <div className="ig-analytics-card__body">
               <div style={{ textAlign: 'center', padding: '32px 20px' }}>
                 <div style={{ fontSize: '48px', fontWeight: 700, color: '#ec4899', marginBottom: '8px' }}>
-                  {formatNumber(45832)}
+                  {formatNumber(interactionsBreakdown.total)}
                 </div>
                 <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '28px' }}>
                   Total de interações no período
@@ -3999,7 +4156,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     textAlign: 'center'
                   }}>
                     <div style={{ fontSize: '20px', fontWeight: 700, color: '#ef4444', marginBottom: '4px' }}>
-                      {formatNumber(32450)}
+                      {formatNumber(interactionsBreakdown.likes)}
                     </div>
                     <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>Curtidas</div>
                   </div>
@@ -4010,7 +4167,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     textAlign: 'center'
                   }}>
                     <div style={{ fontSize: '20px', fontWeight: 700, color: '#3b82f6', marginBottom: '4px' }}>
-                      {formatNumber(8234)}
+                      {formatNumber(interactionsBreakdown.comments)}
                     </div>
                     <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>Comentários</div>
                   </div>
@@ -4021,7 +4178,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     textAlign: 'center'
                   }}>
                     <div style={{ fontSize: '20px', fontWeight: 700, color: '#eab308', marginBottom: '4px' }}>
-                      {formatNumber(3892)}
+                      {formatNumber(interactionsBreakdown.saves)}
                     </div>
                     <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>Salvamentos</div>
                   </div>
@@ -4032,7 +4189,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     textAlign: 'center'
                   }}>
                     <div style={{ fontSize: '20px', fontWeight: 700, color: '#22c55e', marginBottom: '4px' }}>
-                      {formatNumber(1256)}
+                      {formatNumber(interactionsBreakdown.shares)}
                     </div>
                     <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>Compartilhamentos</div>
                   </div>
