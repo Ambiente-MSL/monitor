@@ -78,6 +78,8 @@ const DEFAULT_GENDER_STATS = [
   { name: "Homens", value: 30 },
   { name: "Mulheres", value: 70 },
 ];
+const POSTS_INSIGHTS_LIMIT = 10;
+const RECENT_POSTS_TABLE_LIMIT = 5;
 
 const DEFAULT_AUDIENCE_TYPE = [
   { name: "Não Seguidores", value: 35 },
@@ -243,12 +245,27 @@ const POST_METRIC_PATHS = {
     ["reach_count"],
     ["insights", "reach", "value"],
   ],
+  views: [
+    ["views"],
+    ["viewCount"],
+    ["view_count"],
+    ["videoViews"],
+    ["video_views"],
+    ["insights", "views", "value"],
+    ["insights", "video_views", "value"],
+  ],
 };
 
 const resolvePostMetric = (post, metric, fallback = 0) => {
   const paths = POST_METRIC_PATHS[metric] || [];
   const candidates = paths.map((path) => getNestedValue(post, path));
   return pickFirstNumber(candidates, fallback);
+};
+
+const resolvePostViews = (post) => {
+  const views = resolvePostMetric(post, "views", null);
+  const reach = resolvePostMetric(post, "reach", null);
+  return pickFirstNumber([views, reach], 0);
 };
 
 const sumInteractions = (post) => {
@@ -363,6 +380,13 @@ const formatNumber = (value) => {
   return numeric.toString();
 };
 
+const formatPercent = (value) => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return "0%";
+  const rounded = Math.round(numeric * 10) / 10;
+  return `${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}%`;
+};
+
 const classifyMediaType = (post) => {
   const rawMediaType = String(post.mediaType || post.media_type || "").toUpperCase();
   const mediaProductType = String(post.mediaProductType || post.media_product_type || "").toUpperCase();
@@ -371,6 +395,14 @@ const classifyMediaType = (post) => {
   if (isCarouselType(rawMediaType) || isCarouselType(mediaProductType) || hasChildren) return "CAROUSEL";
   if (rawMediaType === "VIDEO" || rawMediaType === "REEL" || mediaProductType === "REEL" || mediaProductType === "VIDEO") return "VIDEO";
   return "IMAGE";
+};
+
+const classifyViewContentType = (post) => {
+  const mediaProductType = String(post.mediaProductType || post.media_product_type || "").toUpperCase();
+  const mediaType = String(post.mediaType || post.media_type || "").toUpperCase();
+  if (mediaProductType === "REELS" || mediaProductType === "REEL" || mediaType === "REEL") return "REELS";
+  if (mediaProductType === "STORY" || mediaType === "STORY") return "STORIES";
+  return "POSTS";
 };
 
 const analyzeBestTimes = (posts) => {
@@ -464,6 +496,17 @@ const IG_CONTENT_LABEL = {
   IMAGE: "Imagem",
   VIDEO: "Vídeo",
   CAROUSEL: "Carrossel",
+};
+const IG_VIEW_TYPE_ORDER = ["REELS", "POSTS", "STORIES"];
+const IG_VIEW_TYPE_LABEL = {
+  REELS: "Reels",
+  POSTS: "Posts",
+  STORIES: "Stories",
+};
+const IG_VIEW_TYPE_COLORS = {
+  REELS: "#6366f1",
+  POSTS: "#ec4899",
+  STORIES: "#f59e0b",
 };
 
 const BubbleTooltip = ({ active, payload, suffix = "" }) => {
@@ -587,7 +630,7 @@ export default function InstagramDashboard() {
     [accountSnapshotKey, sinceParam, untilParam],
   );
   const postsInsightsCacheKey = useMemo(
-    () => makeDashboardCacheKey("instagram-posts-insights", accountSnapshotKey, sinceParam || "auto", untilParam || "auto"),
+    () => makeDashboardCacheKey("instagram-posts-insights", accountSnapshotKey, POSTS_INSIGHTS_LIMIT, sinceParam || "auto", untilParam || "auto"),
     [accountSnapshotKey, sinceParam, untilParam],
   );
   const sinceDate = useMemo(() => parseQueryDate(sinceParam), [sinceParam]);
@@ -1170,7 +1213,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
     setRecentPostsError("");
 
     const url = (() => {
-      const params = new URLSearchParams({ igUserId: accountConfig.instagramUserId, limit: "5" });
+      const params = new URLSearchParams({ igUserId: accountConfig.instagramUserId, limit: String(POSTS_INSIGHTS_LIMIT) });
       if (sinceParam) params.set("since", sinceParam);
       if (untilParam) params.set("until", untilParam);
       return `${API_BASE_URL}/api/instagram/posts/insights?${params.toString()}`;
@@ -1721,6 +1764,41 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
     }));
   }, [filteredPosts]);
 
+  const viewsByContentType = useMemo(() => {
+    const baseSeries = IG_VIEW_TYPE_ORDER.map((type) => ({
+      key: type,
+      name: IG_VIEW_TYPE_LABEL[type] || type,
+      value: 0,
+      raw: 0,
+      fill: IG_VIEW_TYPE_COLORS[type] || "#6366f1",
+    }));
+    if (!recentPosts.length) return baseSeries;
+
+    const totals = new Map(IG_VIEW_TYPE_ORDER.map((type) => [type, 0]));
+    recentPosts.forEach((post) => {
+      const views = resolvePostViews(post);
+      const bucket = classifyViewContentType(post);
+      totals.set(bucket, (totals.get(bucket) || 0) + views);
+    });
+
+    const totalViews = Array.from(totals.values()).reduce((sum, value) => sum + value, 0);
+    if (!totalViews) return baseSeries;
+
+    return IG_VIEW_TYPE_ORDER
+      .map((type) => {
+        const raw = totals.get(type) || 0;
+        const percent = (raw / totalViews) * 100;
+        return {
+          key: type,
+          name: IG_VIEW_TYPE_LABEL[type] || type,
+          value: Math.round(percent * 10) / 10,
+          raw,
+          fill: IG_VIEW_TYPE_COLORS[type] || "#6366f1",
+        };
+      })
+      .filter((item) => item.raw > 0);
+  }, [recentPosts]);
+
   const postCalendar = useMemo(() => {
     const [calendarYear, calendarMonthIndex] = calendarMonth.split("-").map(Number);
     const baseDate = Number.isFinite(calendarYear) && Number.isFinite(calendarMonthIndex)
@@ -1775,6 +1853,12 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
   const topPosts = useMemo(() => (filteredPosts.length
     ? [...filteredPosts].sort((a, b) => sumInteractions(b) - sumInteractions(a)).slice(0, 6)
     : []), [filteredPosts]);
+
+  const topPostsByViews = useMemo(() => (
+    recentPosts.length
+      ? [...recentPosts].sort((a, b) => resolvePostViews(b) - resolvePostViews(a)).slice(0, 10)
+      : []
+  ), [recentPosts]);
 
   const followerGrowthSeriesSorted = useMemo(() => {
     if (metricsLoading) return [];
@@ -2800,15 +2884,17 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 <div style={{ height: 280 }}>
                   <ResponsiveContainer>
                     <BarChart
-                      data={[
-                        { name: 'Reels', value: Math.round((profileViewsTotal || 0) * 0.58), fill: '#6366f1' },
-                        { name: 'Posts', value: Math.round((profileViewsTotal || 0) * 0.27), fill: '#ec4899' },
-                        { name: 'Stories', value: Math.round((profileViewsTotal || 0) * 0.15), fill: '#f59e0b' }
-                      ]}
+                      data={viewsByContentType}
                     >
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                      <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={{ stroke: '#e5e7eb' }} />
-                      <YAxis tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={{ stroke: '#e5e7eb' }} />
+                      <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={{ stroke: '#e5e7eb' }} interval={0} />
+                      <YAxis
+                        tick={{ fontSize: 12, fill: '#6b7280' }}
+                        axisLine={{ stroke: '#e5e7eb' }}
+                        domain={[0, 100]}
+                        ticks={[0, 25, 50, 75, 100]}
+                        tickFormatter={(value) => formatPercent(value)}
+                      />
                       <Tooltip
                         contentStyle={{
                           background: 'white',
@@ -2817,14 +2903,15 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                           padding: '12px',
                           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
                         }}
-                        formatter={(value) => formatNumber(value)}
+                        formatter={(value, name, props) => {
+                          const raw = props?.payload?.raw;
+                          const rawLabel = Number.isFinite(raw) ? ` (${formatNumber(raw)})` : "";
+                          const label = props?.payload?.name || name;
+                          return [`${formatPercent(value)}${rawLabel}`, label];
+                        }}
                       />
-                      <Bar dataKey="value" radius={[8, 8, 0, 0]}>
-                        {[
-                          { name: 'Reels', value: Math.round((profileViewsTotal || 0) * 0.58), fill: '#6366f1' },
-                          { name: 'Posts', value: Math.round((profileViewsTotal || 0) * 0.27), fill: '#ec4899' },
-                          { name: 'Stories', value: Math.round((profileViewsTotal || 0) * 0.15), fill: '#f59e0b' }
-                        ].map((entry, index) => (
+                      <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={36}>
+                        {viewsByContentType.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.fill} />
                         ))}
                       </Bar>
@@ -2866,8 +2953,8 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   scrollbarWidth: 'thin',
                   scrollbarColor: '#6366f1 #f3f4f6'
                 }}>
-                  {topPosts.length ? topPosts.slice(0, 10).map((post) => {
-                    const reach = resolvePostMetric(post, "reach");
+                  {topPostsByViews.length ? topPostsByViews.map((post) => {
+                    const views = resolvePostViews(post);
                     const previewUrl = [
                       post.previewUrl,
                       post.preview_url,
@@ -2945,7 +3032,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                             color: 'white'
                           }}>
                             <div style={{ fontSize: '20px', fontWeight: 700 }}>
-                              {formatNumber(reach || 0)}
+                              {formatNumber(views)}
                             </div>
                             <div style={{ fontSize: '11px', opacity: 0.9, marginTop: '2px' }}>
                               visualizações
@@ -3993,7 +4080,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             </div>
             <div className="ig-analytics-card__body" style={{ padding: 0 }}>
               <PostsTable
-                posts={recentPosts}
+                posts={recentPosts.slice(0, RECENT_POSTS_TABLE_LIMIT)}
                 loading={recentPostsLoading}
                 error={recentPostsError}
               />
