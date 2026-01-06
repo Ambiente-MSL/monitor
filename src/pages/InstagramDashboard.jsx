@@ -211,11 +211,38 @@ const getNestedValue = (object, path) => {
 
 // Backend sempre retorna formato consistente (meta.py linhas 834-848)
 const POST_METRIC_PATHS = {
-  likes: [["likes"]],
-  comments: [["comments"]],
-  shares: [["shares"]],
-  saves: [["saves"]],
-  reach: [["reach"]],
+  likes: [
+    ["likes"],
+    ["likeCount"],
+    ["like_count"],
+    ["insights", "likes", "value"],
+  ],
+  comments: [
+    ["comments"],
+    ["commentsCount"],
+    ["comments_count"],
+    ["insights", "comments", "value"],
+  ],
+  shares: [
+    ["shares"],
+    ["shareCount"],
+    ["shares_count"],
+    ["insights", "shares", "value"],
+  ],
+  saves: [
+    ["saves"],
+    ["saveCount"],
+    ["saved"],
+    ["saved_count"],
+    ["insights", "saves", "value"],
+    ["insights", "saved", "value"],
+  ],
+  reach: [
+    ["reach"],
+    ["reachCount"],
+    ["reach_count"],
+    ["insights", "reach", "value"],
+  ],
 };
 
 const resolvePostMetric = (post, metric, fallback = 0) => {

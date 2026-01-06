@@ -110,8 +110,34 @@ const PostsTable = ({ posts, loading, error }) => {
   };
 
   const resolvePostMetric = (post, metricKey, fallback = 0) => {
-    const value = post[metricKey] ?? post[`${metricKey}_count`] ?? fallback;
-    return Number(value) || fallback;
+    const candidates = [
+      post?.[metricKey],
+      post?.[`${metricKey}_count`],
+      post?.[`${metricKey}Count`],
+    ];
+
+    if (metricKey === 'likes') {
+      candidates.push(post?.likeCount, post?.like_count);
+    } else if (metricKey === 'comments') {
+      candidates.push(post?.commentsCount, post?.comments_count);
+    } else if (metricKey === 'saves') {
+      candidates.push(post?.saveCount, post?.saved, post?.saved_count);
+    } else if (metricKey === 'shares') {
+      candidates.push(post?.shareCount, post?.shares_count);
+    } else if (metricKey === 'reach') {
+      candidates.push(post?.reachCount, post?.reach_count);
+    } else if (metricKey === 'plays') {
+      candidates.push(post?.playCount, post?.plays_count, post?.videoViews, post?.video_views);
+    } else if (metricKey === 'interactions') {
+      candidates.push(post?.totalInteractions, post?.total_interactions);
+    }
+
+    for (const candidate of candidates) {
+      if (candidate == null) continue;
+      const numeric = Number(candidate);
+      if (Number.isFinite(numeric)) return numeric;
+    }
+    return fallback;
   };
 
   const extractNumber = (value, fallback) => {
