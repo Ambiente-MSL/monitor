@@ -29,6 +29,7 @@ import {
   ReferenceDot,
   ReferenceLine,
   Sector,
+  Brush,
 } from "recharts";
 import {
   BarChart3,
@@ -2005,14 +2006,6 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
       : []
   ), [recentPosts]);
 
-  const followerSeriesSorted = useMemo(() => {
-    if (metricsLoading) return [];
-    if (!followerSeriesNormalized.length) return [];
-    return [...followerSeriesNormalized]
-      .filter((entry) => entry?.date && Number.isFinite(entry.value))
-      .sort((a, b) => (a.date > b.date ? 1 : -1));
-  }, [followerSeriesNormalized, metricsLoading]);
-
   const followerGrowthSeriesSorted = useMemo(() => {
     if (metricsLoading) return [];
     const source = followerSeriesInRange.length ? followerSeriesInRange : followerSeriesNormalized;
@@ -2024,114 +2017,50 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
 
   const followerGrowthChartData = useMemo(() => {
     if (metricsLoading) return [];
-    if (!followerGrowthSeriesSorted.length) {
-      if (metricsError) return [];
-      return [];
-    }
-
-    const baselineSeries = followerSeriesSorted.length ? followerSeriesSorted : followerGrowthSeriesSorted;
-    const valuesByDate = new Map();
-    baselineSeries.forEach((entry) => {
-      if (!entry?.date) return;
-      const numericValue = extractNumber(entry.value, null);
-      if (numericValue == null) return;
-      valuesByDate.set(entry.date, numericValue);
-    });
-
-    const startDate = sinceDate
-      ? startOfDay(sinceDate)
-      : new Date(`${followerGrowthSeriesSorted[0].date}T00:00:00`);
-    const endDate = untilDate
-      ? endOfDay(untilDate)
-      : new Date(`${followerGrowthSeriesSorted[followerGrowthSeriesSorted.length - 1].date}T00:00:00`);
-
-    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return [];
-
-    const rangeStartKey = startDate.toISOString().slice(0, 10);
-    let previousValue = null;
-
-    if (sinceDate && baselineSeries.length) {
-      for (let index = baselineSeries.length - 1; index >= 0; index -= 1) {
-        const entryDate = baselineSeries[index]?.date;
-        if (entryDate && entryDate < rangeStartKey) {
-          previousValue = extractNumber(baselineSeries[index]?.value, null);
-          break;
+    if (followerGrowthSeriesSorted.length) {
+      let previousValue = null;
+      return followerGrowthSeriesSorted.map((entry, index) => {
+        const dateKey = entry.date || null;
+        const parsedDate = dateKey ? new Date(`${dateKey}T00:00:00`) : null;
+        const validDate = parsedDate && !Number.isNaN(parsedDate.getTime()) ? parsedDate : null;
+        const monthLabel = validDate ? MONTH_SHORT_PT[validDate.getMonth()] || "" : "";
+        const dayLabel = validDate ? String(validDate.getDate()) : "";
+        const label = validDate && monthLabel ? `${dayLabel}/${monthLabel}` : entry.label || `${index + 1}`;
+        const tooltipDate = validDate && monthLabel
+          ? `${String(validDate.getDate()).padStart(2, "0")} - ${monthLabel} - ${validDate.getFullYear()}`
+          : dateKey || label;
+        const currentValue = extractNumber(entry.value, null);
+        let growthValue = 0;
+        if (previousValue != null && currentValue != null) {
+          const diff = currentValue - previousValue;
+          growthValue = Number.isFinite(diff) ? Math.max(0, diff) : 0;
         }
-      }
+        previousValue = currentValue != null ? currentValue : previousValue;
+        return {
+          label,
+          value: growthValue,
+          tooltipDate,
+        };
+      });
     }
 
-    const days = eachDayOfInterval({ start: startOfDay(startDate), end: startOfDay(endDate) });
-    return days.map((dateObj, index) => {
-      const dateKey = dateObj.toISOString().slice(0, 10);
-      const currentValue = valuesByDate.has(dateKey) ? extractNumber(valuesByDate.get(dateKey), null) : null;
-      let growthValue = 0;
-      if (previousValue != null && currentValue != null) {
-        const diff = currentValue - previousValue;
-        growthValue = Number.isFinite(diff) ? Math.max(0, diff) : 0;
-      }
-      if (currentValue != null) {
-        previousValue = currentValue;
-      }
-
-      const monthLabel = MONTH_SHORT_PT[dateObj.getMonth()] || "";
-      const dayLabel = String(dateObj.getDate()).padStart(2, "0");
-      const label = monthLabel ? `${dayLabel}/${monthLabel}` : `${index + 1}`;
-      const tooltipDate = monthLabel
-        ? `${dayLabel} - ${monthLabel} - ${dateObj.getFullYear()}`
-        : dateKey || label;
-
-      return {
-        dateKey,
-        label,
-        value: growthValue,
-        tooltipDate,
-      };
-    });
-  }, [
-    followerGrowthSeriesSorted,
-    followerSeriesSorted,
-    metricsError,
-    metricsLoading,
-    sinceDate,
-    untilDate,
-  ]);
-
-  const followerGrowthRangeDays = useMemo(() => {
-    if (sinceDate && untilDate) {
-      return differenceInCalendarDays(endOfDay(untilDate), startOfDay(sinceDate)) + 1;
-    }
-    return followerGrowthChartData.length || 0;
-  }, [sinceDate, untilDate, followerGrowthChartData.length]);
-
-  const formatFollowerGrowthAxisTick = useCallback((value) => {
-    if (!value) return "";
-    const parsedDate = new Date(`${value}T00:00:00`);
-    if (Number.isNaN(parsedDate.getTime())) return value;
-    if (followerGrowthRangeDays > 31) return SHORT_MONTH_FORMATTER.format(parsedDate);
-    return SHORT_DATE_FORMATTER.format(parsedDate);
-  }, [followerGrowthRangeDays]);
+    if (metricsError) return [];
+    return [];
+  }, [followerGrowthSeriesSorted, metricsError, metricsLoading]);
 
   const followerGrowthBarSize = useMemo(() => {
     const length = followerGrowthChartData.length;
-    if (length <= 15) return 28;
-    if (length <= 45) return 18;
-    return 12;
+    if (length <= 15) return 36;
+    if (length <= 30) return 18;
+    return undefined;
   }, [followerGrowthChartData.length]);
 
   const followerGrowthBarCategoryGap = useMemo(() => {
     const length = followerGrowthChartData.length;
-    if (length > 120) return "8%";
-    if (length > 60) return "16%";
-    return "30%";
+    if (length > 120) return "5%";
+    if (length > 60) return "10%";
+    return "35%";
   }, [followerGrowthChartData.length]);
-
-  const followerGrowthChartWidth = useMemo(() => {
-    const length = followerGrowthChartData.length;
-    if (!length) return 0;
-    const barWidth = followerGrowthBarSize || 12;
-    const gap = length > 60 ? 10 : 16;
-    return Math.max(360, length * (barWidth + gap));
-  }, [followerGrowthChartData.length, followerGrowthBarSize]);
 
   const followerGrowthDomain = useMemo(() => {
     if (!followerGrowthChartData.length) return [0, "auto"];
@@ -3931,12 +3860,10 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 {metricsLoading ? (
                   <div className="ig-chart-skeleton ig-chart-skeleton--compact" aria-hidden="true" />
                 ) : followerGrowthChartData.length ? (
-                  <div style={{ overflowX: "auto", paddingBottom: "8px" }}>
+                  <ResponsiveContainer width="100%" height={followerGrowthChartData.length > 15 ? 380 : 280}>
                     <BarChart
-                      width={followerGrowthChartWidth}
-                      height={followerGrowthChartData.length > 15 ? 380 : 280}
                       data={followerGrowthChartData}
-                      margin={{ top: 16, right: 16, bottom: 48, left: 0 }}
+                      margin={{ top: 16, right: 16, bottom: followerGrowthChartData.length > 15 ? 70 : 32, left: 0 }}
                       barCategoryGap={followerGrowthBarCategoryGap}
                     >
                         <defs>
@@ -3952,14 +3879,12 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                         </defs>
                         <CartesianGrid stroke="#e5e7eb" strokeDasharray="4 8" vertical={false} />
                         <XAxis
-                          dataKey="dateKey"
+                          dataKey="label"
                           tick={{ fill: "#9ca3af", fontSize: 12 }}
                           axisLine={false}
                           tickLine={false}
-                          interval="preserveStartEnd"
-                          minTickGap={48}
+                          interval={followerGrowthChartData.length > 15 ? "preserveEnd" : 0}
                           height={32}
-                          tickFormatter={formatFollowerGrowthAxisTick}
                         />
                         <YAxis
                           tick={{ fill: "#9ca3af", fontSize: 12 }}
@@ -3996,7 +3921,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                         {highlightedFollowerGrowthPoint ? (
                           <>
                             <ReferenceLine
-                              x={highlightedFollowerGrowthPoint.dateKey || highlightedFollowerGrowthPoint.label}
+                              x={highlightedFollowerGrowthPoint.label}
                               stroke="#111827"
                               strokeDasharray="4 4"
                               strokeOpacity={0.3}
@@ -4008,7 +3933,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                               strokeOpacity={0.35}
                             />
                             <ReferenceDot
-                              x={highlightedFollowerGrowthPoint.dateKey || highlightedFollowerGrowthPoint.label}
+                              x={highlightedFollowerGrowthPoint.label}
                               y={extractNumber(highlightedFollowerGrowthPoint.value, 0)}
                               r={6}
                               fill="#111827"
@@ -4034,8 +3959,24 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                             />
                           ))}
                         </Bar>
+                        {followerGrowthChartData.length > 15 && (
+                          <Brush
+                            dataKey="label"
+                            height={40}
+                            stroke="#c084fc"
+                            fill="transparent"
+                            startIndex={0}
+                            endIndex={followerGrowthChartData.length - 1}
+                            travellerWidth={14}
+                            y={280}
+                          >
+                            <BarChart>
+                              <Bar dataKey="value" fill="#e9d5ff" radius={[3, 3, 0, 0]} />
+                            </BarChart>
+                          </Brush>
+                        )}
                       </BarChart>
-                    </div>
+                    </ResponsiveContainer>
                 ) : (
                   <div className="ig-empty-state">Sem dados disponiveis.</div>
                 )}
