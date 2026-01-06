@@ -122,6 +122,9 @@ const HERO_TABS = [
 const toUnixSeconds = (date) => Math.floor(date.getTime() / 1000);
 
 const SHORT_DATE_FORMATTER = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" });
+const SHORT_MONTH_FORMATTER = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" });
+const MONTH_YEAR_FORMATTER = new Intl.DateTimeFormat("pt-BR", { month: "short", year: "2-digit" });
+const FULL_DATE_FORMATTER = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
 
 const mapByKey = (items) => {
   const map = {};
@@ -1659,10 +1662,16 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
     };
 
     return reachSeriesBase
-      .map((entry) => ({
-        ...entry,
-        value: extractNumber(entry.value, 0),
-      }))
+      .map((entry) => {
+        const dateKey = entry?.dateKey || resolveEntryDateKey(entry);
+        const label = entry?.label || (dateKey ? SHORT_DATE_FORMATTER.format(new Date(`${dateKey}T00:00:00`)) : "");
+        return {
+          ...entry,
+          dateKey,
+          label,
+          value: extractNumber(entry.value, 0),
+        };
+      })
       .filter((entry) => {
         const entryKey = resolveEntryDateKey(entry);
         if (!entryKey) return true;
@@ -1678,11 +1687,43 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
     return normalizedReachSeries;
   }, [metricsError, metricsLoading, normalizedReachSeries]);
 
-  const reachXAxisInterval = useMemo(() => {
-    if (profileReachData.length <= 7) return 0;
-    // Mostrar ~7 ticks no eixo X, mas mantendo a série completa no gráfico.
-    return Math.max(0, Math.ceil(profileReachData.length / 7) - 1);
-  }, [profileReachData.length]);
+  const reachRangeDays = useMemo(() => {
+    if (sinceDate && untilDate) {
+      return differenceInCalendarDays(endOfDay(untilDate), startOfDay(sinceDate)) + 1;
+    }
+    return profileReachData.length || 0;
+  }, [sinceDate, untilDate, profileReachData.length]);
+
+  const reachXAxisTicks = useMemo(() => {
+    if (!profileReachData.length) return [];
+    const keys = profileReachData.map((entry) => entry.dateKey || entry.label).filter(Boolean);
+    if (keys.length <= 2) return keys;
+    const targetTicks = reachRangeDays >= 180 ? 6 : reachRangeDays >= 90 ? 7 : 8;
+    const step = Math.max(1, Math.floor((keys.length - 1) / Math.max(targetTicks - 1, 1)));
+    const ticks = [];
+    for (let index = 0; index < keys.length; index += step) {
+      ticks.push(keys[index]);
+    }
+    const lastKey = keys[keys.length - 1];
+    if (ticks[ticks.length - 1] !== lastKey) ticks.push(lastKey);
+    return ticks;
+  }, [profileReachData, reachRangeDays]);
+
+  const formatReachAxisTick = useCallback((value) => {
+    if (!value) return "";
+    const parsedDate = new Date(`${value}T00:00:00`);
+    if (Number.isNaN(parsedDate.getTime())) return value;
+    if (reachRangeDays >= 180) return MONTH_YEAR_FORMATTER.format(parsedDate);
+    if (reachRangeDays >= 60) return SHORT_MONTH_FORMATTER.format(parsedDate);
+    return SHORT_DATE_FORMATTER.format(parsedDate);
+  }, [reachRangeDays]);
+
+  const formatReachTooltipLabel = useCallback((value) => {
+    if (!value) return "Periodo";
+    const parsedDate = new Date(`${value}T00:00:00`);
+    if (Number.isNaN(parsedDate.getTime())) return value;
+    return FULL_DATE_FORMATTER.format(parsedDate);
+  }, []);
 
   const profileReachTotal = useMemo(() => normalizedReachSeries.reduce(
     (acc, entry) => acc + (Number.isFinite(entry.value) ? entry.value : 0),
@@ -3670,7 +3711,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   <ResponsiveContainer width="100%" height={300}>
                     <ComposedChart
                       data={profileReachData}
-                      margin={{ top: 24, right: 28, left: 12, bottom: 12 }}
+                      margin={{ top: 24, right: 28, left: 12, bottom: 24 }}
                     >
                       <defs>
                         <linearGradient id="igReachGradient" x1="0" y1="0" x2="1" y2="0">
@@ -3690,32 +3731,17 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                         strokeOpacity={0.5}
                       />
                       <XAxis
-                        dataKey="label"
+                        dataKey="dateKey"
                         tick={{ fill: '#6b7280', fontFamily: 'Lato, sans-serif' }}
                         fontSize={12}
                         tickLine={false}
                         axisLine={{ stroke: '#e5e7eb' }}
-                        interval={reachXAxisInterval}
+                        ticks={reachXAxisTicks}
+                        interval={0}
                         angle={0}
-                        tickFormatter={(value) => {
-                          if (!value) return '';
-                          const parts = value.split('/');
-                          if (parts.length === 2) {
-                            const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-                            const day = parts[0];
-                            const monthPart = parts[1];
-
-                            if (monthNames.includes(monthPart)) {
-                              return `${day} ${monthPart}`;
-                            }
-
-                            const monthIndex = parseInt(monthPart) - 1;
-                            if (!isNaN(monthIndex) && monthIndex >= 0 && monthIndex < 12) {
-                              return `${day} ${monthNames[monthIndex]}`;
-                            }
-                          }
-                          return value;
-                        }}
+                        minTickGap={18}
+                        padding={{ left: 8, right: 8 }}
+                        tickFormatter={formatReachAxisTick}
                       />
                       <YAxis
                         tick={{ fill: '#6b7280', fontFamily: 'Lato, sans-serif' }}
@@ -3739,7 +3765,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                           if (!active || !payload?.length) return null;
                           const [{ payload: item, value }] = payload;
                           const numericValue = Number(value ?? item?.value ?? 0);
-                          const label = item?.label ?? "Período";
+                          const label = formatReachTooltipLabel(item?.dateKey || item?.label);
                           const isPeak =
                             !!peakReachPoint &&
                             item?.dateKey === peakReachPoint.dateKey &&
@@ -3788,7 +3814,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                       {peakReachPoint ? (
                         <>
                           <ReferenceLine
-                            x={peakReachPoint.label}
+                            x={peakReachPoint.dateKey || peakReachPoint.label}
                             stroke="#111827"
                             strokeDasharray="4 4"
                             strokeOpacity={0.45}
@@ -3800,7 +3826,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                             strokeOpacity={0.45}
                           />
                           <ReferenceDot
-                            x={peakReachPoint.label}
+                            x={peakReachPoint.dateKey || peakReachPoint.label}
                             y={peakReachPoint.value}
                             r={6}
                             fill="#111827"
