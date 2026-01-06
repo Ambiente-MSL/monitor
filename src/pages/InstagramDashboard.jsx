@@ -2531,23 +2531,6 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   </svg>
                   <span style={{ fontSize: '14px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Visualizações</span>
                 </div>
-                <h2 style={{
-                  margin: 0,
-                  fontSize: '36px',
-                  fontWeight: 700,
-                  color: 'white',
-                  lineHeight: 1.2
-                }}>
-                  Análise Detalhada
-                </h2>
-                <p style={{
-                  margin: '8px 0 0 0',
-                  fontSize: '16px',
-                  color: 'rgba(255, 255, 255, 0.9)',
-                  fontWeight: 400
-                }}>
-                  Acompanhe as visualizações dos seus conteúdos (Reels, Feed e Stories) com insights detalhados
-                </p>
               </div>
 
               {/* Cards de KPI rápido na hero */}
@@ -2696,79 +2679,6 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   <div className="ig-empty-state" style={{ height: 300 }}>Sem dados de visualizações.</div>
                 )}
               </section>
-
-              {/* Cards de métricas detalhadas - Design aprimorado */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
-                <div className="ig-card-white" style={{
-                  padding: '24px',
-                  textAlign: 'center',
-                  borderRadius: '16px',
-                  background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(99, 102, 241, 0.02) 100%)',
-                  border: '1px solid rgba(99, 102, 241, 0.15)',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}>
-                  <div style={{
-                    position: 'absolute',
-                    top: -20,
-                    right: -20,
-                    width: 80,
-                    height: 80,
-                    background: 'radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%)',
-                    borderRadius: '50%'
-                  }} />
-                  <div style={{ fontSize: '36px', fontWeight: 800, color: '#6366f1', marginBottom: '8px', position: 'relative' }}>
-                    {formatNumber(profileViewsTotal ?? null)}
-                  </div>
-                  <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Total de Visualizações</div>
-                </div>
-                <div className="ig-card-white" style={{
-                  padding: '24px',
-                  textAlign: 'center',
-                  borderRadius: '16px',
-                  background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.02) 100%)',
-                  border: '1px solid rgba(16, 185, 129, 0.15)',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}>
-                  <div style={{
-                    position: 'absolute',
-                    top: -20,
-                    right: -20,
-                    width: 80,
-                    height: 80,
-                    background: 'radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, transparent 70%)',
-                    borderRadius: '50%'
-                  }} />
-                  <div style={{ fontSize: '36px', fontWeight: 800, color: '#10b981', marginBottom: '8px', position: 'relative' }}>
-                    {profileViewsDeltaPct != null ? `${profileViewsDeltaPct > 0 ? '+' : ''}${profileViewsDeltaPct}%` : '--'}
-                  </div>
-                  <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Crescimento (%)</div>
-                </div>
-                <div className="ig-card-white" style={{
-                  padding: '24px',
-                  textAlign: 'center',
-                  borderRadius: '16px',
-                  background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(245, 158, 11, 0.02) 100%)',
-                  border: '1px solid rgba(245, 158, 11, 0.15)',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}>
-                  <div style={{
-                    position: 'absolute',
-                    top: -20,
-                    right: -20,
-                    width: 80,
-                    height: 80,
-                    background: 'radial-gradient(circle, rgba(245, 158, 11, 0.1) 0%, transparent 70%)',
-                    borderRadius: '50%'
-                  }} />
-                  <div style={{ fontSize: '36px', fontWeight: 800, color: '#f59e0b', marginBottom: '8px', position: 'relative' }}>
-                    {formatNumber(profileVisitorsTotals?.total ?? null)}
-                  </div>
-                  <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Visitantes Únicos</div>
-                </div>
-              </div>
 
               {/* Gráfico Donut - Seguidores vs Não Seguidores */}
               <section className="ig-card-white" style={{
