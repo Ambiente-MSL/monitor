@@ -2170,13 +2170,30 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
 
   // Série de dados para o gráfico de Audiência (Seguidores vs Não Seguidores)
   const audienceTypeSeries = useMemo(() => {
+    const followersFromVisitors = extractNumber(profileVisitorsTotals?.followers, null);
+    const nonFollowersFromVisitors = extractNumber(profileVisitorsTotals?.nonFollowers, null);
+    const otherFromVisitors = extractNumber(profileVisitorsTotals?.other, null);
+    const totalFromVisitors = extractNumber(profileVisitorsTotals?.total, null);
+    const followersValue = followersFromVisitors ?? 0;
+    const nonFollowerValue = (nonFollowersFromVisitors ?? 0) + (otherFromVisitors ?? 0);
+    const totalVisitors = totalFromVisitors ?? (followersValue + nonFollowerValue);
+
+    if (totalVisitors > 0 && (followersValue > 0 || nonFollowerValue > 0)) {
+      const followerPct = (followersValue / totalVisitors) * 100;
+      const nonFollowerPct = 100 - followerPct;
+      return [
+        { name: "Não Seguidores", value: Math.round(nonFollowerPct * 10) / 10 },
+        { name: "Seguidores", value: Math.round(followerPct * 10) / 10 },
+      ];
+    }
+
     // Tenta calcular a partir dos dados reais de alcance
     const reachValue = extractNumber(reachMetric?.value, 0);
-    const followersValue = extractNumber(followersMetric?.value, 0);
+    const followersValueMetric = extractNumber(followersMetric?.value, 0);
 
-    if (reachValue > 0 && followersValue > 0) {
+    if (reachValue > 0 && followersValueMetric > 0) {
       // Estima percentual de não seguidores baseado no alcance vs seguidores
-      const nonFollowerReachEstimate = Math.max(0, reachValue - followersValue);
+      const nonFollowerReachEstimate = Math.max(0, reachValue - followersValueMetric);
       const totalReach = reachValue;
 
       const nonFollowerPct = totalReach > 0 ? (nonFollowerReachEstimate / totalReach) * 100 : 35;
@@ -2189,7 +2206,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
     }
 
     return DEFAULT_AUDIENCE_TYPE;
-  }, [reachMetric, followersMetric]);
+  }, [profileVisitorsTotals, reachMetric, followersMetric]);
 
   // const heatmapData = useMemo(() => DEFAULT_HEATMAP_MATRIX, []);
 
