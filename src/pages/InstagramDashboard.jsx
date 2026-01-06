@@ -65,7 +65,7 @@ const STOP_WORDS = new Set([
 
 const IG_TOPBAR_PRESETS = [
   { id: "7d", label: "7 dias", days: 7 },
-  { id: "1m", label: "1 mês", days: 30 },
+  { id: "1m", label: "1 mÃªs", days: 30 },
   { id: "3m", label: "3 meses", days: 90 },
   { id: "6m", label: "6 meses", days: 180 },
   { id: "1y", label: "1 ano", days: 365 },
@@ -79,7 +79,7 @@ const DEFAULT_GENDER_STATS = [
 ];
 
 const DEFAULT_AUDIENCE_TYPE = [
-  { name: "Não Seguidores", value: 35 },
+  { name: "NÃ£o Seguidores", value: 35 },
   { name: "Seguidores", value: 65 },
 ];
 
@@ -111,8 +111,8 @@ const HERO_TABS = [
   { id: "instagram", label: "Instagram", href: "/instagram", icon: InstagramIcon, iconClass: "hero-icon-instagram" },
   { id: "facebook", label: "Facebook", href: "/facebook", icon: Facebook, iconClass: "hero-icon-facebook" },
   { id: "ads", label: "Ads", href: "/ads", icon: BarChart3, iconClass: "hero-icon-ads" },
-  { id: "reports", label: "Relatórios", href: "/relatorios", icon: FileText, iconClass: "hero-icon-reports" },
-  { id: "settings", label: "Configurações", href: "/configuracoes", icon: Settings, iconClass: "hero-icon-settings" },
+  { id: "reports", label: "RelatÃ³rios", href: "/relatorios", icon: FileText, iconClass: "hero-icon-reports" },
+  { id: "settings", label: "ConfiguraÃ§Ãµes", href: "/configuracoes", icon: Settings, iconClass: "hero-icon-settings" },
   { id: "admin", label: "Admin", href: "/admin", icon: Shield, iconClass: "hero-icon-admin" },
 ];
 
@@ -440,7 +440,7 @@ const buildHashtagFrequency = (posts) => {
 const IG_DONUT_COLORS = ["#8b5cf6", "#f97316", "#ec4899", "#14b8a6"];
 const IG_CONTENT_LABEL = {
   IMAGE: "Imagem",
-  VIDEO: "Vídeo",
+  VIDEO: "VÃ­deo",
   CAROUSEL: "Carrossel",
 };
 
@@ -573,14 +573,14 @@ export default function InstagramDashboard() {
   const sinceIso = useMemo(() => toUtcDateString(sinceDate), [sinceDate]);
   const untilIso = useMemo(() => toUtcDateString(untilDate), [untilDate]);
 
-  // Estado para contador de comentários da wordcloud
+  // Estado para contador de comentÃ¡rios da wordcloud
   const [commentsCount, setCommentsCount] = useState(null);
 
   useEffect(() => {
     setCommentsCount(null);
   }, [accountSnapshotKey]);
 
-  // Estado para controlar visualização detalhada
+  // Estado para controlar visualizaÃ§Ã£o detalhada
   const [showDetailedView, setShowDetailedView] = useState(false);
   const [showInteractionsDetail, setShowInteractionsDetail] = useState(false);
   const [interactionsTab, setInteractionsTab] = useState('reels'); // reels, posts, stories
@@ -751,7 +751,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
       setMetricsLoading(false);
       setMetricsFetching(false);
       setMetricsNotice("");
-      setMetricsError("Conta do Instagram não configurada.");
+      setMetricsError("Conta do Instagram nÃ£o configurada.");
       return;
     }
 
@@ -764,8 +764,8 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
       const cachedReachSeries = Array.isArray(cachedMetrics.reachSeries) ? cachedMetrics.reachSeries : [];
       const cachedReachMetricSeries = Array.isArray(cachedReachMetric?.timeseries) ? cachedReachMetric.timeseries : [];
       const hasReachTimeseries = cachedReachSeries.length > 0 || cachedReachMetricSeries.length > 0;
-      // Cache antigo/limitado pode ter o total de alcance, mas sem série diária.
-      // Nesse caso, força re-fetch para preencher o gráfico com dados reais.
+      // Cache antigo/limitado pode ter o total de alcance, mas sem sÃ©rie diÃ¡ria.
+      // Nesse caso, forÃ§a re-fetch para preencher o grÃ¡fico com dados reais.
       const shouldBypassCacheForReach = cachedReachValue != null && cachedReachValue > 0 && !hasReachTimeseries;
 
       setMetrics(Array.isArray(cachedMetrics.metrics) ? cachedMetrics.metrics : []);
@@ -842,7 +842,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
         const text = await resp.text();
         const json = safeParseJson(text) || {};
         if (!resp.ok) {
-          const error = new Error(describeApiError(json, "Falha ao carregar métricas do Instagram."));
+          const error = new Error(describeApiError(json, "Falha ao carregar mÃ©tricas do Instagram."));
           error.status = resp.status;
           throw error;
         }
@@ -875,8 +875,8 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
       setMetricsLoading(false);
       setMetricsNotice(
         shouldRefreshForReach
-          ? "Atualizando série diária de alcance…"
-          : "Atualizando métricas do período selecionado (exibindo dados anteriores até carregar)…",
+          ? "Atualizando sÃ©rie diÃ¡ria de alcanceâ€¦"
+          : "Atualizando mÃ©tricas do perÃ­odo selecionado (exibindo dados anteriores atÃ© carregar)â€¦",
       );
     }
 
@@ -888,7 +888,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
       trackTimeout(setTimeout(() => {
         if (cancelled || metricsRequestIdRef.current !== requestId) return;
         setMetricsLoading(false);
-        setMetricsNotice("Atualizando métricas… isso pode levar alguns segundos na primeira vez.");
+        setMetricsNotice("Atualizando mÃ©tricasâ€¦ isso pode levar alguns segundos na primeira vez.");
       }, SOFT_LOADING_MS));
     }
 
@@ -940,9 +940,9 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
       } catch (err) {
         if (cancelled || metricsRequestIdRef.current !== requestId) return;
         if (err?.name === "AbortError") {
-          setMetricsError("Tempo esgotado ao carregar métricas do Instagram.");
+          setMetricsError("Tempo esgotado ao carregar mÃ©tricas do Instagram.");
         } else {
-          setMetricsError(err?.message || "Não foi possível atualizar.");
+          setMetricsError(err?.message || "NÃ£o foi possÃ­vel atualizar.");
         }
         setMetricsNotice("");
 
@@ -979,7 +979,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
     if (!accountConfig?.instagramUserId) {
       setPosts([]);
       setAccountInfo(null);
-      setPostsError("Conta do Instagram não configurada.");
+      setPostsError("Conta do Instagram nÃ£o configurada.");
       setLoadingPosts(false);
       setPostsFetching(false);
       setPostsNotice("");
@@ -1042,7 +1042,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
         const text = await resp.text();
         const json = safeParseJson(text) || {};
         if (!resp.ok) {
-          const error = new Error(describeApiError(json, "Não foi possível carregar os posts."));
+          const error = new Error(describeApiError(json, "NÃ£o foi possÃ­vel carregar os posts."));
           error.status = resp.status;
           throw error;
         }
@@ -1068,7 +1068,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
       setPostsNotice("");
     } else {
       setLoadingPosts(false);
-      setPostsNotice("Atualizando posts do período selecionado (exibindo dados anteriores até carregar)…");
+      setPostsNotice("Atualizando posts do perÃ­odo selecionado (exibindo dados anteriores atÃ© carregar)â€¦");
     }
 
     setPostsFetching(true);
@@ -1078,7 +1078,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
       trackTimeout(setTimeout(() => {
         if (cancelled || postsRequestIdRef.current !== requestId) return;
         setLoadingPosts(false);
-        setPostsNotice("Atualizando posts… isso pode levar alguns segundos na primeira vez.");
+        setPostsNotice("Atualizando postsâ€¦ isso pode levar alguns segundos na primeira vez.");
       }, SOFT_LOADING_MS));
     }
 
@@ -1098,7 +1098,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
         if (err?.name === "AbortError") {
           setPostsError("Tempo esgotado ao carregar os posts do Instagram.");
         } else {
-          setPostsError(err?.message || "Não foi possível carregar os posts.");
+          setPostsError(err?.message || "NÃ£o foi possÃ­vel carregar os posts.");
         }
         setPostsNotice("");
 
@@ -1317,7 +1317,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
     });
   }, [posts, sinceDate, untilDate]);
 
-  // Calcula total de seguidores ganhos no período filtrado
+  // Calcula total de seguidores ganhos no perÃ­odo filtrado
   const followersDelta = useMemo(() => {
     if (metricsLoading) return null;
     const sumPositiveDiff = (series) => {
@@ -1497,7 +1497,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
 
   const reachXAxisInterval = useMemo(() => {
     if (profileReachData.length <= 7) return 0;
-    // Mostrar ~7 ticks no eixo X, mas mantendo a série completa no gráfico.
+    // Mostrar ~7 ticks no eixo X, mas mantendo a sÃ©rie completa no grÃ¡fico.
     return Math.max(0, Math.ceil(profileReachData.length / 7) - 1);
   }, [profileReachData.length]);
 
@@ -1732,7 +1732,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
         date,
         count,
         level,
-        tooltip: `${count} ${count === 1 ? "publicação" : "publicações"}`,
+        tooltip: `${count} ${count === 1 ? "publicaÃ§Ã£o" : "publicaÃ§Ãµes"}`,
       };
     });
 
@@ -1903,14 +1903,14 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
       : DEFAULT_GENDER_STATS
   ), [genderDistribution]);
 
-  // Série de dados para o gráfico de Audiência (Seguidores vs Não Seguidores)
+  // SÃ©rie de dados para o grÃ¡fico de AudiÃªncia (Seguidores vs NÃ£o Seguidores)
   const audienceTypeSeries = useMemo(() => {
     // Tenta calcular a partir dos dados reais de alcance
     const reachValue = extractNumber(reachMetric?.value, 0);
     const followersValue = extractNumber(followersMetric?.value, 0);
 
     if (reachValue > 0 && followersValue > 0) {
-      // Estima percentual de não seguidores baseado no alcance vs seguidores
+      // Estima percentual de nÃ£o seguidores baseado no alcance vs seguidores
       const nonFollowerReachEstimate = Math.max(0, reachValue - followersValue);
       const totalReach = reachValue;
 
@@ -1918,7 +1918,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
       const followerPct = 100 - nonFollowerPct;
 
       return [
-        { name: "Não Seguidores", value: Math.round(nonFollowerPct * 10) / 10 },
+        { name: "NÃ£o Seguidores", value: Math.round(nonFollowerPct * 10) / 10 },
         { name: "Seguidores", value: Math.round(followerPct * 10) / 10 },
       ];
     }
@@ -1959,7 +1959,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
       } catch (err) {
         if (cancelled) return;
         setCoverImage(null);
-        setCoverError(err?.message || "Não foi possível carregar a capa.");
+        setCoverError(err?.message || "NÃ£o foi possÃ­vel carregar a capa.");
       } finally {
         if (!cancelled) {
           setCoverLoading(false);
@@ -2002,7 +2002,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
         });
         setCoverImage(response?.cover?.url || response?.cover?.storage_url || dataUrl);
       } catch (err) {
-        setCoverError(err?.message || "Não foi possível salvar a capa.");
+        setCoverError(err?.message || "NÃ£o foi possÃ­vel salvar a capa.");
       } finally {
         setCoverLoading(false);
       }
@@ -2019,18 +2019,18 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
       });
       setCoverImage(null);
     } catch (err) {
-      setCoverError(err?.message || "Não foi possível remover a capa.");
+      setCoverError(err?.message || "NÃ£o foi possÃ­vel remover a capa.");
     } finally {
       setCoverLoading(false);
     }
   }, [accountId, apiFetch]);
 
-  // Renderização da visualização detalhada de Interações
+  // RenderizaÃ§Ã£o da visualizaÃ§Ã£o detalhada de InteraÃ§Ãµes
   if (showInteractionsDetail) {
     return (
       <div className="instagram-dashboard instagram-dashboard--clean">
         <div className="ig-clean-container">
-          {/* Degradê de fundo do Instagram */}
+          {/* DegradÃª de fundo do Instagram */}
           <div className="ig-hero-gradient" aria-hidden="true" />
 
           {/* Header com Logo Instagram */}
@@ -2043,11 +2043,11 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             </div>
           </div>
 
-          {/* Hero com navegação - Tema Rosa para Interações */}
+          {/* Hero com navegaÃ§Ã£o - Tema Rosa para InteraÃ§Ãµes */}
           <div className="ig-hero" style={{ marginTop: '20px', marginBottom: '32px' }}>
             <div className="ig-hero__background" style={{ background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)' }} />
             <div className="ig-hero__content">
-              {/* Navegação de volta */}
+              {/* NavegaÃ§Ã£o de volta */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <button
                   onClick={() => setShowInteractionsDetail(false)}
@@ -2076,7 +2076,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 </button>
               </div>
 
-              {/* Título e Métrica Principal */}
+              {/* TÃ­tulo e MÃ©trica Principal */}
               <div style={{ marginTop: '24px' }}>
                 <div style={{
                   display: 'flex',
@@ -2095,7 +2095,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   }}>
                     <Heart size={24} color="white" fill="white" />
                   </div>
-                  <span style={{ fontSize: '14px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Interações</span>
+                  <span style={{ fontSize: '14px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>InteraÃ§Ãµes</span>
                 </div>
                 <h2 style={{
                   margin: 0,
@@ -2104,23 +2104,23 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   color: 'white',
                   marginBottom: '12px'
                 }}>
-                  Análise Detalhada de Engajamento
+                  AnÃ¡lise Detalhada de Engajamento
                 </h2>
                 <p style={{ margin: 0, fontSize: '15px', color: 'rgba(255, 255, 255, 0.9)', lineHeight: 1.6, maxWidth: '600px' }}>
-                  Acompanhe as interações do seu público através de curtidas, comentários, salvamentos, compartilhamentos e reposts em diferentes tipos de conteúdo.
+                  Acompanhe as interaÃ§Ãµes do seu pÃºblico atravÃ©s de curtidas, comentÃ¡rios, salvamentos, compartilhamentos e reposts em diferentes tipos de conteÃºdo.
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Grid de Métricas Resumidas */}
+          {/* Grid de MÃ©tricas Resumidas */}
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
             gap: '20px',
             marginBottom: '32px'
           }}>
-            {/* Total de Interações */}
+            {/* Total de InteraÃ§Ãµes */}
             <div className="ig-card-white" style={{
               padding: '24px',
               textAlign: 'center',
@@ -2144,7 +2144,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               <div style={{ fontSize: '36px', fontWeight: 800, color: '#ec4899', marginBottom: '8px' }}>
                 {formatNumber(45832)}
               </div>
-              <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Total de Interações</div>
+              <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Total de InteraÃ§Ãµes</div>
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -2160,7 +2160,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               </div>
             </div>
 
-            {/* Pico de Interações */}
+            {/* Pico de InteraÃ§Ãµes */}
             <div className="ig-card-white" style={{
               padding: '24px',
               textAlign: 'center',
@@ -2177,11 +2177,11 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               <div style={{ fontSize: '36px', fontWeight: 800, color: '#ec4899', marginBottom: '8px', position: 'relative' }}>
                 {formatNumber(3847)}
               </div>
-              <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Pico de Interações (1 dia)</div>
+              <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Pico de InteraÃ§Ãµes (1 dia)</div>
             </div>
           </div>
 
-          {/* Tabs de Navegação */}
+          {/* Tabs de NavegaÃ§Ã£o */}
           <div style={{
             display: 'flex',
             gap: '12px',
@@ -2230,7 +2230,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             ))}
           </div>
 
-          {/* Métricas Detalhadas por Tipo */}
+          {/* MÃ©tricas Detalhadas por Tipo */}
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
@@ -2260,7 +2260,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
                 <MessageCircle size={22} color="#3b82f6" />
-                <span style={{ fontSize: '14px', color: '#6b7280', fontWeight: 600 }}>Comentários</span>
+                <span style={{ fontSize: '14px', color: '#6b7280', fontWeight: 600 }}>ComentÃ¡rios</span>
               </div>
               <div style={{ fontSize: '32px', fontWeight: 700, color: '#3b82f6' }}>
                 {formatNumber(4832)}
@@ -2349,9 +2349,9 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               gap: '20px'
             }}>
               {[
-                { id: 1, caption: 'Confira nossa nova coleção de produtos! ? Disponível agora na loja', likes: 12450, comments: 834, saves: 1203, shares: 456, thumbnail: '??' },
+                { id: 1, caption: 'Confira nossa nova coleÃ§Ã£o de produtos! ? DisponÃ­vel agora na loja', likes: 12450, comments: 834, saves: 1203, shares: 456, thumbnail: '??' },
                 { id: 2, caption: 'Dica do dia: Como aumentar o engajamento no Instagram ??', likes: 10230, comments: 645, saves: 892, shares: 324, thumbnail: '??' },
-                { id: 3, caption: 'Bastidores da nossa última produção ?? Foi incrível!', likes: 8650, comments: 423, saves: 567, shares: 234, thumbnail: '??' },
+                { id: 3, caption: 'Bastidores da nossa Ãºltima produÃ§Ã£o ?? Foi incrÃ­vel!', likes: 8650, comments: 423, saves: 567, shares: 234, thumbnail: '??' },
               ].map(item => (
                 <div key={item.id} style={{
                   background: 'white',
@@ -2429,12 +2429,12 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
     );
   }
 
-  // Renderização da visualização detalhada de Visualizações
+  // RenderizaÃ§Ã£o da visualizaÃ§Ã£o detalhada de VisualizaÃ§Ãµes
   if (showDetailedView) {
     return (
       <div className="instagram-dashboard instagram-dashboard--clean">
         <div className="ig-clean-container">
-          {/* Degradê de fundo do Instagram */}
+          {/* DegradÃª de fundo do Instagram */}
           <div className="ig-hero-gradient" aria-hidden="true" />
 
           {/* Header com Logo Instagram */}
@@ -2447,11 +2447,11 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             </div>
           </div>
 
-          {/* Hero com navegação */}
+          {/* Hero com navegaÃ§Ã£o */}
           <div className="ig-hero" style={{ marginTop: '20px', marginBottom: '32px' }}>
             <div className="ig-hero__background" />
             <div className="ig-hero__content">
-              {/* Navegação de volta */}
+              {/* NavegaÃ§Ã£o de volta */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <button
                   onClick={() => setShowDetailedView(false)}
@@ -2486,7 +2486,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 </button>
               </div>
 
-              {/* Título da seção */}
+              {/* TÃ­tulo da seÃ§Ã£o */}
               <div>
                 <div style={{
                   display: 'inline-flex',
@@ -2503,7 +2503,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                     <circle cx="12" cy="12" r="3" />
                   </svg>
-                  <span style={{ fontSize: '14px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Visualizações</span>
+                  <span style={{ fontSize: '14px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>VisualizaÃ§Ãµes</span>
                 </div>
                 <h2 style={{
                   margin: 0,
@@ -2512,7 +2512,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   color: 'white',
                   lineHeight: 1.2
                 }}>
-                  Análise Detalhada
+                  AnÃ¡lise Detalhada
                 </h2>
                 <p style={{
                   margin: '8px 0 0 0',
@@ -2520,11 +2520,11 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   color: 'rgba(255, 255, 255, 0.9)',
                   fontWeight: 400
                 }}>
-                  Acompanhe as visualizações dos seus conteúdos (Reels, Feed e Stories) com insights detalhados
+                  Acompanhe as visualizaÃ§Ãµes dos seus conteÃºdos (Reels, Feed e Stories) com insights detalhados
                 </p>
               </div>
 
-              {/* Cards de KPI rápido na hero */}
+              {/* Cards de KPI rÃ¡pido na hero */}
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
@@ -2542,7 +2542,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     {formatNumber(profileViewsTotal ?? null)}
                   </div>
                   <div style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.85)', fontWeight: 500 }}>
-                    Total de Visualizações
+                    Total de VisualizaÃ§Ãµes
                   </div>
                 </div>
                 <div style={{
@@ -2556,7 +2556,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     {profileViewsAverage != null ? formatNumber(Math.round(profileViewsAverage)) : '--'}
                   </div>
                   <div style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.85)', fontWeight: 500 }}>
-                    Média Diária
+                    MÃ©dia DiÃ¡ria
                   </div>
                 </div>
                 <div style={{
@@ -2570,21 +2570,21 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     {profileViewsPeak != null ? formatNumber(profileViewsPeak) : '--'}
                   </div>
                   <div style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.85)', fontWeight: 500 }}>
-                    Pico de Visualizações
+                    Pico de VisualizaÃ§Ãµes
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Layout em coluna única */}
+          {/* Layout em coluna Ãºnica */}
           <div style={{
             padding: '0 24px 24px',
             minHeight: 'calc(100vh - 200px)'
           }}>
-            {/* Conteúdo principal */}
+            {/* ConteÃºdo principal */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '1400px', margin: '0 auto' }}>
-              {/* Card de gráfico de visualizações - Design melhorado */}
+              {/* Card de grÃ¡fico de visualizaÃ§Ãµes - Design melhorado */}
               <section className="ig-card-white" style={{
                 padding: '28px',
                 background: 'white',
@@ -2608,7 +2608,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     </svg>
                   </div>
                   <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
-                    Tendência de Visualizações
+                    TendÃªncia de VisualizaÃ§Ãµes
                   </h3>
                 </div>
                 {profileViewsChartData.length ? (
@@ -2653,11 +2653,11 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     </ResponsiveContainer>
                   </div>
                 ) : (
-                  <div className="ig-empty-state" style={{ height: 300 }}>Sem dados de visualizações.</div>
+                  <div className="ig-empty-state" style={{ height: 300 }}>Sem dados de visualizaÃ§Ãµes.</div>
                 )}
               </section>
 
-              {/* Cards de métricas detalhadas - Design aprimorado */}
+              {/* Cards de mÃ©tricas detalhadas - Design aprimorado */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
                 <div className="ig-card-white" style={{
                   padding: '24px',
@@ -2680,7 +2680,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   <div style={{ fontSize: '36px', fontWeight: 800, color: '#6366f1', marginBottom: '8px', position: 'relative' }}>
                     {formatNumber(profileViewsTotal ?? null)}
                   </div>
-                  <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Total de Visualizações</div>
+                  <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Total de VisualizaÃ§Ãµes</div>
                 </div>
                 <div className="ig-card-white" style={{
                   padding: '24px',
@@ -2726,11 +2726,11 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   <div style={{ fontSize: '36px', fontWeight: 800, color: '#f59e0b', marginBottom: '8px', position: 'relative' }}>
                     {formatNumber(profileVisitorsTotals?.total ?? null)}
                   </div>
-                  <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Visitantes Únicos</div>
+                  <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Visitantes Ãšnicos</div>
                 </div>
               </div>
 
-              {/* Gráfico Donut - Seguidores vs Não Seguidores */}
+              {/* GrÃ¡fico Donut - Seguidores vs NÃ£o Seguidores */}
               <section className="ig-card-white" style={{
                 padding: '28px',
                 borderRadius: '20px',
@@ -2755,7 +2755,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     </svg>
                   </div>
                   <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
-                    Visualizações por Audiência
+                    VisualizaÃ§Ãµes por AudiÃªncia
                   </h3>
                 </div>
                 <div style={{ height: 300, position: 'relative' }}>
@@ -2764,7 +2764,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                       <Pie
                         data={[
                           { name: 'Seguidores', value: profileVisitorsTotals?.followers || 35, fill: '#6366f1' },
-                          { name: 'Não Seguidores', value: profileVisitorsTotals?.nonFollowers || 65, fill: '#ec4899' }
+                          { name: 'NÃ£o Seguidores', value: profileVisitorsTotals?.nonFollowers || 65, fill: '#ec4899' }
                         ]}
                         cx="50%"
                         cy="50%"
@@ -2775,7 +2775,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                       >
                         {[
                           { name: 'Seguidores', value: profileVisitorsTotals?.followers || 35, fill: '#6366f1' },
-                          { name: 'Não Seguidores', value: profileVisitorsTotals?.nonFollowers || 65, fill: '#ec4899' }
+                          { name: 'NÃ£o Seguidores', value: profileVisitorsTotals?.nonFollowers || 65, fill: '#ec4899' }
                         ].map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.fill} />
                         ))}
@@ -2815,12 +2815,12 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#ec4899' }} />
-                    <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Não Seguidores</span>
+                    <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>NÃ£o Seguidores</span>
                   </div>
                 </div>
               </section>
 
-              {/* Gráfico de Barras - Visualizações por Tipo de Conteúdo */}
+              {/* GrÃ¡fico de Barras - VisualizaÃ§Ãµes por Tipo de ConteÃºdo */}
               <section className="ig-card-white" style={{
                 padding: '28px',
                 borderRadius: '20px',
@@ -2844,7 +2844,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     </svg>
                   </div>
                   <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
-                    Visualizações por Tipo de Conteúdo
+                    VisualizaÃ§Ãµes por Tipo de ConteÃºdo
                   </h3>
                 </div>
                 <div style={{ height: 280 }}>
@@ -2883,7 +2883,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 </div>
               </section>
 
-              {/* Top Posts com Visualizações - Carousel Horizontal */}
+              {/* Top Posts com VisualizaÃ§Ãµes - Carousel Horizontal */}
               <section className="ig-card-white" style={{
                 padding: '28px',
                 borderRadius: '20px',
@@ -2905,7 +2905,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     </svg>
                   </div>
                   <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
-                    Top Posts por Visualizações
+                    Top Posts por VisualizaÃ§Ãµes
                   </h3>
                 </div>
                 <div style={{
@@ -2996,7 +2996,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                               {formatNumber(reach || 0)}
                             </div>
                             <div style={{ fontSize: '11px', opacity: 0.9, marginTop: '2px' }}>
-                              visualizações
+                              visualizaÃ§Ãµes
                             </div>
                           </div>
                         </div>
@@ -3018,7 +3018,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                       </div>
                     );
                   }) : (
-                    <div className="ig-empty-state">Sem posts disponíveis.</div>
+                    <div className="ig-empty-state">Sem posts disponÃ­veis.</div>
                   )}
                 </div>
               </section>
@@ -3066,7 +3066,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
       {metricsNotice && <div className="alert">{metricsNotice}</div>}
       {postsNotice && <div className="alert">{postsNotice}</div>}
       {!metricsNotice && !postsNotice && (metricsFetching || postsFetching) ? (
-        <div className="alert">Atualizando dados…</div>
+        <div className="alert">Atualizando dadosâ€¦</div>
       ) : null}
 
       {/* Container Limpo (fundo branco) */}
@@ -3112,7 +3112,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
           </nav>
         </div>
 
-        <h2 className="ig-clean-title">Visão Geral</h2>
+        <h2 className="ig-clean-title">VisÃ£o Geral</h2>
 
         {/* Grid Principal */}
           <div className="ig-clean-grid" style={showDetailedView ? { display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' } : {}}>
@@ -3156,7 +3156,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 {!coverImage && (
                   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#6b7280" }}>
                     <InstagramIcon size={32} />
-                    <span style={{ fontWeight: 600 }}>Capa não configurada</span>
+                    <span style={{ fontWeight: 600 }}>Capa nÃ£o configurada</span>
                   </div>
                 )}
                 {coverImage && (
@@ -3298,7 +3298,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 <div className="ig-profile-vertical__divider" />
 
                 <div className="ig-profile-vertical__engagement">
-                  <h4>Engajamento por Conteúdo</h4>
+                  <h4>Engajamento por ConteÃºdo</h4>
                   {contentBreakdown.length ? (
                     <>
                       <div className="ig-profile-vertical__engagement-chart">
@@ -3345,7 +3345,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
 
                       <div className="ig-engagement-mini-grid">
                         <div className="ig-engagement-mini-card ig-engagement-mini-card--teal">
-                          <span className="ig-engagement-mini-card__label">Melhor horário para postar</span>
+                          <span className="ig-engagement-mini-card__label">Melhor horÃ¡rio para postar</span>
                           <span className="ig-engagement-mini-card__value">{bestTimes.bestTimeRange || "--"}</span>
                         </div>
                         <div className="ig-engagement-mini-card ig-engagement-mini-card--pink">
@@ -3353,7 +3353,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                           <span className="ig-engagement-mini-card__value">{bestTimes.bestDay || "--"}</span>
                         </div>
                       </div>
-                      <p className="ig-best-time-caption">*Baseado nas publicações dos últimos 30 dias</p>
+                      <p className="ig-best-time-caption">*Baseado nas publicaÃ§Ãµes dos Ãºltimos 30 dias</p>
                     </>
                   ) : (
                     <div className="ig-empty-state">Sem dados</div>
@@ -3439,7 +3439,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                                   </span>
                                 </div>
                                 <div className="ig-top-post-compact__caption">
-                                  {truncate(post.caption || "Aqui vai o texto da legenda que post está sendo apresentado se não tiver espaço...", 120)}
+                                  {truncate(post.caption || "Aqui vai o texto da legenda que post estÃ¡ sendo apresentado se nÃ£o tiver espaÃ§o...", 120)}
                                 </div>
                               </div>
                             </div>
@@ -3447,7 +3447,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                         );
                       })
                     ) : (
-                      <div className="ig-empty-state">Nenhum post disponível</div>
+                      <div className="ig-empty-state">Nenhum post disponÃ­vel</div>
                     )}
                   </div>
                 </div>
@@ -3543,7 +3543,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                           if (!active || !payload?.length) return null;
                           const [{ payload: item, value }] = payload;
                           const numericValue = Number(value ?? item?.value ?? 0);
-                          const label = item?.label ?? "Período";
+                          const label = item?.label ?? "PerÃ­odo";
                           const isPeak =
                             !!peakReachPoint &&
                             item?.dateKey === peakReachPoint.dateKey &&
@@ -3552,12 +3552,12 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                             <div className="ig-tooltip">
                               <span className="ig-tooltip__title">{label}</span>
                               <div className="ig-tooltip__row">
-                                <span>Contas alcançadas</span>
+                                <span>Contas alcanÃ§adas</span>
                                 <strong>{numericValue.toLocaleString("pt-BR")}</strong>
                               </div>
                               {isPeak ? (
                                 <div style={{ marginTop: 6, fontSize: 12, color: '#6b7280' }}>
-                                  Pico do período
+                                  Pico do perÃ­odo
                                 </div>
                               ) : null}
                             </div>
@@ -3616,7 +3616,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     </ComposedChart>
                   </ResponsiveContainer>
                 ) : (
-                <div className="ig-empty-state">Sem dados disponíveis</div>
+                <div className="ig-empty-state">Sem dados disponÃ­veis</div>
                 )}
               </div>
             </section>
@@ -3626,7 +3626,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               <header className="ig-card-header">
                 <div>
                   <h3>Crescimento de Seguidores</h3>
-                <p className="ig-card-subtitle">Ganho diário</p>
+                <p className="ig-card-subtitle">Ganho diÃ¡rio</p>
                 </div>
               </header>
 
@@ -3757,9 +3757,9 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               </div>
         </section>
 
-        {/* Novos Cards: Visualizações e Seguidores */}
+        {/* Novos Cards: VisualizaÃ§Ãµes e Seguidores */}
         <div className="ig-analytics-grid ig-analytics-grid--pair" style={{ marginTop: '24px' }}>
-          {/* Card de Visualizações - Estilo Aprimorado */}
+          {/* Card de VisualizaÃ§Ãµes - Estilo Aprimorado */}
           <section className="ig-card-white ig-analytics-card" style={{ position: 'relative', overflow: 'hidden' }}>
 
             <div className="ig-analytics-card__header" style={{
@@ -3786,8 +3786,8 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   </svg>
                 </div>
                 <div>
-                  <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#111827' }}>Visualizações</h4>
-                  <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '2px', marginBottom: 0 }}>Total de reproduções (Reels, Feed e Stories)</p>
+                  <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#111827' }}>VisualizaÃ§Ãµes</h4>
+                  <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '2px', marginBottom: 0 }}>Total de reproduÃ§Ãµes (Reels, Feed e Stories)</p>
                 </div>
               </div>
               <button
@@ -3838,7 +3838,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   {formatNumber(profileViewsTotal ?? null)}
                 </div>
                 <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '20px', fontWeight: 500 }}>
-                  visualizações no período
+                  visualizaÃ§Ãµes no perÃ­odo
                 </div>
                 {typeof profileViewsDeltaPct === "number" && (
                   <div
@@ -3857,11 +3857,11 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     }}
                   >
                     {profileViewsDeltaPct >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-                    <span>{profileViewsDeltaPct >= 0 ? '+' : ''}{profileViewsDeltaPct}% vs. período anterior</span>
+                    <span>{profileViewsDeltaPct >= 0 ? '+' : ''}{profileViewsDeltaPct}% vs. perÃ­odo anterior</span>
                   </div>
                 )}
 
-                {/* Grid de métricas secundárias */}
+                {/* Grid de mÃ©tricas secundÃ¡rias */}
                 <div style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(3, 1fr)',
@@ -3877,7 +3877,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     <div style={{ fontSize: '22px', fontWeight: 700, color: '#6366f1' }}>
                       {formatNumber(profileVisitorsTotals?.total ?? null)}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px', fontWeight: 500 }}>Visitantes únicos</div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px', fontWeight: 500 }}>Visitantes Ãºnicos</div>
                   </div>
                   <div style={{
                     padding: '16px 12px',
@@ -3888,7 +3888,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     <div style={{ fontSize: '22px', fontWeight: 700, color: '#8b5cf6' }}>
                       {profileViewsAverage != null ? formatNumber(Math.round(profileViewsAverage)) : '--'}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px', fontWeight: 500 }}>Média diária</div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px', fontWeight: 500 }}>MÃ©dia diÃ¡ria</div>
                   </div>
                   <div style={{
                     padding: '16px 12px',
@@ -3899,14 +3899,14 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     <div style={{ fontSize: '22px', fontWeight: 700, color: '#a855f7' }}>
                       {profileViewsPeak != null ? formatNumber(profileViewsPeak) : '--'}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px', fontWeight: 500 }}>Pico diário</div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px', fontWeight: 500 }}>Pico diÃ¡rio</div>
                   </div>
                 </div>
               </div>
             </div>
           </section>
 
-          {/* Card de Interações */}
+          {/* Card de InteraÃ§Ãµes */}
           <section className="ig-card-white ig-analytics-card" style={{ position: 'relative', overflow: 'hidden' }}>
             <div className="ig-analytics-card__header" style={{
               display: 'flex',
@@ -3934,8 +3934,8 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   <Heart size={20} color="white" fill="white" />
                 </div>
                 <div>
-                  <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#111827' }}>Interações</h4>
-                  <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '2px', marginBottom: 0 }}>Total de engajamento do público</p>
+                  <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#111827' }}>InteraÃ§Ãµes</h4>
+                  <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '2px', marginBottom: 0 }}>Total de engajamento do pÃºblico</p>
                 </div>
               </div>
               <button
@@ -3971,7 +3971,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   {formatNumber(45832)}
                 </div>
                 <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '28px' }}>
-                  Total de interações no período
+                  Total de interaÃ§Ãµes no perÃ­odo
                 </div>
                 <div style={{
                   display: 'grid',
@@ -3999,7 +3999,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     <div style={{ fontSize: '20px', fontWeight: 700, color: '#3b82f6', marginBottom: '4px' }}>
                       {formatNumber(8234)}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>Comentários</div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>ComentÃ¡rios</div>
                   </div>
                   <div style={{
                     padding: '14px',
@@ -4033,9 +4033,9 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
           <section className="ig-card-white ig-analytics-card" style={{ gridColumn: 'span 2' }}>
             <div className="ig-analytics-card__header">
               <div>
-                <h4>Últimos 5 posts</h4>
+                <h4>Ãšltimos 5 posts</h4>
                 <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
-                  Publicações mais recentes no período filtrado
+                  PublicaÃ§Ãµes mais recentes no perÃ­odo filtrado
                 </p>
               </div>
             </div>
@@ -4052,8 +4052,8 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
         <div className="ig-analytics-grid ig-analytics-grid--pair">
           <section className="ig-card-white ig-analytics-card">
             <div className="ig-analytics-card__header">
-              <h4>Audiência</h4>
-              <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>Seguidores vs Não Seguidores</p>
+              <h4>AudiÃªncia</h4>
+              <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>Seguidores vs NÃ£o Seguidores</p>
             </div>
             <div className="ig-analytics-card__body">
               <ResponsiveContainer width="100%" height={240}>
@@ -4100,7 +4100,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
           <section className="ig-card-white ig-analytics-card">
             <div className="ig-analytics-card__header">
               <div>
-                <h4>Quantidade de publicações por dia</h4>
+                <h4>Quantidade de publicaÃ§Ãµes por dia</h4>
                 <span className="ig-calendar__month">{postCalendar.title}</span>
               </div>
               <select
@@ -4124,7 +4124,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   <span className="ig-calendar__weekday">Qua</span>
                   <span className="ig-calendar__weekday">Qui</span>
                   <span className="ig-calendar__weekday">Sex</span>
-                  <span className="ig-calendar__weekday">Sáb</span>
+                  <span className="ig-calendar__weekday">SÃ¡b</span>
                 </div>
                 <div className="ig-calendar__grid">
                   {Array.from({ length: postCalendar.leadingEmpty }, (_, index) => (
@@ -4323,7 +4323,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
           position: 'sticky',
           top: '24px'
         }}>
-          {/* Botão de fechar */}
+          {/* BotÃ£o de fechar */}
           <button
             onClick={() => setShowDetailedView(false)}
             style={{
@@ -4373,13 +4373,13 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                 <circle cx="12" cy="12" r="3" />
               </svg>
-              <span style={{ fontSize: '13px', fontWeight: 600, color: 'white', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Visualizações</span>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: 'white', textTransform: 'uppercase', letterSpacing: '0.5px' }}>VisualizaÃ§Ãµes</span>
             </div>
             <h3 style={{ margin: '0 0 8px 0', fontSize: '28px', fontWeight: 800, color: '#111827' }}>
-              Análise Detalhada
+              AnÃ¡lise Detalhada
             </h3>
             <p style={{ margin: 0, fontSize: '14px', color: '#6b7280', lineHeight: 1.6 }}>
-              Acompanhe as visualizações dos seus conteúdos (Reels, Feed e Stories) com insights detalhados
+              Acompanhe as visualizaÃ§Ãµes dos seus conteÃºdos (Reels, Feed e Stories) com insights detalhados
             </p>
           </div>
 
@@ -4396,7 +4396,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               border: '1px solid rgba(99, 102, 241, 0.15)'
             }}>
               <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600, marginBottom: '8px' }}>
-                Total de Visualizações
+                Total de VisualizaÃ§Ãµes
               </div>
               <div style={{
                 fontSize: '36px',
@@ -4421,7 +4421,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   fontWeight: 600
                 }}>
                   {profileViewsDeltaPct >= 0 ? '?' : '?'}
-                  <span>{Math.abs(profileViewsDeltaPct)}% vs. período anterior</span>
+                  <span>{Math.abs(profileViewsDeltaPct)}% vs. perÃ­odo anterior</span>
                 </div>
               )}
             </div>
@@ -4433,7 +4433,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               border: '1px solid rgba(99, 102, 241, 0.1)'
             }}>
               <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 600, marginBottom: '6px' }}>
-                Visitantes únicos
+                Visitantes Ãºnicos
               </div>
               <div style={{ fontSize: '28px', fontWeight: 700, color: '#6366f1' }}>
                 {formatNumber(profileVisitorsTotals?.total ?? null)}
@@ -4447,7 +4447,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               border: '1px solid rgba(139, 92, 246, 0.1)'
             }}>
               <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 600, marginBottom: '6px' }}>
-                Média diária
+                MÃ©dia diÃ¡ria
               </div>
               <div style={{ fontSize: '28px', fontWeight: 700, color: '#8b5cf6' }}>
                 {profileViewsAverage != null ? formatNumber(Math.round(profileViewsAverage)) : '--'}
@@ -4461,7 +4461,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               border: '1px solid rgba(168, 85, 247, 0.1)'
             }}>
               <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 600, marginBottom: '6px' }}>
-                Pico diário
+                Pico diÃ¡rio
               </div>
               <div style={{ fontSize: '28px', fontWeight: 700, color: '#a855f7' }}>
                 {profileViewsPeak != null ? formatNumber(profileViewsPeak) : '--'}
@@ -4469,7 +4469,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             </div>
           </div>
 
-          {/* Gráfico de tendência */}
+          {/* GrÃ¡fico de tendÃªncia */}
           <div style={{
             padding: '24px',
             borderRadius: '16px',
@@ -4477,7 +4477,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             border: '1px solid #e5e7eb'
           }}>
             <h4 style={{ margin: '0 0 20px 0', fontSize: '16px', fontWeight: 700, color: '#111827' }}>
-              ?? Tendência de Visualizações
+              ?? TendÃªncia de VisualizaÃ§Ãµes
             </h4>
             {profileViewsChartData.length ? (
               <div style={{ height: 280 }}>
@@ -4524,7 +4524,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               </div>
             ) : (
               <div style={{ padding: '40px', textAlign: 'center', color: '#9ca3af' }}>
-                Sem dados de visualizações
+                Sem dados de visualizaÃ§Ãµes
               </div>
             )}
           </div>
@@ -4554,7 +4554,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                 </svg>
-                <span>{commentsCount.toLocaleString('pt-BR')} comentário{commentsCount !== 1 ? 's' : ''} analisado{commentsCount !== 1 ? 's' : ''}</span>
+                <span>{commentsCount.toLocaleString('pt-BR')} comentÃ¡rio{commentsCount !== 1 ? 's' : ''} analisado{commentsCount !== 1 ? 's' : ''}</span>
               </div>
             )}
           </div>
@@ -4582,7 +4582,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 <YAxis type="category" dataKey="name" tick={{ fill: '#111827' }} fontSize={12} width={100} />
                 <Tooltip
                   cursor={{ fill: 'rgba(236, 72, 153, 0.1)' }}
-                  formatter={(value) => [String(value), "Ocorrências"]}
+                  formatter={(value) => [String(value), "OcorrÃªncias"]}
                 />
                 <Bar dataKey="value" fill="#ec4899" radius={[0, 6, 6, 0]} />
               </BarChart>
@@ -4605,7 +4605,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
                   <XAxis type="number" tick={{ fill: '#111827' }} allowDecimals={false} />
                   <YAxis type="category" dataKey="name" width={140} tick={{ fill: '#111827' }} />
-                  <Tooltip formatter={(value) => [String(value), "Ocorrências"]} />
+                  <Tooltip formatter={(value) => [String(value), "OcorrÃªncias"]} />
                   <Bar dataKey="value" fill="#ec4899" radius={[0, 6, 6, 0]} />
                 </BarChart>
               </ResponsiveContainer>
