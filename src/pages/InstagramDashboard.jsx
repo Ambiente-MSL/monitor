@@ -2482,27 +2482,30 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px',
-                    padding: '10px 20px',
+                    padding: '12px 24px',
                     borderRadius: '12px',
-                    background: 'rgba(255, 255, 255, 0.2)',
+                    background: 'rgba(255, 255, 255, 0.95)',
                     backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                    border: '2px solid white',
                     fontSize: '14px',
-                    fontWeight: 600,
-                    color: 'white',
+                    fontWeight: 700,
+                    color: '#6366f1',
                     cursor: 'pointer',
-                    transition: 'all 0.3s ease'
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
                   }}
                   onMouseOver={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+                    e.currentTarget.style.background = 'white';
                     e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.2)';
                   }}
                   onMouseOut={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.95)';
                     e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
                   }}
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="15 18 9 12 15 6" />
                   </svg>
                   <span>Voltar ao Dashboard</span>
@@ -2580,6 +2583,20 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   </div>
                   <div style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.85)', fontWeight: 500 }}>
                     Média Diária
+                  </div>
+                </div>
+                <div style={{
+                  padding: '20px',
+                  borderRadius: '16px',
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)'
+                }}>
+                  <div style={{ fontSize: '32px', fontWeight: 700, color: 'white', marginBottom: '4px' }}>
+                    {profileViewsDeltaPct != null ? `${profileViewsDeltaPct > 0 ? '+' : ''}${profileViewsDeltaPct}%` : '--'}
+                  </div>
+                  <div style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.85)', fontWeight: 500 }}>
+                    Crescimento (%)
                   </div>
                 </div>
                 <div style={{
@@ -2952,7 +2969,9 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
 
                     return (
                       <div key={post.id} style={{
-                        minWidth: '180px',
+                        minWidth: '160px',
+                        width: '160px',
+                        flexShrink: 0,
                         borderRadius: '16px',
                         overflow: 'hidden',
                         background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.03) 0%, rgba(139, 92, 246, 0.03) 100%)',
@@ -2974,8 +2993,8 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                       }}
                       >
                         <div style={{
-                          width: '100%',
-                          height: '180px',
+                          width: '160px',
+                          height: '284px',
                           background: '#f3f4f6',
                           position: 'relative',
                           overflow: 'hidden'
@@ -4381,88 +4400,15 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             </svg>
           </button>
 
-          {/* Header */}
-          <div style={{ marginBottom: '32px', paddingRight: '40px' }}>
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '8px 16px',
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-              marginBottom: '16px'
-            }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-              <span style={{ fontSize: '13px', fontWeight: 600, color: 'white', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Visualizações</span>
-            </div>
-            <h3 style={{ margin: '0 0 8px 0', fontSize: '28px', fontWeight: 800, color: '#111827' }}>
-              Análise Detalhada
-            </h3>
-            <p style={{ margin: 0, fontSize: '14px', color: '#6b7280', lineHeight: 1.6 }}>
-              Acompanhe as visualizações dos seus conteúdos (Reels, Feed e Stories) com insights detalhados
-            </p>
-          </div>
+          {/* Header - removido para mais espaço */}
 
-          {/* KPIs Principais */}
+          {/* KPIs Principais - mantendo apenas Média diária e Pico diário */}
           <div style={{
             display: 'grid',
+            gridTemplateColumns: 'repeat(2, 1fr)',
             gap: '16px',
             marginBottom: '32px'
           }}>
-            <div style={{
-              padding: '20px',
-              borderRadius: '16px',
-              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%)',
-              border: '1px solid rgba(99, 102, 241, 0.15)'
-            }}>
-              <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600, marginBottom: '8px' }}>
-                Total de Visualizações
-              </div>
-              <div style={{
-                fontSize: '36px',
-                fontWeight: 800,
-                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent'
-              }}>
-                {formatNumber(profileViewsTotal ?? null)}
-              </div>
-              {typeof profileViewsDeltaPct === "number" && (
-                <div style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  marginTop: '12px',
-                  padding: '6px 12px',
-                  borderRadius: '8px',
-                  background: profileViewsDeltaPct >= 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                  color: profileViewsDeltaPct >= 0 ? '#059669' : '#dc2626',
-                  fontSize: '12px',
-                  fontWeight: 600
-                }}>
-                  {profileViewsDeltaPct >= 0 ? '?' : '?'}
-                  <span>{Math.abs(profileViewsDeltaPct)}% vs. período anterior</span>
-                </div>
-              )}
-            </div>
-
-            <div style={{
-              padding: '18px',
-              borderRadius: '14px',
-              background: 'rgba(99, 102, 241, 0.05)',
-              border: '1px solid rgba(99, 102, 241, 0.1)'
-            }}>
-              <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 600, marginBottom: '6px' }}>
-                Visitantes únicos
-              </div>
-              <div style={{ fontSize: '28px', fontWeight: 700, color: '#6366f1' }}>
-                {formatNumber(profileVisitorsTotals?.total ?? null)}
-              </div>
-            </div>
-
             <div style={{
               padding: '18px',
               borderRadius: '14px',
