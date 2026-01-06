@@ -123,7 +123,6 @@ const toUnixSeconds = (date) => Math.floor(date.getTime() / 1000);
 
 const SHORT_DATE_FORMATTER = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" });
 const SHORT_MONTH_FORMATTER = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" });
-const MONTH_YEAR_FORMATTER = new Intl.DateTimeFormat("pt-BR", { month: "short", year: "2-digit" });
 const FULL_DATE_FORMATTER = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
 
 const mapByKey = (items) => {
@@ -1684,7 +1683,12 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
   const profileReachData = useMemo(() => {
     if (metricsLoading) return [];
     if (metricsError) return [];
-    return normalizedReachSeries;
+    return [...normalizedReachSeries].sort((a, b) => {
+      const aKey = a?.dateKey || "";
+      const bKey = b?.dateKey || "";
+      if (aKey && bKey) return aKey.localeCompare(bKey);
+      return (a?.label || "").localeCompare(b?.label || "");
+    });
   }, [metricsError, metricsLoading, normalizedReachSeries]);
 
   const reachRangeDays = useMemo(() => {
@@ -1694,27 +1698,11 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
     return profileReachData.length || 0;
   }, [sinceDate, untilDate, profileReachData.length]);
 
-  const reachXAxisTicks = useMemo(() => {
-    if (!profileReachData.length) return [];
-    const keys = profileReachData.map((entry) => entry.dateKey || entry.label).filter(Boolean);
-    if (keys.length <= 2) return keys;
-    const targetTicks = reachRangeDays >= 180 ? 6 : reachRangeDays >= 90 ? 7 : 8;
-    const step = Math.max(1, Math.floor((keys.length - 1) / Math.max(targetTicks - 1, 1)));
-    const ticks = [];
-    for (let index = 0; index < keys.length; index += step) {
-      ticks.push(keys[index]);
-    }
-    const lastKey = keys[keys.length - 1];
-    if (ticks[ticks.length - 1] !== lastKey) ticks.push(lastKey);
-    return ticks;
-  }, [profileReachData, reachRangeDays]);
-
   const formatReachAxisTick = useCallback((value) => {
     if (!value) return "";
     const parsedDate = new Date(`${value}T00:00:00`);
     if (Number.isNaN(parsedDate.getTime())) return value;
-    if (reachRangeDays >= 180) return MONTH_YEAR_FORMATTER.format(parsedDate);
-    if (reachRangeDays >= 60) return SHORT_MONTH_FORMATTER.format(parsedDate);
+    if (reachRangeDays > 31) return SHORT_MONTH_FORMATTER.format(parsedDate);
     return SHORT_DATE_FORMATTER.format(parsedDate);
   }, [reachRangeDays]);
 
@@ -3753,10 +3741,9 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                         fontSize={12}
                         tickLine={false}
                         axisLine={{ stroke: '#e5e7eb' }}
-                        ticks={reachXAxisTicks}
-                        interval={0}
+                        interval="preserveStartEnd"
+                        minTickGap={48}
                         angle={0}
-                        minTickGap={18}
                         padding={{ left: 8, right: 8 }}
                         tickFormatter={formatReachAxisTick}
                       />
