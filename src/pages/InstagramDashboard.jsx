@@ -3832,39 +3832,33 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               <button
                 onClick={() => setShowDetailedView(true)}
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '10px 18px',
-                  borderRadius: '10px',
+                  padding: '8px 14px',
                   background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
                   color: 'white',
                   border: 'none',
+                  borderRadius: '8px',
                   fontSize: '13px',
                   fontWeight: 600,
                   cursor: 'pointer',
-                  boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
-                  transition: 'all 0.3s ease',
+                  transition: 'all 0.2s',
+                  boxShadow: '0 2px 8px rgba(99, 102, 241, 0.25)',
                   whiteSpace: 'nowrap'
                 }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(99, 102, 241, 0.4)';
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.35)';
                 }}
-                onMouseOut={(e) => {
+                onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.3)';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(99, 102, 241, 0.25)';
                 }}
               >
-                <span>Ver mais</span>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
+                Ver mais
               </button>
             </div>
 
-            <div className="ig-analytics-card__body" style={{ position: 'relative', zIndex: 1 }}>
-              <div style={{ textAlign: 'center', padding: '32px 20px 24px' }}>
+            <div className="ig-analytics-card__body">
+              <div style={{ textAlign: 'center', padding: '32px 20px' }}>
                 <div style={{
                   fontSize: '56px',
                   fontWeight: 800,
@@ -3876,29 +3870,9 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 }}>
                   {formatNumber(profileViewsTotal ?? null)}
                 </div>
-                <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '20px', fontWeight: 500 }}>
+                <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '28px', fontWeight: 500 }}>
                   visualizações no período
                 </div>
-                {typeof profileViewsDeltaPct === "number" && (
-                  <div
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      padding: '8px 16px',
-                      borderRadius: '999px',
-                      background: profileViewsDeltaPct >= 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                      color: profileViewsDeltaPct >= 0 ? '#047857' : '#b91c1c',
-                      fontWeight: 600,
-                      fontSize: '13px',
-                      marginBottom: '24px',
-                      border: `1px solid ${profileViewsDeltaPct >= 0 ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`
-                    }}
-                  >
-                    {profileViewsDeltaPct >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-                    <span>{profileViewsDeltaPct >= 0 ? '+' : ''}{profileViewsDeltaPct}% vs. período anterior</span>
-                  </div>
-                )}
 
                 {/* Grid de métricas secundárias */}
                 <div style={{
@@ -3910,13 +3884,13 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   <div style={{
                     padding: '16px 12px',
                     borderRadius: '12px',
-                    background: 'rgba(99, 102, 241, 0.05)',
-                    border: '1px solid rgba(99, 102, 241, 0.1)'
+                    background: 'rgba(16, 185, 129, 0.05)',
+                    border: '1px solid rgba(16, 185, 129, 0.1)'
                   }}>
-                    <div style={{ fontSize: '22px', fontWeight: 700, color: '#6366f1' }}>
-                      {formatNumber(profileVisitorsTotals?.total ?? null)}
+                    <div style={{ fontSize: '22px', fontWeight: 700, color: '#10b981' }}>
+                      {profileViewsDeltaPct != null ? `${profileViewsDeltaPct > 0 ? '+' : ''}${profileViewsDeltaPct}%` : '--'}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px', fontWeight: 500 }}>Visitantes únicos</div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px', fontWeight: 500 }}>Crescimento</div>
                   </div>
                   <div style={{
                     padding: '16px 12px',
