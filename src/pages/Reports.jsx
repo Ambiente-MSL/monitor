@@ -9,6 +9,7 @@ import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import Papa from "papaparse";
 import { utils as XLSXutils, writeFile as XLSXwriteFile } from "xlsx";
+import { unwrapApiData } from "../lib/apiEnvelope";
 
 const API_BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 
@@ -78,7 +79,7 @@ export default function Reports() {
     const r = await fetch(url.toString());
     const t = await r.text();
     try {
-      return JSON.parse(t);
+      return unwrapApiData(t ? JSON.parse(t) : {}, {});
     } catch {
       return {};
     }

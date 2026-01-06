@@ -3,6 +3,7 @@ import { ChevronDown } from "lucide-react";
 import useQueryState from "../hooks/useQueryState";
 import { useAccounts } from "../context/AccountsContext";
 import { DEFAULT_ACCOUNTS } from "../data/accounts";
+import { unwrapApiData } from "../lib/apiEnvelope";
 
 const FALLBACK_ACCOUNT_ID = DEFAULT_ACCOUNTS[0]?.id || "";
 const API_BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
@@ -50,7 +51,7 @@ export default function AccountSelect() {
         const params = new URLSearchParams({ igUserId: account.instagramUserId, limit: "1" });
         const url = `${API_BASE_URL}/api/instagram/posts?${params.toString()}`;
         const resp = await fetch(url);
-        const json = await resp.json();
+        const json = unwrapApiData(await resp.json(), {});
 
         if (json.account) {
           setAccountsData((prev) => ({

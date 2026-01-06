@@ -13,6 +13,7 @@ import useQueryState from '../hooks/useQueryState';
 import { useAccounts } from '../context/AccountsContext';
 
 import { DEFAULT_ACCOUNTS } from '../data/accounts';
+import { getApiErrorMessage, unwrapApiData } from '../lib/apiEnvelope';
 
 
 
@@ -170,23 +171,18 @@ const { setTopbarConfig, resetTopbarConfig } = outletContext;
   const fetchJson = useCallback(async (url) => {
     const response = await fetch(url);
     const raw = await response.text();
-    let json = null;
+    let json = {};
     if (raw) {
       try {
         json = JSON.parse(raw);
       } catch (err) {
-        json = null;
+        json = {};
       }
     }
     if (!response.ok) {
-      const message =
-        json?.error ||
-        json?.message ||
-        (json && typeof json === 'object' && json.error?.message) ||
-        `HTTP ${response.status}`;
-      throw new Error(message);
+      throw new Error(getApiErrorMessage(json, `HTTP ${response.status}`));
     }
-    return json || {};
+    return unwrapApiData(json, {});
   }, []);
 
   const [instagramReach30d, setInstagramReach30d] = useState({ value: null, cacheAt: null });

@@ -53,6 +53,7 @@ import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import WordCloudCard from "../components/WordCloudCard";
 import { useAuth } from "../context/AuthContext";
 import { getDashboardCache, makeDashboardCacheKey, setDashboardCache } from "../lib/dashboardCache";
+import { getApiErrorMessage, unwrapApiData } from "../lib/apiEnvelope";
 
 const API_BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 const FALLBACK_ACCOUNT_ID = DEFAULT_ACCOUNTS[0]?.id || "";
@@ -137,13 +138,7 @@ const safeParseJson = (text) => {
     return null;
   }
 };
-const describeApiError = (payload, fallback) => {
-  if (!payload) return fallback;
-  if (payload.error) {
-    return payload.graph?.code ? `${payload.error} (Graph code ${payload.graph.code})` : payload.error;
-  }
-  return payload.message || fallback;
-};
+const describeApiError = (payload, fallback) => getApiErrorMessage(payload, fallback);
 
 const normalizeNumericString = (value) => (
   String(value)
@@ -839,19 +834,19 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
 
       try {
         const resp = await fetch(url, { signal: controller.signal });
-        const text = await resp.text();
-        const json = safeParseJson(text) || {};
-        if (!resp.ok) {
-          const error = new Error(describeApiError(json, "Falha ao carregar métricas do Instagram."));
-          error.status = resp.status;
-          throw error;
-        }
-        return json;
-      } catch (err) {
-        const status = err?.status;
-        const retryableStatus = status === 429 || status === 502 || status === 503 || status === 504;
-        const shouldRetry = attempt < MAX_ATTEMPTS - 1 && (timedOut || err?.name === "AbortError" || retryableStatus);
-        if (shouldRetry) {
+         const text = await resp.text();
+         const json = safeParseJson(text) || {};
+         if (!resp.ok) {
+           const error = new Error(describeApiError(json, "Falha ao carregar métricas do Instagram."));
+           error.status = resp.status;
+           throw error;
+         }
+         return unwrapApiData(json, {});
+       } catch (err) {
+         const status = err?.status;
+         const retryableStatus = status === 429 || status === 502 || status === 503 || status === 504;
+         const shouldRetry = attempt < MAX_ATTEMPTS - 1 && (timedOut || err?.name === "AbortError" || retryableStatus);
+         if (shouldRetry) {
           await sleep(600);
           return fetchMetricsPayload(attempt + 1);
         }
@@ -1039,19 +1034,19 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
 
       try {
         const resp = await fetch(url, { signal: controller.signal });
-        const text = await resp.text();
-        const json = safeParseJson(text) || {};
-        if (!resp.ok) {
-          const error = new Error(describeApiError(json, "Não foi possível carregar os posts."));
-          error.status = resp.status;
-          throw error;
-        }
-        return json;
-      } catch (err) {
-        const status = err?.status;
-        const retryableStatus = status === 429 || status === 502 || status === 503 || status === 504;
-        const shouldRetry = attempt < MAX_ATTEMPTS - 1 && (timedOut || err?.name === "AbortError" || retryableStatus);
-        if (shouldRetry) {
+         const text = await resp.text();
+         const json = safeParseJson(text) || {};
+         if (!resp.ok) {
+           const error = new Error(describeApiError(json, "Não foi possível carregar os posts."));
+           error.status = resp.status;
+           throw error;
+         }
+         return unwrapApiData(json, {});
+       } catch (err) {
+         const status = err?.status;
+         const retryableStatus = status === 429 || status === 502 || status === 503 || status === 504;
+         const shouldRetry = attempt < MAX_ATTEMPTS - 1 && (timedOut || err?.name === "AbortError" || retryableStatus);
+         if (shouldRetry) {
           await sleep(600);
           return fetchPostsPayload(attempt + 1);
         }
@@ -1156,18 +1151,19 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
 
     (async () => {
       try {
-        const resp = await fetch(url, { signal: controller.signal });
-        const text = await resp.text();
-        const json = safeParseJson(text) || {};
-        if (!resp.ok) {
-          throw new Error(describeApiError(json, "Nao foi possivel carregar as publicacoes."));
-        }
-        if (recentPostsRequestIdRef.current !== requestId) return;
-        const normalizedPosts = Array.isArray(json?.posts) ? json.posts : [];
-        setRecentPosts(normalizedPosts);
-        setDashboardCache(postsInsightsCacheKey, { posts: normalizedPosts });
-        setRecentPostsError("");
-      } catch (err) {
+         const resp = await fetch(url, { signal: controller.signal });
+         const text = await resp.text();
+         const json = safeParseJson(text) || {};
+         if (!resp.ok) {
+           throw new Error(describeApiError(json, "Nao foi possivel carregar as publicacoes."));
+         }
+         if (recentPostsRequestIdRef.current !== requestId) return;
+         const data = unwrapApiData(json, {});
+         const normalizedPosts = Array.isArray(data?.posts) ? data.posts : [];
+         setRecentPosts(normalizedPosts);
+         setDashboardCache(postsInsightsCacheKey, { posts: normalizedPosts });
+         setRecentPostsError("");
+       } catch (err) {
         if (recentPostsRequestIdRef.current !== requestId) return;
         if (err?.name === "AbortError") {
           setRecentPostsError("Tempo esgotado ao carregar publicacoes do Instagram.");

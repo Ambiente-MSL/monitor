@@ -41,6 +41,7 @@ import { useAccounts } from "../context/AccountsContext";
 import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import { useAuth } from "../context/AuthContext";
 import useQueryState from "../hooks/useQueryState";
+import { unwrapApiData } from "../lib/apiEnvelope";
 
 const API_BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 
@@ -427,7 +428,7 @@ export default function AdsDashboard() {
         const params = new URLSearchParams({ igUserId: selectedAccount.instagramUserId, limit: "1" });
         const url = `${API_BASE_URL}/api/instagram/posts?${params.toString()}`;
         const resp = await fetch(url);
-        const json = await resp.json();
+        const json = unwrapApiData(await resp.json(), {});
 
         if (json.account) {
           setInstagramProfileData({

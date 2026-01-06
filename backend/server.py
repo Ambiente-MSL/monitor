@@ -345,6 +345,90 @@ def unix_range(args, default_days=DEFAULT_DAYS):
     return since, until
 
 
+# ================= API Envelope (v2) =================
+ENVELOPE_CACHE_SOURCES = {"cache", "stale", "refresh", "prime", "live", "cache-fallback"}
+
+
+def _utc_now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _normalize_envelope_cache(cache_meta: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    now_iso = _utc_now_iso()
+    if not isinstance(cache_meta, dict):
+        return {
+            "source": "live",
+            "stale": False,
+            "fetched_at": now_iso,
+            "next_refresh_at": None,
+            "cache_key": None,
+        }
+
+    source = cache_meta.get("source") or "live"
+    source_str = str(source)
+    if source_str not in ENVELOPE_CACHE_SOURCES:
+        source_str = "live"
+
+    fetched_at = cache_meta.get("fetched_at") or now_iso
+    next_refresh_at = cache_meta.get("next_refresh_at")
+    cache_key = cache_meta.get("cache_key")
+
+    return {
+        "source": source_str,
+        "stale": bool(cache_meta.get("stale", False)),
+        "fetched_at": str(fetched_at) if fetched_at is not None else None,
+        "next_refresh_at": str(next_refresh_at) if next_refresh_at is not None else None,
+        "cache_key": str(cache_key) if cache_key is not None else None,
+    }
+
+
+def _build_api_error(
+    message: str,
+    code: Optional[Any] = None,
+    details: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    return {
+        "message": message,
+        "code": str(code) if code is not None else "unknown",
+        "details": details or {},
+    }
+
+
+def _build_api_envelope(
+    data: Any,
+    *,
+    platform: str,
+    account_id: str,
+    since: Optional[int],
+    until: Optional[int],
+    timezone_name: str = "UTC",
+    cache_meta: Optional[Dict[str, Any]] = None,
+    error: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    return {
+        "data": data,
+        "meta": {
+            "platform": platform,
+            "account_id": account_id,
+            "since": since,
+            "until": until,
+            "timezone": timezone_name,
+            "cache": _normalize_envelope_cache(cache_meta),
+        },
+        "error": error,
+    }
+
+
+def _meta_api_error_details(err: MetaAPIError) -> Dict[str, Any]:
+    return {
+        "graph": {
+            "status": err.status,
+            "code": err.code,
+            "type": err.error_type,
+        }
+    }
+
+
 def _duration(since_ts: int, until_ts: int) -> int:
     return max(1, until_ts - since_ts)
 
@@ -2954,7 +3038,20 @@ def instagram_metrics():
     """
     ig = request.args.get("igUserId", IG_ID)
     if not ig:
-        return jsonify({"error": "META_IG_USER_ID is not configured"}), 500
+        envelope = _build_api_envelope(
+            None,
+            platform="instagram",
+            account_id=str(ig or ""),
+            since=None,
+            until=None,
+            timezone_name="UTC",
+            cache_meta=None,
+            error=_build_api_error(
+                "META_IG_USER_ID is not configured",
+                code="missing_account_id",
+            ),
+        )
+        return jsonify(envelope), 500
     since, until = unix_range(request.args)
     force_refresh = request.args.get("force")
     force_refresh_flag = str(force_refresh).lower() in ("1", "true", "yes", "y")
@@ -2986,7 +3083,25 @@ def instagram_metrics():
     if db_payload:
         payload_obj = dict(db_payload)
         _ensure_reach_timeseries(payload_obj)
-        return jsonify(payload_obj)
+        legacy_cache = payload_obj.get("cache") if isinstance(payload_obj.get("cache"), dict) else {}
+        precomputed_cache = {
+            "source": "cache",
+            "stale": False,
+            "fetched_at": legacy_cache.get("fetched_at") or _utc_now_iso(),
+            "next_refresh_at": None,
+            "cache_key": None,
+        }
+        envelope = _build_api_envelope(
+            payload_obj,
+            platform="instagram",
+            account_id=str(ig),
+            since=since,
+            until=until,
+            timezone_name="UTC",
+            cache_meta=precomputed_cache,
+            error=None,
+        )
+        return jsonify(envelope)
 
     try:
         payload, meta = get_cached_payload(
@@ -3011,8 +3126,47 @@ def instagram_metrics():
             meta["requested_until"] = until
             response = dict(payload) if isinstance(payload, dict) else {"payload": payload}
             response["cache"] = meta
-            return jsonify(response)
-        return meta_error_response(err)
+            envelope = _build_api_envelope(
+                response,
+                platform="instagram",
+                account_id=str(ig),
+                since=since,
+                until=until,
+                timezone_name="UTC",
+                cache_meta=meta,
+                error=_build_api_error(
+                    err.args[0] if err.args else "Meta API error",
+                    code=err.code if err.code is not None else (err.error_type or "meta_api_error"),
+                    details={
+                        **_meta_api_error_details(err),
+                        "fallback": True,
+                        "fallback_reason": "meta_api_error",
+                        "requested_since": since,
+                        "requested_until": until,
+                    },
+                ),
+            )
+            return jsonify(envelope)
+        envelope = _build_api_envelope(
+            None,
+            platform="instagram",
+            account_id=str(ig),
+            since=since,
+            until=until,
+            timezone_name="UTC",
+            cache_meta=None,
+            error=_build_api_error(
+                err.args[0] if err.args else "Meta API error",
+                code=err.code if err.code is not None else (err.error_type or "meta_api_error"),
+                details={
+                    **_meta_api_error_details(err),
+                    "fallback": False,
+                    "requested_since": since,
+                    "requested_until": until,
+                },
+            ),
+        )
+        return jsonify(envelope), 502
     except ValueError as err:
         fallback = get_latest_cached_payload("instagram_metrics", ig, platform=DEFAULT_CACHE_PLATFORM)
         if fallback:
@@ -3024,8 +3178,44 @@ def instagram_metrics():
             meta["requested_until"] = until
             response = dict(payload) if isinstance(payload, dict) else {"payload": payload}
             response["cache"] = meta
-            return jsonify(response)
-        return jsonify({"error": str(err)}), 400
+            envelope = _build_api_envelope(
+                response,
+                platform="instagram",
+                account_id=str(ig),
+                since=since,
+                until=until,
+                timezone_name="UTC",
+                cache_meta=meta,
+                error=_build_api_error(
+                    str(err),
+                    code="invalid_range",
+                    details={
+                        "fallback": True,
+                        "requested_since": since,
+                        "requested_until": until,
+                    },
+                ),
+            )
+            return jsonify(envelope)
+        envelope = _build_api_envelope(
+            None,
+            platform="instagram",
+            account_id=str(ig),
+            since=since,
+            until=until,
+            timezone_name="UTC",
+            cache_meta=None,
+            error=_build_api_error(
+                str(err),
+                code="invalid_range",
+                details={
+                    "fallback": False,
+                    "requested_since": since,
+                    "requested_until": until,
+                },
+            ),
+        )
+        return jsonify(envelope), 400
     except Exception as err:  # noqa: BLE001
         logger.exception("Falha inesperada em instagram_metrics")
         fallback = get_latest_cached_payload("instagram_metrics", ig, platform=DEFAULT_CACHE_PLATFORM)
@@ -3038,8 +3228,44 @@ def instagram_metrics():
             meta["requested_until"] = until
             response = dict(payload) if isinstance(payload, dict) else {"payload": payload}
             response["cache"] = meta
-            return jsonify(response)
-        return jsonify({"error": str(err)}), 500
+            envelope = _build_api_envelope(
+                response,
+                platform="instagram",
+                account_id=str(ig),
+                since=since,
+                until=until,
+                timezone_name="UTC",
+                cache_meta=meta,
+                error=_build_api_error(
+                    str(err),
+                    code="unexpected_error",
+                    details={
+                        "fallback": True,
+                        "requested_since": since,
+                        "requested_until": until,
+                    },
+                ),
+            )
+            return jsonify(envelope)
+        envelope = _build_api_envelope(
+            None,
+            platform="instagram",
+            account_id=str(ig),
+            since=since,
+            until=until,
+            timezone_name="UTC",
+            cache_meta=None,
+            error=_build_api_error(
+                str(err),
+                code="unexpected_error",
+                details={
+                    "fallback": False,
+                    "requested_since": since,
+                    "requested_until": until,
+                },
+            ),
+        )
+        return jsonify(envelope), 500
 
     payload_obj = dict(payload) if isinstance(payload, dict) else {"payload": payload}
     _ensure_reach_timeseries(payload_obj)
@@ -3069,7 +3295,17 @@ def instagram_metrics():
             logger.warning("Falha ao forçar refresh para completar reach_timeseries: %s", refresh_err)
 
     payload_obj["cache"] = meta
-    return jsonify(payload_obj)
+    envelope = _build_api_envelope(
+        payload_obj,
+        platform="instagram",
+        account_id=str(ig),
+        since=since,
+        until=until,
+        timezone_name="UTC",
+        cache_meta=meta,
+        error=None,
+    )
+    return jsonify(envelope)
 
 @app.get("/api/instagram/organic")
 def instagram_organic():
@@ -3181,7 +3417,20 @@ def instagram_audience():
 def instagram_posts():
     ig = request.args.get("igUserId", IG_ID)
     if not ig:
-        return jsonify({"error": "META_IG_USER_ID is not configured"}), 500
+        envelope = _build_api_envelope(
+            None,
+            platform="instagram",
+            account_id=str(ig or ""),
+            since=None,
+            until=None,
+            timezone_name="UTC",
+            cache_meta=None,
+            error=_build_api_error(
+                "META_IG_USER_ID is not configured",
+                code="missing_account_id",
+            ),
+        )
+        return jsonify(envelope), 500
     limit_param = request.args.get("limit")
     try:
         limit = int(limit_param) if limit_param is not None else 6
@@ -3199,17 +3448,148 @@ def instagram_posts():
         )
     except MetaAPIError as err:
         mark_cache_error("instagram_posts", ig, None, None, {"limit": limit}, err.args[0], platform=DEFAULT_CACHE_PLATFORM)
-        return meta_error_response(err)
+        fallback = get_latest_cached_payload(
+            "instagram_posts",
+            ig,
+            extra={"limit": limit},
+            platform=DEFAULT_CACHE_PLATFORM,
+        )
+        if not fallback:
+            fallback = get_latest_cached_payload("instagram_posts", ig, platform=DEFAULT_CACHE_PLATFORM)
+        if fallback:
+            payload, meta = fallback
+            meta = dict(meta or {})
+            meta["fallback_error"] = err.args[0] if err.args else "Meta API error"
+            meta["fallback_reason"] = "meta_api_error"
+            meta["requested_limit"] = limit
+            response = dict(payload) if isinstance(payload, dict) else {"payload": payload}
+            response["cache"] = meta
+            envelope = _build_api_envelope(
+                response,
+                platform="instagram",
+                account_id=str(ig),
+                since=None,
+                until=None,
+                timezone_name="UTC",
+                cache_meta=meta,
+                error=_build_api_error(
+                    err.args[0] if err.args else "Meta API error",
+                    code=err.code if err.code is not None else (err.error_type or "meta_api_error"),
+                    details={
+                        **_meta_api_error_details(err),
+                        "fallback": True,
+                        "fallback_reason": "meta_api_error",
+                        "requested_limit": limit,
+                    },
+                ),
+            )
+            return jsonify(envelope)
+        envelope = _build_api_envelope(
+            None,
+            platform="instagram",
+            account_id=str(ig),
+            since=None,
+            until=None,
+            timezone_name="UTC",
+            cache_meta=None,
+            error=_build_api_error(
+                err.args[0] if err.args else "Meta API error",
+                code=err.code if err.code is not None else (err.error_type or "meta_api_error"),
+                details={
+                    **_meta_api_error_details(err),
+                    "fallback": False,
+                    "requested_limit": limit,
+                },
+            ),
+        )
+        return jsonify(envelope), 502
+    except Exception as err:  # noqa: BLE001
+        logger.exception("Falha inesperada em instagram_posts")
+        fallback = get_latest_cached_payload(
+            "instagram_posts",
+            ig,
+            extra={"limit": limit},
+            platform=DEFAULT_CACHE_PLATFORM,
+        )
+        if not fallback:
+            fallback = get_latest_cached_payload("instagram_posts", ig, platform=DEFAULT_CACHE_PLATFORM)
+        if fallback:
+            payload, meta = fallback
+            meta = dict(meta or {})
+            meta["fallback_error"] = str(err)
+            meta["fallback_reason"] = "unexpected_error"
+            meta["requested_limit"] = limit
+            response = dict(payload) if isinstance(payload, dict) else {"payload": payload}
+            response["cache"] = meta
+            envelope = _build_api_envelope(
+                response,
+                platform="instagram",
+                account_id=str(ig),
+                since=None,
+                until=None,
+                timezone_name="UTC",
+                cache_meta=meta,
+                error=_build_api_error(
+                    str(err),
+                    code="unexpected_error",
+                    details={
+                        "fallback": True,
+                        "requested_limit": limit,
+                    },
+                ),
+            )
+            return jsonify(envelope)
+        envelope = _build_api_envelope(
+            None,
+            platform="instagram",
+            account_id=str(ig),
+            since=None,
+            until=None,
+            timezone_name="UTC",
+            cache_meta=None,
+            error=_build_api_error(
+                str(err),
+                code="unexpected_error",
+                details={
+                    "fallback": False,
+                    "requested_limit": limit,
+                },
+            ),
+        )
+        return jsonify(envelope), 500
     response = dict(payload)
     response["cache"] = meta
-    return jsonify(response)
+    envelope = _build_api_envelope(
+        response,
+        platform="instagram",
+        account_id=str(ig),
+        since=None,
+        until=None,
+        timezone_name="UTC",
+        cache_meta=meta,
+        error=None,
+    )
+    return jsonify(envelope)
 
 
 @app.get("/api/instagram/posts/insights")
 def instagram_posts_insights():
     ig = request.args.get("igUserId", IG_ID)
     if not ig:
-        return jsonify({"error": "META_IG_USER_ID is not configured"}), 500
+        envelope = _build_api_envelope(
+            None,
+            platform="instagram",
+            account_id=str(ig or ""),
+            since=None,
+            until=None,
+            timezone_name="UTC",
+            cache_meta=None,
+            error=_build_api_error(
+                "META_IG_USER_ID is not configured",
+                code="missing_account_id",
+            ),
+        )
+        return jsonify(envelope), 500
     since, until = unix_range(request.args)
     limit_param = request.args.get("limit")
     try:
@@ -3236,15 +3616,199 @@ def instagram_posts_insights():
             err.args[0],
             platform=DEFAULT_CACHE_PLATFORM,
         )
-        return meta_error_response(err)
+        fallback = get_latest_cached_payload(
+            "instagram_posts_insights",
+            ig,
+            extra={"limit": limit},
+            platform=DEFAULT_CACHE_PLATFORM,
+        )
+        if not fallback:
+            fallback = get_latest_cached_payload("instagram_posts_insights", ig, platform=DEFAULT_CACHE_PLATFORM)
+        if fallback:
+            payload, meta = fallback
+            meta = dict(meta or {})
+            meta["fallback_error"] = err.args[0] if err.args else "Meta API error"
+            meta["fallback_reason"] = "meta_api_error"
+            meta["requested_since"] = since
+            meta["requested_until"] = until
+            meta["requested_limit"] = limit
+            response = dict(payload) if isinstance(payload, dict) else {"payload": payload}
+            response["cache"] = meta
+            envelope = _build_api_envelope(
+                response,
+                platform="instagram",
+                account_id=str(ig),
+                since=since,
+                until=until,
+                timezone_name="UTC",
+                cache_meta=meta,
+                error=_build_api_error(
+                    err.args[0] if err.args else "Meta API error",
+                    code=err.code if err.code is not None else (err.error_type or "meta_api_error"),
+                    details={
+                        **_meta_api_error_details(err),
+                        "fallback": True,
+                        "fallback_reason": "meta_api_error",
+                        "requested_since": since,
+                        "requested_until": until,
+                        "requested_limit": limit,
+                    },
+                ),
+            )
+            return jsonify(envelope)
+        envelope = _build_api_envelope(
+            None,
+            platform="instagram",
+            account_id=str(ig),
+            since=since,
+            until=until,
+            timezone_name="UTC",
+            cache_meta=None,
+            error=_build_api_error(
+                err.args[0] if err.args else "Meta API error",
+                code=err.code if err.code is not None else (err.error_type or "meta_api_error"),
+                details={
+                    **_meta_api_error_details(err),
+                    "fallback": False,
+                    "requested_since": since,
+                    "requested_until": until,
+                    "requested_limit": limit,
+                },
+            ),
+        )
+        return jsonify(envelope), 502
     except ValueError as err:
-        return jsonify({"error": str(err)}), 400
+        fallback = get_latest_cached_payload(
+            "instagram_posts_insights",
+            ig,
+            extra={"limit": limit},
+            platform=DEFAULT_CACHE_PLATFORM,
+        )
+        if not fallback:
+            fallback = get_latest_cached_payload("instagram_posts_insights", ig, platform=DEFAULT_CACHE_PLATFORM)
+        if fallback:
+            payload, meta = fallback
+            meta = dict(meta or {})
+            meta["fallback_error"] = str(err)
+            meta["fallback_reason"] = "invalid_range"
+            meta["requested_since"] = since
+            meta["requested_until"] = until
+            meta["requested_limit"] = limit
+            response = dict(payload) if isinstance(payload, dict) else {"payload": payload}
+            response["cache"] = meta
+            envelope = _build_api_envelope(
+                response,
+                platform="instagram",
+                account_id=str(ig),
+                since=since,
+                until=until,
+                timezone_name="UTC",
+                cache_meta=meta,
+                error=_build_api_error(
+                    str(err),
+                    code="invalid_range",
+                    details={
+                        "fallback": True,
+                        "requested_since": since,
+                        "requested_until": until,
+                        "requested_limit": limit,
+                    },
+                ),
+            )
+            return jsonify(envelope)
+        envelope = _build_api_envelope(
+            None,
+            platform="instagram",
+            account_id=str(ig),
+            since=since,
+            until=until,
+            timezone_name="UTC",
+            cache_meta=None,
+            error=_build_api_error(
+                str(err),
+                code="invalid_range",
+                details={
+                    "fallback": False,
+                    "requested_since": since,
+                    "requested_until": until,
+                    "requested_limit": limit,
+                },
+            ),
+        )
+        return jsonify(envelope), 400
     except Exception as err:  # noqa: BLE001
         logger.exception("Falha inesperada em instagram_posts_insights")
-        return jsonify({"error": str(err)}), 500
+        fallback = get_latest_cached_payload(
+            "instagram_posts_insights",
+            ig,
+            extra={"limit": limit},
+            platform=DEFAULT_CACHE_PLATFORM,
+        )
+        if not fallback:
+            fallback = get_latest_cached_payload("instagram_posts_insights", ig, platform=DEFAULT_CACHE_PLATFORM)
+        if fallback:
+            payload, meta = fallback
+            meta = dict(meta or {})
+            meta["fallback_error"] = str(err)
+            meta["fallback_reason"] = "unexpected_error"
+            meta["requested_since"] = since
+            meta["requested_until"] = until
+            meta["requested_limit"] = limit
+            response = dict(payload) if isinstance(payload, dict) else {"payload": payload}
+            response["cache"] = meta
+            envelope = _build_api_envelope(
+                response,
+                platform="instagram",
+                account_id=str(ig),
+                since=since,
+                until=until,
+                timezone_name="UTC",
+                cache_meta=meta,
+                error=_build_api_error(
+                    str(err),
+                    code="unexpected_error",
+                    details={
+                        "fallback": True,
+                        "requested_since": since,
+                        "requested_until": until,
+                        "requested_limit": limit,
+                    },
+                ),
+            )
+            return jsonify(envelope)
+        envelope = _build_api_envelope(
+            None,
+            platform="instagram",
+            account_id=str(ig),
+            since=since,
+            until=until,
+            timezone_name="UTC",
+            cache_meta=None,
+            error=_build_api_error(
+                str(err),
+                code="unexpected_error",
+                details={
+                    "fallback": False,
+                    "requested_since": since,
+                    "requested_until": until,
+                    "requested_limit": limit,
+                },
+            ),
+        )
+        return jsonify(envelope), 500
     response = dict(payload)
     response["cache"] = meta
-    return jsonify(response)
+    envelope = _build_api_envelope(
+        response,
+        platform="instagram",
+        account_id=str(ig),
+        since=since,
+        until=until,
+        timezone_name="UTC",
+        cache_meta=meta,
+        error=None,
+    )
+    return jsonify(envelope)
 
 
 def _parse_date_param(value: Optional[str]) -> date:
