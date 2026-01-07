@@ -219,6 +219,8 @@ DEFAULT_REFRESH_RESOURCES = [
 
 IG_METRICS_TABLE = "metrics_daily"
 IG_METRICS_ROLLUP_TABLE = "metrics_daily_rollup"
+IG_METRICS_DAILY_TABLE = "ig_metrics_daily"
+IG_METRICS_COVERAGE_TABLE = "ig_metrics_coverage"
 IG_METRICS_PLATFORM = "instagram"
 IG_ROLLUP_BUCKETS = ("7d", "30d", "90d")
 DEFAULT_CACHE_PLATFORM = "instagram"
@@ -1953,6 +1955,122 @@ def _coverage_summary(
         "last_available_date": last_available.isoformat() if last_available else None,
         "has_full_coverage": requested_days > 0 and covered_days == requested_days,
     }
+
+
+def _upsert_instagram_metrics_coverage(
+    client,
+    account_id: str,
+    start_date: date,
+    end_date: date,
+    days_expected: int,
+    days_present: int,
+    error_message: Optional[str] = None,
+) -> None:
+    if client is None:
+        return
+    payload = {
+        "account_id": str(account_id),
+        "date_from": start_date.isoformat(),
+        "date_to": end_date.isoformat(),
+        "days_expected": int(days_expected),
+        "days_present": int(days_present),
+        "last_backfill_at": datetime.now(timezone.utc).isoformat(),
+        "last_error": error_message,
+    }
+    try:
+        client.table(IG_METRICS_COVERAGE_TABLE).upsert(
+            payload,
+            on_conflict="account_id,date_from,date_to",
+        ).execute()
+    except Exception as err:  # noqa: BLE001
+        logger.warning("Coverage upsert failed for %s: %s", account_id, err)
+
+
+def compute_instagram_metrics_coverage(
+    account_id: str,
+    start_date: date,
+    end_date: date,
+    *,
+    debug: bool = False,
+    table_name: str = IG_METRICS_TABLE,
+    platform: Optional[str] = IG_METRICS_PLATFORM,
+    persist: bool = True,
+) -> Dict[str, Any]:
+    """
+    Compute coverage for a date range.
+    When debug is True, include missing_days list.
+    """
+    summary: Dict[str, Any] = {
+        "account_id": str(account_id),
+        "date_from": start_date.isoformat(),
+        "date_to": end_date.isoformat(),
+        "days_expected": 0,
+        "days_present": 0,
+    }
+
+    if start_date > end_date:
+        summary["error"] = "invalid_range"
+        if debug:
+            summary["missing_days"] = []
+        return summary
+
+    days_expected = (end_date - start_date).days + 1
+    summary["days_expected"] = days_expected
+
+    client = get_postgres_client()
+    if client is None:
+        summary["error"] = "postgres_not_configured"
+        if debug:
+            summary["missing_days"] = [
+                day.isoformat() for day in daterange(start_date, end_date)
+            ]
+        return summary
+
+    existing_dates: set[date] = set()
+    error_message = None
+    try:
+        query = (
+            client.table(table_name)
+            .select("metric_date")
+            .eq("account_id", account_id)
+            .gte("metric_date", start_date.isoformat())
+            .lte("metric_date", end_date.isoformat())
+        )
+        if platform and table_name == IG_METRICS_TABLE:
+            query = query.eq("platform", platform)
+        response = query.execute()
+        for row in response.data or []:
+            normalized = _normalize_metric_date(row.get("metric_date"))
+            if normalized is not None:
+                existing_dates.add(normalized)
+    except Exception as err:  # noqa: BLE001
+        error_message = str(err)
+        logger.warning("Coverage query failed for %s: %s", table_name, err)
+
+    days_present = len(existing_dates)
+    summary["days_present"] = days_present
+    summary["coverage_ratio"] = round(days_present / days_expected, 4) if days_expected else 1.0
+    if error_message:
+        summary["error"] = error_message
+    if debug:
+        summary["missing_days"] = [
+            day.isoformat()
+            for day in daterange(start_date, end_date)
+            if day not in existing_dates
+        ]
+
+    if persist:
+        _upsert_instagram_metrics_coverage(
+            client,
+            account_id,
+            start_date,
+            end_date,
+            days_expected,
+            days_present,
+            error_message,
+        )
+
+    return summary
 
 
 def _sum_metric(data: Dict[str, List[Dict[str, Any]]], metric_key: str) -> Optional[float]:

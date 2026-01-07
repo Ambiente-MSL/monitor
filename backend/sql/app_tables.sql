@@ -79,6 +79,60 @@ CREATE TABLE IF NOT EXISTS ig_cache (
 
 CREATE TABLE IF NOT EXISTS fb_cache (LIKE ig_cache INCLUDING ALL);
 CREATE TABLE IF NOT EXISTS ads_cache (LIKE ig_cache INCLUDING ALL);
+-- Instagram daily metrics (tall table used by ingest)
+CREATE TABLE IF NOT EXISTS metrics_daily (
+    account_id TEXT NOT NULL,
+    platform TEXT NOT NULL,
+    metric_key TEXT NOT NULL,
+    metric_date DATE NOT NULL,
+    value DOUBLE PRECISION,
+    metadata JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (account_id, platform, metric_key, metric_date)
+);
+
+CREATE TABLE IF NOT EXISTS metrics_daily_rollup (
+    account_id TEXT NOT NULL,
+    platform TEXT NOT NULL,
+    metric_key TEXT NOT NULL,
+    bucket TEXT NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    value_sum DOUBLE PRECISION,
+    value_avg DOUBLE PRECISION,
+    samples INTEGER,
+    payload JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (account_id, platform, metric_key, bucket, start_date, end_date)
+);
+
+-- Instagram daily metrics (wide table for fast dashboards)
+CREATE TABLE IF NOT EXISTS ig_metrics_daily (
+    account_id TEXT NOT NULL,
+    metric_date DATE NOT NULL,
+    reach INTEGER,
+    impressions INTEGER,
+    profile_views INTEGER,
+    follower_delta INTEGER,
+    engagement INTEGER,
+    source TEXT,
+    fetched_at TIMESTAMPTZ,
+    PRIMARY KEY (account_id, metric_date)
+);
+
+CREATE TABLE IF NOT EXISTS ig_metrics_coverage (
+    account_id TEXT NOT NULL,
+    date_from DATE NOT NULL,
+    date_to DATE NOT NULL,
+    days_expected INT NOT NULL,
+    days_present INT NOT NULL,
+    last_backfill_at TIMESTAMPTZ,
+    last_error TEXT,
+    PRIMARY KEY (account_id, date_from, date_to)
+);
+
 
 -- Índices de performance para métricas/Instagram
 CREATE INDEX IF NOT EXISTS metrics_daily_account_platform_date_idx
