@@ -526,7 +526,6 @@ const IG_VIEW_TYPE_COLORS = {
 };
 const INTERACTIONS_TABS = [
   { id: "reels", label: "Reels", icon: "R" },
-  { id: "videos", label: "Videos", icon: "V" },
   { id: "posts", label: "Posts", icon: "P" },
 ];
 
@@ -2375,34 +2374,108 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             </div>
           </div>
 
+          {/* Gráfico de Pizza - Interações por Audiência */}
+          <section className="ig-card-white" style={{
+            padding: '28px',
+            borderRadius: '20px',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
+            border: '1px solid rgba(0, 0, 0, 0.05)',
+            marginBottom: '24px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '10px',
+                background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <Heart size={20} color="white" fill="white" />
+              </div>
+              <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
+                Interações por Audiência
+              </h3>
+            </div>
+            <div style={{ height: 300, position: 'relative' }}>
+              <ResponsiveContainer>
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: 'Seguidores', value: 77, fill: '#6366f1' },
+                      { name: 'Não Seguidores', value: 23, fill: '#ec4899' }
+                    ]}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={70}
+                    outerRadius={110}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {[
+                      { name: 'Seguidores', value: 77, fill: '#6366f1' },
+                      { name: 'Não Seguidores', value: 23, fill: '#ec4899' }
+                    ].map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      background: 'white',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '12px',
+                      padding: '12px',
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                    }}
+                    formatter={(value) => `${value}%`}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                textAlign: 'center',
+                pointerEvents: 'none'
+              }}>
+                <div style={{ fontSize: '32px', fontWeight: 800, color: '#111827' }}>
+                  {formatNumber(interactionsBreakdown.total)}
+                </div>
+                <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500, marginTop: '4px' }}>
+                  Interações
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', marginTop: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#6366f1' }} />
+                <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Seguidores (77%)</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#ec4899' }} />
+                <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Não Seguidores (23%)</span>
+              </div>
+            </div>
+          </section>
+
           {/* Grid de Métricas Resumidas */}
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-            gap: '20px',
+            gap: '16px',
             marginBottom: '32px'
           }}>
             {/* Total de Interações */}
             <div className="ig-card-white" style={{
-              padding: '24px',
+              padding: '20px',
               textAlign: 'center',
               borderRadius: '16px',
               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
               background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.05) 0%, rgba(244, 114, 182, 0.05) 100%)',
               border: '1px solid rgba(236, 72, 153, 0.1)'
             }}>
-              <div style={{
-                width: '48px',
-                height: '48px',
-                margin: '0 auto 16px',
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <Heart size={24} color="white" fill="white" />
-              </div>
               <div style={{ fontSize: '36px', fontWeight: 800, color: '#ec4899', marginBottom: '8px' }}>
                 {formatNumber(interactionsBreakdown.total)}
               </div>
@@ -2412,7 +2485,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '6px',
-                marginTop: '12px',
+                marginTop: '8px',
                 fontSize: '13px',
                 color: interactionsDeltaTone,
                 fontWeight: 600
@@ -2430,19 +2503,12 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
 
             {/* Pico de Interações */}
             <div className="ig-card-white" style={{
-              padding: '24px',
+              padding: '20px',
               textAlign: 'center',
               borderRadius: '16px',
               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)'
             }}>
-              <div style={{
-                width: '48px',
-                height: '48px',
-                margin: '0 auto 16px',
-                borderRadius: '50%',
-                background: '#fef2f2'
-              }} />
-              <div style={{ fontSize: '36px', fontWeight: 800, color: '#ec4899', marginBottom: '8px', position: 'relative' }}>
+              <div style={{ fontSize: '36px', fontWeight: 800, color: '#ec4899', marginBottom: '8px' }}>
                 {interactionsPeak != null ? formatNumber(interactionsPeak) : "--"}
               </div>
               <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Pico de Interações (1 dia)</div>
