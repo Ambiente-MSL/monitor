@@ -3652,7 +3652,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 <div className="ig-profile-vertical__divider" />
 
                 <div className="ig-profile-vertical__engagement">
-                  <h4>Engajamento por conteúdo</h4>
+                  <h4>Engajamento por conteúdoo</h4>
                   {contentBreakdown.length ? (
                     <>
                       <div className="ig-profile-vertical__engagement-chart">
