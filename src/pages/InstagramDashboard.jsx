@@ -2374,145 +2374,182 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             </div>
           </div>
 
-          {/* Gráfico de Pizza - Interações por Audiência */}
-          <section className="ig-card-white" style={{
-            padding: '28px',
-            borderRadius: '20px',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
-            border: '1px solid rgba(0, 0, 0, 0.05)',
-            marginBottom: '24px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '10px',
-                background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <Heart size={20} color="white" fill="white" />
-              </div>
-              <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
-                Interações por Audiência
-              </h3>
-            </div>
-            <div style={{ height: 300, position: 'relative' }}>
-              <ResponsiveContainer>
-                <PieChart>
-                  <Pie
-                    data={[
-                      { name: 'Seguidores', value: 77, fill: '#6366f1' },
-                      { name: 'Não Seguidores', value: 23, fill: '#ec4899' }
-                    ]}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={70}
-                    outerRadius={110}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {[
-                      { name: 'Seguidores', value: 77, fill: '#6366f1' },
-                      { name: 'Não Seguidores', value: 23, fill: '#ec4899' }
-                    ].map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      background: 'white',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '12px',
-                      padding: '12px',
-                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
-                    }}
-                    formatter={(value) => `${value}%`}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <div style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                textAlign: 'center',
-                pointerEvents: 'none'
-              }}>
-                <div style={{ fontSize: '32px', fontWeight: 800, color: '#111827' }}>
-                  {formatNumber(interactionsBreakdown.total)}
-                </div>
-                <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500, marginTop: '4px' }}>
-                  Interações
-                </div>
-              </div>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', marginTop: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#6366f1' }} />
-                <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Seguidores (77%)</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#ec4899' }} />
-                <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Não Seguidores (23%)</span>
-              </div>
-            </div>
-          </section>
-
-          {/* Grid de Métricas Resumidas */}
+          {/* Grade de Gráficos - Audiência e Tipo de Conteúdo */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-            gap: '16px',
+            gridTemplateColumns: 'repeat(2, 1fr)',
+            gap: '20px',
             marginBottom: '32px'
           }}>
-            {/* Total de Interações */}
-            <div className="ig-card-white" style={{
-              padding: '20px',
-              textAlign: 'center',
-              borderRadius: '16px',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
-              background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.05) 0%, rgba(244, 114, 182, 0.05) 100%)',
-              border: '1px solid rgba(236, 72, 153, 0.1)'
+            {/* Gráfico de Pizza - Interações por Audiência */}
+            <section className="ig-card-white" style={{
+              padding: '28px',
+              borderRadius: '20px',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
+              border: '1px solid rgba(0, 0, 0, 0.05)'
             }}>
-              <div style={{ fontSize: '36px', fontWeight: 800, color: '#ec4899', marginBottom: '8px' }}>
-                {formatNumber(interactionsBreakdown.total)}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
+                </div>
+                <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
+                  Por Audiência
+                </h3>
               </div>
-              <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Total de Interações</div>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                marginTop: '8px',
-                fontSize: '13px',
-                color: interactionsDeltaTone,
-                fontWeight: 600
-              }}>
-                {interactionsDeltaDisplay ? (
-                  <>
-                    {interactionsDeltaPct < 0 ? <TrendingDown size={16} /> : <TrendingUp size={16} />}
-                    <span>{interactionsDeltaDisplay}</span>
-                  </>
-                ) : (
-                  <span>--</span>
-                )}
+              <div style={{ height: 300, position: 'relative' }}>
+                <ResponsiveContainer>
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Seguidores', value: 77, fill: '#6366f1' },
+                        { name: 'Não Seguidores', value: 23, fill: '#ec4899' }
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={70}
+                      outerRadius={110}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {[
+                        { name: 'Seguidores', value: 77, fill: '#6366f1' },
+                        { name: 'Não Seguidores', value: 23, fill: '#ec4899' }
+                      ].map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        background: 'white',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '12px',
+                        padding: '12px',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                      }}
+                      formatter={(value) => `${value}%`}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  textAlign: 'center',
+                  pointerEvents: 'none'
+                }}>
+                  <div style={{ fontSize: '32px', fontWeight: 800, color: '#111827' }}>
+                    {formatNumber(interactionsBreakdown.total)}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500, marginTop: '4px' }}>
+                    Interações
+                  </div>
+                </div>
               </div>
-            </div>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', marginTop: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#6366f1' }} />
+                  <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Seguidores (77%)</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#ec4899' }} />
+                  <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Não Seguidores (23%)</span>
+                </div>
+              </div>
+            </section>
 
-            {/* Pico de Interações */}
-            <div className="ig-card-white" style={{
-              padding: '20px',
-              textAlign: 'center',
-              borderRadius: '16px',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)'
+            {/* Gráfico de Barras Horizontais - Interações por Tipo de Conteúdo */}
+            <section className="ig-card-white" style={{
+              padding: '28px',
+              borderRadius: '20px',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
+              border: '1px solid rgba(0, 0, 0, 0.05)'
             }}>
-              <div style={{ fontSize: '36px', fontWeight: 800, color: '#ec4899', marginBottom: '8px' }}>
-                {interactionsPeak != null ? formatNumber(interactionsPeak) : "--"}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="7" height="7" />
+                    <rect x="14" y="3" width="7" height="7" />
+                    <rect x="14" y="14" width="7" height="7" />
+                    <rect x="3" y="14" width="7" height="7" />
+                  </svg>
+                </div>
+                <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
+                  Por Tipo de Conteúdo
+                </h3>
               </div>
-              <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Pico de Interações (1 dia)</div>
-            </div>
+              <div style={{ height: 300 }}>
+                <ResponsiveContainer>
+                  <BarChart
+                    layout="vertical"
+                    data={[
+                      { name: 'Reels', value: 4520, fill: '#6366f1' },
+                      { name: 'Posts', value: 3280, fill: '#ec4899' },
+                      { name: 'Stories', value: 1980, fill: '#f59e0b' }
+                    ]}
+                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
+                    <XAxis type="number" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={{ stroke: '#e5e7eb' }} />
+                    <YAxis type="category" dataKey="name" tick={{ fontSize: 13, fill: '#111827', fontWeight: 600 }} axisLine={{ stroke: '#e5e7eb' }} width={80} />
+                    <Tooltip
+                      formatter={(value) => formatNumber(value)}
+                      contentStyle={{
+                        background: 'white',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '12px',
+                        padding: '12px',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                      }}
+                    />
+                    <Bar dataKey="value" radius={[0, 8, 8, 0]}>
+                      {[
+                        { name: 'Reels', value: 4520, fill: '#6366f1' },
+                        { name: 'Posts', value: 3280, fill: '#ec4899' },
+                        { name: 'Stories', value: 1980, fill: '#f59e0b' }
+                      ].map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '20px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#6366f1' }} />
+                  <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Reels</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#ec4899' }} />
+                  <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Posts</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#f59e0b' }} />
+                  <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Stories</span>
+                </div>
+              </div>
+            </section>
           </div>
 
           {/* Tabs de Navegação */}
@@ -2554,7 +2591,24 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   }
                 }}
               >
-                <span style={{ fontSize: '18px' }}>{tab.icon}</span>
+                {tab.id === 'reels' ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" />
+                    <line x1="7" y1="2" x2="7" y2="22" />
+                    <line x1="17" y1="2" x2="17" y2="22" />
+                    <line x1="2" y1="12" x2="22" y2="12" />
+                    <line x1="2" y1="7" x2="7" y2="7" />
+                    <line x1="2" y1="17" x2="7" y2="17" />
+                    <line x1="17" y1="17" x2="22" y2="17" />
+                    <line x1="17" y1="7" x2="22" y2="7" />
+                  </svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <polyline points="21 15 16 10 5 21" />
+                  </svg>
+                )}
                 <span>{tab.label}</span>
               </button>
             ))}
