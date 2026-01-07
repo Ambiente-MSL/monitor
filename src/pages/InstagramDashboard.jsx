@@ -3598,7 +3598,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 <div className="ig-profile-vertical__divider" />
 
                 <div className="ig-profile-vertical__engagement">
-                  <h4>Engajamento por Conteúdo</h4>
+                  <h4>Engajamento por conteúdo</h4>
                   {contentBreakdown.length ? (
                     <>
                       <div className="ig-profile-vertical__engagement-chart">
@@ -3663,7 +3663,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 {/* Posts em Destaque */}
                 <div className="ig-profile-vertical__divider" />
                 <div className="ig-profile-vertical__top-posts">
-                  <h4>Top posts</h4>
+                  <h4>Melhores posts</h4>
                   <div className="ig-top-posts-list">
                     {loadingPosts && !topPosts.length ? (
                       <div className="ig-empty-state">Carregando...</div>
@@ -3909,7 +3909,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             <section className="ig-growth-clean ig-growth-followers ig-follower-growth-card">
               <header className="ig-card-header">
                 <div>
-                  <h3>Crescimento de Seguidores</h3>
+                  <h3>Crescimento de seguidores</h3>
                 <p className="ig-card-subtitle">Ganho diário</p>
                 </div>
               </header>
@@ -4086,7 +4086,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             </div>
 
             <div className="ig-analytics-card__body">
-              <div style={{ textAlign: 'center', padding: '20px 16px' }}>
+              <div style={{ textAlign: 'center', padding: '16px 16px 18px' }}>
                 <div style={{
                   fontSize: '42px',
                   fontWeight: 800,
@@ -4098,7 +4098,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 }}>
                   {formatNumber(profileViewsTotal ?? null)}
                 </div>
-                <div style={{ fontSize: '13px', color: '#6b7280', marginBottom: '16px', fontWeight: 500 }}>
+                <div style={{ fontSize: '13px', color: '#6b7280', marginBottom: '14px', fontWeight: 500 }}>
                   visualizações no período
                 </div>
 
@@ -4187,11 +4187,11 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               </button>
             </div>
             <div className="ig-analytics-card__body">
-              <div style={{ textAlign: 'center', padding: '20px 16px' }}>
+              <div style={{ textAlign: 'center', padding: '16px 16px 18px' }}>
                 <div style={{ fontSize: '42px', fontWeight: 700, color: '#ec4899', marginBottom: '4px' }}>
                   {formatNumber(interactionsBreakdown.total)}
                 </div>
-                <div style={{ fontSize: '13px', color: '#6b7280', marginBottom: '16px' }}>
+                <div style={{ fontSize: '13px', color: '#6b7280', marginBottom: '14px' }}>
                   Total de interações no período
                 </div>
                 <div style={{
@@ -4254,7 +4254,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
           <section className="ig-card-white ig-analytics-card" style={{ gridColumn: 'span 2' }}>
             <div className="ig-analytics-card__header">
               <div>
-                <h4>Últimos 5 posts</h4>
+                <h4>Posts recentes</h4>
                 <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
                   Publicações mais recentes no período filtrado
                 </p>
