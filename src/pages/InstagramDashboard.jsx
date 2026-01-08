@@ -668,6 +668,7 @@ export default function InstagramDashboard() {
   // Estado para controlar visualização detalhada
   const [showDetailedView, setShowDetailedView] = useState(false);
   const [showInteractionsDetail, setShowInteractionsDetail] = useState(false);
+  const [showFollowersDetail, setShowFollowersDetail] = useState(false);
   const [interactionsTab, setInteractionsTab] = useState('reels'); // reels, videos, posts
 
   const now = useMemo(() => new Date(), []);
@@ -2956,6 +2957,481 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
     );
   }
 
+  // Renderização da visualização detalhada de Seguidores
+  if (showFollowersDetail) {
+    // Dados mockados para a aba de seguidores
+    const mockGenderData = [
+      { name: 'Homens', value: 45, color: '#6366f1' },
+      { name: 'Mulheres', value: 52, color: '#ec4899' },
+      { name: 'Outros', value: 3, color: '#8b5cf6' }
+    ];
+
+    const mockAgeData = [
+      { name: '13-17', value: 8 },
+      { name: '18-24', value: 32 },
+      { name: '25-34', value: 28 },
+      { name: '35-44', value: 18 },
+      { name: '45-54', value: 10 },
+      { name: '55-64', value: 3 },
+      { name: '65+', value: 1 }
+    ];
+
+    const mockCitiesData = [
+      { city: 'São Paulo', state: 'SP', country: 'Brasil', followers: 15420, percentage: 18.5 },
+      { city: 'Rio de Janeiro', state: 'RJ', country: 'Brasil', followers: 12350, percentage: 14.8 },
+      { city: 'Belo Horizonte', state: 'MG', country: 'Brasil', followers: 8920, percentage: 10.7 },
+      { city: 'Brasília', state: 'DF', country: 'Brasil', followers: 7650, percentage: 9.2 },
+      { city: 'Curitiba', state: 'PR', country: 'Brasil', followers: 6340, percentage: 7.6 },
+      { city: 'Porto Alegre', state: 'RS', country: 'Brasil', followers: 5890, percentage: 7.1 },
+      { city: 'Salvador', state: 'BA', country: 'Brasil', followers: 4720, percentage: 5.7 },
+      { city: 'Fortaleza', state: 'CE', country: 'Brasil', followers: 4120, percentage: 4.9 },
+      { city: 'Recife', state: 'PE', country: 'Brasil', followers: 3850, percentage: 4.6 },
+      { city: 'Manaus', state: 'AM', country: 'Brasil', followers: 3210, percentage: 3.9 }
+    ];
+
+    return (
+      <div className="instagram-dashboard instagram-dashboard--clean">
+        <div className="ig-clean-container">
+          {/* Degradê de fundo do Instagram */}
+          <div className="ig-hero-gradient" aria-hidden="true" />
+
+          {/* Header com Logo Instagram */}
+          <div className="ig-clean-header" style={{ marginBottom: '24px' }}>
+            <div className="ig-clean-header__brand">
+              <div className="ig-clean-header__logo">
+                <InstagramIcon size={32} />
+              </div>
+              <h1>Instagram</h1>
+            </div>
+          </div>
+
+          {/* Hero com navegação */}
+          <div className="ig-hero" style={{ marginTop: '20px', marginBottom: '32px' }}>
+            <div className="ig-hero__background" />
+            <div className="ig-hero__content">
+              {/* Navegação de volta */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <button
+                  onClick={() => setShowFollowersDetail(false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '12px 24px',
+                    borderRadius: '12px',
+                    background: 'rgba(255, 255, 255, 0.95)',
+                    backdropFilter: 'blur(10px)',
+                    border: '2px solid white',
+                    fontSize: '14px',
+                    fontWeight: 700,
+                    color: '#c084fc',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.background = 'white';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.2)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.95)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                  }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c084fc" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                  <span>Voltar ao Dashboard</span>
+                </button>
+              </div>
+
+              {/* Título da seção */}
+              <div>
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '10px 20px',
+                  borderRadius: '12px',
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  marginBottom: '12px'
+                }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
+                  <span style={{ fontSize: '14px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Crescimento de Seguidores</span>
+                </div>
+              </div>
+
+              {/* Cards de KPI rápido na hero */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '16px',
+                marginTop: '24px'
+              }}>
+                <div style={{
+                  padding: '20px',
+                  borderRadius: '16px',
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)'
+                }}>
+                  <div style={{ fontSize: '32px', fontWeight: 700, color: 'white', marginBottom: '4px' }}>
+                    {formatNumber(totalFollowers ?? 0)}
+                  </div>
+                  <div style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.85)', fontWeight: 500 }}>
+                    Total de Seguidores
+                  </div>
+                </div>
+                <div style={{
+                  padding: '20px',
+                  borderRadius: '16px',
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)'
+                }}>
+                  <div style={{ fontSize: '32px', fontWeight: 700, color: 'white', marginBottom: '4px' }}>
+                    +{formatNumber(1234)}
+                  </div>
+                  <div style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.85)', fontWeight: 500 }}>
+                    Novos Seguidores
+                  </div>
+                </div>
+                <div style={{
+                  padding: '20px',
+                  borderRadius: '16px',
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)'
+                }}>
+                  <div style={{ fontSize: '32px', fontWeight: 700, color: 'white', marginBottom: '4px' }}>
+                    +8.5%
+                  </div>
+                  <div style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.85)', fontWeight: 500 }}>
+                    Crescimento
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Layout em coluna única */}
+          <div style={{
+            padding: '0 24px 24px',
+            minHeight: 'calc(100vh - 200px)'
+          }}>
+            {/* Conteúdo principal */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '1400px', margin: '0 auto' }}>
+
+              {/* Gráfico de Crescimento de Seguidores */}
+              <section className="ig-card-white" style={{
+                padding: '28px',
+                background: 'white',
+                borderRadius: '20px',
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
+                border: '1px solid rgba(0, 0, 0, 0.05)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '10px',
+                    background: 'linear-gradient(135deg, #c084fc 0%, #a855f7 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                    </svg>
+                  </div>
+                  <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
+                    Crescimento ao longo do período
+                  </h3>
+                </div>
+                <div style={{ height: 350 }}>
+                  {followerGrowthChartData.length ? (
+                    <ResponsiveContainer>
+                      <BarChart
+                        data={followerGrowthChartData}
+                        margin={{ top: 16, right: 16, bottom: 32, left: 0 }}
+                      >
+                        <defs>
+                          <linearGradient id="followerDetailBar" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#d8b4fe" />
+                            <stop offset="100%" stopColor="#c084fc" />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                        <XAxis
+                          dataKey="label"
+                          tick={{ fontSize: 11, fill: '#6b7280' }}
+                          axisLine={{ stroke: '#e5e7eb' }}
+                          tickLine={false}
+                        />
+                        <YAxis
+                          tick={{ fontSize: 11, fill: '#6b7280' }}
+                          axisLine={{ stroke: '#e5e7eb' }}
+                          tickLine={false}
+                          tickFormatter={(value) => formatNumber(value)}
+                        />
+                        <Tooltip
+                          cursor={{ fill: 'rgba(216, 180, 254, 0.25)' }}
+                          formatter={(value) => [formatNumber(value), 'Seguidores ganhos']}
+                          contentStyle={{
+                            background: 'white',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '8px',
+                            padding: '8px 12px'
+                          }}
+                        />
+                        <Bar dataKey="value" fill="url(#followerDetailBar)" radius={[8, 8, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="ig-empty-state">Sem dados disponíveis.</div>
+                  )}
+                </div>
+              </section>
+
+              {/* Grid com Gênero e Faixa Etária */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px' }}>
+
+                {/* Gráfico de Pizza - Gênero */}
+                <section className="ig-card-white" style={{
+                  padding: '28px',
+                  borderRadius: '20px',
+                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
+                  border: '1px solid rgba(0, 0, 0, 0.05)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '10px',
+                      background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="8" x2="12" y2="12" />
+                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                      </svg>
+                    </div>
+                    <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
+                      Gênero dos Seguidores
+                    </h3>
+                  </div>
+                  <div style={{ height: 280, position: 'relative' }}>
+                    <ResponsiveContainer>
+                      <PieChart>
+                        <Pie
+                          data={mockGenderData}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={100}
+                          paddingAngle={2}
+                          stroke="none"
+                        >
+                          {mockGenderData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          formatter={(value) => `${value}%`}
+                          contentStyle={{
+                            background: 'white',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '8px',
+                            padding: '8px 12px'
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      textAlign: 'center',
+                      pointerEvents: 'none'
+                    }}>
+                      <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>
+                        Total
+                      </div>
+                      <div style={{ fontSize: '24px', fontWeight: 800, color: '#111827' }}>
+                        100%
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', marginTop: '20px', flexWrap: 'wrap' }}>
+                    {mockGenderData.map((item) => (
+                      <div key={item.name} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: item.color }} />
+                        <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>
+                          {item.name}: {item.value}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                {/* Gráfico de Barras - Faixa Etária */}
+                <section className="ig-card-white" style={{
+                  padding: '28px',
+                  borderRadius: '20px',
+                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
+                  border: '1px solid rgba(0, 0, 0, 0.05)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '10px',
+                      background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <line x1="9" y1="9" x2="15" y2="9" />
+                        <line x1="9" y1="15" x2="15" y2="15" />
+                      </svg>
+                    </div>
+                    <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
+                      Faixa Etária
+                    </h3>
+                  </div>
+                  <div style={{ height: 280 }}>
+                    <ResponsiveContainer>
+                      <BarChart data={mockAgeData} layout="vertical" margin={{ left: 0, right: 12, top: 5, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
+                        <XAxis
+                          type="number"
+                          tick={{ fontSize: 11, fill: '#6b7280' }}
+                          axisLine={{ stroke: '#e5e7eb' }}
+                          tickFormatter={(value) => `${value}%`}
+                        />
+                        <YAxis
+                          type="category"
+                          dataKey="name"
+                          tick={{ fontSize: 11, fill: '#6b7280' }}
+                          width={60}
+                          axisLine={{ stroke: '#e5e7eb' }}
+                        />
+                        <Tooltip
+                          formatter={(value) => [`${value}%`, 'Percentual']}
+                          contentStyle={{
+                            background: 'white',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '8px',
+                            padding: '8px 12px'
+                          }}
+                        />
+                        <Bar dataKey="value" fill="#6366f1" radius={[0, 8, 8, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </section>
+              </div>
+
+              {/* Lista de Cidades */}
+              <section className="ig-card-white" style={{
+                padding: '28px',
+                borderRadius: '20px',
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
+                border: '1px solid rgba(0, 0, 0, 0.05)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '10px',
+                    background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                      <circle cx="12" cy="10" r="3" />
+                    </svg>
+                  </div>
+                  <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
+                    Principais Cidades
+                  </h3>
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+                        <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: '13px', fontWeight: 600, color: '#6b7280' }}>#</th>
+                        <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: '13px', fontWeight: 600, color: '#6b7280' }}>Cidade</th>
+                        <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: '13px', fontWeight: 600, color: '#6b7280' }}>Estado</th>
+                        <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: '13px', fontWeight: 600, color: '#6b7280' }}>País</th>
+                        <th style={{ textAlign: 'right', padding: '12px 16px', fontSize: '13px', fontWeight: 600, color: '#6b7280' }}>Seguidores</th>
+                        <th style={{ textAlign: 'right', padding: '12px 16px', fontSize: '13px', fontWeight: 600, color: '#6b7280' }}>% do Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {mockCitiesData.map((city, index) => (
+                        <tr key={index} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                          <td style={{ padding: '16px', fontSize: '14px', color: '#6b7280', fontWeight: 600 }}>
+                            {index + 1}
+                          </td>
+                          <td style={{ padding: '16px', fontSize: '14px', color: '#111827', fontWeight: 600 }}>
+                            {city.city}
+                          </td>
+                          <td style={{ padding: '16px', fontSize: '14px', color: '#6b7280' }}>
+                            {city.state}
+                          </td>
+                          <td style={{ padding: '16px', fontSize: '14px', color: '#6b7280' }}>
+                            {city.country}
+                          </td>
+                          <td style={{ padding: '16px', fontSize: '14px', color: '#111827', fontWeight: 600, textAlign: 'right' }}>
+                            {formatNumber(city.followers)}
+                          </td>
+                          <td style={{ padding: '16px', fontSize: '14px', textAlign: 'right' }}>
+                            <span style={{
+                              display: 'inline-block',
+                              padding: '4px 12px',
+                              borderRadius: '12px',
+                              background: 'rgba(16, 185, 129, 0.1)',
+                              color: '#10b981',
+                              fontWeight: 600,
+                              fontSize: '13px'
+                            }}>
+                              {city.percentage}%
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Renderização da visualização detalhada de Visualizações
   if (showDetailedView) {
     return (
@@ -4066,11 +4542,37 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
 
             {/* Card de Crescimento de Seguidores */}
             <section className="ig-growth-clean ig-growth-followers ig-follower-growth-card">
-              <header className="ig-card-header">
+              <header className="ig-card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
                   <h3>Crescimento de seguidores</h3>
-                <p className="ig-card-subtitle">Ganho diário</p>
+                  <p className="ig-card-subtitle">Ganho diário</p>
                 </div>
+                <button
+                  onClick={() => setShowFollowersDetail(true)}
+                  style={{
+                    padding: '8px 14px',
+                    background: 'linear-gradient(135deg, #c084fc 0%, #a855f7 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    boxShadow: '0 2px 8px rgba(192, 132, 252, 0.25)',
+                    whiteSpace: 'nowrap'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(192, 132, 252, 0.35)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(192, 132, 252, 0.25)';
+                  }}
+                >
+                  Ver mais
+                </button>
               </header>
 
               <div className="ig-chart-area">
@@ -4249,8 +4751,8 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                justifyContent: 'center',
-                padding: '24px 16px',
+                justifyContent: 'flex-start',
+                padding: '16px 16px 18px',
                 minHeight: '200px'
               }}>
                 <div style={{
