@@ -804,6 +804,7 @@ export default function InstagramDashboard() {
 
 const [accountInfo, setAccountInfo] = useState(null);
 const [followerSeries, setFollowerSeries] = useState([]);
+const [followerGainSeries, setFollowerGainSeries] = useState([]);
 const [followerCounts, setFollowerCounts] = useState(null);
 const [overviewSnapshot, setOverviewSnapshot] = useState(null);
 const [reachCacheSeries, setReachCacheSeries] = useState([]);
@@ -828,6 +829,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
     if (!accountConfig?.instagramUserId) {
       setMetrics([]);
       setFollowerSeries([]);
+      setFollowerGainSeries([]);
       setFollowerCounts(null);
       setReachCacheSeries([]);
       setProfileViewsSeries([]);
@@ -855,6 +857,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
 
       setMetrics(Array.isArray(cachedMetrics.metrics) ? cachedMetrics.metrics : []);
       setFollowerSeries(Array.isArray(cachedMetrics.followerSeries) ? cachedMetrics.followerSeries : []);
+      setFollowerGainSeries(Array.isArray(cachedMetrics.followerGainSeries) ? cachedMetrics.followerGainSeries : []);
       setFollowerCounts(cachedMetrics.followerCounts ?? null);
       setReachCacheSeries(Array.isArray(cachedMetrics.reachSeries) ? cachedMetrics.reachSeries : []);
       const cachedViewsSeries = Array.isArray(cachedMetrics.videoViewsSeries)
@@ -949,6 +952,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
     if (shouldBlockUi) {
       setMetrics([]);
       setFollowerSeries([]);
+      setFollowerGainSeries([]);
       setFollowerCounts(null);
       setReachCacheSeries([]);
       setProfileViewsSeries([]);
@@ -984,6 +988,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
 
         const fetchedMetrics = json.metrics || [];
         const fetchedFollowerSeries = Array.isArray(json.follower_series) ? json.follower_series : [];
+        const fetchedFollowerGainSeries = Array.isArray(json.followers_gain_series) ? json.followers_gain_series : [];
         const fetchedFollowerCounts = json.follower_counts || null;
         const parseNumericSeries = (series) => (
           Array.isArray(series)
@@ -1007,6 +1012,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
 
         setMetrics(fetchedMetrics);
         setFollowerSeries(fetchedFollowerSeries);
+        setFollowerGainSeries(fetchedFollowerGainSeries);
         setFollowerCounts(fetchedFollowerCounts);
         setReachCacheSeries(reachSeries);
         setProfileViewsSeries(resolvedViewsSeries);
@@ -1014,6 +1020,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
         setDashboardCache(metricsCacheKey, {
           metrics: fetchedMetrics,
           followerSeries: fetchedFollowerSeries,
+          followerGainSeries: fetchedFollowerGainSeries,
           followerCounts: fetchedFollowerCounts,
           reachSeries,
           profileViewsSeries: resolvedViewsSeries,
@@ -1034,6 +1041,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
         if (shouldBlockUi) {
           setMetrics([]);
           setFollowerSeries([]);
+          setFollowerGainSeries([]);
           setFollowerCounts(null);
           setReachCacheSeries([]);
           setProfileViewsSeries([]);
@@ -1399,6 +1407,18 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
       return { date: dateKey, value: extractNumber(entry.value, null) };
     })
     .filter(Boolean), [followerSeries]);
+  const followerGainSeriesNormalized = useMemo(() => (followerGainSeries || [])
+    .map((entry) => {
+      const dateKey = normalizeDateKey(
+        entry.date || entry.metric_date || entry.end_time || entry.endTime || entry.label,
+      );
+      if (!dateKey) return null;
+      const value = extractNumber(entry.value, null);
+      if (value == null) return null;
+      return { date: dateKey, value };
+    })
+    .filter(Boolean)
+    .sort((a, b) => (a.date || "").localeCompare(b.date || "")), [followerGainSeries]);
   const followerSeriesInRange = useMemo(() => {
     if (!followerSeriesNormalized.length) return [];
     const sorted = [...followerSeriesNormalized].sort((a, b) => {
@@ -1787,6 +1807,23 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
 
   const followerGrowthStats = useMemo(() => {
     const totalsByWeekday = Array.from({ length: 7 }, () => 0);
+    if (followerGainSeriesNormalized.length) {
+      let accumulatedGrowth = 0;
+      let samples = 0;
+      followerGainSeriesNormalized.forEach((entry) => {
+        const gainValue = Math.max(0, extractNumber(entry.value, 0));
+        accumulatedGrowth += gainValue;
+        samples += 1;
+        const dayRef = new Date(`${entry.date}T00:00:00`);
+        if (Number.isNaN(dayRef.getTime())) return;
+        const weekday = dayRef.getDay();
+        totalsByWeekday[weekday] += gainValue;
+      });
+      return {
+        average: samples ? Math.round(accumulatedGrowth / samples) : 0,
+        weeklyPattern: buildWeeklyPattern(totalsByWeekday),
+      };
+    }
     if (followerSeriesNormalized.length >= 2) {
       let accumulatedGrowth = 0;
       for (let index = 1; index < followerSeriesNormalized.length; index += 1) {
@@ -1812,7 +1849,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
       average: fallbackGrowth ? Math.round(fallbackGrowth / 30) : 0,
       weeklyPattern: buildWeeklyPattern(totalsByWeekday),
     };
-  }, [followerSeriesNormalized, followerGrowthMetric?.value]);
+  }, [followerGainSeriesNormalized, followerSeriesNormalized, followerGrowthMetric?.value]);
 
   const avgFollowersPerDay = followerGrowthStats.average;
 
@@ -2016,14 +2053,16 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
   const followerGrowthChartData = useMemo(() => {
     if (metricsLoading) return [];
     if (metricsError) return [];
-    if (!followerGrowthSeriesSorted.length) return [];
+    const hasGainSeries = followerGainSeriesNormalized.length > 0;
+    const seriesForRange = hasGainSeries ? followerGainSeriesNormalized : followerGrowthSeriesSorted;
+    if (!seriesForRange.length) return [];
 
-    const rangeStart = sinceDate
-      ? startOfDay(sinceDate)
-      : new Date(`${followerGrowthSeriesSorted[0].date}T00:00:00`);
-    const rangeEnd = untilDate
-      ? startOfDay(untilDate)
-      : new Date(`${followerGrowthSeriesSorted[followerGrowthSeriesSorted.length - 1].date}T00:00:00`);
+    const firstDateKey = seriesForRange[0]?.date;
+    const lastDateKey = seriesForRange[seriesForRange.length - 1]?.date;
+    if (!firstDateKey || !lastDateKey) return [];
+
+    const rangeStart = sinceDate ? startOfDay(sinceDate) : new Date(`${firstDateKey}T00:00:00`);
+    const rangeEnd = untilDate ? startOfDay(untilDate) : new Date(`${lastDateKey}T00:00:00`);
 
     if (Number.isNaN(rangeStart.getTime()) || Number.isNaN(rangeEnd.getTime())) {
       return [];
@@ -2034,10 +2073,35 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
 
     const startKey = rangeStart.toISOString().slice(0, 10);
     const endKey = rangeEnd.toISOString().slice(0, 10);
-    const hasDataInRange = followerGrowthSeriesSorted.some(
+    const hasDataInRange = seriesForRange.some(
       (entry) => entry.date >= startKey && entry.date <= endKey,
     );
     if (!hasDataInRange) return [];
+
+    if (hasGainSeries) {
+      const gainsByDate = new Map();
+      followerGainSeriesNormalized.forEach((entry) => {
+        const numericValue = extractNumber(entry.value, 0);
+        gainsByDate.set(entry.date, Math.max(0, numericValue));
+      });
+
+      return eachDayOfInterval({ start: rangeStart, end: rangeEnd }).map((day) => {
+        const dateKey = day.toISOString().slice(0, 10);
+        const monthLabel = MONTH_SHORT_PT[day.getMonth()] || "";
+        const dayLabel = String(day.getDate());
+        const label = monthLabel ? `${dayLabel}/${monthLabel}` : dayLabel;
+        const tooltipDate = monthLabel
+          ? `${String(day.getDate()).padStart(2, "0")} - ${monthLabel} - ${day.getFullYear()}`
+          : dateKey;
+
+        return {
+          label,
+          value: gainsByDate.get(dateKey) || 0,
+          tooltipDate,
+          dateKey,
+        };
+      });
+    }
 
     const totalsByDate = new Map();
     followerGrowthSeriesSorted.forEach((entry) => {
@@ -2079,7 +2143,14 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
         dateKey,
       };
     });
-  }, [followerGrowthSeriesSorted, metricsError, metricsLoading, sinceDate, untilDate]);
+  }, [
+    followerGainSeriesNormalized,
+    followerGrowthSeriesSorted,
+    metricsError,
+    metricsLoading,
+    sinceDate,
+    untilDate,
+  ]);
 
   const followerGrowthBarSize = useMemo(() => {
     const length = followerGrowthChartData.length;

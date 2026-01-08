@@ -1024,6 +1024,33 @@ def fetch_instagram_metrics(
         "unfollows": cur.get("unfollows"),
     }
 
+    followers_gain_series: List[Dict[str, Any]] = []
+    follower_series_raw = cur.get("follower_series") or []
+    if follower_series_raw:
+        normalized_series: List[Dict[str, Any]] = []
+        for entry in follower_series_raw:
+            raw_date = entry.get("date") or entry.get("end_time") or entry.get("start_time")
+            metric_date = _normalize_metric_date(raw_date)
+            metric_value = _to_float(entry.get("value"))
+            if metric_date is None or metric_value is None:
+                continue
+            normalized_series.append({"metric_date": metric_date, "value": metric_value})
+        normalized_series.sort(key=lambda item: item["metric_date"])
+        previous_value = None
+        for entry in normalized_series:
+            gain_value = 0
+            if previous_value is not None:
+                diff = entry["value"] - previous_value
+                if diff > 0 and math.isfinite(diff):
+                    gain_value = diff
+            previous_value = entry["value"]
+            followers_gain_series.append(
+                {
+                    "date": entry["metric_date"].isoformat(),
+                    "value": int(round(gain_value)),
+                }
+            )
+
     top_posts = _build_top_posts_payload(posts_in_period)
 
     return {
@@ -1033,6 +1060,7 @@ def fetch_instagram_metrics(
         "profile_visitors_breakdown": cur.get("profile_visitors_breakdown"),
         "follower_counts": follower_counts,
         "follower_series": cur.get("follower_series") or [],
+        "followers_gain_series": followers_gain_series,
         "top_posts": top_posts,
         "reach_timeseries": reach_timeseries,
         "profile_views_timeseries": profile_views_timeseries,
@@ -2238,6 +2266,26 @@ def build_instagram_metrics_from_db(ig_id: str, since_ts: int, until_ts: int) ->
         if entry.get("value") is not None
     ]
 
+    def _build_followers_gain_series(metric_key: str) -> List[Dict[str, Any]]:
+        series: List[Dict[str, Any]] = []
+        for entry in current_data.get(metric_key, []):
+            metric_date = _normalize_metric_date(entry.get("metric_date"))
+            metric_value = _to_float(entry.get("value"))
+            if metric_date is None or metric_value is None:
+                continue
+            series.append(
+                {
+                    "date": metric_date.isoformat(),
+                    "value": int(round(max(0, metric_value))),
+                }
+            )
+        series.sort(key=lambda item: item["date"])
+        return series
+
+    followers_gain_series = _build_followers_gain_series("follows")
+    if not followers_gain_series:
+        followers_gain_series = _build_followers_gain_series("followers_delta")
+
     reach_timeseries = [
         {
             "date": entry["metric_date"].isoformat(),
@@ -2380,6 +2428,7 @@ def build_instagram_metrics_from_db(ig_id: str, since_ts: int, until_ts: int) ->
         "profile_visitors_breakdown": profile_visitors_breakdown,
         "follower_counts": follower_counts,
         "follower_series": follower_series,
+        "followers_gain_series": followers_gain_series,
         "top_posts": top_posts_payload,
         "reach_timeseries": reach_timeseries,
         "profile_views_timeseries": profile_views_timeseries,
