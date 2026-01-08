@@ -1024,32 +1024,37 @@ def fetch_instagram_metrics(
         "unfollows": cur.get("unfollows"),
     }
 
-    followers_gain_series: List[Dict[str, Any]] = []
-    follower_series_raw = cur.get("follower_series") or []
-    if follower_series_raw:
-        normalized_series: List[Dict[str, Any]] = []
-        for entry in follower_series_raw:
-            raw_date = entry.get("date") or entry.get("end_time") or entry.get("start_time")
-            metric_date = _normalize_metric_date(raw_date)
-            metric_value = _to_float(entry.get("value"))
-            if metric_date is None or metric_value is None:
-                continue
-            normalized_series.append({"metric_date": metric_date, "value": metric_value})
-        normalized_series.sort(key=lambda item: item["metric_date"])
-        previous_value = None
-        for entry in normalized_series:
-            gain_value = 0
-            if previous_value is not None:
-                diff = entry["value"] - previous_value
-                if diff > 0 and math.isfinite(diff):
-                    gain_value = diff
-            previous_value = entry["value"]
-            followers_gain_series.append(
-                {
-                    "date": entry["metric_date"].isoformat(),
-                    "value": int(round(gain_value)),
-                }
-            )
+    followers_gain_series = _load_followers_gain_series_from_db(
+        ig_id,
+        _unix_to_date(since_ts),
+        _unix_to_date(until_ts),
+    )
+    if not followers_gain_series:
+        follower_series_raw = cur.get("follower_series") or []
+        if follower_series_raw:
+            normalized_series: List[Dict[str, Any]] = []
+            for entry in follower_series_raw:
+                raw_date = entry.get("date") or entry.get("end_time") or entry.get("start_time")
+                metric_date = _normalize_metric_date(raw_date)
+                metric_value = _to_float(entry.get("value"))
+                if metric_date is None or metric_value is None:
+                    continue
+                normalized_series.append({"metric_date": metric_date, "value": metric_value})
+            normalized_series.sort(key=lambda item: item["metric_date"])
+            previous_value = None
+            for entry in normalized_series:
+                gain_value = 0
+                if previous_value is not None:
+                    diff = entry["value"] - previous_value
+                    if diff > 0 and math.isfinite(diff):
+                        gain_value = diff
+                previous_value = entry["value"]
+                followers_gain_series.append(
+                    {
+                        "date": entry["metric_date"].isoformat(),
+                        "value": int(round(gain_value)),
+                    }
+                )
 
     top_posts = _build_top_posts_payload(posts_in_period)
 
@@ -1910,6 +1915,47 @@ def _load_metrics_map(ig_id: str, start_date: date, end_date: date) -> Dict[str,
         entries.sort(key=lambda item: item["metric_date"])
 
     return grouped
+
+
+def _load_followers_gain_series_from_db(ig_id: str, start_date: date, end_date: date) -> List[Dict[str, Any]]:
+    client = get_postgres_client()
+    if client is None:
+        return []
+
+    response = (
+        client.table(IG_METRICS_TABLE)
+        .select("metric_key,metric_date,value")
+        .eq("account_id", ig_id)
+        .eq("platform", IG_METRICS_PLATFORM)
+        .gte("metric_date", start_date.isoformat())
+        .lte("metric_date", end_date.isoformat())
+        .in_("metric_key", ["follows", "followers_delta"])
+        .execute()
+    )
+    if getattr(response, "error", None):
+        logger.warning("Falha ao carregar followers_gain_series: %s", response.error)
+        return []
+
+    series_by_key: Dict[str, List[Dict[str, Any]]] = {"follows": [], "followers_delta": []}
+    for row in response.data or []:
+        metric_key = row.get("metric_key")
+        if metric_key not in series_by_key:
+            continue
+        metric_date = _normalize_metric_date(row.get("metric_date"))
+        metric_value = _to_float(row.get("value"))
+        if metric_date is None or metric_value is None:
+            continue
+        series_by_key[metric_key].append(
+            {
+                "date": metric_date.isoformat(),
+                "value": int(round(max(0, metric_value))),
+            }
+        )
+
+    for entries in series_by_key.values():
+        entries.sort(key=lambda item: item["date"])
+
+    return series_by_key["follows"] or series_by_key["followers_delta"]
 
 
 def _load_instagram_rollups(ig_id: str, end_date: date) -> Dict[str, Dict[str, Any]]:
