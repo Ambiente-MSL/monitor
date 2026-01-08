@@ -104,7 +104,7 @@ export default function AccountSelect() {
       <label className="account-dropdown__label" htmlFor="account-select">Conta</label>
       {isDisabled ? (
         <div className="filter-select__empty" role="note">
-          Cadastre uma conta nas configuracoes.
+          Cadastre uma conta nas configuracões.
         </div>
       ) : (
         <>
