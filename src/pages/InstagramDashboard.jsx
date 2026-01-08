@@ -653,6 +653,10 @@ export default function InstagramDashboard() {
     () => makeDashboardCacheKey("instagram-posts-insights", accountSnapshotKey, POSTS_INSIGHTS_LIMIT, sinceParam || "auto", untilParam || "auto"),
     [accountSnapshotKey, sinceParam, untilParam],
   );
+  const audienceCacheKey = useMemo(
+    () => makeDashboardCacheKey("instagram-audience", accountSnapshotKey),
+    [accountSnapshotKey],
+  );
   const sinceDate = useMemo(() => parseQueryDate(sinceParam), [sinceParam]);
   const untilDate = useMemo(() => parseQueryDate(untilParam), [untilParam]);
   const sinceIso = useMemo(() => toUtcDateString(sinceDate), [sinceDate]);
@@ -806,6 +810,10 @@ export default function InstagramDashboard() {
 const [accountInfo, setAccountInfo] = useState(null);
 const [followerSeries, setFollowerSeries] = useState([]);
 const [followerGainSeries, setFollowerGainSeries] = useState([]);
+const [audienceData, setAudienceData] = useState(null);
+const [audienceLoading, setAudienceLoading] = useState(false);
+const [audienceError, setAudienceError] = useState("");
+const audienceRequestIdRef = useRef(0);
 const [followerCounts, setFollowerCounts] = useState(null);
 const [overviewSnapshot, setOverviewSnapshot] = useState(null);
 const [reachCacheSeries, setReachCacheSeries] = useState([]);
@@ -1282,6 +1290,69 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
     };
   }, [accountConfig?.instagramUserId, accountSnapshotKey, sinceParam, untilParam, postsInsightsCacheKey]);
 
+  useEffect(() => {
+    if (!showFollowersDetail) return undefined;
+
+    if (!accountConfig?.instagramUserId) {
+      setAudienceData(null);
+      setAudienceError("Conta do Instagram nao configurada.");
+      setAudienceLoading(false);
+      return undefined;
+    }
+
+    const cached = getDashboardCache(audienceCacheKey);
+    if (cached) {
+      setAudienceData(cached);
+      setAudienceError("");
+      setAudienceLoading(false);
+      return undefined;
+    }
+
+    const requestId = (audienceRequestIdRef.current || 0) + 1;
+    audienceRequestIdRef.current = requestId;
+    const controller = new AbortController();
+    const REQUEST_TIMEOUT_MS = 15000;
+    const hardTimeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+    setAudienceData(null);
+    setAudienceLoading(true);
+    setAudienceError("");
+
+    const url = `${API_BASE_URL}/api/instagram/audience?igUserId=${accountConfig.instagramUserId}`;
+
+    (async () => {
+      try {
+        const resp = await fetch(url, { signal: controller.signal });
+        const text = await resp.text();
+        const json = safeParseJson(text) || {};
+        if (!resp.ok) {
+          throw new Error(describeApiError(json, "Nao foi possivel carregar a audiencia."));
+        }
+        if (audienceRequestIdRef.current !== requestId) return;
+        const data = unwrapApiData(json, {});
+        setAudienceData(data);
+        setDashboardCache(audienceCacheKey, data);
+        setAudienceError("");
+      } catch (err) {
+        if (audienceRequestIdRef.current !== requestId) return;
+        if (err?.name === "AbortError") {
+          setAudienceError("Tempo esgotado ao carregar audiencia.");
+        } else {
+          setAudienceError(err?.message || "Nao foi possivel carregar a audiencia.");
+        }
+      } finally {
+        if (audienceRequestIdRef.current !== requestId) return;
+        clearTimeout(hardTimeout);
+        setAudienceLoading(false);
+      }
+    })();
+
+    return () => {
+      clearTimeout(hardTimeout);
+      controller.abort();
+    };
+  }, [accountConfig?.instagramUserId, audienceCacheKey, showFollowersDetail]);
+
 const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
  const reachMetric = metricsByKey.reach;
  const followersMetric = metricsByKey.followers_total;
@@ -1442,6 +1513,21 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
       return true;
     });
   }, [followerSeriesNormalized, sinceDate, untilDate]);
+  const followerGainSeriesInRange = useMemo(() => {
+    if (!followerGainSeriesNormalized.length) return [];
+    if (!sinceDate && !untilDate) return followerGainSeriesNormalized;
+    const startBoundary = sinceDate ? startOfDay(sinceDate).getTime() : null;
+    const endBoundary = untilDate ? endOfDay(untilDate).getTime() : null;
+    return followerGainSeriesNormalized.filter((item) => {
+      if (!item?.date) return false;
+      const currentDate = new Date(`${item.date}T00:00:00`);
+      const current = currentDate.getTime();
+      if (Number.isNaN(current)) return false;
+      if (startBoundary != null && current < startBoundary) return false;
+      if (endBoundary != null && current > endBoundary) return false;
+      return true;
+    });
+  }, [followerGainSeriesNormalized, sinceDate, untilDate]);
 
   const filteredPosts = useMemo(() => {
     if (!posts.length) return [];
@@ -1525,6 +1611,25 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
   // Calcula total de seguidores ganhos no período filtrado
   const followersDelta = useMemo(() => {
     if (metricsLoading) return null;
+    const sumGainSeries = (series) => {
+      if (!Array.isArray(series) || !series.length) return null;
+      let total = 0;
+      let hasValue = false;
+      series.forEach((entry) => {
+        const value = extractNumber(entry?.value, null);
+        if (value == null) return;
+        hasValue = true;
+        total += Math.max(0, value);
+      });
+      if (!hasValue) return null;
+      return total > 0 ? total : 0;
+    };
+
+    const gainInRange = sumGainSeries(followerGainSeriesInRange);
+    if (Number.isFinite(gainInRange)) {
+      return Math.round(gainInRange);
+    }
+
     const sumPositiveDiff = (series) => {
       if (!Array.isArray(series) || series.length < 2) return null;
       let prev = null;
@@ -1598,7 +1703,14 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
     }
 
     return 0;
-  }, [followerCounts, followerGrowthMetric?.value, followerSeriesInRange, followerSeriesNormalized, metricsLoading]);
+  }, [
+    followerCounts,
+    followerGainSeriesInRange,
+    followerGrowthMetric?.value,
+    followerSeriesInRange,
+    followerSeriesNormalized,
+    metricsLoading,
+  ]);
 
 
 
@@ -1808,10 +1920,13 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
 
   const followerGrowthStats = useMemo(() => {
     const totalsByWeekday = Array.from({ length: 7 }, () => 0);
-    if (followerGainSeriesNormalized.length) {
+    const gainSeries = followerGainSeriesInRange.length
+      ? followerGainSeriesInRange
+      : followerGainSeriesNormalized;
+    if (gainSeries.length) {
       let accumulatedGrowth = 0;
       let samples = 0;
-      followerGainSeriesNormalized.forEach((entry) => {
+      gainSeries.forEach((entry) => {
         const gainValue = Math.max(0, extractNumber(entry.value, 0));
         accumulatedGrowth += gainValue;
         samples += 1;
@@ -1850,7 +1965,12 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
       average: fallbackGrowth ? Math.round(fallbackGrowth / 30) : 0,
       weeklyPattern: buildWeeklyPattern(totalsByWeekday),
     };
-  }, [followerGainSeriesNormalized, followerSeriesNormalized, followerGrowthMetric?.value]);
+  }, [
+    followerGainSeriesInRange,
+    followerGainSeriesNormalized,
+    followerSeriesNormalized,
+    followerGrowthMetric?.value,
+  ]);
 
   const avgFollowersPerDay = followerGrowthStats.average;
 
@@ -1915,6 +2035,29 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
     const numeric = Number(overviewMetrics.followersDelta);
     return Number.isFinite(numeric) ? numeric : null;
   }, [metricsLoading, overviewMetrics.followersDelta]);
+  const followersGainedValue = useMemo(() => {
+    const numeric = extractNumber(followersDelta, null);
+    if (numeric == null) return null;
+    return Math.max(0, numeric);
+  }, [followersDelta]);
+  const followersGrowthPct = useMemo(() => {
+    if (metricsLoading) return null;
+    const gained = followersGainedValue;
+    if (gained == null) return null;
+    const startCount = extractNumber(followerCounts?.start, null)
+      ?? extractNumber(followerSeriesInRange[0]?.value, null)
+      ?? extractNumber(followerSeriesNormalized[0]?.value, null);
+    if (startCount == null || startCount <= 0) return null;
+    const pct = (gained / startCount) * 100;
+    if (!Number.isFinite(pct)) return null;
+    return Math.round(pct * 10) / 10;
+  }, [
+    followersGainedValue,
+    followerCounts,
+    followerSeriesInRange,
+    followerSeriesNormalized,
+    metricsLoading,
+  ]);
 
   const FollowerDeltaIcon = followerDeltaValue != null && followerDeltaValue < 0 ? TrendingDown : TrendingUp;
   const followerDeltaColor = followerDeltaValue == null
@@ -2300,6 +2443,81 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
 
     return DEFAULT_AUDIENCE_TYPE;
   }, [profileVisitorsTotals, reachMetric, followersMetric]);
+
+  const audienceGenderSeries = useMemo(() => {
+    const entries = Array.isArray(audienceData?.gender) ? audienceData.gender : [];
+    if (!entries.length) return [];
+    const total = entries.reduce((sum, entry) => sum + extractNumber(entry.value, 0), 0);
+    return entries
+      .map((entry) => {
+        const label = entry.label || entry.key || "Outro";
+        const raw = extractNumber(entry.value, 0);
+        const percent = extractNumber(entry.percentage, null);
+        const resolvedPercent = percent != null
+          ? percent
+          : total > 0
+            ? (raw / total) * 100
+            : 0;
+        const normalizedLabel = String(label).toLowerCase();
+        const color = normalizedLabel.startsWith("f")
+          ? "#ec4899"
+          : normalizedLabel.startsWith("m")
+            ? "#6366f1"
+            : "#8b5cf6";
+        return {
+          name: label,
+          value: Math.round(resolvedPercent * 10) / 10,
+          raw,
+          color,
+        };
+      })
+      .filter((entry) => entry.value > 0);
+  }, [audienceData]);
+
+  const audienceAgeSeries = useMemo(() => {
+    const entries = Array.isArray(audienceData?.ages) ? audienceData.ages : [];
+    if (!entries.length) return [];
+    const total = entries.reduce((sum, entry) => sum + extractNumber(entry.value, 0), 0);
+    return entries
+      .map((entry) => {
+        const label = entry.range || entry.label || entry.name;
+        const raw = extractNumber(entry.value, 0);
+        const percent = extractNumber(entry.percentage, null);
+        const resolvedPercent = percent != null
+          ? percent
+          : total > 0
+            ? (raw / total) * 100
+            : 0;
+        return {
+          name: label,
+          value: Math.round(resolvedPercent * 10) / 10,
+          raw,
+        };
+      })
+      .filter((entry) => entry.name && entry.value > 0);
+  }, [audienceData]);
+
+  const audienceCities = useMemo(() => {
+    const entries = Array.isArray(audienceData?.cities) ? audienceData.cities : [];
+    if (!entries.length) return [];
+    return entries
+      .map((entry) => ({
+        name: entry.name || entry.city || entry.label || "",
+        value: extractNumber(entry.value, 0),
+        percentage: extractNumber(entry.percentage, null),
+      }))
+      .filter((entry) => entry.name);
+  }, [audienceData]);
+
+  const audienceCitiesTotal = useMemo(() => {
+    const totalFromPayload = extractNumber(audienceData?.totals?.cities, null);
+    if (totalFromPayload != null) return totalFromPayload;
+    return audienceCities.reduce((sum, entry) => sum + extractNumber(entry.value, 0), 0);
+  }, [audienceCities, audienceData]);
+
+  const audienceGenderTotalPct = useMemo(() => (
+    audienceGenderSeries.reduce((sum, entry) => sum + extractNumber(entry.value, 0), 0)
+  ), [audienceGenderSeries]);
 
   // const heatmapData = useMemo(() => DEFAULT_HEATMAP_MATRIX, []);
 
@@ -2959,35 +3177,20 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
 
   // Renderização da visualização detalhada de Seguidores
   if (showFollowersDetail) {
-    // Dados mockados para a aba de seguidores
-    const mockGenderData = [
-      { name: 'Homens', value: 45, color: '#6366f1' },
-      { name: 'Mulheres', value: 52, color: '#ec4899' },
-      { name: 'Outros', value: 3, color: '#8b5cf6' }
-    ];
+    const followersGainedDisplay = followersGainedValue != null
+      ? `+${formatNumber(followersGainedValue)}`
+      : "--";
+    const followersGrowthPctDisplay = followersGrowthPct != null
+      ? `${followersGrowthPct > 0 ? "+" : ""}${followersGrowthPct.toLocaleString("pt-BR", {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+      })}%`
+      : "--";
+    const audienceStatusMessage = audienceLoading ? "Carregando..." : (audienceError || "Sem dados");
+    const audienceGenderTotalDisplay = audienceGenderSeries.length
+      ? formatPercent(audienceGenderTotalPct)
+      : "--";
 
-    const mockAgeData = [
-      { name: '13-17', value: 8 },
-      { name: '18-24', value: 32 },
-      { name: '25-34', value: 28 },
-      { name: '35-44', value: 18 },
-      { name: '45-54', value: 10 },
-      { name: '55-64', value: 3 },
-      { name: '65+', value: 1 }
-    ];
-
-    const mockCitiesData = [
-      { city: 'São Paulo', state: 'SP', country: 'Brasil', followers: 15420, percentage: 18.5 },
-      { city: 'Rio de Janeiro', state: 'RJ', country: 'Brasil', followers: 12350, percentage: 14.8 },
-      { city: 'Belo Horizonte', state: 'MG', country: 'Brasil', followers: 8920, percentage: 10.7 },
-      { city: 'Brasília', state: 'DF', country: 'Brasil', followers: 7650, percentage: 9.2 },
-      { city: 'Curitiba', state: 'PR', country: 'Brasil', followers: 6340, percentage: 7.6 },
-      { city: 'Porto Alegre', state: 'RS', country: 'Brasil', followers: 5890, percentage: 7.1 },
-      { city: 'Salvador', state: 'BA', country: 'Brasil', followers: 4720, percentage: 5.7 },
-      { city: 'Fortaleza', state: 'CE', country: 'Brasil', followers: 4120, percentage: 4.9 },
-      { city: 'Recife', state: 'PE', country: 'Brasil', followers: 3850, percentage: 4.6 },
-      { city: 'Manaus', state: 'AM', country: 'Brasil', followers: 3210, percentage: 3.9 }
-    ];
 
     return (
       <div className="instagram-dashboard instagram-dashboard--clean">
@@ -3099,7 +3302,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   border: '1px solid rgba(255, 255, 255, 0.2)'
                 }}>
                   <div style={{ fontSize: '32px', fontWeight: 700, color: 'white', marginBottom: '4px' }}>
-                    +{formatNumber(1234)}
+                    {followersGainedDisplay}
                   </div>
                   <div style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.85)', fontWeight: 500 }}>
                     Novos Seguidores
@@ -3113,7 +3316,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   border: '1px solid rgba(255, 255, 255, 0.2)'
                 }}>
                   <div style={{ fontSize: '32px', fontWeight: 700, color: 'white', marginBottom: '4px' }}>
-                    +8.5%
+                    {followersGrowthPctDisplay}
                   </div>
                   <div style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.85)', fontWeight: 500 }}>
                     Crescimento
@@ -3233,60 +3436,68 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     </h3>
                   </div>
                   <div style={{ height: 280, position: 'relative' }}>
-                    <ResponsiveContainer>
-                      <PieChart>
-                        <Pie
-                          data={mockGenderData}
-                          dataKey="value"
-                          nameKey="name"
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={60}
-                          outerRadius={100}
-                          paddingAngle={2}
-                          stroke="none"
-                        >
-                          {mockGenderData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip
-                          formatter={(value) => `${value}%`}
-                          contentStyle={{
-                            background: 'white',
-                            border: '1px solid #e5e7eb',
-                            borderRadius: '8px',
-                            padding: '8px 12px'
-                          }}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                    <div style={{
-                      position: 'absolute',
-                      top: '50%',
-                      left: '50%',
-                      transform: 'translate(-50%, -50%)',
-                      textAlign: 'center',
-                      pointerEvents: 'none'
-                    }}>
-                      <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>
-                        Total
-                      </div>
-                      <div style={{ fontSize: '24px', fontWeight: 800, color: '#111827' }}>
-                        100%
-                      </div>
+                    {audienceGenderSeries.length ? (
+                      <>
+                        <ResponsiveContainer>
+                          <PieChart>
+                            <Pie
+                              data={audienceGenderSeries}
+                              dataKey="value"
+                              nameKey="name"
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={60}
+                              outerRadius={100}
+                              paddingAngle={2}
+                              stroke="none"
+                            >
+                              {audienceGenderSeries.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip
+                              formatter={(value) => formatPercent(value)}
+                              contentStyle={{
+                                background: 'white',
+                                border: '1px solid #e5e7eb',
+                                borderRadius: '8px',
+                                padding: '8px 12px'
+                              }}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                        <div style={{
+                          position: 'absolute',
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          textAlign: 'center',
+                          pointerEvents: 'none'
+                        }}>
+                          <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>
+                            Total
+                          </div>
+                          <div style={{ fontSize: '24px', fontWeight: 800, color: '#111827' }}>
+                            {audienceGenderTotalDisplay}
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="ig-empty-state">{audienceStatusMessage}</div>
+                    )}
+                  </div>
+                  {audienceGenderSeries.length ? (
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', marginTop: '20px', flexWrap: 'wrap' }}>
+                      {audienceGenderSeries.map((item) => (
+                        <div key={item.name} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: item.color }} />
+                          <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>
+                            {item.name}: {formatPercent(item.value)}
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', marginTop: '20px', flexWrap: 'wrap' }}>
-                    {mockGenderData.map((item) => (
-                      <div key={item.name} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: item.color }} />
-                        <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>
-                          {item.name}: {item.value}%
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+                  ) : null}
                 </section>
 
                 {/* Gráfico de Barras - Faixa Etária */}
@@ -3317,34 +3528,38 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     </h3>
                   </div>
                   <div style={{ height: 280 }}>
-                    <ResponsiveContainer>
-                      <BarChart data={mockAgeData} layout="vertical" margin={{ left: 0, right: 12, top: 5, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
-                        <XAxis
-                          type="number"
-                          tick={{ fontSize: 11, fill: '#6b7280' }}
-                          axisLine={{ stroke: '#e5e7eb' }}
-                          tickFormatter={(value) => `${value}%`}
-                        />
-                        <YAxis
-                          type="category"
-                          dataKey="name"
-                          tick={{ fontSize: 11, fill: '#6b7280' }}
-                          width={60}
-                          axisLine={{ stroke: '#e5e7eb' }}
-                        />
-                        <Tooltip
-                          formatter={(value) => [`${value}%`, 'Percentual']}
-                          contentStyle={{
-                            background: 'white',
-                            border: '1px solid #e5e7eb',
-                            borderRadius: '8px',
-                            padding: '8px 12px'
-                          }}
-                        />
-                        <Bar dataKey="value" fill="#6366f1" radius={[0, 8, 8, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    {audienceAgeSeries.length ? (
+                      <ResponsiveContainer>
+                        <BarChart data={audienceAgeSeries} layout="vertical" margin={{ left: 0, right: 12, top: 5, bottom: 5 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
+                          <XAxis
+                            type="number"
+                            tick={{ fontSize: 11, fill: '#6b7280' }}
+                            axisLine={{ stroke: '#e5e7eb' }}
+                            tickFormatter={(value) => formatPercent(value)}
+                          />
+                          <YAxis
+                            type="category"
+                            dataKey="name"
+                            tick={{ fontSize: 11, fill: '#6b7280' }}
+                            width={60}
+                            axisLine={{ stroke: '#e5e7eb' }}
+                          />
+                          <Tooltip
+                            formatter={(value) => [formatPercent(value), 'Percentual']}
+                            contentStyle={{
+                              background: 'white',
+                              border: '1px solid #e5e7eb',
+                              borderRadius: '8px',
+                              padding: '8px 12px'
+                            }}
+                          />
+                          <Bar dataKey="value" fill="#6366f1" radius={[0, 8, 8, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="ig-empty-state">{audienceStatusMessage}</div>
+                    )}
                   </div>
                 </section>
               </div>
@@ -3376,52 +3591,69 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   </h3>
                 </div>
                 <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
-                        <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: '13px', fontWeight: 600, color: '#6b7280' }}>#</th>
-                        <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: '13px', fontWeight: 600, color: '#6b7280' }}>Cidade</th>
-                        <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: '13px', fontWeight: 600, color: '#6b7280' }}>Estado</th>
-                        <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: '13px', fontWeight: 600, color: '#6b7280' }}>País</th>
-                        <th style={{ textAlign: 'right', padding: '12px 16px', fontSize: '13px', fontWeight: 600, color: '#6b7280' }}>Seguidores</th>
-                        <th style={{ textAlign: 'right', padding: '12px 16px', fontSize: '13px', fontWeight: 600, color: '#6b7280' }}>% do Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {mockCitiesData.map((city, index) => (
-                        <tr key={index} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                          <td style={{ padding: '16px', fontSize: '14px', color: '#6b7280', fontWeight: 600 }}>
-                            {index + 1}
-                          </td>
-                          <td style={{ padding: '16px', fontSize: '14px', color: '#111827', fontWeight: 600 }}>
-                            {city.city}
-                          </td>
-                          <td style={{ padding: '16px', fontSize: '14px', color: '#6b7280' }}>
-                            {city.state}
-                          </td>
-                          <td style={{ padding: '16px', fontSize: '14px', color: '#6b7280' }}>
-                            {city.country}
-                          </td>
-                          <td style={{ padding: '16px', fontSize: '14px', color: '#111827', fontWeight: 600, textAlign: 'right' }}>
-                            {formatNumber(city.followers)}
-                          </td>
-                          <td style={{ padding: '16px', fontSize: '14px', textAlign: 'right' }}>
-                            <span style={{
-                              display: 'inline-block',
-                              padding: '4px 12px',
-                              borderRadius: '12px',
-                              background: 'rgba(16, 185, 129, 0.1)',
-                              color: '#10b981',
-                              fontWeight: 600,
-                              fontSize: '13px'
-                            }}>
-                              {city.percentage}%
-                            </span>
-                          </td>
+                  {audienceCities.length ? (
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+                          <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: '13px', fontWeight: 600, color: '#6b7280' }}>#</th>
+                          <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: '13px', fontWeight: 600, color: '#6b7280' }}>Cidade</th>
+                          <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: '13px', fontWeight: 600, color: '#6b7280' }}>Estado</th>
+                          <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: '13px', fontWeight: 600, color: '#6b7280' }}>Pais</th>
+                          <th style={{ textAlign: 'right', padding: '12px 16px', fontSize: '13px', fontWeight: 600, color: '#6b7280' }}>Seguidores</th>
+                          <th style={{ textAlign: 'right', padding: '12px 16px', fontSize: '13px', fontWeight: 600, color: '#6b7280' }}>% do Total</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {audienceCities.map((city, index) => {
+                          const nameValue = String(city.name || "");
+                          const parts = nameValue.split(",").map((part) => part.trim()).filter(Boolean);
+                          const cityName = parts[0] || nameValue;
+                          const stateName = parts.length >= 2 ? parts[1] : "";
+                          const countryName = parts.length >= 3 ? parts.slice(2).join(", ") : "";
+                          const percentageValue = city.percentage != null
+                            ? city.percentage
+                            : audienceCitiesTotal > 0
+                              ? (city.value / audienceCitiesTotal) * 100
+                              : null;
+                          const percentageDisplay = percentageValue != null ? formatPercent(percentageValue) : "--";
+                          return (
+                            <tr key={city.name || index} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                              <td style={{ padding: '16px', fontSize: '14px', color: '#6b7280', fontWeight: 600 }}>
+                                {index + 1}
+                              </td>
+                              <td style={{ padding: '16px', fontSize: '14px', color: '#111827', fontWeight: 600 }}>
+                                {cityName || "--"}
+                              </td>
+                              <td style={{ padding: '16px', fontSize: '14px', color: '#6b7280' }}>
+                                {stateName || "--"}
+                              </td>
+                              <td style={{ padding: '16px', fontSize: '14px', color: '#6b7280' }}>
+                                {countryName || "--"}
+                              </td>
+                              <td style={{ padding: '16px', fontSize: '14px', color: '#111827', fontWeight: 600, textAlign: 'right' }}>
+                                {formatNumber(city.value)}
+                              </td>
+                              <td style={{ padding: '16px', fontSize: '14px', textAlign: 'right' }}>
+                                <span style={{
+                                  display: 'inline-block',
+                                  padding: '4px 12px',
+                                  borderRadius: '12px',
+                                  background: 'rgba(16, 185, 129, 0.1)',
+                                  color: '#10b981',
+                                  fontWeight: 600,
+                                  fontSize: '13px'
+                                }}>
+                                  {percentageDisplay}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <div className="ig-empty-state">{audienceStatusMessage}</div>
+                  )}
                 </div>
               </section>
 
