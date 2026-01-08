@@ -4245,19 +4245,26 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             </div>
 
             <div className="ig-analytics-card__body">
-              <div style={{ textAlign: 'center', padding: '16px 16px 18px' }}>
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '24px 16px',
+                minHeight: '200px'
+              }}>
                 <div style={{
                   fontSize: '42px',
                   fontWeight: 800,
                   background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  marginBottom: '4px',
+                  marginBottom: '8px',
                   lineHeight: 1
                 }}>
                   {formatNumber(profileViewsTotal ?? null)}
                 </div>
-                <div style={{ fontSize: '13px', color: '#6b7280', marginBottom: '14px', fontWeight: 500 }}>
+                <div style={{ fontSize: '13px', color: '#6b7280', marginBottom: '20px', fontWeight: 500 }}>
                   visualizações no período
                 </div>
 
@@ -4265,41 +4272,45 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 <div style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(3, 1fr)',
-                  gap: '8px',
-                  marginTop: '0'
+                  gap: '12px',
+                  width: '100%',
+                  maxWidth: '400px'
                 }}>
                   <div style={{
-                    padding: '10px 8px',
+                    padding: '14px 12px',
                     borderRadius: '8px',
                     background: 'rgba(16, 185, 129, 0.05)',
-                    border: '1px solid rgba(16, 185, 129, 0.1)'
+                    border: '1px solid rgba(16, 185, 129, 0.1)',
+                    textAlign: 'center'
                   }}>
-                    <div style={{ fontSize: '18px', fontWeight: 700, color: '#10b981' }}>
+                    <div style={{ fontSize: '18px', fontWeight: 700, color: '#10b981', marginBottom: '4px' }}>
                       {profileViewsDeltaPct != null ? `${profileViewsDeltaPct > 0 ? '+' : ''}${profileViewsDeltaPct}%` : '--'}
                     </div>
-                    <div style={{ fontSize: '10px', color: '#6b7280', marginTop: '2px', fontWeight: 500 }}>Crescimento</div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>Crescimento</div>
                   </div>
                   <div style={{
-                    padding: '10px 8px',
+                    padding: '14px 12px',
                     borderRadius: '8px',
                     background: 'rgba(139, 92, 246, 0.05)',
-                    border: '1px solid rgba(139, 92, 246, 0.1)'
+                    border: '1px solid rgba(139, 92, 246, 0.1)',
+                    textAlign: 'center'
                   }}>
-                    <div style={{ fontSize: '18px', fontWeight: 700, color: '#8b5cf6' }}>
+                    <div style={{ fontSize: '18px', fontWeight: 700, color: '#8b5cf6', marginBottom: '4px' }}>
                       {profileViewsAverage != null ? formatNumber(Math.round(profileViewsAverage)) : '--'}
                     </div>
-                    <div style={{ fontSize: '10px', color: '#6b7280', marginTop: '2px', fontWeight: 500 }}>Média diária</div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>Média diária</div>
                   </div>
                   <div style={{
-                    padding: '10px 8px',
+                    padding: '14px 12px',
                     borderRadius: '8px',
                     background: 'rgba(168, 85, 247, 0.05)',
-                    border: '1px solid rgba(168, 85, 247, 0.1)'
+                    border: '1px solid rgba(168, 85, 247, 0.1)',
+                    textAlign: 'center'
                   }}>
-                    <div style={{ fontSize: '18px', fontWeight: 700, color: '#a855f7' }}>
+                    <div style={{ fontSize: '18px', fontWeight: 700, color: '#a855f7', marginBottom: '4px' }}>
                       {profileViewsPeak != null ? formatNumber(profileViewsPeak) : '--'}
                     </div>
-                    <div style={{ fontSize: '10px', color: '#6b7280', marginTop: '2px', fontWeight: 500 }}>Pico diário</div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>Pico diário</div>
                   </div>
                 </div>
               </div>
@@ -4405,26 +4416,6 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   </div>
                 </div>
               </div>
-            </div>
-          </section>
-        </div>
-
-        <div className="ig-analytics-grid ig-analytics-grid--pair" style={{ marginTop: '24px' }}>
-          <section className="ig-card-white ig-analytics-card" style={{ gridColumn: 'span 2' }}>
-            <div className="ig-analytics-card__header">
-              <div>
-                <h4>Posts recentes</h4>
-                <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
-                  Publicações mais recentes no período filtrado
-                </p>
-              </div>
-            </div>
-            <div className="ig-analytics-card__body" style={{ padding: 0 }}>
-              <PostsTable
-                posts={recentPosts.slice(0, RECENT_POSTS_TABLE_LIMIT)}
-                loading={recentPostsLoading}
-                error={recentPostsError}
-              />
             </div>
           </section>
         </div>
@@ -4839,6 +4830,27 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             )}
           </div>
         </div>
+
+      {/* Posts recentes - Largura Total */}
+      <div className="ig-analytics-grid ig-analytics-grid--pair" style={{ marginTop: '24px' }}>
+        <section className="ig-card-white ig-analytics-card" style={{ gridColumn: 'span 2' }}>
+          <div className="ig-analytics-card__header">
+            <div>
+              <h4>Posts recentes</h4>
+              <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
+                Publicações mais recentes no período filtrado
+              </p>
+            </div>
+          </div>
+          <div className="ig-analytics-card__body" style={{ padding: 0 }}>
+            <PostsTable
+              posts={recentPosts.slice(0, RECENT_POSTS_TABLE_LIMIT)}
+              loading={recentPostsLoading}
+              error={recentPostsError}
+            />
+          </div>
+        </section>
+      </div>
 
       {/* Palavras-chave e Hashtags - Largura Total */}
       <div className="ig-analytics-grid ig-analytics-grid--pair">
