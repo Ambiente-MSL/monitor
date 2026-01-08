@@ -2007,45 +2007,79 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
 
   const followerGrowthSeriesSorted = useMemo(() => {
     if (metricsLoading) return [];
-    const source = followerSeriesInRange.length ? followerSeriesInRange : followerSeriesNormalized;
-    if (!source.length) return [];
-    return source
+    if (!followerSeriesNormalized.length) return [];
+    return [...followerSeriesNormalized]
       .filter((entry) => entry?.date && Number.isFinite(entry.value))
       .sort((a, b) => (a.date > b.date ? 1 : -1));
-  }, [followerSeriesInRange, followerSeriesNormalized, metricsLoading]);
+  }, [followerSeriesNormalized, metricsLoading]);
 
   const followerGrowthChartData = useMemo(() => {
     if (metricsLoading) return [];
-    if (followerGrowthSeriesSorted.length) {
-      let previousValue = null;
-      return followerGrowthSeriesSorted.map((entry, index) => {
-        const dateKey = entry.date || null;
-        const parsedDate = dateKey ? new Date(`${dateKey}T00:00:00`) : null;
-        const validDate = parsedDate && !Number.isNaN(parsedDate.getTime()) ? parsedDate : null;
-        const monthLabel = validDate ? MONTH_SHORT_PT[validDate.getMonth()] || "" : "";
-        const dayLabel = validDate ? String(validDate.getDate()) : "";
-        const label = validDate && monthLabel ? `${dayLabel}/${monthLabel}` : entry.label || `${index + 1}`;
-        const tooltipDate = validDate && monthLabel
-          ? `${String(validDate.getDate()).padStart(2, "0")} - ${monthLabel} - ${validDate.getFullYear()}`
-          : dateKey || label;
-        const currentValue = extractNumber(entry.value, null);
-        let growthValue = 0;
-        if (previousValue != null && currentValue != null) {
-          const diff = currentValue - previousValue;
-          growthValue = Number.isFinite(diff) ? Math.max(0, diff) : 0;
-        }
-        previousValue = currentValue != null ? currentValue : previousValue;
-        return {
-          label,
-          value: growthValue,
-          tooltipDate,
-        };
-      });
+    if (metricsError) return [];
+    if (!followerGrowthSeriesSorted.length) return [];
+
+    const rangeStart = sinceDate
+      ? startOfDay(sinceDate)
+      : new Date(`${followerGrowthSeriesSorted[0].date}T00:00:00`);
+    const rangeEnd = untilDate
+      ? startOfDay(untilDate)
+      : new Date(`${followerGrowthSeriesSorted[followerGrowthSeriesSorted.length - 1].date}T00:00:00`);
+
+    if (Number.isNaN(rangeStart.getTime()) || Number.isNaN(rangeEnd.getTime())) {
+      return [];
+    }
+    if (rangeStart > rangeEnd) {
+      return [];
     }
 
-    if (metricsError) return [];
-    return [];
-  }, [followerGrowthSeriesSorted, metricsError, metricsLoading]);
+    const startKey = rangeStart.toISOString().slice(0, 10);
+    const endKey = rangeEnd.toISOString().slice(0, 10);
+    const hasDataInRange = followerGrowthSeriesSorted.some(
+      (entry) => entry.date >= startKey && entry.date <= endKey,
+    );
+    if (!hasDataInRange) return [];
+
+    const totalsByDate = new Map();
+    followerGrowthSeriesSorted.forEach((entry) => {
+      totalsByDate.set(entry.date, entry.value);
+    });
+
+    let lastKnownTotal = null;
+    for (let index = followerGrowthSeriesSorted.length - 1; index >= 0; index -= 1) {
+      const entry = followerGrowthSeriesSorted[index];
+      if (entry.date < startKey) {
+        lastKnownTotal = entry.value;
+        break;
+      }
+    }
+
+    return eachDayOfInterval({ start: rangeStart, end: rangeEnd }).map((day) => {
+      const dateKey = day.toISOString().slice(0, 10);
+      const monthLabel = MONTH_SHORT_PT[day.getMonth()] || "";
+      const dayLabel = String(day.getDate());
+      const label = monthLabel ? `${dayLabel}/${monthLabel}` : dayLabel;
+      const tooltipDate = monthLabel
+        ? `${String(day.getDate()).padStart(2, "0")} - ${monthLabel} - ${day.getFullYear()}`
+        : dateKey;
+
+      const currentTotal = totalsByDate.get(dateKey);
+      let growthValue = 0;
+      if (currentTotal != null && lastKnownTotal != null) {
+        const diff = currentTotal - lastKnownTotal;
+        growthValue = Number.isFinite(diff) ? Math.max(0, diff) : 0;
+      }
+      if (currentTotal != null) {
+        lastKnownTotal = currentTotal;
+      }
+
+      return {
+        label,
+        value: growthValue,
+        tooltipDate,
+        dateKey,
+      };
+    });
+  }, [followerGrowthSeriesSorted, metricsError, metricsLoading, sinceDate, untilDate]);
 
   const followerGrowthBarSize = useMemo(() => {
     const length = followerGrowthChartData.length;
