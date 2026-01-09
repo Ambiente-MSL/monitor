@@ -556,7 +556,6 @@ def fb_page_window(page_id: str, since: int, until: int):
     }
 
     followers_total = 0
-    fans_series = []
     try:
         fans_payload = gget(
             f"/{page_id}/insights",
@@ -564,13 +563,12 @@ def fb_page_window(page_id: str, since: int, until: int):
             token=page_token,
         )
         fans_values = extract_insight_values(fans_payload, "page_fans")
-        fans_series = extract_insight_series(fans_payload, "page_fans")
         if fans_values:
             followers_total = int(round(fans_values[-1]))
     except MetaAPIError:
         followers_total = 0
 
-    # Fallback absoluto para total de seguidores independente do range (valor fixo da pagina)
+    # Fallback absoluto para total de seguidores independente do range (valor fixo da página)
     try:
         fan_info = gget(
             f"/{page_id}",
@@ -579,59 +577,9 @@ def fb_page_window(page_id: str, since: int, until: int):
         )
         fan_count_val = fan_info.get("fan_count") or fan_info.get("followers_count")
         if fan_count_val is not None:
-            candidate_val = int(fan_count_val)
-            if candidate_val > 0 or followers_total in (None, 0):
-                followers_total = candidate_val
+            followers_total = int(fan_count_val)
     except MetaAPIError:
         pass
-
-    if fans_series:
-        fans_series.sort(key=lambda row: row.get("date") or "")
-        first_val = _coerce_number(fans_series[0].get("value"))
-        last_val = _coerce_number(fans_series[-1].get("value"))
-        if last_val is not None and followers_total in (None, 0):
-            followers_total = int(round(last_val))
-        if first_val is not None and last_val is not None:
-            net_from_fans = int(round(last_val - first_val))
-            if followers_gained in (None, 0) and net_from_fans > 0:
-                followers_gained = net_from_fans
-            if followers_lost in (None, 0) and net_from_fans < 0:
-                followers_lost = abs(net_from_fans)
-            if net_followers in (None, 0) and net_from_fans != 0:
-                net_followers = net_from_fans
-            if not net_followers_series:
-                cumulative = 0
-                previous = None
-                fallback_series = []
-                for entry in fans_series:
-                    value = _coerce_number(entry.get("value"))
-                    date_value = entry.get("date")
-                    if value is None or not date_value:
-                        continue
-                    if previous is None:
-                        previous = value
-                        fallback_series.append({
-                            "date": date_value,
-                            "adds": 0,
-                            "removes": 0,
-                            "net": 0,
-                            "cumulative": 0,
-                        })
-                        continue
-                    diff = value - previous
-                    net_value = int(round(diff))
-                    adds_value = max(net_value, 0)
-                    removes_value = max(-net_value, 0)
-                    cumulative += net_value
-                    fallback_series.append({
-                        "date": date_value,
-                        "adds": adds_value,
-                        "removes": removes_value,
-                        "net": net_value,
-                        "cumulative": cumulative,
-                    })
-                    previous = value
-                net_followers_series = fallback_series
 
     return {
         "impressions": impressions,
