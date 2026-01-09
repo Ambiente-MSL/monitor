@@ -437,7 +437,7 @@ export default function AdsDashboard() {
           });
         }
       } catch (err) {
-        console.warn(`Falha ao carregar foto de perfil do Instagram`, err);
+        console.warn(`Falha ao carregar foto de perfil do Instagram.`, err);
       }
     };
 
