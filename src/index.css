@@ -2997,28 +2997,44 @@ body.theme-light {
 .account-add-modal {
   position: fixed;
   inset: 0;
-  z-index: 2000;
+  z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 16px;
 }
 
 .account-add-modal__overlay {
   position: absolute;
   inset: 0;
-  background: rgba(15, 23, 42, 0.45);
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .account-add-modal__content {
   position: relative;
-  width: min(520px, 92vw);
-  max-height: 90vh;
+  width: min(520px, 100%);
+  max-height: min(85vh, 800px);
   overflow-y: auto;
   background: #ffffff;
   border-radius: 16px;
   padding: 24px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.25),
+              0 0 0 1px rgba(0, 0, 0, 0.05);
   z-index: 1;
+  animation: modalFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .account-add-modal__header {
