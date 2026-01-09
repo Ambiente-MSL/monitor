@@ -5,11 +5,15 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+concurrency:
+  group: deploy-monitor
+  cancel-in-progress: true
+
 jobs:
   deploy:
     name: Deploy Monitor
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: 🚀 Deploy via SSH
       uses: appleboy/ssh-action@v1.0.3
@@ -17,46 +21,38 @@ jobs:
         host: ${{ secrets.SERVER_HOST }}
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
+        command_timeout: 30m
         script: |
+          set -e
+
           echo "========================================="
           echo "🔄 Iniciando deploy do Monitor"
           echo "========================================="
-          
-          # Vai para a pasta do projeto
+
           cd /root/monitor || exit 1
-          
-          # Exibe branch atual
-          echo "📍 Branch atual:"
-          git branch
-          
-          # Puxa atualizações
-          echo "⬇️  Fazendo git pull..."
-          git pull origin main
-          
-          # Exibe último commit
+
+          echo "⬇️  Fazendo sync com origin/main..."
+          git fetch origin main
+          git reset --hard origin/main
+
           echo "📝 Último commit:"
           git log -1 --oneline
-          
-          # Para containers antigos
-          echo "🛑 Parando containers..."
-          docker compose down
-          
-          # Rebuilda e sobe
-          echo "🔨 Rebuilding e subindo containers..."
-          docker compose up -d --build
-          
-          # Aguarda containers subirem
+
+          export DOCKER_BUILDKIT=1
+          export COMPOSE_DOCKER_CLI_BUILD=1
+
+          echo "🔨 Build + Up (sem derrubar tudo)..."
+          docker compose up -d --build --remove-orphans
+
           echo "⏳ Aguardando containers..."
-          sleep 10
-          
-          # Verifica status
+          sleep 5
+
           echo "📊 Status dos containers:"
           docker compose ps
-          
-          # Limpa imagens antigas
-          echo "🧹 Limpando imagens antigas..."
-          docker image prune -f
-          
+
+          echo "🧹 Limpeza segura (opcional)..."
+          docker image prune -f --filter "until=168h"
+
           echo "========================================="
-          echo "✅ Deploy concluído com sucesso!"
+          echo "✅ Deploy concluído!"
           echo "========================================="
