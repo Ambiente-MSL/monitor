@@ -15,6 +15,7 @@ import {
   Cell,
   ComposedChart,
   Line,
+  LineChart,
   ReferenceDot,
   ReferenceLine,
 } from "recharts";
