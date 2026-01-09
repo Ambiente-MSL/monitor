@@ -133,7 +133,7 @@ export default function Topbar({
         </div>
         <div className="topbar__controls">
           <div className="topbar__notif">
-            <button type="button" className="topbar__notif-btn" aria-label="NotificaÃ§Ãµes">
+            <button type="button" className="topbar__notif-btn" aria-label="Notificações">
               <Bell size={16} />
               {displayNotification && <span className="topbar__notif-badge">{notificationCount}</span>}
             </button>

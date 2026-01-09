@@ -914,9 +914,10 @@ useEffect(() => {
 
         <h2 className="ig-clean-title">Visão Geral</h2>
 
-        {/* Grid Principal */}
-        <div className="ig-clean-grid">
-          <div className="ig-clean-grid__left">
+        {/* Grid Principal - Layout 2 Colunas */}
+        <div className="fb-main-grid">
+          {/* Coluna Esquerda - Fixa ~320px */}
+          <div className="fb-left-column">
             <section className="ig-profile-vertical">
               <div className="ig-profile-vertical__cover" style={heroCoverStyle}>
                 {coverLoading && (
@@ -1028,7 +1029,7 @@ useEffect(() => {
                   </div>
                 </div>
 
-                <div className="ig-overview-activity" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                <div className="fb-stats-grid fb-stats-grid--two-cols">
                   <div className="ig-overview-stat">
                     <div className="ig-overview-stat__value">{formatNumber(overviewMetrics.engagement || 0)}</div>
                     <div className="ig-overview-stat__label">Engajamento total</div>
@@ -1092,7 +1093,7 @@ useEffect(() => {
               </div>
             </section>
 
-            <section className="ig-card" style={{ marginTop: 12 }}>
+            <section className="ig-card">
               <header className="ig-card-header">
                 <div>
                   <h3 className="ig-clean-title2">Visão de vídeos</h3>
@@ -1129,7 +1130,8 @@ useEffect(() => {
             </section>
           </div>
 
-          <div className="ig-clean-grid__right">
+          {/* Coluna Direita - Flex */}
+          <div className="fb-right-column">
             {/* Card de Crescimento do Perfil */}
             <section className="ig-growth-clean">
               <header className="ig-card-header">
@@ -1256,7 +1258,255 @@ useEffect(() => {
               </div>
             </section>
 
-            {/* Card de Performance de Conteúdo */}
+            {/* NOVA SEÇÃO: Seguidores (MOCK) */}
+            <div className="fb-followers-section">
+              {/* Card A: Seguidores (Resumo) */}
+              <section className="ig-card">
+                <header className="ig-card-header">
+                  <div>
+                    <h3 className="ig-clean-title2">Seguidores</h3>
+                    <p className="ig-card-subtitle">Resumo do período</p>
+                  </div>
+                </header>
+
+                <div className="fb-card-body">
+                  <div className="fb-followers-kpis">
+                    {/* Total de seguidores */}
+                    <div className="fb-follower-kpi fb-follower-kpi--primary">
+                      <div className="fb-follower-kpi__value">65.250</div>
+                      <div className="fb-follower-kpi__label">Total de seguidores</div>
+                    </div>
+
+                    {/* Novos seguidores */}
+                    <div className="fb-follower-kpi">
+                      <div className="fb-follower-kpi__value fb-follower-kpi__value--positive">
+                        +320
+                      </div>
+                      <div className="fb-follower-kpi__label">Novos seguidores</div>
+                    </div>
+
+                    {/* Deixaram de seguir */}
+                    <div className="fb-follower-kpi">
+                      <div className="fb-follower-kpi__value fb-follower-kpi__value--negative">
+                        -85
+                      </div>
+                      <div className="fb-follower-kpi__label">Deixaram de seguir</div>
+                    </div>
+
+                    {/* Crescimento líquido */}
+                    <div className="fb-follower-kpi fb-follower-kpi--highlight">
+                      <div className="fb-follower-kpi__value fb-follower-kpi__value--positive">
+                        +235
+                      </div>
+                      <div className="fb-follower-kpi__label">Crescimento líquido</div>
+                      <div className="fb-follower-kpi__change">
+                        <span className="fb-follower-kpi__change-icon">↗</span>
+                        <span className="fb-follower-kpi__change-value">+3,2%</span>
+                        <span className="fb-follower-kpi__change-label">vs período anterior</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Card B: Crescimento de Seguidores */}
+              <section className="ig-card">
+                <header className="ig-card-header">
+                  <div>
+                    <h3 className="ig-clean-title2">Crescimento de Seguidores</h3>
+                    <p className="ig-card-subtitle">Evolução diária</p>
+                  </div>
+                </header>
+
+                <div className="fb-card-body">
+                  <ResponsiveContainer width="100%" height={260}>
+                    <ComposedChart
+                      data={[
+                        { date: '01/01', value: 64950, label: '01 de janeiro' },
+                        { date: '02/01', value: 64980, label: '02 de janeiro' },
+                        { date: '03/01', value: 65020, label: '03 de janeiro' },
+                        { date: '04/01', value: 65010, label: '04 de janeiro' },
+                        { date: '05/01', value: 65045, label: '05 de janeiro' },
+                        { date: '06/01', value: 65090, label: '06 de janeiro' },
+                        { date: '07/01', value: 65110, label: '07 de janeiro' },
+                        { date: '08/01', value: 65130, label: '08 de janeiro' },
+                        { date: '09/01', value: 65165, label: '09 de janeiro' },
+                        { date: '10/01', value: 65180, label: '10 de janeiro' },
+                        { date: '11/01', value: 65200, label: '11 de janeiro' },
+                        { date: '12/01', value: 65225, label: '12 de janeiro' },
+                        { date: '13/01', value: 65250, label: '13 de janeiro' },
+                      ]}
+                      margin={{ top: 20, right: 20, left: -10, bottom: 10 }}
+                    >
+                      <defs>
+                        <linearGradient id="fbFollowersAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#1877F2" stopOpacity={0.3} />
+                          <stop offset="100%" stopColor="#1877F2" stopOpacity={0.05} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#f3f4f6" />
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fill: '#6b7280', fontSize: 11 }}
+                        tickLine={false}
+                        axisLine={{ stroke: '#e5e7eb' }}
+                        minTickGap={30}
+                      />
+                      <YAxis
+                        tick={{ fill: '#6b7280', fontSize: 11 }}
+                        tickLine={false}
+                        axisLine={{ stroke: '#e5e7eb' }}
+                        tickFormatter={(val) => formatShortNumber(val)}
+                        domain={['dataMin - 50', 'dataMax + 50']}
+                      />
+                      <Tooltip
+                        cursor={{ stroke: '#1877F2', strokeWidth: 1, strokeDasharray: '4 4' }}
+                        content={({ active, payload }) => {
+                          if (!active || !payload?.length) return null;
+                          const item = payload[0];
+                          return (
+                            <div className="ig-tooltip">
+                              <span className="ig-tooltip__title">{item.payload.label}</span>
+                              <div className="ig-tooltip__row">
+                                <span>Seguidores</span>
+                                <strong>{formatNumber(item.value)}</strong>
+                              </div>
+                            </div>
+                          );
+                        }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="value"
+                        fill="url(#fbFollowersAreaGradient)"
+                        stroke="none"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="value"
+                        stroke="#1877F2"
+                        strokeWidth={3}
+                        dot={{ fill: '#ffffff', stroke: '#1877F2', strokeWidth: 2, r: 4 }}
+                        activeDot={{ r: 6, fill: '#ffffff', stroke: '#1877F2', strokeWidth: 3 }}
+                      />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              </section>
+            </div>
+
+            {/* NOVA SEÇÃO: Alcance (MOCK) */}
+            <div className="fb-followers-section">
+              {/* Card C: Alcance no período */}
+              <section className="ig-card">
+                <header className="ig-card-header">
+                  <div>
+                    <h3 className="ig-clean-title2">Alcance no período</h3>
+                    <p className="ig-card-subtitle">Principais métricas</p>
+                  </div>
+                </header>
+
+                <div className="fb-card-body">
+                  <div className="fb-reach-kpis">
+                    {/* Alcance total */}
+                    <div className="fb-reach-kpi fb-reach-kpi--primary">
+                      <div className="fb-reach-kpi__value">30.824</div>
+                      <div className="fb-reach-kpi__label">Alcance total</div>
+                    </div>
+
+                    {/* Impressões */}
+                    <div className="fb-reach-kpi">
+                      <div className="fb-reach-kpi__value">45.120</div>
+                      <div className="fb-reach-kpi__label">Impressões</div>
+                    </div>
+
+                    {/* Frequência média */}
+                    <div className="fb-reach-kpi">
+                      <div className="fb-reach-kpi__value">1,4</div>
+                      <div className="fb-reach-kpi__label">Frequência média</div>
+                    </div>
+                  </div>
+
+                  {/* Mini sparkline */}
+                  <div className="fb-reach-sparkline">
+                    <ResponsiveContainer width="100%" height={60}>
+                      <LineChart
+                        data={[
+                          { value: 28500 },
+                          { value: 29200 },
+                          { value: 28900 },
+                          { value: 30100 },
+                          { value: 29800 },
+                          { value: 30500 },
+                          { value: 30824 },
+                        ]}
+                        margin={{ top: 5, right: 0, left: 0, bottom: 5 }}
+                      >
+                        <Line
+                          type="monotone"
+                          dataKey="value"
+                          stroke="#1877F2"
+                          strokeWidth={2}
+                          dot={false}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </section>
+
+              {/* Card D: Detalhamento do Alcance */}
+              <section className="ig-card">
+                <header className="ig-card-header">
+                  <div>
+                    <h3 className="ig-clean-title2">Detalhamento do Alcance</h3>
+                    <p className="ig-card-subtitle">Origem do alcance</p>
+                  </div>
+                </header>
+
+                <div className="fb-card-body">
+                  <div className="fb-reach-details">
+                    {/* Orgânico */}
+                    <div className="fb-reach-detail-item">
+                      <div className="fb-reach-detail-item__header">
+                        <span className="fb-reach-detail-item__label">Orgânico</span>
+                        <span className="fb-reach-detail-item__value">26.200</span>
+                      </div>
+                      <div className="fb-reach-detail-item__bar">
+                        <div
+                          className="fb-reach-detail-item__bar-fill fb-reach-detail-item__bar-fill--organic"
+                          style={{ width: '85%' }}
+                        />
+                      </div>
+                      <div className="fb-reach-detail-item__percentage">85%</div>
+                    </div>
+
+                    {/* Pago */}
+                    <div className="fb-reach-detail-item">
+                      <div className="fb-reach-detail-item__header">
+                        <span className="fb-reach-detail-item__label">Pago</span>
+                        <span className="fb-reach-detail-item__value">4.624</span>
+                      </div>
+                      <div className="fb-reach-detail-item__bar">
+                        <div
+                          className="fb-reach-detail-item__bar-fill fb-reach-detail-item__bar-fill--paid"
+                          style={{ width: '15%' }}
+                        />
+                      </div>
+                      <div className="fb-reach-detail-item__percentage">15%</div>
+                    </div>
+                  </div>
+
+                  {/* Total */}
+                  <div className="fb-reach-detail-total">
+                    <span className="fb-reach-detail-total__label">Total</span>
+                    <span className="fb-reach-detail-total__value">30.824</span>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            {/* Card de Performance de Conteúdo - ESCONDIDO */}
             <section className="ig-growth-clean fb-content-performance" style={{ display: "none" }}>
               <header className="ig-card-header">
                 <div>

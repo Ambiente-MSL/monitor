@@ -12405,3 +12405,419 @@ body:has(.facebook-dashboard--clean) .app-main__content {
     font-size: 15px;
   }
 }
+
+/* ========================================
+   FACEBOOK DASHBOARD - MAIN GRID LAYOUT
+   ======================================== */
+
+/* Grid principal com 2 colunas */
+.fb-main-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
+  margin-top: 24px;
+}
+
+/* Coluna esquerda - largura fixa */
+.fb-left-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Coluna direita - flex */
+.fb-right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Grid para pares de analytics cards */
+.fb-analytics-grid--pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+}
+
+/* Espaçamento superior dos cards na coluna direita */
+.fb-right-column > section:not(:first-child) {
+  margin-top: 0; /* Gap do flex já controla */
+}
+
+/* Seção de Seguidores - 2 cards lado a lado */
+.fb-followers-section {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+/* KPIs de Seguidores */
+.fb-followers-kpis {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.fb-follower-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.fb-follower-kpi:hover {
+  background: white;
+  border-color: rgba(24, 119, 242, 0.15);
+  box-shadow: 0 2px 8px rgba(24, 119, 242, 0.08);
+}
+
+.fb-follower-kpi--primary {
+  background: linear-gradient(135deg, rgba(24, 119, 242, 0.08) 0%, rgba(10, 102, 194, 0.12) 100%);
+  border-color: rgba(24, 119, 242, 0.2);
+}
+
+.fb-follower-kpi--highlight {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(5, 150, 105, 0.12) 100%);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.fb-follower-kpi__value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1;
+}
+
+.fb-follower-kpi__value--positive {
+  color: #10b981;
+}
+
+.fb-follower-kpi__value--negative {
+  color: #ef4444;
+}
+
+.fb-follower-kpi__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fb-follower-kpi__change {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.fb-follower-kpi__change-icon {
+  color: #10b981;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.fb-follower-kpi__change-value {
+  color: #10b981;
+  font-weight: 700;
+}
+
+.fb-follower-kpi__change-label {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+/* KPIs de Alcance - Card C */
+.fb-reach-kpis {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.fb-reach-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.fb-reach-kpi:hover {
+  background: white;
+  border-color: rgba(24, 119, 242, 0.15);
+  box-shadow: 0 2px 8px rgba(24, 119, 242, 0.08);
+}
+
+.fb-reach-kpi--primary {
+  background: linear-gradient(135deg, rgba(24, 119, 242, 0.08) 0%, rgba(10, 102, 194, 0.12) 100%);
+  border-color: rgba(24, 119, 242, 0.2);
+}
+
+.fb-reach-kpi__value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1;
+}
+
+.fb-reach-kpi__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* Sparkline */
+.fb-reach-sparkline {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #f3f4f6;
+}
+
+/* Detalhamento do Alcance - Card D */
+.fb-reach-details {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.fb-reach-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fb-reach-detail-item__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fb-reach-detail-item__label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.fb-reach-detail-item__value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.fb-reach-detail-item__bar {
+  height: 12px;
+  background: #f3f4f6;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.fb-reach-detail-item__bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fb-reach-detail-item__bar-fill--organic {
+  background: linear-gradient(90deg, #1877F2 0%, #42A5F5 100%);
+}
+
+.fb-reach-detail-item__bar-fill--paid {
+  background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+}
+
+.fb-reach-detail-item__percentage {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  text-align: right;
+}
+
+.fb-reach-detail-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(24, 119, 242, 0.08) 0%, rgba(10, 102, 194, 0.12) 100%);
+  border-radius: 12px;
+  border: 2px solid rgba(24, 119, 242, 0.2);
+}
+
+.fb-reach-detail-total__label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.fb-reach-detail-total__value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1877F2;
+}
+
+/* Stats Grid - usado em cards de Seguidores e Alcance */
+.fb-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.fb-stats-grid--two-cols {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 0;
+}
+
+/* Card de breakdown de alcance */
+.fb-reach-breakdown {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.fb-reach-breakdown__item {
+  background: linear-gradient(135deg, rgba(24, 119, 242, 0.08) 0%, rgba(10, 102, 194, 0.12) 100%);
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid rgba(24, 119, 242, 0.15);
+}
+
+.fb-reach-breakdown__item--paid {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(5, 150, 105, 0.12) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+}
+
+.fb-reach-breakdown__label {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.fb-reach-breakdown__value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1877F2;
+  margin-bottom: 4px;
+}
+
+.fb-reach-breakdown__item--paid .fb-reach-breakdown__value {
+  color: #10b981;
+}
+
+.fb-reach-breakdown__change {
+  font-size: 12px;
+  color: #10b981;
+  font-weight: 600;
+}
+
+.fb-reach-breakdown__change-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.fb-reach-breakdown__change-text {
+  color: #9ca3af;
+  margin-left: 6px;
+}
+
+/* Métricas adicionais */
+.fb-metrics-additional {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid #f3f4f6;
+}
+
+/* Padding interno dos cards */
+.fb-card-body {
+  padding: 0 24px 24px;
+}
+
+/* Responsividade do grid principal */
+@media (max-width: 1024px) {
+  .fb-main-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .fb-left-column {
+    gap: 20px;
+  }
+
+  .fb-right-column {
+    gap: 20px;
+  }
+
+  .fb-analytics-grid--pair {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .fb-stats-grid,
+  .fb-reach-breakdown {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .fb-stats-grid--two-cols {
+    grid-template-columns: 1fr;
+  }
+
+  .fb-followers-section {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .fb-main-grid {
+    gap: 16px;
+  }
+
+  .fb-left-column,
+  .fb-right-column {
+    gap: 16px;
+  }
+
+  .fb-analytics-grid--pair {
+    gap: 16px;
+  }
+
+  .fb-metrics-additional {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .fb-followers-section {
+    gap: 16px;
+  }
+
+  .fb-follower-kpi__value {
+    font-size: 28px;
+  }
+
+  .fb-reach-kpi__value {
+    font-size: 24px;
+  }
+
+  .fb-reach-detail-total__value {
+    font-size: 20px;
+  }
+}
