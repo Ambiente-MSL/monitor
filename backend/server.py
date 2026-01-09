@@ -3337,77 +3337,6 @@ def instagram_metrics():
                     payload_obj["reach_timeseries"] = series
                 return
 
-    def _get_metric(metrics, metric_key):
-        for metric in metrics or []:
-            if isinstance(metric, dict) and metric.get("key") == metric_key:
-                return metric
-        return None
-
-    def _has_follower_metrics(payload_obj):
-        metrics = payload_obj.get("metrics") or []
-        followers_metric = _get_metric(metrics, "followers_total")
-        growth_metric = _get_metric(metrics, "follower_growth")
-        has_metric = (
-            (followers_metric is not None and followers_metric.get("value") is not None)
-            or (growth_metric is not None and growth_metric.get("value") is not None)
-        )
-        counts = payload_obj.get("follower_counts") or {}
-        has_counts = any(
-            counts.get(key) is not None
-            for key in ("start", "end", "follows", "unfollows")
-        )
-        has_series = bool(payload_obj.get("follower_series") or []) or bool(
-            payload_obj.get("followers_gain_series") or []
-        )
-        return has_metric or has_counts or has_series
-
-    def _merge_follower_metrics(target, source):
-        if not source:
-            return False
-        changed = False
-        metrics = target.get("metrics") or []
-        source_metrics = source.get("metrics") or []
-
-        def merge_metric(metric_key):
-            nonlocal changed
-            src_metric = _get_metric(source_metrics, metric_key)
-            if src_metric is None:
-                return
-            dest_metric = _get_metric(metrics, metric_key)
-            if dest_metric is None:
-                metrics.append(dict(src_metric))
-                changed = True
-                return
-            if dest_metric.get("value") is None and src_metric.get("value") is not None:
-                dest_metric["value"] = src_metric.get("value")
-                changed = True
-            if dest_metric.get("deltaPct") is None and src_metric.get("deltaPct") is not None:
-                dest_metric["deltaPct"] = src_metric.get("deltaPct")
-                changed = True
-
-        merge_metric("followers_total")
-        merge_metric("follower_growth")
-
-        if source.get("follower_series") and not (target.get("follower_series") or []):
-            target["follower_series"] = source.get("follower_series")
-            changed = True
-        if source.get("followers_gain_series") and not (target.get("followers_gain_series") or []):
-            target["followers_gain_series"] = source.get("followers_gain_series")
-            changed = True
-
-        source_counts = source.get("follower_counts") or {}
-        if source_counts:
-            target_counts = dict(target.get("follower_counts") or {})
-            for key in ("start", "end", "follows", "unfollows"):
-                if target_counts.get(key) is None and source_counts.get(key) is not None:
-                    target_counts[key] = source_counts.get(key)
-                    changed = True
-            target["follower_counts"] = target_counts
-
-        if changed:
-            target["metrics"] = metrics
-        return changed
-
     db_start = time.perf_counter()
     try:
         db_payload = build_instagram_metrics_from_db(ig, since, until)
@@ -3427,34 +3356,6 @@ def instagram_metrics():
     if db_payload:
         payload_obj = dict(db_payload)
         _ensure_reach_timeseries(payload_obj)
-        follower_fallback_meta = None
-        used_follower_fallback = False
-        if not _has_follower_metrics(payload_obj):
-            try:
-                fallback_payload, fallback_meta = get_cached_payload(
-                    "instagram_metrics",
-                    ig,
-                    since,
-                    until,
-                    fetcher=fetch_instagram_metrics,
-                    platform=DEFAULT_CACHE_PLATFORM,
-                    force=False,
-                    refresh_reason="followers-fallback",
-                )
-                used_follower_fallback = _merge_follower_metrics(payload_obj, fallback_payload)
-                if used_follower_fallback:
-                    follower_fallback_meta = fallback_meta
-            except MetaAPIError as err:
-                fallback = get_latest_cached_payload("instagram_metrics", ig, platform=DEFAULT_CACHE_PLATFORM)
-                if fallback:
-                    fallback_payload, fallback_meta = fallback
-                    used_follower_fallback = _merge_follower_metrics(payload_obj, fallback_payload)
-                    if used_follower_fallback:
-                        follower_fallback_meta = fallback_meta
-                else:
-                    logger.warning("Followers fallback failed: %s", err)
-            except Exception as err:  # noqa: BLE001
-                logger.warning("Followers fallback failed: %s", err)
         legacy_cache = payload_obj.get("cache") if isinstance(payload_obj.get("cache"), dict) else {}
         precomputed_cache = {
             "source": "cache",
@@ -3463,12 +3364,6 @@ def instagram_metrics():
             "next_refresh_at": None,
             "cache_key": None,
         }
-        if used_follower_fallback:
-            precomputed_cache["source"] = "cache-fallback"
-            if isinstance(follower_fallback_meta, dict):
-                precomputed_cache["stale"] = follower_fallback_meta.get("stale", precomputed_cache["stale"])
-                precomputed_cache["fetched_at"] = follower_fallback_meta.get("fetched_at") or precomputed_cache["fetched_at"]
-                precomputed_cache["next_refresh_at"] = follower_fallback_meta.get("next_refresh_at")
         envelope = _build_api_envelope(
             payload_obj,
             platform="instagram",
