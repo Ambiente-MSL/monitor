@@ -167,7 +167,7 @@ export default function Reports() {
     const rows = flattenForTable(data);
     const sheet = XLSXutils.json_to_sheet(rows);
     const wb = XLSXutils.book_new();
-    XLSXutils.book_append_sheet(wb, sheet, "RelatA3rio");
+    XLSXutils.book_append_sheet(wb, sheet, "Relatório");
     XLSXwriteFile(wb, `${report?.name || "relatorio"}.xlsx`);
   };
 
