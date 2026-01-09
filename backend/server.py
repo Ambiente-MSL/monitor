@@ -53,19 +53,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def _timing_enabled() -> bool:
-    return os.getenv("DEBUG_METRICS_TIMING", "").lower() in ("1", "true", "yes", "y")
-
-
-def _log_timing(label: str, start_ts: float, extra: Optional[Dict[str, Any]] = None) -> None:
-    if not _timing_enabled():
-        return
-    elapsed_ms = (time.perf_counter() - start_ts) * 1000.0
-    if extra:
-        logger.info("Timing %s: %.1fms %s", label, elapsed_ms, extra)
-    else:
-        logger.info("Timing %s: %.1fms", label, elapsed_ms)
-
 
 DEFAULT_DEV_ORIGINS = [
     "http://localhost:3010",
@@ -816,20 +803,8 @@ def fetch_instagram_metrics(
     if since_ts is None or until_ts is None:
         raise ValueError("since_ts e until_ts são obrigatórios para instagram_metrics")
 
-    current_start = time.perf_counter()
     cur = ig_window(ig_id, since_ts, until_ts)
-    _log_timing(
-        "instagram.metrics.ig_window.current",
-        current_start,
-        {"account_id": ig_id, "since": since_ts, "until": until_ts},
-    )
-    previous_start = time.perf_counter()
     prev = ig_window(ig_id, since_ts - _duration(since_ts, until_ts), since_ts)
-    _log_timing(
-        "instagram.metrics.ig_window.prev",
-        previous_start,
-        {"account_id": ig_id, "since": since_ts - _duration(since_ts, until_ts), "until": since_ts},
-    )
 
     def pct(current, previous):
         return round(((current - previous) / previous) * 100, 2) if previous and previous > 0 and current is not None else None
@@ -1910,7 +1885,6 @@ def _load_metrics_map(ig_id: str, start_date: date, end_date: date) -> Dict[str,
     if client is None:
         return {}
 
-    query_start = time.perf_counter()
     response = (
         client.table(IG_METRICS_TABLE)
         .select("metric_key,metric_date,value,metadata")
@@ -1919,17 +1893,6 @@ def _load_metrics_map(ig_id: str, start_date: date, end_date: date) -> Dict[str,
         .gte("metric_date", start_date.isoformat())
         .lte("metric_date", end_date.isoformat())
         .execute()
-    )
-    _log_timing(
-        "metrics_daily.query",
-        query_start,
-        {
-            "account_id": ig_id,
-            "start": start_date.isoformat(),
-            "end": end_date.isoformat(),
-            "rows": len(response.data or []),
-            "error": bool(getattr(response, "error", None)),
-        },
     )
     if getattr(response, "error", None):
         logger.warning("Falha ao carregar %s: %s", IG_METRICS_TABLE, response.error)
@@ -1959,7 +1922,6 @@ def _load_followers_gain_series_from_db(ig_id: str, start_date: date, end_date: 
     if client is None:
         return []
 
-    query_start = time.perf_counter()
     response = (
         client.table(IG_METRICS_TABLE)
         .select("metric_key,metric_date,value")
@@ -1969,17 +1931,6 @@ def _load_followers_gain_series_from_db(ig_id: str, start_date: date, end_date: 
         .lte("metric_date", end_date.isoformat())
         .in_("metric_key", ["follows", "followers_delta"])
         .execute()
-    )
-    _log_timing(
-        "metrics_daily.followers_gain_query",
-        query_start,
-        {
-            "account_id": ig_id,
-            "start": start_date.isoformat(),
-            "end": end_date.isoformat(),
-            "rows": len(response.data or []),
-            "error": bool(getattr(response, "error", None)),
-        },
     )
     if getattr(response, "error", None):
         logger.warning("Falha ao carregar followers_gain_series: %s", response.error)
@@ -3337,21 +3288,10 @@ def instagram_metrics():
                     payload_obj["reach_timeseries"] = series
                 return
 
-    db_start = time.perf_counter()
     try:
         db_payload = build_instagram_metrics_from_db(ig, since, until)
-        _log_timing(
-            "instagram.metrics.db_payload",
-            db_start,
-            {"account_id": ig, "hit": bool(db_payload)},
-        )
     except Exception as err:  # noqa: BLE001
-        _log_timing(
-            "instagram.metrics.db_payload",
-            db_start,
-            {"account_id": ig, "hit": False, "error": True},
-        )
-        logger.exception("Falha ao montar metricas via %s", IG_METRICS_TABLE, exc_info=err)
+        logger.exception("Falha ao montar métricas via %s", IG_METRICS_TABLE, exc_info=err)
         db_payload = None
     if db_payload:
         payload_obj = dict(db_payload)
@@ -3376,7 +3316,6 @@ def instagram_metrics():
         )
         return jsonify(envelope)
 
-    cache_start = time.perf_counter()
     try:
         payload, meta = get_cached_payload(
             "instagram_metrics",
@@ -3387,15 +3326,6 @@ def instagram_metrics():
             platform=DEFAULT_CACHE_PLATFORM,
             force=force_refresh_flag,
             refresh_reason="forced" if force_refresh_flag else None,
-        )
-        _log_timing(
-            "instagram.metrics.cache_fetch",
-            cache_start,
-            {
-                "account_id": ig,
-                "source": meta.get("source") if isinstance(meta, dict) else None,
-                "stale": meta.get("stale") if isinstance(meta, dict) else None,
-            },
         )
     except MetaAPIError as err:
         mark_cache_error("instagram_metrics", ig, since, until, None, err.args[0], platform=DEFAULT_CACHE_PLATFORM)
