@@ -43,6 +43,7 @@ import {
 } from "../lib/dashboardCache";
 import DataState from "../components/DataState";
 import CustomChartTooltip from "../components/CustomChartTooltip";
+import LastSyncBadge from "../components/LastSyncBadge";
 import { fetchWithTimeout, isTimeoutError } from "../lib/fetchWithTimeout";
 import { formatChartDate, formatCompactNumber, formatTooltipNumber } from "../lib/chartFormatters";
 import { normalizeSyncInfo } from "../lib/syncInfo";
@@ -286,7 +287,6 @@ useEffect(() => {
       selectedPreset: activePreset,
       onPresetSelect: handlePresetSelect,
       onDateChange: handleDateChange,
-      syncInfo: overviewSync,
     });
     return () => resetTopbarConfig?.();
   }, [
@@ -984,7 +984,10 @@ useEffect(() => {
           </nav>
         </div>
 
-        <h2 className="ig-clean-title">Visão Geral</h2>
+        <div className="ig-clean-title-row">
+          <h2 className="ig-clean-title">Visão Geral</h2>
+          <LastSyncBadge {...overviewSync} />
+        </div>
 
         {/* Grid Principal - Layout 2 Colunas */}
         <div className="fb-main-grid">

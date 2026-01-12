@@ -53,6 +53,7 @@ import DataState from "../components/DataState";
 import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import WordCloudCard from "../components/WordCloudCard";
 import CustomChartTooltip from "../components/CustomChartTooltip";
+import LastSyncBadge from "../components/LastSyncBadge";
 import { useAuth } from "../context/AuthContext";
 import {
   getDashboardCache,
@@ -732,7 +733,6 @@ export default function InstagramDashboard() {
       selectedPreset: activePreset,
       onPresetSelect: handlePresetSelect,
       onDateChange: handleDateChange,
-      syncInfo: metricsSync,
     });
     return () => resetTopbarConfig?.();
   }, [
@@ -4349,7 +4349,10 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
           </nav>
         </div>
 
-        <h2 className="ig-clean-title">Visão Geral</h2>
+        <div className="ig-clean-title-row">
+          <h2 className="ig-clean-title">Visão Geral</h2>
+          <LastSyncBadge {...metricsSync} />
+        </div>
 
         {/* Grid Principal */}
           <div className="ig-clean-grid" style={showDetailedView ? { display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' } : {}}>

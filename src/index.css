@@ -10205,6 +10205,18 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   margin: 0 0 20px 0;
 }
 
+.ig-clean-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.ig-clean-title-row .ig-clean-title {
+  margin: 0;
+}
+
 
 
 

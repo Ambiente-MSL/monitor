@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import DataState from "../components/DataState";
 import CustomChartTooltip from "../components/CustomChartTooltip";
+import LastSyncBadge from "../components/LastSyncBadge";
 import { useAccounts } from "../context/AccountsContext";
 import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import { useAuth } from "../context/AuthContext";
@@ -356,7 +357,6 @@ export default function AdsDashboard() {
       showFilters: true,
       presets: ADS_TOPBAR_PRESETS,
       selectedPreset: activePreset,
-      syncInfo: adsSyncInfo,
       onPresetSelect: (presetId) => {
         const preset = ADS_TOPBAR_PRESETS.find((item) => item.id === presetId);
         if (!preset?.days || preset.days <= 0) return;
@@ -1312,7 +1312,10 @@ export default function AdsDashboard() {
 
           {/* Título e Nome da Conta */}
           <div style={{ flex: 1 }}>
-            <h2 className="ig-clean-title" style={{ margin: 0, lineHeight: 1.2 }}>Visão Geral</h2>
+            <div className="ig-clean-title-row">
+              <h2 className="ig-clean-title" style={{ margin: 0, lineHeight: 1.2 }}>Visão Geral</h2>
+              <LastSyncBadge {...adsSyncInfo} />
+            </div>
             {selectedAccount?.label && (
               <p style={{
                 margin: '4px 0 0 0',
