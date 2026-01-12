@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { fetchWithTimeout, isTimeoutError } from "../lib/fetchWithTimeout";
 import { createDefaultAccounts } from "../data/accounts";
 import { useAuth } from "./AuthContext";
 
@@ -143,7 +144,7 @@ export function AccountsProvider({ children }) {
 
       // 2) Descobrir contas do token
       try {
-        const response = await fetch(DISCOVER_ACCOUNTS_ENDPOINT, {
+        const response = await fetchWithTimeout(DISCOVER_ACCOUNTS_ENDPOINT, {
           signal: controller.signal,
         });
         if (!response.ok) {
@@ -237,6 +238,7 @@ export function AccountsProvider({ children }) {
           return;
         }
         console.warn("Falha ao descobrir contas automaticamente.", error);
+        setError(isTimeoutError(error) ? "Tempo esgotado ao descobrir contas." : "Falha ao descobrir contas automaticamente.");
         setLoading(false);
       }
     };

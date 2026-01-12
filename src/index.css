@@ -7004,6 +7004,76 @@ tbody
   background: var(--panel-hover);
 }
 
+/* Unified loading/empty/error state */
+.data-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 160px;
+  padding: 24px;
+  border: 1px dashed var(--stroke);
+  border-radius: 12px;
+  color: var(--muted);
+  background: var(--panel-hover);
+  text-align: center;
+}
+
+.data-state--sm {
+  min-height: 120px;
+  padding: 16px;
+}
+
+.data-state--lg {
+  min-height: 220px;
+  padding: 32px;
+}
+
+.data-state--inline {
+  min-height: auto;
+  padding: 8px 12px;
+  flex-direction: row;
+}
+
+.data-state__spinner {
+  width: 26px;
+  height: 26px;
+  border: 3px solid rgba(103, 123, 170, 0.2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.data-state__label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.data-state__hint {
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.data-state--error {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.06);
+  color: #b91c1c;
+}
+
+.data-state--overlay {
+  border: none;
+  background: transparent;
+  color: #fff;
+  min-height: auto;
+  padding: 0;
+}
+
+.data-state--overlay .data-state__spinner {
+  border-color: rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+}
+
 /* (mantÃ©m todo o restante do seu CSS original) */
 
 /* ========== Facebook Dashboard - Unified Layout ========== */

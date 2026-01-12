@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import DataState from './DataState';
 
 const PostsTable = ({ posts, loading, error }) => {
   const [columnOrder, setColumnOrder] = useState([
@@ -262,8 +263,7 @@ const PostsTable = ({ posts, loading, error }) => {
     return (
       <div className="posts-table-compact">
         <div className="posts-table-compact__loading">
-          <div className="posts-table-compact__spinner" />
-          <p>Carregando publicações...</p>
+          <DataState state="loading" label="Carregando publicacoes..." size="sm" />
         </div>
       </div>
     );

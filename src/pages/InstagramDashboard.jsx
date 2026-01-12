@@ -49,6 +49,7 @@ import {
 import useQueryState from "../hooks/useQueryState";
 import { useAccounts } from "../context/AccountsContext";
 import PostsTable from "../components/PostsTable";
+import DataState from "../components/DataState";
 import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import WordCloudCard from "../components/WordCloudCard";
 import { useAuth } from "../context/AuthContext";
@@ -3186,7 +3187,8 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
         maximumFractionDigits: 1,
       })}%`
       : "--";
-    const audienceStatusMessage = audienceLoading ? "Carregando..." : (audienceError || "Sem dados");
+    const audienceStatusState = audienceLoading ? "loading" : audienceError ? "error" : "empty";
+    const audienceStatusMessage = audienceLoading ? "Carregando dados..." : (audienceError || "Sem dados");
     const audienceGenderTotalDisplay = audienceGenderSeries.length
       ? formatPercent(audienceGenderTotalPct)
       : "--";
@@ -3483,7 +3485,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                         </div>
                       </>
                     ) : (
-                      <div className="ig-empty-state">{audienceStatusMessage}</div>
+                      <DataState state={audienceStatusState} label={audienceStatusMessage} size="sm" />
                     )}
                   </div>
                   {audienceGenderSeries.length ? (
@@ -3558,7 +3560,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                         </BarChart>
                       </ResponsiveContainer>
                     ) : (
-                      <div className="ig-empty-state">{audienceStatusMessage}</div>
+                      <DataState state={audienceStatusState} label={audienceStatusMessage} size="sm" />
                     )}
                   </div>
                 </section>
@@ -3652,7 +3654,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                       </tbody>
                     </table>
                   ) : (
-                    <div className="ig-empty-state">{audienceStatusMessage}</div>
+                    <DataState state={audienceStatusState} label={audienceStatusMessage} size="sm" />
                   )}
                 </div>
               </section>
@@ -4317,7 +4319,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                       zIndex: 2,
                     }}
                   >
-                    Carregando capa...
+                    <DataState state="loading" label="Carregando capa..." size="sm" className="data-state--overlay" />
                   </div>
                 )}
                 {!coverImage && (
@@ -4466,7 +4468,11 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
 
                 <div className="ig-profile-vertical__engagement">
                   <h4>Engajamento por conteúdo</h4>
-                  {contentBreakdown.length ? (
+                  {metricsLoading || loadingPosts ? (
+                    <DataState state="loading" label="Carregando engajamento..." size="sm" />
+                  ) : (postsError || metricsError) ? (
+                    <DataState state="error" label="Falha ao carregar engajamento." size="sm" />
+                  ) : contentBreakdown.length ? (
                     <>
                       <div className="ig-profile-vertical__engagement-chart">
                         <ResponsiveContainer width="100%" height={260}>
@@ -4523,7 +4529,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                       <p className="ig-best-time-caption">*Baseado nas publicações dos últimos 30 dias</p>
                     </>
                   ) : (
-                    <div className="ig-empty-state">Sem dados</div>
+                    <DataState state="empty" label="Sem dados de engajamento." size="sm" />
                   )}
                 </div>
 
@@ -4533,7 +4539,9 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   <h4>Melhores posts</h4>
                   <div className="ig-top-posts-list">
                     {loadingPosts && !topPosts.length ? (
-                      <div className="ig-empty-state">Carregando...</div>
+                      <DataState state="loading" label="Carregando posts..." size="sm" />
+                    ) : postsError && !topPosts.length ? (
+                      <DataState state="error" label="Falha ao carregar posts." size="sm" />
                     ) : topPosts.length ? (
                       topPosts.slice(0, 4).map((post) => {
                         const likes = resolvePostMetric(post, "likes");
@@ -4614,7 +4622,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                         );
                       })
                     ) : (
-                      <div className="ig-empty-state">Nenhum post disponível</div>
+                      <DataState state="empty" label="Nenhum post disponivel." size="sm" />
                     )}
                   </div>
                 </div>

@@ -10,6 +10,8 @@ import html2canvas from "html2canvas";
 import Papa from "papaparse";
 import { utils as XLSXutils, writeFile as XLSXwriteFile } from "xlsx";
 import { unwrapApiData } from "../lib/apiEnvelope";
+import DataState from "../components/DataState";
+import { fetchWithTimeout, isTimeoutError } from "../lib/fetchWithTimeout";
 
 const API_BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 
@@ -76,7 +78,15 @@ export default function Reports() {
     Object.entries(params || {}).forEach(([k, v]) => {
       if (v != null && v !== "") url.searchParams.set(k, v);
     });
-    const r = await fetch(url.toString());
+    let r;
+    try {
+      r = await fetchWithTimeout(url.toString());
+    } catch (err) {
+      if (isTimeoutError(err)) {
+        throw new Error("Tempo esgotado ao carregar dados.");
+      }
+      throw err;
+    }
     const t = await r.text();
     try {
       return unwrapApiData(t ? JSON.parse(t) : {}, {});
@@ -280,21 +290,15 @@ export default function Reports() {
             <tbody>
               {fetchingData ? (
                 <tr>
-                  <td colSpan="5" className="empty-state">
-                    Carregando relatórios...
-                  </td>
+                  <td colSpan="5" className="empty-state"><DataState state="loading" label="Carregando relatorios..." size="sm" inline /></td>
                 </tr>
               ) : dataError ? (
                 <tr>
-                  <td colSpan="5" className="empty-state">
-                    {dataError}
-                  </td>
+                  <td colSpan="5" className="empty-state"><DataState state="error" label={dataError} size="sm" inline /></td>
                 </tr>
               ) : reports.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="empty-state">
-                    Nenhum relatório encontrado. Crie seu primeiro relatório!
-                  </td>
+                  <td colSpan="5" className="empty-state"><DataState state="empty" label="Nenhum relatorio encontrado." size="sm" inline /></td>
                 </tr>
               ) : (
                 reports.map((report, idx) => {

@@ -1,5 +1,6 @@
 // src/components/InstagramRanking.jsx
 import { Play, Heart, MessageCircle, ExternalLink, TrendingUp } from "lucide-react";
+import DataState from "./DataState";
 
 const isLikelyVideoUrl = (url) =>
   typeof url === "string" && /\.(mp4|mov|mpe?g|m4v|avi|wmv|flv)(\?|$)/i.test(url);
@@ -9,7 +10,7 @@ export default function InstagramRanking({ posts, loading }) {
     return (
       <div className="ig-ranking-card">
         <h3 className="ig-ranking-card__title">🏆 Melhores Posts</h3>
-        <div className="ig-ranking-loading">Carregando ranking...</div>
+        <DataState state="loading" label="Carregando ranking..." size="sm" />
       </div>
     );
   }

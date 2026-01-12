@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { buildLegalUrl } from '../lib/legalLinks';
 import { useTranslation } from 'react-i18next';
 import logoMsl from '../assets/logo-msl.svg';
+import { fetchWithTimeout } from '../lib/fetchWithTimeout';
 
 const translateError = (rawMessage) => {
   if (!rawMessage) {
@@ -183,7 +184,7 @@ export default function Login() {
       const sessionToken = loginResponse?.token;
       if (sessionToken) {
         try {
-          const persistResponse = await fetch(buildApiUrl('/api/auth/meta-token'), {
+          const persistResponse = await fetchWithTimeout(buildApiUrl('/api/auth/meta-token'), {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

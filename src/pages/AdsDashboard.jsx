@@ -37,11 +37,13 @@ import {
   Shield,
   Info,
 } from "lucide-react";
+import DataState from "../components/DataState";
 import { useAccounts } from "../context/AccountsContext";
 import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import { useAuth } from "../context/AuthContext";
 import useQueryState from "../hooks/useQueryState";
 import { unwrapApiData } from "../lib/apiEnvelope";
+import { fetchWithTimeout } from "../lib/fetchWithTimeout";
 
 const API_BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 
@@ -427,7 +429,7 @@ export default function AdsDashboard() {
       try {
         const params = new URLSearchParams({ igUserId: selectedAccount.instagramUserId, limit: "1" });
         const url = `${API_BASE_URL}/api/instagram/posts?${params.toString()}`;
-        const resp = await fetch(url);
+        const resp = await fetchWithTimeout(url);
         const json = unwrapApiData(await resp.json(), {});
 
         if (json.account) {
@@ -1356,7 +1358,9 @@ export default function AdsDashboard() {
                 </div>
 
                 {adsLoading ? (
-                  <div className="ig-empty-state">Carregando...</div>
+                  <DataState state="loading" label="Carregando anuncios pagos..." size="sm" />
+                ) : adsError ? (
+                  <DataState state="error" label={adsError} size="sm" />
                 ) : hasVideoMetrics ? (
                   <div style={{ display: "grid", gap: 20 }}>
                     {/* Cards de Visualizações - Estilo Instagram Professional */}

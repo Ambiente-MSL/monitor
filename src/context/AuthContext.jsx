@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { DEFAULT_TIMEOUT_MS, fetchWithTimeout, isTimeoutError } from '../lib/fetchWithTimeout';
 
 const API_BASE_URL = (process.env.REACT_APP_API_URL || '').replace(/\/$/, '');
 const TOKEN_STORAGE_KEY = 'dashboardsocial.authToken';
@@ -11,6 +12,19 @@ function buildApiUrl(path = '') {
   const normalized = path.startsWith('/') ? path : `/${path}`;
   return `${API_BASE_URL}${normalized}`;
 }
+
+const TIMEOUT_MESSAGE = 'Tempo esgotado ao carregar dados.';
+
+const requestWithTimeout = async (url, options = {}, timeoutMs = DEFAULT_TIMEOUT_MS) => {
+  try {
+    return await fetchWithTimeout(url, options, timeoutMs);
+  } catch (err) {
+    if (isTimeoutError(err)) {
+      throw new Error(TIMEOUT_MESSAGE);
+    }
+    throw err;
+  }
+};
 
 async function parseResponseBody(response) {
   const contentType = response.headers.get('content-type') || '';
@@ -92,7 +106,7 @@ export function AuthProvider({ children }) {
     const loadSession = async () => {
       setLoading(true);
       try {
-        const response = await fetch(buildApiUrl('/api/auth/session'), {
+        const response = await requestWithTimeout(buildApiUrl('/api/auth/session'), {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -128,7 +142,7 @@ export function AuthProvider({ children }) {
 
   const signInWithPassword = useCallback(
     async (email, password) => {
-      const response = await fetch(buildApiUrl('/api/auth/login'), {
+      const response = await requestWithTimeout(buildApiUrl('/api/auth/login'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -149,7 +163,7 @@ export function AuthProvider({ children }) {
 
   const signInWithFacebook = useCallback(
     async (accessToken) => {
-      const response = await fetch(buildApiUrl('/api/auth/facebook'), {
+      const response = await requestWithTimeout(buildApiUrl('/api/auth/facebook'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -170,7 +184,7 @@ export function AuthProvider({ children }) {
 
   const signUp = useCallback(
     async (email, password, nome) => {
-      const response = await fetch(buildApiUrl('/api/auth/register'), {
+      const response = await requestWithTimeout(buildApiUrl('/api/auth/register'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -202,11 +216,12 @@ export function AuthProvider({ children }) {
   const apiFetch = useCallback(
     async (path, options = {}) => {
       const url = buildApiUrl(path);
+      const { timeoutMs = DEFAULT_TIMEOUT_MS, ...fetchOptions } = options;
       const headers = {
         Accept: 'application/json',
-        ...(options.headers || {}),
+        ...(fetchOptions.headers || {}),
       };
-      let body = options.body;
+      let body = fetchOptions.body;
       if (body && typeof body === 'object' && !(body instanceof FormData)) {
         headers['Content-Type'] = 'application/json';
         body = JSON.stringify(body);
@@ -215,11 +230,11 @@ export function AuthProvider({ children }) {
         headers.Authorization = `Bearer ${token}`;
       }
 
-      const response = await fetch(url, {
-        ...options,
+      const response = await requestWithTimeout(url, {
+        ...fetchOptions,
         headers,
         body,
-      });
+      }, timeoutMs);
       const payload = await parseResponseBody(response);
 
       if (response.status === 401) {

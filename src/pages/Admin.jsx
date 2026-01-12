@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Shield, UserCog, AlertCircle, CheckCircle, BarChart3, FileText, Settings, Instagram as InstagramIcon, Facebook, UserPlus, Edit2, Trash2, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import DataState from '../components/DataState';
 
 const HERO_TABS = [
   { id: "instagram", label: "Instagram", href: "/instagram", icon: InstagramIcon, iconClass: "hero-icon-instagram" },
@@ -318,8 +319,8 @@ export default function Admin() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: 'var(--muted)' }}>
-                      Carregando usuarios...
+                    <td colSpan={5} style={{ textAlign: 'center', padding: '2rem' }}>
+                      <DataState state="loading" label="Carregando usuarios..." size="sm" inline />
                     </td>
                   </tr>
                 ) : users.length === 0 ? (

@@ -7,6 +7,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import Section from '../components/Section';
 
 import AccountSelect from '../components/AccountSelect';
+import DataState from '../components/DataState';
 
 import useQueryState from '../hooks/useQueryState';
 
@@ -14,6 +15,7 @@ import { useAccounts } from '../context/AccountsContext';
 
 import { DEFAULT_ACCOUNTS } from '../data/accounts';
 import { getApiErrorMessage, unwrapApiData } from '../lib/apiEnvelope';
+import { fetchWithTimeout, isTimeoutError } from '../lib/fetchWithTimeout';
 
 
 
@@ -169,7 +171,15 @@ const { setTopbarConfig, resetTopbarConfig } = outletContext;
 
   const until = get('until');
   const fetchJson = useCallback(async (url) => {
-    const response = await fetch(url);
+    let response;
+    try {
+      response = await fetchWithTimeout(url);
+    } catch (err) {
+      if (isTimeoutError(err)) {
+        throw new Error("Tempo esgotado ao carregar dados.");
+      }
+      throw err;
+    }
     const raw = await response.text();
     let json = {};
     if (raw) {
@@ -729,7 +739,7 @@ const { setTopbarConfig, resetTopbarConfig } = outletContext;
 
           {loading && !currentFacebookSummary && !currentInstagramSummary ? (
 
-            <div className="overview-loading">Carregando visao geral...</div>
+            <DataState state="loading" label="Carregando visao geral..." size="sm" />
 
           ) : (
 
@@ -789,11 +799,11 @@ const { setTopbarConfig, resetTopbarConfig } = outletContext;
 
           {loading && !currentFacebookSummary && !currentInstagramSummary ? (
 
-            <div className="overview-loading">Carregando dados...</div>
+            <DataState state="loading" label="Carregando dados..." size="sm" />
 
           ) : reachByPlatformData.length === 0 ? (
 
-            <div className="overview-loading">Nenhum dado de alcance disponÃ­vel para o perÃ­odo selecionado.</div>
+            <DataState state="empty" label="Nenhum dado de alcance disponivel para o periodo selecionado." size="sm" />
 
           ) : (
 

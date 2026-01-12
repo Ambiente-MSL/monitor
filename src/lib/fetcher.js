@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from "./fetchWithTimeout";
+
 const API_BASE_URL = (process.env.REACT_APP_API_URL || '').replace(/\/$/, '');
 
 const buildUrl = (input) => {
@@ -15,7 +17,7 @@ const buildUrl = (input) => {
 };
 
 export const fetcher = (input, init) =>
-  fetch(buildUrl(input), init).then((response) => {
+  fetchWithTimeout(buildUrl(input), init).then((response) => {
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }

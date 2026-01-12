@@ -35,6 +35,8 @@ import { useAccounts } from "../context/AccountsContext";
 import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import { useAuth } from "../context/AuthContext";
 import { getDashboardCache, makeDashboardCacheKey, mergeDashboardCache, setDashboardCache } from "../lib/dashboardCache";
+import DataState from "../components/DataState";
+import { fetchWithTimeout, isTimeoutError } from "../lib/fetchWithTimeout";
 const API_BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 const FALLBACK_ACCOUNT_ID = DEFAULT_ACCOUNTS[0]?.id || "";
 
@@ -463,7 +465,7 @@ useEffect(() => {
         params.set("since", sinceParam);
         params.set("until", untilParam);
         const url = `${API_BASE_URL}/api/facebook/metrics?${params.toString()}`;
-        const response = await fetch(url, { signal: controller.signal });
+        const response = await fetchWithTimeout(url, { signal: controller.signal });
         const raw = await response.text();
         const json = safeParseJson(raw) || {};
         if (!response.ok) {
@@ -495,7 +497,11 @@ useEffect(() => {
         setNetFollowersSeries([]);
         setReachSeries([]);
         setOverviewSource(null);
-        setPageError(err.message || "Não foi possível carregar as métricas do Facebook.");
+        setPageError(
+          isTimeoutError(err)
+            ? "Tempo esgotado ao carregar metricas do Facebook."
+            : err.message || "Nao foi possivel carregar as metricas do Facebook.",
+        );
       } finally {
         if (!cancelled) {
           setOverviewLoading(false);
@@ -936,7 +942,7 @@ useEffect(() => {
                       zIndex: 2,
                     }}
                   >
-                    Carregando capa...
+                    <DataState state="loading" label="Carregando capa..." size="sm" className="data-state--overlay" />
                   </div>
                 )}
                 {coverError && (
@@ -1047,7 +1053,11 @@ useEffect(() => {
 
                 <div className="ig-profile-vertical__engagement">
                   <h4>Engajamento por Conteúdo</h4>
-                  {engagementBreakdown.length ? (
+                  {overviewIsLoading ? (
+                    <DataState state="loading" label="Carregando engajamento..." size="sm" />
+                  ) : pageError ? (
+                    <DataState state="error" label="Falha ao carregar engajamento." size="sm" />
+                  ) : engagementBreakdown.length ? (
                     <>
                       <div className="ig-profile-vertical__engagement-chart">
                         <ResponsiveContainer width="100%" height={220}>
@@ -1088,7 +1098,7 @@ useEffect(() => {
                       </div>
                     </>
                   ) : (
-                    <div className="ig-empty-state">Sem dados</div>
+                    <DataState state="empty" label="Sem dados de engajamento." size="sm" />
                   )}
                 </div>
               </div>
@@ -1102,7 +1112,9 @@ useEffect(() => {
                 </div>
               </header>
               {overviewIsLoading ? (
-                <div className="ig-empty-state">Carregando...</div>
+                <DataState state="loading" label="Carregando dados..." size="sm" />
+              ) : pageError ? (
+                <DataState state="error" label={pageError} size="sm" />
               ) : hasVideoWatchData ? (
                 <div
                   className="ig-overview-activity"
@@ -1126,7 +1138,7 @@ useEffect(() => {
                   </div>
                 </div>
               ) : (
-                <div className="ig-empty-state">Sem dados de vídeo para o período</div>
+                <DataState state="empty" label="Sem dados de video para o periodo." size="sm" />
               )}
             </section>
           </div>

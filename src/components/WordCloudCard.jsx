@@ -1,10 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
+import { fetchWithTimeout, isTimeoutError } from "../lib/fetchWithTimeout";
+import DataState from "./DataState";
 
 const WORD_COLORS = ["#a855f7", "#6366f1", "#f97316", "#14b8a6", "#facc15", "#22d3ee", "#34d399", "#f472b6", "#60a5fa"];
 
 const fetcher = async (url) => {
-  const response = await fetch(url);
+  let response;
+  try {
+    response = await fetchWithTimeout(url);
+  } catch (err) {
+    if (isTimeoutError(err)) {
+      throw new Error("Tempo esgotado ao carregar nuvem de palavras.");
+    }
+    throw err;
+  }
   if (!response.ok) {
     const message = await response.text();
     throw new Error(message || "Falha ao carregar nuvem de palavras.");
@@ -65,53 +75,35 @@ export default function WordCloudCard({
   const [loadingSlow, setLoadingSlow] = useState(false);
 
   const requestKey = useMemo(() => {
-    if (!igUserId) return null;
-    const params = new URLSearchParams({ igUserId });
-    if (since) params.set("since", since);
-    if (until) params.set("until", until);
-    const limitedTop = Math.min(Math.max(top || 30, 1), 30);
-    params.set("top", String(limitedTop));
-    const path = `/api/instagram/comments/wordcloud?${params.toString()}`;
-    return sanitizedBaseUrl ? `${sanitizedBaseUrl}${path}` : path;
-  }, [igUserId, since, until, top, sanitizedBaseUrl]);
-
-  useEffect(() => {
-    setLoadingSlow(false);
-  }, [requestKey]);
-
-  const { data, error, isLoading, isValidating } = useSWR(requestKey, fetcher, {
-    revalidateOnFocus: false,
-    shouldRetryOnError: false,
-    keepPreviousData: true,
-    loadingTimeout: 3000,
-    onLoadingSlow: () => setLoadingSlow(true),
-  });
-
-  if (!igUserId) {
+    if (!igUserId) {
     return (
-      <div className="flex min-h-[300px] items-center justify-center text-sm text-slate-500">
-        Selecione um perfil para visualizar os comentarios.
-      </div>
+      <DataState
+        state="empty"
+        label="Selecione um perfil para visualizar os comentarios."
+        size="lg"
+      />
     );
   }
 
   if (isLoading) {
-    if (loadingSlow) {
-      return (
-        <div className="flex min-h-[300px] items-center justify-center text-center text-sm text-slate-500">
-          Carregando palavras-chave… isso pode levar alguns segundos na primeira vez.
-        </div>
-      );
-    }
-    return <div className="h-[300px] animate-pulse rounded-2xl bg-slate-100" />;
+    return (
+      <DataState
+        state="loading"
+        label="Carregando palavras-chave..."
+        hint={loadingSlow ? "Isso pode levar alguns segundos na primeira vez." : null}
+        size="lg"
+      />
+    );
   }
 
   if (error) {
     return (
-      <div className="flex min-h-[300px] flex-col items-center justify-center text-center text-sm text-rose-500">
-        <p>Falha ao carregar a nuvem de palavras.</p>
-        <p className="mt-1 text-xs text-rose-400">{error.message}</p>
-      </div>
+      <DataState
+        state="error"
+        label="Falha ao carregar a nuvem de palavras."
+        hint={error.message}
+        size="lg"
+      />
     );
   }
 
@@ -123,6 +115,11 @@ export default function WordCloudCard({
   }
 
   if (!entries.length) {
+    return <DataState state="empty" label="Sem dados no periodo." size="lg" />;
+  }
+
+
+
     return (
       <div className="flex min-h-[300px] items-center justify-center text-sm text-slate-500">
         Sem dados no periodo.
