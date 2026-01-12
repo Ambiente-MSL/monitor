@@ -52,9 +52,11 @@ import PostsTable from "../components/PostsTable";
 import DataState from "../components/DataState";
 import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import WordCloudCard from "../components/WordCloudCard";
+import CustomChartTooltip from "../components/CustomChartTooltip";
 import { useAuth } from "../context/AuthContext";
 import { getDashboardCache, makeDashboardCacheKey, setDashboardCache } from "../lib/dashboardCache";
 import { getApiErrorMessage, unwrapApiData } from "../lib/apiEnvelope";
+import { formatChartDate, formatCompactNumber, formatTooltipNumber } from "../lib/chartFormatters";
 
 const API_BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 const FALLBACK_ACCOUNT_ID = DEFAULT_ACCOUNTS[0]?.id || "";
@@ -125,6 +127,8 @@ const toUnixSeconds = (date) => Math.floor(date.getTime() / 1000);
 const SHORT_DATE_FORMATTER = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" });
 const SHORT_MONTH_FORMATTER = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" });
 const FULL_DATE_FORMATTER = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
+const formatAxisDate = (value) => formatChartDate(value, "short");
+const formatTooltipDate = (value) => formatChartDate(value, "medium");
 
 const mapByKey = (items) => {
   const map = {};
@@ -529,45 +533,6 @@ const INTERACTIONS_TABS = [
   { id: "reels", label: "Reels", icon: "R" },
   { id: "posts", label: "Posts", icon: "P" },
 ];
-
-const BubbleTooltip = ({ active, payload, suffix = "" }) => {
-  if (!active || !payload?.length) return null;
-  const item = payload[0];
-  const label = item?.name || item?.payload?.name || "";
-  const value = Number(item?.value ?? item?.payload?.value ?? 0);
-  const color = item?.payload?.fill || item?.fill || "#6366f1";
-
-  return (
-    <div
-      style={{
-        background: "rgba(17, 24, 39, 0.95)",
-        backdropFilter: "blur(8px)",
-        padding: "12px 16px",
-        borderRadius: "10px",
-        border: "1px solid rgba(255, 255, 255, 0.1)",
-        boxShadow: "0 8px 24px rgba(0, 0, 0, 0.3)",
-        minWidth: "140px",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
-        <div
-          style={{
-            width: "12px",
-            height: "12px",
-            borderRadius: "50%",
-            background: color,
-            boxShadow: `0 0 8px ${color}`,
-          }}
-        />
-        <span style={{ fontSize: "13px", color: "#9ca3af", fontWeight: 500 }}>{label}</span>
-      </div>
-      <div style={{ fontSize: "20px", fontWeight: 700, color: "#fff", letterSpacing: "-0.02em" }}>
-        {value.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
-        {suffix}
-      </div>
-    </div>
-  );
-};
 
 const renderActiveShape = (props) => {
   const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
@@ -2757,14 +2722,14 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                       ))}
                     </Pie>
                     <Tooltip
-                      contentStyle={{
-                        background: 'white',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '12px',
-                        padding: '12px',
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
-                      }}
-                      formatter={(value) => `${value}%`}
+                      content={(
+                        <CustomChartTooltip
+                          variant="pie"
+                          unit="%"
+                          valueFormatter={formatTooltipNumber}
+                          showPercent={false}
+                        />
+                      )}
                     />
                   </PieChart>
                 </ResponsiveContainer>
@@ -2836,17 +2801,21 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
-                    <XAxis type="number" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={{ stroke: '#e5e7eb' }} />
+                    <XAxis
+                      type="number"
+                      tick={{ fontSize: 12, fill: '#6b7280' }}
+                      axisLine={{ stroke: '#e5e7eb' }}
+                      tickFormatter={(value) => formatCompactNumber(value)}
+                    />
                     <YAxis type="category" dataKey="name" tick={{ fontSize: 13, fill: '#111827', fontWeight: 600 }} axisLine={{ stroke: '#e5e7eb' }} width={80} />
                     <Tooltip
-                      formatter={(value) => formatNumber(value)}
-                      contentStyle={{
-                        background: 'white',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '12px',
-                        padding: '12px',
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
-                      }}
+                      content={(
+                        <CustomChartTooltip
+                          labelFormatter={(value) => String(value || "")}
+                          labelMap={{ value: "Interacoes" }}
+                          valueFormatter={formatTooltipNumber}
+                        />
+                      )}
                     />
                     <Bar dataKey="value" radius={[0, 8, 8, 0]}>
                       {[
@@ -2863,15 +2832,15 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '20px', flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#6366f1' }} />
-                  <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Reels</span>
+                  <span style={{ fontSize: '13px', color: '#111827', fontWeight: 600 }}>Reels</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#ec4899' }} />
-                  <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Posts</span>
+                  <span style={{ fontSize: '13px', color: '#111827', fontWeight: 600 }}>Posts</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#f59e0b' }} />
-                  <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Stories</span>
+                  <span style={{ fontSize: '13px', color: '#111827', fontWeight: 600 }}>Stories</span>
                 </div>
               </div>
             </section>
@@ -3381,21 +3350,28 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                           tick={{ fontSize: 11, fill: '#6b7280' }}
                           axisLine={{ stroke: '#e5e7eb' }}
                           tickLine={false}
+                          interval="preserveStartEnd"
+                          minTickGap={50}
+                          tickFormatter={formatAxisDate}
                         />
                         <YAxis
                           tick={{ fontSize: 11, fill: '#6b7280' }}
                           axisLine={{ stroke: '#e5e7eb' }}
                           tickLine={false}
-                          tickFormatter={(value) => formatNumber(value)}
+                          tickFormatter={(value) => formatCompactNumber(value)}
                         />
                         <Tooltip
                           cursor={{ fill: 'rgba(216, 180, 254, 0.25)' }}
-                          formatter={(value) => [formatNumber(value), 'Seguidores ganhos']}
-                          contentStyle={{
-                            background: 'white',
-                            border: '1px solid #e5e7eb',
-                            borderRadius: '8px',
-                            padding: '8px 12px'
+                          content={(props) => {
+                            const tooltipDate = props?.payload?.[0]?.payload?.tooltipDate || props?.label;
+                            return (
+                              <CustomChartTooltip
+                                {...props}
+                                labelFormatter={() => String(tooltipDate || "")}
+                                labelMap={{ value: "Seguidores ganhos" }}
+                                valueFormatter={formatTooltipNumber}
+                              />
+                            );
                           }}
                         />
                         <Bar dataKey="value" fill="url(#followerDetailBar)" radius={[8, 8, 0, 0]} />
@@ -3458,13 +3434,14 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                               ))}
                             </Pie>
                             <Tooltip
-                              formatter={(value) => formatPercent(value)}
-                              contentStyle={{
-                                background: 'white',
-                                border: '1px solid #e5e7eb',
-                                borderRadius: '8px',
-                                padding: '8px 12px'
-                              }}
+                              content={(
+                                <CustomChartTooltip
+                                  variant="pie"
+                                  unit="%"
+                                  valueFormatter={formatPercent}
+                                  showPercent={false}
+                                />
+                              )}
                             />
                           </PieChart>
                         </ResponsiveContainer>
@@ -3476,7 +3453,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                           textAlign: 'center',
                           pointerEvents: 'none'
                         }}>
-                          <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>
+                          <div style={{ fontSize: '13px', color: '#111827', fontWeight: 700 }}>
                             Total
                           </div>
                           <div style={{ fontSize: '24px', fontWeight: 800, color: '#111827' }}>
@@ -3493,7 +3470,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                       {audienceGenderSeries.map((item) => (
                         <div key={item.name} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: item.color }} />
-                          <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>
+                          <span style={{ fontSize: '13px', color: '#111827', fontWeight: 600 }}>
                             {item.name}: {formatPercent(item.value)}
                           </span>
                         </div>
@@ -3548,13 +3525,15 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                             axisLine={{ stroke: '#e5e7eb' }}
                           />
                           <Tooltip
-                            formatter={(value) => [formatPercent(value), 'Percentual']}
-                            contentStyle={{
-                              background: 'white',
-                              border: '1px solid #e5e7eb',
-                              borderRadius: '8px',
-                              padding: '8px 12px'
-                            }}
+                            content={(
+                              <CustomChartTooltip
+                                labelFormatter={(value) => String(value || "")}
+                                labelMap={{ value: "Percentual" }}
+                                unit="%"
+                                valueFormatter={formatPercent}
+                                showPercent={false}
+                              />
+                            )}
                           />
                           <Bar dataKey="value" fill="#6366f1" radius={[0, 8, 8, 0]} />
                         </BarChart>
@@ -3859,18 +3838,27 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                        <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={{ stroke: '#e5e7eb' }} />
-                        <YAxis tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={{ stroke: '#e5e7eb' }} />
+                        <XAxis
+                          dataKey="label"
+                          tick={{ fontSize: 12, fill: '#6b7280' }}
+                          axisLine={{ stroke: '#e5e7eb' }}
+                          interval="preserveStartEnd"
+                          minTickGap={50}
+                          tickFormatter={formatAxisDate}
+                        />
+                        <YAxis
+                          tick={{ fontSize: 12, fill: '#6b7280' }}
+                          axisLine={{ stroke: '#e5e7eb' }}
+                          tickFormatter={(value) => formatCompactNumber(value)}
+                        />
                         <Tooltip
-                          formatter={(value) => formatNumber(value)}
-                          labelFormatter={(label) => `Dia ${label}`}
-                          contentStyle={{
-                            background: 'white',
-                            border: '1px solid #e5e7eb',
-                            borderRadius: '12px',
-                            padding: '12px',
-                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
-                          }}
+                          content={(
+                            <CustomChartTooltip
+                              labelFormatter={formatTooltipDate}
+                              labelMap={{ value: "Visualizacoes" }}
+                              valueFormatter={formatTooltipNumber}
+                            />
+                          )}
                         />
                         <Line
                           type="monotone"
@@ -3945,14 +3933,12 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                         ))}
                       </Pie>
                       <Tooltip
-                        contentStyle={{
-                          background: 'white',
-                          border: '1px solid #e5e7eb',
-                          borderRadius: '12px',
-                          padding: '12px',
-                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
-                        }}
-                        formatter={(value) => `${formatNumber(value)}`}
+                        content={(
+                          <CustomChartTooltip
+                            variant="pie"
+                            valueFormatter={formatTooltipNumber}
+                          />
+                        )}
                       />
                     </PieChart>
                   </ResponsiveContainer>
@@ -3975,11 +3961,11 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', marginTop: '20px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#6366f1' }} />
-                    <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Seguidores</span>
+                    <span style={{ fontSize: '13px', color: '#111827', fontWeight: 600 }}>Seguidores</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#ec4899' }} />
-                    <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Não Seguidores</span>
+                    <span style={{ fontSize: '13px', color: '#111827', fontWeight: 600 }}>Não Seguidores</span>
                   </div>
                 </div>
               </section>
@@ -4026,19 +4012,18 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                         tickFormatter={(value) => formatPercent(value)}
                       />
                       <Tooltip
-                        contentStyle={{
-                          background: 'white',
-                          border: '1px solid #e5e7eb',
-                          borderRadius: '12px',
-                          padding: '12px',
-                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
-                        }}
-                        formatter={(value, name, props) => {
-                          const raw = props?.payload?.raw;
-                          const rawLabel = Number.isFinite(raw) ? ` (${formatNumber(raw)})` : "";
-                          const label = props?.payload?.name || name;
-                          return [`${formatPercent(value)}${rawLabel}`, label];
-                        }}
+                        content={(props) => (
+                          <CustomChartTooltip
+                            {...props}
+                            labelFormatter={(value) => String(value || "")}
+                            labelMap={{ value: "Percentual" }}
+                            valueFormatter={(value, item) => {
+                              const raw = item?.payload?.raw;
+                              const rawLabel = Number.isFinite(raw) ? ` (${formatTooltipNumber(raw)})` : "";
+                              return `${formatPercent(value)}${rawLabel}`;
+                            }}
+                          />
+                        )}
                       />
                       <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={36}>
                         {viewsByContentType.map((entry, index) => (
@@ -4494,7 +4479,14 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                                 <Cell key={index} fill={IG_DONUT_COLORS[index % IG_DONUT_COLORS.length]} />
                               ))}
                             </Pie>
-                            <Tooltip formatter={(value, name) => [Number(value).toLocaleString("pt-BR"), name]} />
+                            <Tooltip
+                              content={(
+                                <CustomChartTooltip
+                                  variant="pie"
+                                  valueFormatter={formatTooltipNumber}
+                                />
+                              )}
+                            />
                           </PieChart>
                         </ResponsiveContainer>
                       </div>
@@ -4685,41 +4677,33 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                         fontSize={12}
                         tickLine={false}
                         axisLine={{ stroke: '#e5e7eb' }}
-                        tickFormatter={(value) => {
-                          if (value >= 1000000) {
-                            return `${Math.round(value / 1000000)}M`;
-                          }
-                          if (value >= 1000) {
-                            return `${Math.round(value / 1000)}k`;
-                          }
-                          return value;
-                        }}
+                        tickFormatter={(value) => formatCompactNumber(value)}
                         domain={['dataMin', (dataMax) => (Number.isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : dataMax)]}
                       />
                       <Tooltip
                         cursor={{ stroke: 'rgba(17, 24, 39, 0.2)', strokeDasharray: '4 4' }}
-                        content={({ active, payload }) => {
-                          if (!active || !payload?.length) return null;
-                          const [{ payload: item, value }] = payload;
-                          const numericValue = Number(value ?? item?.value ?? 0);
-                          const label = formatReachTooltipLabel(item?.dateKey || item?.label);
+                        content={(props) => {
+                          if (!props?.active || !props?.payload?.length) return null;
+                          const item = props.payload[0]?.payload;
+                          const numericValue = Number(props.payload[0]?.value ?? item?.value ?? 0);
+                          const labelValue = formatReachTooltipLabel(item?.dateKey || item?.label);
                           const isPeak =
                             !!peakReachPoint &&
                             item?.dateKey === peakReachPoint.dateKey &&
                             numericValue === peakReachPoint.value;
-                          return (
-                            <div className="ig-tooltip">
-                              <span className="ig-tooltip__title">{label}</span>
-                              <div className="ig-tooltip__row">
-                                <span>Contas alcançadas</span>
-                                <strong>{numericValue.toLocaleString("pt-BR")}</strong>
-                              </div>
-                              {isPeak ? (
-                                <div style={{ marginTop: 6, fontSize: 12, color: '#6b7280' }}>
-                                  Pico do período
-                                </div>
-                              ) : null}
+                          const footer = isPeak ? (
+                            <div style={{ marginTop: 6, fontSize: 12, color: '#6b7280' }}>
+                              Pico do periodo
                             </div>
+                          ) : null;
+                          return (
+                            <CustomChartTooltip
+                              {...props}
+                              labelFormatter={() => labelValue}
+                              labelMap={{ value: "Contas alcancadas" }}
+                              valueFormatter={formatTooltipNumber}
+                              footer={footer}
+                            />
                           );
                         }}
                       />
@@ -4844,36 +4828,28 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                           tickLine={false}
                           interval={followerGrowthChartData.length > 15 ? "preserveEnd" : 0}
                           height={32}
+                          minTickGap={50}
+                          tickFormatter={formatAxisDate}
                         />
                         <YAxis
                           tick={{ fill: "#9ca3af", fontSize: 12 }}
                           axisLine={false}
                           tickLine={false}
-                          tickFormatter={(value) => {
-                            if (value >= 1000000) {
-                              const millions = (value / 1000000).toFixed(1);
-                              return `${millions.endsWith(".0") ? millions.slice(0, -2) : millions}M`;
-                            }
-                            if (value >= 1000) return `${Math.round(value / 1000)}k`;
-                            return value;
-                          }}
+                          tickFormatter={(value) => formatCompactNumber(value)}
                           ticks={followerGrowthTicks}
                           domain={followerGrowthDomain}
                         />
                         <Tooltip
                           cursor={{ fill: "rgba(216, 180, 254, 0.25)" }}
-                          content={({ active, payload }) => {
-                            if (!active || !payload?.length) return null;
-                            const dataPoint = payload[0];
-                            const tooltipValue = formatNumber(extractNumber(dataPoint.value, 0));
-                            const tooltipDate = dataPoint.payload?.tooltipDate || dataPoint.payload?.label;
+                          content={(props) => {
+                            const tooltipDate = props?.payload?.[0]?.payload?.tooltipDate || props?.label;
                             return (
-                              <div className="ig-follower-tooltip">
-                                <div className="ig-follower-tooltip__label">
-                                  Seguidores ganhos: {tooltipValue}
-                                </div>
-                                <div className="ig-follower-tooltip__date">{tooltipDate}</div>
-                              </div>
+                              <CustomChartTooltip
+                                {...props}
+                                labelFormatter={() => String(tooltipDate || "")}
+                                labelMap={{ value: "Seguidores ganhos" }}
+                                valueFormatter={formatTooltipNumber}
+                              />
                             );
                           }}
                         />
@@ -5193,7 +5169,16 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                       <Cell key={`cell-${index}`} fill={index === 0 ? "#f472b6" : "#6366f1"} />
                     ))}
                   </Pie>
-                  <Tooltip content={(props) => <BubbleTooltip {...props} suffix="%" />} />
+                  <Tooltip
+                    content={(
+                      <CustomChartTooltip
+                        variant="pie"
+                        unit="%"
+                        valueFormatter={formatTooltipNumber}
+                        showPercent={false}
+                      />
+                    )}
+                  />
                 </PieChart>
               </ResponsiveContainer>
               <div className="ig-analytics-legend" style={{ marginTop: '20px', gap: '18px' }}>
@@ -5203,7 +5188,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                       className="ig-analytics-legend__swatch"
                       style={{ backgroundColor: index === 0 ? "#f472b6" : "#6366f1", width: '16px', height: '16px' }}
                     />
-                    <span className="ig-analytics-legend__label">{slice.name}</span>
+                    <span className="ig-analytics-legend__label" style={{ color: '#111827', fontWeight: 600 }}>{slice.name}</span>
                   </div>
                 ))}
               </div>
@@ -5300,6 +5285,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     fontSize={12}
                     axisLine={false}
                     tickLine={false}
+                    tickFormatter={(value) => formatCompactNumber(value)}
                   />
                   <YAxis
                     type="category"
@@ -5312,13 +5298,12 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   />
                   <Tooltip
                     cursor={{ fill: 'rgba(99, 102, 241, 0.08)' }}
-                    formatter={(value) => Number(value).toLocaleString("pt-BR")}
-                    contentStyle={{
-                      backgroundColor: 'white',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
-                    }}
+                    content={(
+                      <CustomChartTooltip
+                        labelFormatter={(value) => String(value || "")}
+                        valueFormatter={formatTooltipNumber}
+                      />
+                    )}
                   />
                   <Bar dataKey="male" fill="url(#maleGradient)" radius={[0, 6, 6, 0]} barSize={14} />
                   <Bar dataKey="female" fill="url(#femaleGradient)" radius={[0, 6, 6, 0]} barSize={14} />
@@ -5327,11 +5312,11 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               <div className="ig-analytics-legend" style={{ marginTop: '4px', gap: '16px', justifyContent: 'center' }}>
                 <div className="ig-analytics-legend__item" style={{ fontSize: '13px', fontWeight: '500' }}>
                   <span className="ig-analytics-legend__swatch" style={{ backgroundColor: '#4f46e5', width: '12px', height: '12px' }} />
-                  <span className="ig-analytics-legend__label">Homens</span>
+                  <span className="ig-analytics-legend__label" style={{ color: '#111827', fontWeight: 600 }}>Homens</span>
                 </div>
                 <div className="ig-analytics-legend__item" style={{ fontSize: '13px', fontWeight: '500' }}>
                   <span className="ig-analytics-legend__swatch" style={{ backgroundColor: '#ec4899', width: '12px', height: '12px' }} />
-                  <span className="ig-analytics-legend__label">Mulheres</span>
+                  <span className="ig-analytics-legend__label" style={{ color: '#111827', fontWeight: 600 }}>Mulheres</span>
                 </div>
               </div>
             </div>
@@ -5408,6 +5393,15 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                         <stop offset="100%" stopColor="#5eead4" stopOpacity={0} />
                       </linearGradient>
                     </defs>
+                    <Tooltip
+                      content={(
+                        <CustomChartTooltip
+                          labelFormatter={(value) => String(value || "")}
+                          labelMap={{ value: "Total" }}
+                          valueFormatter={formatTooltipNumber}
+                        />
+                      )}
+                    />
                     <Area
                       type="monotone"
                       dataKey="value"
@@ -5535,21 +5529,24 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                       tick={{ fontSize: 11, fill: '#6b7280' }}
                       axisLine={{ stroke: '#e5e7eb' }}
                       tickLine={false}
+                      interval="preserveStartEnd"
+                      minTickGap={50}
+                      tickFormatter={formatAxisDate}
                     />
                     <YAxis
                       tick={{ fontSize: 11, fill: '#6b7280' }}
                       axisLine={{ stroke: '#e5e7eb' }}
                       tickLine={false}
-                      tickFormatter={(value) => formatNumber(value)}
+                      tickFormatter={(value) => formatCompactNumber(value)}
                     />
                     <Tooltip
-                      formatter={(value) => formatNumber(value)}
-                      contentStyle={{
-                        background: 'white',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        fontSize: '12px'
-                      }}
+                      content={(
+                        <CustomChartTooltip
+                          labelFormatter={formatTooltipDate}
+                          labelMap={{ value: "Visualizacoes" }}
+                          valueFormatter={formatTooltipNumber}
+                        />
+                      )}
                     />
                     <Area
                       type="monotone"
@@ -5639,11 +5636,23 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             <ResponsiveContainer width="100%" height={320}>
               <BarChart data={hashtagList.slice(0, 10)} layout="vertical" margin={{ left: 12, right: 12, top: 5, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
-                <XAxis type="number" tick={{ fill: '#111827' }} fontSize={12} allowDecimals={false} />
+                <XAxis
+                  type="number"
+                  tick={{ fill: '#111827' }}
+                  fontSize={12}
+                  allowDecimals={false}
+                  tickFormatter={(value) => formatCompactNumber(value)}
+                />
                 <YAxis type="category" dataKey="name" tick={{ fill: '#111827' }} fontSize={12} width={100} />
                 <Tooltip
                   cursor={{ fill: 'rgba(236, 72, 153, 0.1)' }}
-                  formatter={(value) => [String(value), "Ocorrências"]}
+                  content={(
+                    <CustomChartTooltip
+                      labelFormatter={(value) => String(value || "")}
+                      labelMap={{ value: "Ocorrencias" }}
+                      valueFormatter={formatTooltipNumber}
+                    />
+                  )}
                 />
                 <Bar dataKey="value" fill="#ec4899" radius={[0, 6, 6, 0]} />
               </BarChart>
@@ -5664,9 +5673,22 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={hashtagList} layout="vertical" margin={{ left: 12, right: 12 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
-                  <XAxis type="number" tick={{ fill: '#111827' }} allowDecimals={false} />
+                  <XAxis
+                    type="number"
+                    tick={{ fill: '#111827' }}
+                    allowDecimals={false}
+                    tickFormatter={(value) => formatCompactNumber(value)}
+                  />
                   <YAxis type="category" dataKey="name" width={140} tick={{ fill: '#111827' }} />
-                  <Tooltip formatter={(value) => [String(value), "Ocorrências"]} />
+                  <Tooltip
+                    content={(
+                      <CustomChartTooltip
+                        labelFormatter={(value) => String(value || "")}
+                        labelMap={{ value: "Ocorrencias" }}
+                        valueFormatter={formatTooltipNumber}
+                      />
+                    )}
+                  />
                   <Bar dataKey="value" fill="#ec4899" radius={[0, 6, 6, 0]} />
                 </BarChart>
               </ResponsiveContainer>

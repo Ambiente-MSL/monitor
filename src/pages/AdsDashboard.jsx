@@ -38,11 +38,13 @@ import {
   Info,
 } from "lucide-react";
 import DataState from "../components/DataState";
+import CustomChartTooltip from "../components/CustomChartTooltip";
 import { useAccounts } from "../context/AccountsContext";
 import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import { useAuth } from "../context/AuthContext";
 import useQueryState from "../hooks/useQueryState";
 import { isApiEnvelope, unwrapApiData } from "../lib/apiEnvelope";
+import { formatChartDate, formatCompactNumber, formatTooltipNumber } from "../lib/chartFormatters";
 import { fetchWithTimeout } from "../lib/fetchWithTimeout";
 
 const API_BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
@@ -251,7 +253,6 @@ const ADS_TOPBAR_PRESETS = [
   { id: "1y", label: "1 ano", days: 365 },
 ];
 
-const ADS_SHORT_DATE_FORMATTER = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" });
 
 const DEFAULT_ADS_RANGE_DAYS = 7;
 
@@ -499,12 +500,8 @@ export default function AdsDashboard() {
     return `${mins}m ${secs}s`;
   };
 
-  const formatShortDate = (value) => {
-    if (!value) return "";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return String(value);
-    return ADS_SHORT_DATE_FORMATTER.format(date);
-  };
+  const formatShortDate = (value) => formatChartDate(value, "short");
+  const formatTooltipDate = (value) => formatChartDate(value, "medium");
 
   const formatCityLabel = (value) => {
     if (!value) return "";
@@ -756,6 +753,14 @@ export default function AdsDashboard() {
     }));
     return { data, lines };
   }, [videoAdsTimeseries]);
+
+  const videoAdsLabelMap = useMemo(() => {
+    const map = {};
+    videoAdsGrowth.lines.forEach((line) => {
+      if (line?.key) map[line.key] = line.name || line.key;
+    });
+    return map;
+  }, [videoAdsGrowth.lines]);
 
   const avgVideoViewsDisplay = avgVideoViews > 0 ? formatNumber(Math.round(avgVideoViews)) : "--";
 
@@ -1778,7 +1783,7 @@ export default function AdsDashboard() {
                               tick={{ fill: "#6b7280", fontSize: 11 }}
                               axisLine={false}
                               tickLine={false}
-                              tickFormatter={(value) => formatNumber(value)}
+                              tickFormatter={(value) => formatCompactNumber(value)}
                             />
                             <YAxis
                               type="category"
@@ -1790,19 +1795,13 @@ export default function AdsDashboard() {
                             />
                             <Tooltip
                               cursor={{ fill: "rgba(14,165,233,0.08)" }}
-                              content={({ active, payload }) => {
-                                if (!active || !payload?.length) return null;
-                                const item = payload[0]?.payload;
-                                return (
-                                  <div className="ig-tooltip">
-                                    <span className="ig-tooltip__title">Views {item?.label}</span>
-                                    <div className="ig-tooltip__row">
-                                      <span>Total</span>
-                                      <strong>{formatNumber(item?.value || 0)}</strong>
-                                    </div>
-                                  </div>
-                                );
-                              }}
+                              content={(
+                                <CustomChartTooltip
+                                  labelFormatter={(value) => (value ? `Views ${value}` : "Views")}
+                                  labelMap={{ value: "Total" }}
+                                  valueFormatter={formatTooltipNumber}
+                                />
+                              )}
                             />
                             <Bar dataKey="value" radius={[0, 8, 8, 0]} fill="url(#durationGradient)" maxBarSize={35} />
                           </BarChart>
@@ -1822,7 +1821,7 @@ export default function AdsDashboard() {
                           Crescimento por anuncio
                         </h5>
                         {videoAdsGrowth.lines.length ? (
-                          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", fontSize: 11, color: "#6b7280" }}>
+                          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", fontSize: 11, color: "#111827", fontWeight: 600 }}>
                             {videoAdsGrowth.lines.map((line) => (
                               <div key={line.key} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                                 <span style={{ width: 10, height: 10, borderRadius: "50%", background: line.color }} />
@@ -1844,18 +1843,25 @@ export default function AdsDashboard() {
                                 tick={{ fill: "#6b7280", fontSize: 11 }}
                                 axisLine={false}
                                 tickLine={false}
+                                interval="preserveStartEnd"
+                                minTickGap={50}
                                 tickFormatter={formatShortDate}
                               />
                               <YAxis
                                 tick={{ fill: "#6b7280", fontSize: 11 }}
                                 axisLine={false}
                                 tickLine={false}
-                                tickFormatter={(value) => formatNumber(value)}
+                                tickFormatter={(value) => formatCompactNumber(value)}
                               />
                               <Tooltip
                                 cursor={{ stroke: "rgba(99,102,241,0.2)" }}
-                                formatter={(value) => formatNumber(value)}
-                                labelFormatter={formatShortDate}
+                                content={(
+                                  <CustomChartTooltip
+                                    labelFormatter={formatTooltipDate}
+                                    labelMap={videoAdsLabelMap}
+                                    valueFormatter={formatTooltipNumber}
+                                  />
+                                )}
                               />
                               {videoAdsGrowth.lines.map((line) => (
                                 <Line
@@ -1994,15 +2000,14 @@ export default function AdsDashboard() {
                           ))}
                         </Pie>
                         <Tooltip
-                          content={({ active, payload }) => {
-                            if (!active || !payload?.length) return null;
-                            return (
-                              <div className="ig-follower-tooltip">
-                                <div className="ig-follower-tooltip__label">{payload[0].payload.name}</div>
-                                <div className="ig-follower-tooltip__date">{payload[0].value}%</div>
-                              </div>
-                            );
-                          }}
+                          content={(
+                            <CustomChartTooltip
+                              variant="pie"
+                              unit="%"
+                              valueFormatter={formatTooltipNumber}
+                              showPercent={false}
+                            />
+                          )}
                         />
                       </PieChart>
                     </ResponsiveContainer>
@@ -2037,8 +2042,8 @@ export default function AdsDashboard() {
                             borderRadius: '3px',
                             background: entry.color
                           }}></span>
-                          <span style={{ color: '#374151', fontWeight: 500 }}>{entry.name}</span>
-                          <span style={{ color: '#6b7280' }}>({entry.value}%)</span>
+                          <span style={{ color: '#111827', fontWeight: 600 }}>{entry.name}</span>
+                          <span style={{ color: '#4b5563' }}>({entry.value}%)</span>
                         </div>
                       ))}
                     </div>
@@ -2092,26 +2097,25 @@ export default function AdsDashboard() {
                           tick={{ fill: "#9ca3af", fontSize: 12 }}
                           axisLine={false}
                           tickLine={false}
+                          interval="preserveStartEnd"
+                          minTickGap={50}
+                          tickFormatter={formatShortDate}
                         />
                         <YAxis
                           tick={{ fill: "#9ca3af", fontSize: 12 }}
                           axisLine={false}
                           tickLine={false}
-                          tickFormatter={(value) => `R$ ${formatNumber(value)}`}
+                          tickFormatter={(value) => `R$ ${formatCompactNumber(value)}`}
                         />
                         <Tooltip
                           cursor={{ fill: "rgba(99, 102, 241, 0.1)" }}
-                          content={({ active, payload }) => {
-                            if (!active || !payload?.length) return null;
-                            return (
-                              <div className="ig-follower-tooltip">
-                                <div className="ig-follower-tooltip__label">
-                                  Investimento: {formatCurrency(payload[0].value)}
-                                </div>
-                                <div className="ig-follower-tooltip__date">{payload[0].payload.date}</div>
-                              </div>
-                            );
-                          }}
+                          content={(
+                            <CustomChartTooltip
+                              labelFormatter={formatTooltipDate}
+                              labelMap={{ value: "Investimento" }}
+                              valueFormatter={(value) => formatCurrency(Number(value))}
+                            />
+                          )}
                         />
                         {highlightedSpendPoint && (
                           <>
@@ -2218,32 +2222,24 @@ export default function AdsDashboard() {
                       tick={{ fill: "#9ca3af", fontSize: 12 }}
                       axisLine={false}
                       tickLine={false}
+                      interval="preserveStartEnd"
+                      minTickGap={50}
+                      tickFormatter={formatShortDate}
                     />
                     <YAxis
                       tick={{ fill: "#9ca3af", fontSize: 12 }}
                       axisLine={false}
                       tickLine={false}
-                      tickFormatter={(value) => {
-                        if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
-                        if (value >= 1000) return `${Math.round(value / 1000)}k`;
-                        return value;
-                      }}
+                      tickFormatter={(value) => formatCompactNumber(value)}
                     />
                     <Tooltip
-                      content={({ active, payload }) => {
-                        if (!active || !payload?.length) return null;
-                        return (
-                          <div className="ig-follower-tooltip">
-                            <div className="ig-follower-tooltip__date">{payload[0].payload.date}</div>
-                            <div className="ig-follower-tooltip__label">
-                              Impressões: {formatNumber(payload[0].payload.impressions)}
-                            </div>
-                            <div className="ig-follower-tooltip__label">
-                              Alcance: {formatNumber(payload[0].payload.reach)}
-                            </div>
-                          </div>
-                        );
-                      }}
+                      content={(
+                        <CustomChartTooltip
+                          labelFormatter={formatTooltipDate}
+                          labelMap={{ impressions: "Impressoes", reach: "Alcance" }}
+                          valueFormatter={formatTooltipNumber}
+                        />
+                      )}
                     />
                     <Area
                       type="monotone"
@@ -2328,7 +2324,7 @@ export default function AdsDashboard() {
                             tick={{ fill: '#6b7280', fontSize: 11 }}
                             axisLine={false}
                             tickLine={false}
-                            tickFormatter={(value) => `R$ ${formatNumber(value)}`}
+                            tickFormatter={(value) => `R$ ${formatCompactNumber(value)}`}
                           />
                           <YAxis
                             type="category"
@@ -2341,15 +2337,13 @@ export default function AdsDashboard() {
                           />
                           <Tooltip
                             cursor={{ fill: 'rgba(99, 102, 241, 0.08)' }}
-                            formatter={(value) => formatCurrency(Number(value))}
-                            labelFormatter={(label) => String(label)}
-                            contentStyle={{
-                              backgroundColor: 'white',
-                              border: '1px solid #e5e7eb',
-                              borderRadius: '8px',
-                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                              fontSize: '12px'
-                            }}
+                            content={(
+                              <CustomChartTooltip
+                                labelFormatter={formatCityLabel}
+                                labelMap={{ value: "Investimento" }}
+                                valueFormatter={(value) => formatCurrency(Number(value))}
+                              />
+                            )}
                           />
                           <Bar dataKey="value" fill="#6366f1" radius={[0, 6, 6, 0]} barSize={14} />
                         </BarChart>
@@ -2376,7 +2370,7 @@ export default function AdsDashboard() {
                                 tick={{ fill: '#6b7280', fontSize: 11 }}
                                 axisLine={false}
                                 tickLine={false}
-                                tickFormatter={(value) => `R$ ${formatNumber(value)}`}
+                                tickFormatter={(value) => `R$ ${formatCompactNumber(value)}`}
                               />
                               <YAxis
                                 type="category"
@@ -2389,15 +2383,13 @@ export default function AdsDashboard() {
                               />
                               <Tooltip
                                 cursor={{ fill: 'rgba(99, 102, 241, 0.08)' }}
-                                formatter={(value) => formatCurrency(Number(value))}
-                                labelFormatter={(label) => String(label)}
-                                contentStyle={{
-                                  backgroundColor: 'white',
-                                  border: '1px solid #e5e7eb',
-                                  borderRadius: '8px',
-                                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                                  fontSize: '12px'
-                                }}
+                                content={(
+                                  <CustomChartTooltip
+                                    labelFormatter={formatCityLabel}
+                                    labelMap={{ value: "Investimento" }}
+                                    valueFormatter={(value) => formatCurrency(Number(value))}
+                                  />
+                                )}
                               />
                               <Bar dataKey="value" fill="#8b5cf6" radius={[0, 6, 6, 0]} barSize={12} />
                             </BarChart>
@@ -2815,6 +2807,7 @@ export default function AdsDashboard() {
                                 tick={{ fill: '#6b7280', fontSize: 11 }}
                                 axisLine={false}
                                 tickLine={false}
+                                tickFormatter={(value) => formatCompactNumber(value)}
                               />
                               <YAxis
                                 type="category"
@@ -2826,14 +2819,12 @@ export default function AdsDashboard() {
                               />
                               <Tooltip
                                 cursor={{ fill: 'rgba(99, 102, 241, 0.08)' }}
-                                formatter={(value) => formatNumber(Number(value))}
-                                contentStyle={{
-                                  backgroundColor: 'white',
-                                  border: '1px solid #e5e7eb',
-                                  borderRadius: '8px',
-                                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                                  fontSize: '12px'
-                                }}
+                                content={(
+                                  <CustomChartTooltip
+                                    labelFormatter={(value) => String(value || "")}
+                                    valueFormatter={formatTooltipNumber}
+                                  />
+                                )}
                               />
                               <Bar dataKey="male" fill="#6366f1" radius={[0, 6, 6, 0]} barSize={12} name="Homens" />
                               <Bar dataKey="female" fill="#ec4899" radius={[0, 6, 6, 0]} barSize={12} name="Mulheres" />
@@ -2847,16 +2838,16 @@ export default function AdsDashboard() {
                       <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '8px', flexWrap: 'wrap' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
                           <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#6366f1' }}></span>
-                          <span style={{ color: '#6b7280', fontWeight: 500 }}>Homens</span>
+                          <span style={{ color: '#111827', fontWeight: 600 }}>Homens</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
                           <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#ec4899' }}></span>
-                          <span style={{ color: '#6b7280', fontWeight: 500 }}>Mulheres</span>
+                          <span style={{ color: '#111827', fontWeight: 600 }}>Mulheres</span>
                         </div>
                         {hasUnknownAudienceGender && (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
                             <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#94a3b8' }}></span>
-                            <span style={{ color: '#6b7280', fontWeight: 500 }}>Indefinido</span>
+                            <span style={{ color: '#111827', fontWeight: 600 }}>Indefinido</span>
                           </div>
                         )}
                       </div>
@@ -2902,7 +2893,7 @@ export default function AdsDashboard() {
                           tick={{ fill: '#6b7280', fontSize: 11 }}
                           axisLine={false}
                           tickLine={false}
-                          tickFormatter={(value) => formatNumber(value)}
+                          tickFormatter={(value) => formatCompactNumber(value)}
                         />
                         <YAxis
                           type="category"
@@ -2914,14 +2905,13 @@ export default function AdsDashboard() {
                         />
                         <Tooltip
                           cursor={{ fill: 'rgba(99, 102, 241, 0.08)' }}
-                          formatter={(value) => formatNumber(Number(value))}
-                          contentStyle={{
-                            backgroundColor: 'white',
-                            border: '1px solid #e5e7eb',
-                            borderRadius: '8px',
-                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                            fontSize: '12px'
-                          }}
+                          content={(
+                            <CustomChartTooltip
+                              labelFormatter={(value) => String(value || "")}
+                              labelMap={{ value: "Alcance" }}
+                              valueFormatter={formatTooltipNumber}
+                            />
+                          )}
                         />
                         <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={14}>
                           {audienceGenderReachData.map((entry, index) => (
@@ -2968,14 +2958,12 @@ export default function AdsDashboard() {
                             ))}
                           </Pie>
                           <Tooltip
-                            formatter={(value) => formatNumber(Number(value))}
-                            contentStyle={{
-                              backgroundColor: 'white',
-                              border: '1px solid #e5e7eb',
-                              borderRadius: '8px',
-                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                              fontSize: '12px'
-                            }}
+                            content={(
+                              <CustomChartTooltip
+                                variant="pie"
+                                valueFormatter={formatTooltipNumber}
+                              />
+                            )}
                           />
                         </PieChart>
                       </ResponsiveContainer>
@@ -2984,7 +2972,7 @@ export default function AdsDashboard() {
                           <div key={item.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                               <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: item.color }}></span>
-                              <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500 }}>{item.name}</span>
+                              <span style={{ fontSize: '12px', color: '#111827', fontWeight: 600 }}>{item.name}</span>
                             </div>
                             <span style={{ fontSize: '12px', color: '#111827', fontWeight: 600 }}>
                               {formatNumber(item.value)}

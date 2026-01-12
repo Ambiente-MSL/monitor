@@ -1,5 +1,7 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { MapPin } from 'lucide-react';
+import CustomChartTooltip from './CustomChartTooltip';
+import { formatCompactNumber, formatTooltipNumber } from '../lib/chartFormatters';
 
 /**
  * Gráfico de barras horizontais para mostrar distribuição por cidades
@@ -30,30 +32,6 @@ export default function CityChart({ data, title = 'Principais Cidades' }) {
     '#f8fafc', // slate-50
   ];
 
-  // Tooltip customizado
-  const CustomTooltip = ({ active, payload }) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div style={{
-          backgroundColor: 'var(--surface)',
-          border: '1px solid var(--border)',
-          borderRadius: '0.5rem',
-          padding: '0.75rem',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-        }}>
-          <p style={{ fontWeight: '600', marginBottom: '0.25rem', fontSize: '0.875rem' }}>
-            {data.name}
-          </p>
-          <p style={{ color: 'var(--primary)', fontSize: '0.875rem' }}>
-            <strong>{data.value.toLocaleString('pt-BR')}</strong> ({data.percentage}%)
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
     <div className="chart-container">
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
@@ -68,7 +46,12 @@ export default function CityChart({ data, title = 'Principais Cidades' }) {
           margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
-          <XAxis type="number" stroke="var(--muted)" fontSize={12} />
+          <XAxis
+            type="number"
+            stroke="var(--muted)"
+            fontSize={12}
+            tickFormatter={(value) => formatCompactNumber(value)}
+          />
           <YAxis
             type="category"
             dataKey="name"
@@ -77,7 +60,16 @@ export default function CityChart({ data, title = 'Principais Cidades' }) {
             width={150}
             tick={{ fill: 'var(--foreground)' }}
           />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--surface)' }} />
+          <Tooltip
+            cursor={{ fill: 'var(--surface)' }}
+            content={(
+              <CustomChartTooltip
+                labelFormatter={(value) => String(value || "")}
+                labelMap={{ value: "Total" }}
+                valueFormatter={formatTooltipNumber}
+              />
+            )}
+          />
           <Bar dataKey="value" radius={[0, 4, 4, 0]}>
             {data.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />

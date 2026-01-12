@@ -1,5 +1,7 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { Users } from 'lucide-react';
+import CustomChartTooltip from './CustomChartTooltip';
+import { formatTooltipNumber } from '../lib/chartFormatters';
 
 /**
  * Gráfico de pizza para mostrar distribuição por faixa etária
@@ -39,30 +41,6 @@ export default function AgeChart({ data, title = 'Distribuição por Idade' }) {
     );
   }
 
-  // Tooltip customizado
-  const CustomTooltip = ({ active, payload }) => {
-    if (active && payload && payload.length) {
-      const data = payload[0];
-      return (
-        <div style={{
-          backgroundColor: 'var(--surface)',
-          border: '1px solid var(--border)',
-          borderRadius: '0.5rem',
-          padding: '0.75rem',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-        }}>
-          <p style={{ fontWeight: '600', marginBottom: '0.25rem', fontSize: '0.875rem' }}>
-            Faixa: {data.payload.range}
-          </p>
-          <p style={{ color: data.payload.fill, fontSize: '0.875rem' }}>
-            <strong>{data.value.toLocaleString('pt-BR')}</strong> ({data.payload.percentage}%)
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
-
   // Label customizado para mostrar percentual
   const renderLabel = (entry) => {
     if (entry.percentage < 5) return ''; // Não mostrar label se percentual < 5%
@@ -87,18 +65,30 @@ export default function AgeChart({ data, title = 'Distribuição por Idade' }) {
             outerRadius={100}
             fill="#8884d8"
             dataKey="value"
+            nameKey="range"
           >
             {chartData.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={COLORS[entry.range] || '#cbd5e1'} />
             ))}
           </Pie>
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip
+            content={(
+              <CustomChartTooltip
+                variant="pie"
+                valueFormatter={formatTooltipNumber}
+              />
+            )}
+          />
           <Legend
             verticalAlign="bottom"
             height={36}
             formatter={(value, entry) => {
               const item = chartData.find(d => d.range === value);
-              return `${value} (${item?.percentage || 0}%)`;
+              return (
+                <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+                  {value} ({item?.percentage || 0}%)
+                </span>
+              );
             }}
             wrapperStyle={{ fontSize: '0.75rem' }}
           />

@@ -36,7 +36,9 @@ import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import { useAuth } from "../context/AuthContext";
 import { getDashboardCache, makeDashboardCacheKey, mergeDashboardCache, setDashboardCache } from "../lib/dashboardCache";
 import DataState from "../components/DataState";
+import CustomChartTooltip from "../components/CustomChartTooltip";
 import { fetchWithTimeout, isTimeoutError } from "../lib/fetchWithTimeout";
+import { formatChartDate, formatCompactNumber, formatTooltipNumber } from "../lib/chartFormatters";
 const API_BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 const FALLBACK_ACCOUNT_ID = DEFAULT_ACCOUNTS[0]?.id || "";
 
@@ -70,6 +72,7 @@ const HERO_TABS = [
 const toUnixSeconds = (date) => Math.floor(date.getTime() / 1000);
 
 const SHORT_DATE_FORMATTER = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" });
+const formatAxisDate = (value) => formatChartDate(value, "short");
 
 const safeParseJson = (text) => {
   if (!text) return null;
@@ -105,15 +108,6 @@ const formatNumber = (value) => {
   return numeric.toString();
 };
 
-const formatShortNumber = (value) => {
-  if (!Number.isFinite(value)) return "0";
-  const abs = Math.abs(value);
-  if (abs >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)}B`;
-  if (abs >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
-  if (abs >= 1_000) return `${(value / 1_000).toFixed(1)}k`;
-  return value.toLocaleString("pt-BR");
-};
-
 const formatDurationSeconds = (seconds) => {
   if (!Number.isFinite(seconds)) return "--";
   if (seconds < 60) return `${Math.round(seconds)}s`;
@@ -140,20 +134,6 @@ const parseQueryDate = (value) => {
   const ms = numeric > 1_000_000_000_000 ? numeric : numeric * 1000;
   const date = new Date(ms);
   return Number.isNaN(date.getTime()) ? null : date;
-};
-
-const BubbleTooltip = ({ active, payload, suffix = "" }) => {
-  if (!active || !payload?.length) return null;
-  const item = payload[0];
-  const label = item?.name || item?.payload?.name || "";
-  const value = Number(item?.value ?? item?.payload?.value ?? 0);
-
-  return (
-    <div className="ig-bubble-tooltip">
-      <span>{label}</span>
-      <strong>{`${value.toLocaleString("pt-BR")}${suffix}`}</strong>
-    </div>
-  );
 };
 
 export default function FacebookDashboard() {
@@ -1075,7 +1055,14 @@ useEffect(() => {
                               <Cell fill="#fbbf24" />
                               <Cell fill="#10b981" />
                             </Pie>
-                            <Tooltip formatter={(value, name) => [Number(value).toLocaleString("pt-BR"), name]} />
+                            <Tooltip
+                              content={(
+                                <CustomChartTooltip
+                                  variant="pie"
+                                  valueFormatter={formatTooltipNumber}
+                                />
+                              )}
+                            />
                           </PieChart>
                         </ResponsiveContainer>
                       </div>
@@ -1087,7 +1074,7 @@ useEffect(() => {
                               className="ig-engagement-legend__swatch"
                               style={{ backgroundColor: index === 0 ? "#3b82f6" : index === 1 ? "#fbbf24" : "#10b981" }}
                             />
-                            <span className="ig-engagement-legend__label">{slice.name}</span>
+                            <span className="ig-engagement-legend__label" style={{ color: '#111827', fontWeight: 600 }}>{slice.name}</span>
                           </div>
                         ))}
                       </div>
@@ -1178,39 +1165,42 @@ useEffect(() => {
                         fontSize={12}
                         tickLine={false}
                         axisLine={{ stroke: '#e5e7eb' }}
+                        interval="preserveStartEnd"
+                        minTickGap={50}
+                        tickFormatter={formatAxisDate}
                       />
                       <YAxis
                         tick={{ fill: '#111827' }}
                         fontSize={12}
                         tickLine={false}
                         axisLine={{ stroke: '#e5e7eb' }}
-                        tickFormatter={(value) => formatShortNumber(value)}
+                        tickFormatter={(value) => formatCompactNumber(value)}
                         domain={['dataMin', (dataMax) => (Number.isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : dataMax)]}
                       />
                       <Tooltip
                         cursor={{ stroke: 'rgba(17, 24, 39, 0.2)', strokeDasharray: '4 4' }}
-                        content={({ active, payload }) => {
-                          if (!active || !payload?.length) return null;
-                          const [{ payload: item, value }] = payload;
-                          const numericValue = Number(value ?? item?.value ?? 0);
-                          const label = item?.label ?? "Período";
+                        content={(props) => {
+                          if (!props?.active || !props?.payload?.length) return null;
+                          const item = props.payload[0]?.payload;
+                          const numericValue = Number(props.payload[0]?.value ?? item?.value ?? 0);
+                          const labelValue = item?.label || props.label || "Periodo";
                           const isPeak =
                             !!peakReachPoint &&
                             item?.dateKey === peakReachPoint.dateKey &&
                             numericValue === peakReachPoint.value;
-                          return (
-                            <div className="ig-tooltip">
-                              <span className="ig-tooltip__title">{label}</span>
-                              <div className="ig-tooltip__row">
-                                <span>Contas alcançadas</span>
-                                <strong>{numericValue.toLocaleString("pt-BR")}</strong>
-                              </div>
-                              {isPeak ? (
-                                <div style={{ marginTop: 6, fontSize: 12, color: '#6b7280' }}>
-                                  Pico do período
-                                </div>
-                              ) : null}
+                          const footer = isPeak ? (
+                            <div style={{ marginTop: 6, fontSize: 12, color: '#6b7280' }}>
+                              Pico do periodo
                             </div>
+                          ) : null;
+                          return (
+                            <CustomChartTooltip
+                              {...props}
+                              labelFormatter={() => labelValue}
+                              labelMap={{ value: "Contas alcancadas" }}
+                              valueFormatter={formatTooltipNumber}
+                              footer={footer}
+                            />
                           );
                         }}
                       />
@@ -1364,27 +1354,27 @@ useEffect(() => {
                         tickLine={false}
                         axisLine={{ stroke: '#e5e7eb' }}
                         minTickGap={30}
+                        interval="preserveStartEnd"
+                        tickFormatter={formatAxisDate}
                       />
                       <YAxis
                         tick={{ fill: '#6b7280', fontSize: 11 }}
                         tickLine={false}
                         axisLine={{ stroke: '#e5e7eb' }}
-                        tickFormatter={(val) => formatShortNumber(val)}
+                        tickFormatter={(val) => formatCompactNumber(val)}
                         domain={['dataMin - 50', 'dataMax + 50']}
                       />
                       <Tooltip
                         cursor={{ stroke: '#1877F2', strokeWidth: 1, strokeDasharray: '4 4' }}
-                        content={({ active, payload }) => {
-                          if (!active || !payload?.length) return null;
-                          const item = payload[0];
+                        content={(props) => {
+                          const labelValue = props?.payload?.[0]?.payload?.label || props?.label || "";
                           return (
-                            <div className="ig-tooltip">
-                              <span className="ig-tooltip__title">{item.payload.label}</span>
-                              <div className="ig-tooltip__row">
-                                <span>Seguidores</span>
-                                <strong>{formatNumber(item.value)}</strong>
-                              </div>
-                            </div>
+                            <CustomChartTooltip
+                              {...props}
+                              labelFormatter={() => labelValue}
+                              labelMap={{ value: "Seguidores" }}
+                              valueFormatter={formatTooltipNumber}
+                            />
                           );
                         }}
                       />
@@ -1455,6 +1445,15 @@ useEffect(() => {
                         ]}
                         margin={{ top: 5, right: 0, left: 0, bottom: 5 }}
                       >
+                        <Tooltip
+                          content={(
+                            <CustomChartTooltip
+                              hideLabel
+                              labelMap={{ value: "Alcance" }}
+                              valueFormatter={formatTooltipNumber}
+                            />
+                          )}
+                        />
                         <Line
                           type="monotone"
                           dataKey="value"
@@ -1703,7 +1702,7 @@ useEffect(() => {
                       <XAxis
                         type="number"
                         tick={{ fill: '#6b7280', fontSize: 11 }}
-                        tickFormatter={(value) => formatShortNumber(value)}
+                        tickFormatter={(value) => formatCompactNumber(value)}
                       />
                       <YAxis
                         type="category"
@@ -1713,20 +1712,14 @@ useEffect(() => {
                       />
                       <Tooltip
                         cursor={{ fill: 'rgba(24, 119, 242, 0.08)' }}
-                        content={({ active, payload }) => {
-                          if (!active || !payload?.length) return null;
+                        content={(props) => {
+                          const age = props?.payload?.[0]?.payload?.age;
                           return (
-                            <div className="ig-tooltip">
-                              <span className="ig-tooltip__title">{payload[0].payload.age} anos</span>
-                              <div className="ig-tooltip__row">
-                                <span>Masculino</span>
-                                <strong>{formatNumber(payload[0].value)}</strong>
-                              </div>
-                              <div className="ig-tooltip__row">
-                                <span>Feminino</span>
-                                <strong>{formatNumber(payload[1].value)}</strong>
-                              </div>
-                            </div>
+                            <CustomChartTooltip
+                              {...props}
+                              labelFormatter={() => (age ? `${age} anos` : "")}
+                              valueFormatter={formatTooltipNumber}
+                            />
                           );
                         }}
                       />
@@ -1738,11 +1731,11 @@ useEffect(() => {
                   <div className="fb-gender-legend">
                     <div className="fb-gender-legend__item">
                       <div className="fb-gender-legend__dot" style={{ background: 'linear-gradient(90deg, #1877F2, #0A66C2)' }} />
-                      <span>Masculino (48%)</span>
+                      <span style={{ color: '#111827', fontWeight: 600 }}>Masculino (48%)</span>
                     </div>
                     <div className="fb-gender-legend__item">
                       <div className="fb-gender-legend__dot" style={{ background: 'linear-gradient(90deg, #42A5F5, #64B5F6)' }} />
-                      <span>Feminino (52%)</span>
+                      <span style={{ color: '#111827', fontWeight: 600 }}>Feminino (52%)</span>
                     </div>
                   </div>
                 </div>
