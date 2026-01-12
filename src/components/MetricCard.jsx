@@ -25,10 +25,11 @@ export default memo(function MetricCard({
   const cardClasses = ["metric-card"];
   if (isCompact) cardClasses.push("metric-card--compact");
   if (className) cardClasses.push(className);
+  const titleText = typeof title === "string" || typeof title === "number" ? String(title) : "";
 
   const Cmp = (
     <div className={cardClasses.join(" ")}>
-      <div className="metric-card__title">{title}</div>
+      <div className="metric-card__title" title={titleText || undefined}>{title}</div>
       <div className="metric-card__value-row">
         <div className="metric-card__value">{value ?? "-"}</div>
         {hasDelta && (

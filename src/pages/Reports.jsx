@@ -308,7 +308,12 @@ export default function Reports() {
                       <td className="col-tipo">
                         <FileText size={24} className="report-type-icon" />
                       </td>
-                      <td className="col-nome">{report.name || report.title || "Relatório sem nome"}</td>
+                      <td
+                        className="col-nome truncate"
+                        title={report.name || report.title || undefined}
+                      >
+                        {report.name || report.title || "Relatório sem nome"}
+                      </td>
                       <td className="col-canais">
                         <div className="channel-icons">
                           {channels.includes("instagram") && (

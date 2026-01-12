@@ -42,6 +42,7 @@ export default function AccountSelect() {
     () => availableAccounts.find((acc) => acc.id === currentValue) || availableAccounts[0],
     [availableAccounts, currentValue]
   );
+  const currentAccountLabel = accountsData[currentAccount?.id]?.username || currentAccount?.label || "";
 
   useEffect(() => {
     if (!availableAccounts.length) return;
@@ -196,8 +197,11 @@ export default function AccountSelect() {
                   {getAccountInitials(currentAccount?.label)}
                 </span>
               )}
-              <span className="account-dropdown__name">
-                {accountsData[currentAccount?.id]?.username || currentAccount?.label}
+              <span
+                className="account-dropdown__name"
+                title={currentAccountLabel || undefined}
+              >
+                {currentAccountLabel}
               </span>
             </div>
             <ChevronDown size={16} className={`account-dropdown__icon${isOpen ? " account-dropdown__icon--open" : ""}`} />
@@ -205,30 +209,36 @@ export default function AccountSelect() {
 
           {isOpen && (
             <ul className="account-dropdown__list" role="listbox">
-              {availableAccounts.map((account) => (
-                <li key={account.id} role="option" aria-selected={account.id === currentValue}>
-                  <button
-                    type="button"
-                    className={`account-dropdown__item${account.id === currentValue ? " account-dropdown__item--active" : ""}`}
-                    onClick={() => handleSelect(account.id)}
-                  >
-                    {accountsData[account.id]?.profilePicture ? (
-                      <img
-                        src={accountsData[account.id].profilePicture}
-                        alt={account.label}
-                        className="account-dropdown__avatar"
-                      />
-                    ) : (
-                      <span className="account-dropdown__avatar-placeholder">
-                        {getAccountInitials(account.label)}
+              {availableAccounts.map((account) => {
+                const accountLabel = accountsData[account.id]?.username || account.label || "";
+                return (
+                  <li key={account.id} role="option" aria-selected={account.id === currentValue}>
+                    <button
+                      type="button"
+                      className={`account-dropdown__item${account.id === currentValue ? " account-dropdown__item--active" : ""}`}
+                      onClick={() => handleSelect(account.id)}
+                    >
+                      {accountsData[account.id]?.profilePicture ? (
+                        <img
+                          src={accountsData[account.id].profilePicture}
+                          alt={account.label}
+                          className="account-dropdown__avatar"
+                        />
+                      ) : (
+                        <span className="account-dropdown__avatar-placeholder">
+                          {getAccountInitials(account.label)}
+                        </span>
+                      )}
+                      <span
+                        className="account-dropdown__item-name"
+                        title={accountLabel || undefined}
+                      >
+                        {accountLabel}
                       </span>
-                    )}
-                    <span className="account-dropdown__item-name">
-                      {accountsData[account.id]?.username || account.label}
-                    </span>
-                  </button>
-                </li>
-              ))}
+                    </button>
+                  </li>
+                );
+              })}
               <li className="account-dropdown__divider" role="presentation" />
               <li role="presentation">
                 <button

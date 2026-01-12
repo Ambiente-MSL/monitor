@@ -12919,3 +12919,239 @@ body:has(.facebook-dashboard--clean) .app-main__content {
     font-size: 20px;
   }
 }
+
+/* Visual polish: typography, buttons, truncation */
+:root {
+  --type-page-title: 1.25rem;
+  --type-section-title: 1.125rem;
+  --type-card-title: 1rem;
+  --type-label: 0.875rem;
+  --type-kpi: 1.5rem;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.ig-clean-header__brand h1,
+.reports-title,
+.ig-new-page-title,
+.ig-clean-title,
+.ig-clean-title2,
+.ig-hero__title {
+  font-size: var(--type-page-title);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.section__title,
+.section-title,
+.section-title h2,
+.settings-section__title,
+.ig-section-title,
+.ig-new-section-title {
+  font-size: var(--type-section-title);
+  font-weight: 600;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metric-card__title,
+.chart-card__title,
+.card .card__title,
+.best-ad-card__title,
+.platform-card__title h3,
+.ig-card__title,
+.ig-ranking__title {
+  font-size: var(--type-card-title);
+  font-weight: 600;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.section__description,
+.section-description,
+.chart-card__subtitle,
+.reports-subtitle,
+.settings-section__subtitle,
+.metric-card__hint,
+.account-dropdown__label,
+.filter-select__label,
+.date-range-indicator__label,
+.posts-table__header-label,
+.posts-table-compact__th-label {
+  font-size: var(--type-label);
+  color: var(--muted);
+}
+
+.metric-card__value,
+.kpi .value,
+.best-time-stat__value,
+.ig-summary-stat__value,
+.ig-engagement-card__value,
+.ig-new-stat-inline__value,
+.ig-overview-stat__value,
+.ig-overview-metric__value,
+.ig-engagement-summary__value,
+.ig-engagement-mini-card__value,
+.ig-best-time-card__value,
+.ig-metric__value,
+.ig-top-city-row__value,
+.fb-content-type-card__value,
+.fb-best-time-highlight__value,
+.fb-reach-source-item__value,
+.fb-reach-total__value,
+.fb-sentiment-item__value,
+.fb-city-item__value,
+.fb-follower-kpi__value,
+.fb-reach-kpi__value,
+.fb-reach-detail-item__value,
+.fb-reach-detail-total__value,
+.fb-reach-breakdown__value {
+  font-size: var(--type-kpi);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.reports-table,
+.posts-table-compact__table,
+.posts-table__table {
+  font-size: 0.875rem;
+}
+
+.col-nome {
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn {
+  background: var(--surface-100);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+.btn:hover {
+  background: var(--surface-200);
+  color: var(--text-primary);
+  border-color: var(--color-primary);
+}
+
+.btn--ghost {
+  background: transparent;
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+.btn--ghost:hover {
+  background: var(--surface-100);
+}
+
+.filter-button {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+  font-weight: 600;
+}
+
+.filter-button:hover {
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1);
+}
+
+.filter-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.date-range-preset-new {
+  color: var(--text-primary);
+  border-color: var(--border-color);
+  font-weight: 600;
+}
+
+.date-range-preset-new:hover {
+  background: var(--surface-50);
+  color: var(--text-primary);
+}
+
+.date-range-preset-new--active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.date-range-btn-new {
+  color: var(--text-primary);
+}
+
+.date-range-dropdown-new__btn--secondary {
+  background: var(--surface-50);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.date-range-dropdown-new__btn--secondary:hover {
+  background: var(--surface-100);
+  color: var(--text-primary);
+}
+
+.settings-button {
+  background: var(--color-primary);
+  color: #ffffff;
+  border-color: transparent;
+}
+
+.settings-button:hover {
+  filter: brightness(0.95);
+}
+
+.settings-button--outline {
+  background: transparent;
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+.settings-button--outline:hover {
+  background: var(--surface-100);
+}
+
+.account-dropdown__add-button {
+  background: var(--surface-50);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.account-dropdown__add-button:hover {
+  background: var(--surface-100);
+}
+
+.btn-new-report {
+  background: var(--surface-100);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+.btn-new-report:hover {
+  background: var(--surface-200);
+}
+
+.btn-action,
+.btn-action-more {
+  color: var(--text-primary);
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.btn-action:hover,
+.btn-action-more:hover {
+  border-color: var(--border-color);
+}

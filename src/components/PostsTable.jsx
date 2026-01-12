@@ -204,7 +204,9 @@ const PostsTable = ({ posts, loading, error }) => {
               </div>
             )}
             <div className="posts-table__caption-content">
-              <div className="posts-table__caption-text">{truncate(caption, 100)}</div>
+              <div className="posts-table__caption-text" title={caption || undefined}>
+                {truncate(caption, 100)}
+              </div>
             </div>
           </div>
         );
@@ -304,6 +306,7 @@ const PostsTable = ({ posts, loading, error }) => {
                       ${draggedColumn === columnId ? 'posts-table-compact__th--dragging' : ''}
                       ${dragOverColumn === columnId ? 'posts-table-compact__th--drag-over' : ''}
                     `}
+                    title={column.label}
                     draggable
                     onDragStart={(e) => handleDragStart(e, columnId)}
                     onDragOver={(e) => handleDragOver(e, columnId)}
@@ -313,7 +316,9 @@ const PostsTable = ({ posts, loading, error }) => {
                   >
                     <div className="posts-table-compact__th-content">
                       <span className="posts-table-compact__th-grip">⋮⋮</span>
-                      <span className="posts-table-compact__th-label">{column.label}</span>
+                      <span className="posts-table-compact__th-label truncate" title={column.label}>
+                        {column.label}
+                      </span>
                     </div>
                   </th>
                 );
