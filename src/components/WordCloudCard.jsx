@@ -75,7 +75,29 @@ export default function WordCloudCard({
   const [loadingSlow, setLoadingSlow] = useState(false);
 
   const requestKey = useMemo(() => {
-    if (!igUserId) {
+    if (!igUserId) return null;
+    const params = new URLSearchParams({ igUserId });
+    if (since) params.set("since", since);
+    if (until) params.set("until", until);
+    const limitedTop = Math.min(Math.max(top || 30, 1), 30);
+    params.set("top", String(limitedTop));
+    const path = `/api/instagram/comments/wordcloud?${params.toString()}`;
+    return sanitizedBaseUrl ? `${sanitizedBaseUrl}${path}` : path;
+  }, [igUserId, since, until, top, sanitizedBaseUrl]);
+
+  useEffect(() => {
+    setLoadingSlow(false);
+  }, [requestKey]);
+
+  const { data, error, isLoading, isValidating } = useSWR(requestKey, fetcher, {
+    revalidateOnFocus: false,
+    shouldRetryOnError: false,
+    keepPreviousData: true,
+    loadingTimeout: 3000,
+    onLoadingSlow: () => setLoadingSlow(true),
+  });
+
+  if (!igUserId) {
     return (
       <DataState
         state="empty"
@@ -109,7 +131,7 @@ export default function WordCloudCard({
 
   const entries = buildCloudEntries(data?.words || []);
 
-  // Chama callback com o total de comentários se fornecido
+  // Chama callback com o total de comentarios se fornecido
   if (onCommentsCountRender && typeof data?.total_comments === "number") {
     onCommentsCountRender(data.total_comments);
   }
@@ -118,21 +140,12 @@ export default function WordCloudCard({
     return <DataState state="empty" label="Sem dados no periodo." size="lg" />;
   }
 
-
-
-    return (
-      <div className="flex min-h-[300px] items-center justify-center text-sm text-slate-500">
-        Sem dados no periodo.
-      </div>
-    );
-  }
-
   return (
     <div className="flex w-full flex-col gap-3">
       {isValidating && entries.length ? (
         <div className="flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-xs font-medium text-slate-600">
           <span className="inline-flex h-2 w-2 rounded-full bg-indigo-500" />
-          <span>Atualizando palavras-chave…</span>
+          <span>Atualizando palavras-chave...</span>
         </div>
       ) : null}
       {showCommentsCount && typeof data.total_comments === "number" ? (
