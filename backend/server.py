@@ -431,6 +431,94 @@ def _meta_api_error_details(err: MetaAPIError) -> Dict[str, Any]:
     }
 
 
+ADS_PERMISSION_ERROR_CODES = {10, 102, 190, 200}
+ADS_RATE_LIMIT_ERROR_CODES = {4, 17, 32, 613}
+
+
+def _ads_error_payload(code: str, message: Optional[str] = None) -> Dict[str, Any]:
+    payload = {"code": code}
+    if message:
+        payload["message"] = message
+    return payload
+
+
+def _ads_meta_payload(cache_meta: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    now_iso = _utc_now_iso()
+    if not isinstance(cache_meta, dict):
+        return {"status": "live", "fetched_at": now_iso}
+    status = str(cache_meta.get("source") or "live")
+    fetched_at = cache_meta.get("fetched_at") or now_iso
+    return {
+        "status": status,
+        "fetched_at": str(fetched_at) if fetched_at is not None else None,
+    }
+
+
+def _ads_envelope(
+    data: Any,
+    *,
+    cache_meta: Optional[Dict[str, Any]] = None,
+    error: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    return {
+        "data": data,
+        "error": error,
+        "meta": _ads_meta_payload(cache_meta),
+    }
+
+
+def _ads_error_code_from_meta(err: MetaAPIError) -> str:
+    code = None
+    try:
+        if err.code is not None:
+            code = int(err.code)
+    except (TypeError, ValueError):
+        code = None
+    if err.status in (401, 403):
+        return "PERMISSION_DENIED"
+    if err.status == 429:
+        return "RATE_LIMIT"
+    if err.status >= 500:
+        return "INTEGRATION_ERROR"
+    if code in ADS_PERMISSION_ERROR_CODES:
+        return "PERMISSION_DENIED"
+    if code in ADS_RATE_LIMIT_ERROR_CODES:
+        return "RATE_LIMIT"
+    if err.error_type in ("timeout", "request_exception"):
+        return "INTEGRATION_ERROR"
+    return "INTEGRATION_ERROR"
+
+
+def _ads_payload_has_data(payload: Any) -> bool:
+    if not isinstance(payload, dict):
+        return False
+    totals = payload.get("totals") or {}
+    for key in ("spend", "impressions", "reach", "clicks"):
+        try:
+            if float(totals.get(key) or 0) > 0:
+                return True
+        except (TypeError, ValueError):
+            continue
+    for list_key in (
+        "campaigns",
+        "spend_series",
+        "creatives",
+        "actions",
+        "video_ads",
+        "spend_by_region",
+        "spend_by_city",
+    ):
+        value = payload.get(list_key)
+        if isinstance(value, list) and value:
+            return True
+    demographics = payload.get("demographics") or {}
+    for demo_key in ("byGender", "byAge", "byAgeGender", "topSegments"):
+        value = demographics.get(demo_key)
+        if isinstance(value, list) and value:
+            return True
+    return False
+
+
 def _duration(since_ts: int, until_ts: int) -> int:
     return max(1, until_ts - since_ts)
 
@@ -4147,7 +4235,15 @@ def instagram_comments_ingest_http():
 def ads_high():
     act = request.args.get("actId", ACT_ID)
     if not act:
-        return jsonify({"error": "META_AD_ACCOUNT_ID is not configured"}), 500
+        envelope = _ads_envelope(
+            None,
+            cache_meta=None,
+            error=_ads_error_payload(
+                "INTEGRATION_ERROR",
+                "META_AD_ACCOUNT_ID is not configured",
+            ),
+        )
+        return jsonify(envelope)
 
     since_param = request.args.get("since")
     until_param = request.args.get("until")
@@ -4186,19 +4282,26 @@ def ads_high():
     except MetaAPIError as err:
         mark_cache_error("ads_highlights", act, since_ts, until_ts, None, err.args[0], platform="ads")
         fallback = get_latest_cached_payload("ads_highlights", act, platform="ads")
+        error_payload = _ads_error_payload(
+            _ads_error_code_from_meta(err),
+            err.args[0] if err.args else None,
+        )
         if fallback:
             payload, meta = fallback
             meta = dict(meta or {})
-            meta["fallback_error"] = err.args[0]
+            meta["fallback_error"] = err.args[0] if err.args else "Meta API error"
             meta["fallback_reason"] = "meta_api_error"
             meta["requested_since"] = since_ts
             meta["requested_until"] = until_ts
             response = dict(payload) if isinstance(payload, dict) else {"payload": payload}
             response["cache"] = meta
-            return jsonify(response)
-        return meta_error_response(err)
+            envelope = _ads_envelope(response, cache_meta=meta, error=error_payload)
+            return jsonify(envelope)
+        envelope = _ads_envelope(None, cache_meta=None, error=error_payload)
+        return jsonify(envelope)
     except ValueError as err:
         fallback = get_latest_cached_payload("ads_highlights", act, platform="ads")
+        error_payload = _ads_error_payload("INTEGRATION_ERROR", str(err))
         if fallback:
             payload, meta = fallback
             meta = dict(meta or {})
@@ -4208,11 +4311,14 @@ def ads_high():
             meta["requested_until"] = until_ts
             response = dict(payload) if isinstance(payload, dict) else {"payload": payload}
             response["cache"] = meta
-            return jsonify(response)
-        return jsonify({"error": str(err)}), 400
+            envelope = _ads_envelope(response, cache_meta=meta, error=error_payload)
+            return jsonify(envelope)
+        envelope = _ads_envelope(None, cache_meta=None, error=error_payload)
+        return jsonify(envelope)
     except Exception as err:  # noqa: BLE001
         logger.exception("Falha inesperada em ads_highlights")
         fallback = get_latest_cached_payload("ads_highlights", act, platform="ads")
+        error_payload = _ads_error_payload("INTEGRATION_ERROR", str(err))
         if fallback:
             payload, meta = fallback
             meta = dict(meta or {})
@@ -4222,12 +4328,25 @@ def ads_high():
             meta["requested_until"] = until_ts
             response = dict(payload) if isinstance(payload, dict) else {"payload": payload}
             response["cache"] = meta
-            return jsonify(response)
-        return jsonify({"error": str(err)}), 500
+            envelope = _ads_envelope(response, cache_meta=meta, error=error_payload)
+            return jsonify(envelope)
+        envelope = _ads_envelope(None, cache_meta=None, error=error_payload)
+        return jsonify(envelope)
 
-    response = dict(payload)
+    response = dict(payload) if isinstance(payload, dict) else {"payload": payload}
     response["cache"] = meta
-    return jsonify(response)
+    if not _ads_payload_has_data(response):
+        envelope = _ads_envelope(
+            None,
+            cache_meta=meta,
+            error=_ads_error_payload(
+                "NO_DATA",
+                "Nenhum dado disponivel para o periodo",
+            ),
+        )
+        return jsonify(envelope)
+    envelope = _ads_envelope(response, cache_meta=meta, error=None)
+    return jsonify(envelope)
 
 
 @app.get("/api/accounts/discover")

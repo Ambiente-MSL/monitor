@@ -18,7 +18,7 @@ const translateError = (rawMessage) => {
   if (normalized.includes('email') && normalized.includes('required')) {
     return 'Informe o e-mail e senha para continuar!';
   }
-  if (normalized.includes('network')) {
+  if (normalized.includes('network')) { 
     return 'Falha de rede ao conectar. Tente novamente em instantes.';
   }
   return rawMessage;

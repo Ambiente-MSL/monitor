@@ -263,7 +263,7 @@ const PostsTable = ({ posts, loading, error }) => {
     return (
       <div className="posts-table-compact">
         <div className="posts-table-compact__loading">
-          <DataState state="loading" label="Carregando publicacoes..." size="sm" />
+          <DataState state="loading" label="Carregando publicações..." size="sm" />
         </div>
       </div>
     );

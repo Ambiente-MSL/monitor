@@ -1227,7 +1227,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
   useEffect(() => {
     if (!accountConfig?.instagramUserId) {
       setRecentPosts([]);
-      setRecentPostsError("Conta do Instagram nao configurada.");
+      setRecentPostsError("Conta do Instagram não configurada.");
       setRecentPostsLoading(false);
       return undefined;
     }
@@ -1263,7 +1263,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
          const text = await resp.text();
          const json = safeParseJson(text) || {};
          if (!resp.ok) {
-           throw new Error(describeApiError(json, "Nao foi possivel carregar as publicacoes."));
+           throw new Error(describeApiError(json, "Nao foi possivel carregar as publicações."));
          }
          if (recentPostsRequestIdRef.current !== requestId) return;
          const data = unwrapApiData(json, {});
@@ -1274,9 +1274,9 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
        } catch (err) {
         if (recentPostsRequestIdRef.current !== requestId) return;
         if (err?.name === "AbortError") {
-          setRecentPostsError("Tempo esgotado ao carregar publicacoes do Instagram.");
+          setRecentPostsError("Tempo esgotado ao carregar publicações do Instagram.");
         } else {
-          setRecentPostsError(err?.message || "Nao foi possivel carregar as publicacoes.");
+          setRecentPostsError(err?.message || "Nao foi possivel carregar as publicações.");
         }
       } finally {
         if (recentPostsRequestIdRef.current !== requestId) return;
@@ -1296,7 +1296,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
 
     if (!accountConfig?.instagramUserId) {
       setAudienceData(null);
-      setAudienceError("Conta do Instagram nao configurada.");
+      setAudienceError("Conta do Instagram não configurada.");
       setAudienceLoading(false);
       return undefined;
     }
@@ -1327,7 +1327,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
         const text = await resp.text();
         const json = safeParseJson(text) || {};
         if (!resp.ok) {
-          throw new Error(describeApiError(json, "Nao foi possivel carregar a audiencia."));
+          throw new Error(describeApiError(json, "Não foi possivel carregar a audiência."));
         }
         if (audienceRequestIdRef.current !== requestId) return;
         const data = unwrapApiData(json, {});
@@ -1337,9 +1337,9 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
       } catch (err) {
         if (audienceRequestIdRef.current !== requestId) return;
         if (err?.name === "AbortError") {
-          setAudienceError("Tempo esgotado ao carregar audiencia.");
+          setAudienceError("Tempo esgotado ao carregar audiência.");
         } else {
-          setAudienceError(err?.message || "Nao foi possivel carregar a audiencia.");
+          setAudienceError(err?.message || "Não foi possivel carregar a audiência.");
         }
       } finally {
         if (audienceRequestIdRef.current !== requestId) return;

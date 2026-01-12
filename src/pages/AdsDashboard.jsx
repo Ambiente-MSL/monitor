@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Link, useLocation, useOutletContext } from "react-router-dom";
+import { Link, useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import { differenceInCalendarDays, endOfDay, format, startOfDay, subDays } from "date-fns";
 import {
   ResponsiveContainer,
@@ -42,10 +42,11 @@ import { useAccounts } from "../context/AccountsContext";
 import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import { useAuth } from "../context/AuthContext";
 import useQueryState from "../hooks/useQueryState";
-import { unwrapApiData } from "../lib/apiEnvelope";
+import { isApiEnvelope, unwrapApiData } from "../lib/apiEnvelope";
 import { fetchWithTimeout } from "../lib/fetchWithTimeout";
 
 const API_BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
+const ADS_MOCK_ENABLED = false;
 
 // Hero Tabs
 const HERO_TABS = [
@@ -266,6 +267,7 @@ const translateObjective = (value) => {
 
 export default function AdsDashboard() {
   const location = useLocation();
+  const navigate = useNavigate();
   const outletContext = useOutletContext() || {};
   const { setTopbarConfig, resetTopbarConfig } = outletContext;
   const { accounts, loading: accountsLoading } = useAccounts();
@@ -283,9 +285,11 @@ export default function AdsDashboard() {
 
   const [activeSpendBar, setActiveSpendBar] = useState(-1);
   const [activeCampaignIndex, setActiveCampaignIndex] = useState(-1);
+  const [adsEnvelope, setAdsEnvelope] = useState(null);
   const [adsData, setAdsData] = useState(null);
-  const [adsError, setAdsError] = useState("");
+  const [adsError, setAdsError] = useState(null);
   const [adsLoading, setAdsLoading] = useState(false);
+  const [adsReloadKey, setAdsReloadKey] = useState(0);
   const [instagramProfileData, setInstagramProfileData] = useState(null);
   const adAccountId = useMemo(() => {
     if (!selectedAccount) return "";
@@ -384,14 +388,20 @@ export default function AdsDashboard() {
   // reset quando trocar conta ou range para evitar exibir dados da conta anterior
   useEffect(() => {
     setAdsData(null);
-    setAdsError("");
+    setAdsEnvelope(null);
+    setAdsError(null);
   }, [queryAccountId, adAccountId, sinceDate?.getTime?.(), untilDate?.getTime?.()]);
 
   useEffect(() => {
     let cancelled = false;
     const loadAds = async () => {
       setAdsLoading(true);
-      setAdsError(actParam ? "" : "A conta selecionada não possui adAccountId configurado.");
+      setAdsError(
+        actParam
+          ? null
+          : { code: "INTEGRATION_ERROR", message: "Conta selecionada nao possui adAccountId configurado." },
+      );
+      setAdsEnvelope(null);
       if (!actParam) {
         setAdsData(null);
         setAdsLoading(false);
@@ -404,11 +414,27 @@ export default function AdsDashboard() {
         if (untilDate) params.set("until", format(startOfDay(untilDate), "yyyy-MM-dd"));
         const resp = await apiFetch(`/api/ads/highlights?${params.toString()}`);
         if (cancelled) return;
-        setAdsData(resp || {});
+        if (isApiEnvelope(resp)) {
+          setAdsEnvelope(resp);
+          setAdsData(resp.data ?? null);
+          setAdsError(resp.error ?? null);
+        } else {
+          const legacyError =
+            resp && typeof resp === "object" && resp.error
+              ? { code: "INTEGRATION_ERROR", message: String(resp.error) }
+              : null;
+          setAdsEnvelope(null);
+          setAdsData(resp || null);
+          setAdsError(legacyError);
+        }
       } catch (err) {
         if (cancelled) return;
         setAdsData(null);
-        setAdsError(err?.message || "Não foi possível carregar dados de anúncios.");
+        setAdsEnvelope(null);
+        setAdsError({
+          code: "INTEGRATION_ERROR",
+          message: err?.message || "Nao foi possivel carregar dados de anuncios.",
+        });
       } finally {
         if (!cancelled) {
           setAdsLoading(false);
@@ -419,7 +445,7 @@ export default function AdsDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [adAccountId, apiFetch, sinceDate, untilDate]);
+  }, [adAccountId, apiFetch, sinceDate, untilDate, adsReloadKey]);
 
   // Fetch Instagram profile picture
   useEffect(() => {
@@ -485,6 +511,59 @@ export default function AdsDashboard() {
     const text = String(value);
     return text.length > 18 ? `${text.slice(0, 16)}...` : text;
   };
+
+  const normalizeAdsError = (err) => {
+    if (!err) return null;
+    if (typeof err === "string") {
+      return { code: "INTEGRATION_ERROR", message: err };
+    }
+    if (typeof err === "object") {
+      const code = err.code ? String(err.code).toUpperCase() : null;
+      const message = err.message || err.error || "";
+      return {
+        code: code || "INTEGRATION_ERROR",
+        message: message || "Falha ao carregar dados.",
+      };
+    }
+    return { code: "INTEGRATION_ERROR", message: String(err) };
+  };
+
+  const adsErrorInfo = useMemo(() => normalizeAdsError(adsError), [adsError]);
+  const adsErrorCode = adsErrorInfo?.code || null;
+  const retryAds = () => setAdsReloadKey((value) => value + 1);
+  const reconnectAccount = () => navigate("/configuracoes/contas");
+
+  const formatCacheDate = (value) => {
+    if (!value) return "";
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return "";
+    return format(parsed, "dd/MM HH:mm");
+  };
+
+  const adsMeta = useMemo(() => {
+    if (adsEnvelope && typeof adsEnvelope === "object" && adsEnvelope.meta) {
+      return adsEnvelope.meta;
+    }
+    if (adsData && typeof adsData === "object" && adsData.cache) {
+      return {
+        status: adsData.cache.source,
+        fetched_at: adsData.cache.fetched_at,
+      };
+    }
+    return null;
+  }, [adsEnvelope, adsData]);
+
+  const cacheNotice = useMemo(() => {
+    if (!adsMeta || typeof adsMeta !== "object") return "";
+    const status = adsMeta.status || adsMeta.source;
+    if (!status || !["cache", "stale", "cache-fallback"].includes(status)) return "";
+    const suffix = status === "stale" ? " (desatualizado)" : status === "cache-fallback" ? " (fallback)" : "";
+    const fetchedAt = formatCacheDate(adsMeta.fetched_at);
+    if (fetchedAt) {
+      return `Dados em cache${suffix} - Atualizado em ${fetchedAt}`;
+    }
+    return `Dados em cache${suffix}`;
+  }, [adsMeta]);
 
   const totals = adsData?.totals || {};
   const averages = adsData?.averages || {};
@@ -709,8 +788,109 @@ export default function AdsDashboard() {
   const spendSeries = useMemo(() => {
     if (Array.isArray(adsData?.spend_series)) return adsData.spend_series;
     if (adsData) return [];
-    return MOCK_SPEND_SERIES;
+    return ADS_MOCK_ENABLED ? MOCK_SPEND_SERIES : [];
   }, [adsData]);
+
+  const adsHasData = useMemo(() => {
+    if (adsErrorCode === "NO_DATA") return false;
+    if (!adsData || typeof adsData !== "object") return false;
+    const totalsPresent = ["spend", "impressions", "reach", "clicks"].some(
+      (key) => Number(totals?.[key] || 0) > 0,
+    );
+    const hasCampaigns = Array.isArray(adsData.campaigns) && adsData.campaigns.length > 0;
+    const hasSpendSeries = Array.isArray(adsData.spend_series) && adsData.spend_series.length > 0;
+    const hasCreatives = Array.isArray(adsData.creatives) && adsData.creatives.length > 0;
+    const hasActions = Array.isArray(adsData.actions) && adsData.actions.length > 0;
+    const hasVideoAds = Array.isArray(adsData.video_ads) && adsData.video_ads.length > 0;
+    const hasRegion = Array.isArray(adsData.spend_by_region) && adsData.spend_by_region.length > 0;
+    const hasCity = Array.isArray(adsData.spend_by_city) && adsData.spend_by_city.length > 0;
+    const demographics = adsData.demographics || {};
+    const hasDemographics = [demographics.byGender, demographics.byAge, demographics.byAgeGender, demographics.topSegments]
+      .some((entry) => Array.isArray(entry) && entry.length > 0);
+    return (
+      totalsPresent
+      || hasCampaigns
+      || hasSpendSeries
+      || hasCreatives
+      || hasActions
+      || hasVideoAds
+      || hasRegion
+      || hasCity
+      || hasDemographics
+    );
+  }, [adsData, adsErrorCode, totals]);
+
+  const adsFallbackState = useMemo(() => {
+    if (adsLoading) return "loading";
+    if (!adsHasData) {
+      if (!adsErrorCode || adsErrorCode === "NO_DATA") return "empty";
+      return "error";
+    }
+    return "ready";
+  }, [adsLoading, adsHasData, adsErrorCode]);
+
+  const adsFallbackProps = useMemo(() => {
+    if (adsFallbackState === "loading") {
+      return { state: "loading", label: "Carregando anuncios pagos..." };
+    }
+    if (adsFallbackState === "empty") {
+      return {
+        state: "empty",
+        label: "Nenhum dado disponivel para este periodo",
+        hint: "Tente outro periodo ou conta",
+      };
+    }
+    if (adsFallbackState === "error") {
+      if (adsErrorCode === "PERMISSION_DENIED") {
+        return {
+          state: "error",
+          label: "Permissao necessaria para acessar estes dados",
+          actionLabel: "Reconectar conta",
+          onAction: reconnectAccount,
+        };
+      }
+      if (adsErrorCode === "RATE_LIMIT" || adsErrorCode === "INTEGRATION_ERROR") {
+        return {
+          state: "error",
+          label: "Nao foi possivel carregar os dados no momento",
+          actionLabel: "Tentar novamente",
+          onAction: retryAds,
+        };
+      }
+      return {
+        state: "error",
+        label: adsErrorInfo?.message || "Nao foi possivel carregar os dados no momento",
+        actionLabel: "Tentar novamente",
+        onAction: retryAds,
+      };
+    }
+    return null;
+  }, [adsFallbackState, adsErrorCode, adsErrorInfo, retryAds, reconnectAccount]);
+
+  const shouldShowAdsFallback = adsFallbackState !== "ready";
+
+  const adsWarningProps = useMemo(() => {
+    if (!adsHasData || !adsErrorCode || adsErrorCode === "NO_DATA") return null;
+    if (adsErrorCode === "PERMISSION_DENIED") {
+      return {
+        label: "Permissao necessaria para acessar estes dados",
+        actionLabel: "Reconectar conta",
+        onAction: reconnectAccount,
+      };
+    }
+    if (adsErrorCode === "RATE_LIMIT" || adsErrorCode === "INTEGRATION_ERROR") {
+      return {
+        label: "Nao foi possivel atualizar os dados no momento",
+        actionLabel: "Tentar novamente",
+        onAction: retryAds,
+      };
+    }
+    return {
+      label: adsErrorInfo?.message || "Nao foi possivel atualizar os dados no momento",
+      actionLabel: "Tentar novamente",
+      onAction: retryAds,
+    };
+  }, [adsHasData, adsErrorCode, adsErrorInfo, retryAds, reconnectAccount]);
 
   const spendByCity = useMemo(() => {
     const source = Array.isArray(adsData?.spend_by_city)
@@ -904,7 +1084,7 @@ export default function AdsDashboard() {
         }));
     }
     if (adsData) return [];
-    return MOCK_TOP_CAMPAIGNS;
+    return ADS_MOCK_ENABLED ? MOCK_TOP_CAMPAIGNS : [];
   }, [adsData]);
 
   const activeCampaigns = useMemo(() => {
@@ -928,7 +1108,7 @@ export default function AdsDashboard() {
       }));
     }
     if (adsData) return [];
-    return MOCK_DETAILED_CAMPAIGNS;
+    return ADS_MOCK_ENABLED ? MOCK_DETAILED_CAMPAIGNS : [];
   }, [adsData]);
 
   const objectivePerformance = useMemo(() => {
@@ -964,7 +1144,7 @@ export default function AdsDashboard() {
   const performanceSeries = useMemo(() => {
     // Se não temos dados reais, usa o mock
     if (!adsData || !spendSeries.length) {
-      return MOCK_PERFORMANCE_SERIES;
+      return ADS_MOCK_ENABLED ? MOCK_PERFORMANCE_SERIES : [];
     }
 
     const totalImpressions = Number(totals.impressions || 0);
@@ -1129,6 +1309,24 @@ export default function AdsDashboard() {
           </div>
         </div>
 
+        {cacheNotice ? (
+          <div style={{ marginBottom: "16px", fontSize: "12px", color: "#6b7280" }}>
+            {cacheNotice}
+          </div>
+        ) : null}
+        {adsWarningProps ? (
+          <div style={{ marginBottom: "16px" }}>
+            <DataState
+              state="error"
+              inline
+              size="sm"
+              label={adsWarningProps.label}
+              actionLabel={adsWarningProps.actionLabel}
+              onAction={adsWarningProps.onAction}
+            />
+          </div>
+        ) : null}
+
         {/* Grid Principal */}
         <div className="ig-clean-grid">
           {/* Left Column - Overview Card */}
@@ -1141,6 +1339,19 @@ export default function AdsDashboard() {
                 gap: '12px',
                 padding: '20px 24px'
               }}>
+                {shouldShowAdsFallback && adsFallbackProps ? (
+                  <div style={{ gridColumn: "1 / -1" }}>
+                    <DataState
+                      state={adsFallbackProps.state}
+                      label={adsFallbackProps.label}
+                      hint={adsFallbackProps.hint}
+                      size="sm"
+                      actionLabel={adsFallbackProps.actionLabel}
+                      onAction={adsFallbackProps.onAction}
+                    />
+                  </div>
+                ) : (
+                  <>
                 {/* Investimento */}
                 <div style={{
                   padding: '14px',
@@ -1327,6 +1538,8 @@ export default function AdsDashboard() {
                   </div>
                 </div>
 
+                  </>
+                )}
               </div>
 
               <div className="ig-profile-vertical__divider" />
@@ -1357,10 +1570,15 @@ export default function AdsDashboard() {
                   </div>
                 </div>
 
-                {adsLoading ? (
-                  <DataState state="loading" label="Carregando anuncios pagos..." size="sm" />
-                ) : adsError ? (
-                  <DataState state="error" label={adsError} size="sm" />
+                {shouldShowAdsFallback && adsFallbackProps ? (
+                  <DataState
+                    state={adsFallbackProps.state}
+                    label={adsFallbackProps.label}
+                    hint={adsFallbackProps.hint}
+                    size="sm"
+                    actionLabel={adsFallbackProps.actionLabel}
+                    onAction={adsFallbackProps.onAction}
+                  />
                 ) : hasVideoMetrics ? (
                   <div style={{ display: "grid", gap: 20 }}>
                     {/* Cards de Visualizações - Estilo Instagram Professional */}
@@ -1653,29 +1871,18 @@ export default function AdsDashboard() {
                           </ResponsiveContainer>
                         </div>
                       ) : (
-                        <div style={{ padding: 24, textAlign: "center", color: "#9ca3af" }}>
-                          Sem dados de crescimento por anuncio
-                        </div>
+                        <DataState state="empty" label="Sem dados de crescimento por anuncio" size="sm" />
                       )}
                     </div>
 
                   </div>
                 ) : (
-                  <div style={{
-                    padding: 48,
-                    textAlign: "center",
-                    background: "linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05))",
-                    borderRadius: 16,
-                    border: "2px dashed rgba(102, 126, 234, 0.2)"
-                  }}>
-                    <Activity size={48} color="#667eea" style={{ opacity: 0.5, marginBottom: 16 }} />
-                    <div style={{ fontSize: 16, fontWeight: 600, color: "#6b7280", marginBottom: 8 }}>
-                      Sem dados de vídeo
-                    </div>
-                    <div style={{ fontSize: 13, color: "#9ca3af" }}>
-                      Nenhum anúncio de vídeo encontrado para o período/conta selecionados
-                    </div>
-                  </div>
+                  <DataState
+                    state="empty"
+                    label="Sem dados de video"
+                    hint="Nenhum anuncio de video encontrado para o periodo/conta selecionados"
+                    size="sm"
+                  />
                 )}
               </div>
             </section>
@@ -1693,35 +1900,46 @@ export default function AdsDashboard() {
               </header>
 
               <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {MOCK_INSIGHTS.map((insight) => (
-                  <div
-                    key={insight.id}
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.9)',
-                      border: `1px solid ${insight.color}30`,
-                      borderLeft: `4px solid ${insight.color}`,
-                      borderRadius: '8px',
-                      padding: '16px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      transition: 'all 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateX(4px)';
-                      e.currentTarget.style.boxShadow = `0 4px 12px ${insight.color}20`;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateX(0)';
-                      e.currentTarget.style.boxShadow = 'none';
-                    }}
-                  >
-                    <span style={{ fontSize: '24px' }}>{insight.icon}</span>
-                    <span style={{ fontSize: '14px', color: '#374151', fontWeight: 500 }}>
-                      {insight.message}
-                    </span>
-                  </div>
-                ))}
+                {shouldShowAdsFallback && adsFallbackProps ? (
+                  <DataState
+                    state={adsFallbackProps.state}
+                    label={adsFallbackProps.label}
+                    hint={adsFallbackProps.hint}
+                    size="sm"
+                    actionLabel={adsFallbackProps.actionLabel}
+                    onAction={adsFallbackProps.onAction}
+                  />
+                ) : (
+                  MOCK_INSIGHTS.map((insight) => (
+                    <div
+                      key={insight.id}
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.9)',
+                        border: `1px solid ${insight.color}30`,
+                        borderLeft: `4px solid ${insight.color}`,
+                        borderRadius: '8px',
+                        padding: '16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateX(4px)';
+                        e.currentTarget.style.boxShadow = `0 4px 12px ${insight.color}20`;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateX(0)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                    >
+                      <span style={{ fontSize: '24px' }}>{insight.icon}</span>
+                      <span style={{ fontSize: '14px', color: '#374151', fontWeight: 500 }}>
+                        {insight.message}
+                      </span>
+                    </div>
+                  ))
+                )}
               </div>
             </section>
 
@@ -1735,10 +1953,22 @@ export default function AdsDashboard() {
               </header>
 
               <div className="ig-chart-area">
-                {objectivePerformance.length === 0 ? (
-                  <div style={{ padding: "16px", fontSize: "13px", color: "#6b7280" }}>
-                    Não encontramos campanhas com objetivo configurado para este período e conta selecionada.
-                  </div>
+                {shouldShowAdsFallback && adsFallbackProps ? (
+                  <DataState
+                    state={adsFallbackProps.state}
+                    label={adsFallbackProps.label}
+                    hint={adsFallbackProps.hint}
+                    size="sm"
+                    actionLabel={adsFallbackProps.actionLabel}
+                    onAction={adsFallbackProps.onAction}
+                  />
+                ) : objectivePerformance.length === 0 ? (
+                  <DataState
+                    state="empty"
+                    label="Nenhum dado de objetivo para este periodo"
+                    hint="Tente outro periodo ou conta"
+                    size="sm"
+                  />
                 ) : (
                   <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                     <ResponsiveContainer width="100%" height={300}>
@@ -1830,6 +2060,16 @@ export default function AdsDashboard() {
               </header>
 
               <div className="ig-chart-area">
+                {shouldShowAdsFallback && adsFallbackProps ? (
+                  <DataState
+                    state={adsFallbackProps.state}
+                    label={adsFallbackProps.label}
+                    hint={adsFallbackProps.hint}
+                    size="md"
+                    actionLabel={adsFallbackProps.actionLabel}
+                    onAction={adsFallbackProps.onAction}
+                  />
+                ) : spendSeries.length ? (
                 <ResponsiveContainer width="100%" height={spendSeries.length > 15 ? 380 : 280}>
                   <BarChart
                     data={spendSeries}
@@ -1929,6 +2169,15 @@ export default function AdsDashboard() {
                         )}
                       </BarChart>
                     </ResponsiveContainer>
+                ) : (
+                  <DataState
+                    state="empty"
+                    label="Sem dados de investimento no periodo"
+                    hint="Tente outro periodo ou conta"
+                    size="sm"
+                  />
+                )}
+
               </div>
             </section>
 
@@ -1942,6 +2191,16 @@ export default function AdsDashboard() {
               </header>
 
               <div className="ig-chart-area">
+                {shouldShowAdsFallback && adsFallbackProps ? (
+                  <DataState
+                    state={adsFallbackProps.state}
+                    label={adsFallbackProps.label}
+                    hint={adsFallbackProps.hint}
+                    size="md"
+                    actionLabel={adsFallbackProps.actionLabel}
+                    onAction={adsFallbackProps.onAction}
+                  />
+                ) : performanceSeries.length ? (
                 <ResponsiveContainer width="100%" height={performanceSeries.length > 15 ? 380 : 280}>
                   <ComposedChart
                     data={performanceSeries}
@@ -2013,6 +2272,15 @@ export default function AdsDashboard() {
                     )}
                   </ComposedChart>
                 </ResponsiveContainer>
+                ) : (
+                  <DataState
+                    state="empty"
+                    label="Sem dados de performance no periodo"
+                    hint="Tente outro periodo ou conta"
+                    size="sm"
+                  />
+                )}
+
               </div>
             </section>
 
@@ -2026,7 +2294,16 @@ export default function AdsDashboard() {
               </header>
 
               <div style={{ marginTop: '24px' }}>
-                {spendByCity.length ? (
+                {shouldShowAdsFallback && adsFallbackProps ? (
+                  <DataState
+                    state={adsFallbackProps.state}
+                    label={adsFallbackProps.label}
+                    hint={adsFallbackProps.hint}
+                    size="sm"
+                    actionLabel={adsFallbackProps.actionLabel}
+                    onAction={adsFallbackProps.onAction}
+                  />
+                ) : spendByCity.length ? (
                   <div style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
@@ -2130,7 +2407,12 @@ export default function AdsDashboard() {
                     </div>
                   </div>
                 ) : (
-                  <div className="ig-empty-state">Sem dados por cidade no período.</div>
+                  <DataState
+                    state="empty"
+                    label="Sem dados por cidade no periodo"
+                    hint="Tente outro periodo ou conta"
+                    size="sm"
+                  />
                 )}
               </div>
             </section>
@@ -2145,7 +2427,16 @@ export default function AdsDashboard() {
               </header>
 
               <div style={{ marginTop: "16px", overflowX: "auto" }}>
-                {topCreatives.length ? (
+                {shouldShowAdsFallback && adsFallbackProps ? (
+                  <DataState
+                    state={adsFallbackProps.state}
+                    label={adsFallbackProps.label}
+                    hint={adsFallbackProps.hint}
+                    size="sm"
+                    actionLabel={adsFallbackProps.actionLabel}
+                    onAction={adsFallbackProps.onAction}
+                  />
+                ) : topCreatives.length ? (
                   <table
                     style={{
                       width: "100%",
@@ -2250,9 +2541,12 @@ export default function AdsDashboard() {
                     </tbody>
                   </table>
                 ) : (
-                  <div className="ig-empty-state" style={{ padding: "20px" }}>
-                    Sem criativos registrados para o período/conta selecionados.
-                  </div>
+                  <DataState
+                    state="empty"
+                    label="Sem criativos registrados para o periodo"
+                    hint="Tente outro periodo ou conta"
+                    size="sm"
+                  />
                 )}
               </div>
             </section>
@@ -2267,6 +2561,16 @@ export default function AdsDashboard() {
               </header>
 
               <div style={{ marginTop: "16px", overflowX: "auto" }}>
+                {shouldShowAdsFallback && adsFallbackProps ? (
+                  <DataState
+                    state={adsFallbackProps.state}
+                    label={adsFallbackProps.label}
+                    hint={adsFallbackProps.hint}
+                    size="sm"
+                    actionLabel={adsFallbackProps.actionLabel}
+                    onAction={adsFallbackProps.onAction}
+                  />
+                ) : topCampaigns.length ? (
                 <table style={{
                   width: "100%",
                   borderCollapse: "separate",
@@ -2445,6 +2749,15 @@ export default function AdsDashboard() {
                     ))}
                   </tbody>
                 </table>
+                ) : (
+                  <DataState
+                    state="empty"
+                    label="Sem campanhas ativas no periodo"
+                    hint="Tente outro periodo ou conta"
+                    size="sm"
+                  />
+                )}
+
               </div>
             </section>
 
@@ -2461,6 +2774,19 @@ export default function AdsDashboard() {
               </header>
 
               <div className="ig-audience-grid">
+                {shouldShowAdsFallback && adsFallbackProps ? (
+                  <div style={{ gridColumn: "1 / -1" }}>
+                    <DataState
+                      state={adsFallbackProps.state}
+                      label={adsFallbackProps.label}
+                      hint={adsFallbackProps.hint}
+                      size="sm"
+                      actionLabel={adsFallbackProps.actionLabel}
+                      onAction={adsFallbackProps.onAction}
+                    />
+                  </div>
+                ) : (
+                  <>
                 {/* Gráfico Idade x Gênero */}
                 <div style={{
                   background: 'rgba(255, 255, 255, 0.9)',
@@ -2536,12 +2862,12 @@ export default function AdsDashboard() {
                       </div>
                     </>
                   ) : (
-                    <div
-                      className="ig-empty-state"
-                      style={{ minHeight: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}
-                    >
-                      Sem dados de audiência por idade e gênero.
-                    </div>
+                    <DataState
+                      state="empty"
+                      label="Sem dados de audiencia por idade e genero"
+                      hint="Tente outro periodo ou conta"
+                      size="sm"
+                    />
                   )}
                 </div>
 
@@ -2556,12 +2882,12 @@ export default function AdsDashboard() {
                     Alcance Homens x Mulheres
                   </h4>
                   {audienceGenderReachData.length === 0 ? (
-                    <div
-                      className="ig-empty-state"
-                      style={{ minHeight: 180, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}
-                    >
-                      Sem dados de alcance por gênero.
-                    </div>
+                    <DataState
+                      state="empty"
+                      label="Sem dados de alcance por genero"
+                      hint="Tente outro periodo ou conta"
+                      size="sm"
+                    />
                   ) : (
                     <ResponsiveContainer width="100%" height={200}>
                       <BarChart
@@ -2618,12 +2944,12 @@ export default function AdsDashboard() {
                     Localização (alcance)
                   </h4>
                   {audienceLocationData.length === 0 ? (
-                    <div
-                      className="ig-empty-state"
-                      style={{ minHeight: 180, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}
-                    >
-                      Sem dados de localização no período.
-                    </div>
+                    <DataState
+                      state="empty"
+                      label="Sem dados de localizacao no periodo"
+                      hint="Tente outro periodo ou conta"
+                      size="sm"
+                    />
                   ) : (
                     <>
                       <ResponsiveContainer width="100%" height={180}>
@@ -2681,12 +3007,12 @@ export default function AdsDashboard() {
                     Top segmentos da audiência
                   </h4>
                   {audienceTopSegments.length === 0 ? (
-                    <div
-                      className="ig-empty-state"
-                      style={{ minHeight: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}
-                    >
-                      Sem dados de segmentos para o período.
-                    </div>
+                    <DataState
+                      state="empty"
+                      label="Sem dados de segmentos para o periodo"
+                      hint="Tente outro periodo ou conta"
+                      size="sm"
+                    />
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       {audienceTopSegments.map((segment) => (
@@ -2723,6 +3049,8 @@ export default function AdsDashboard() {
                     </div>
                   )}
                 </div>
+                  </>
+                )}
               </div>
             </section>
           </div>
