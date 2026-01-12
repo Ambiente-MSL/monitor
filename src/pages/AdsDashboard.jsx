@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import { differenceInCalendarDays, endOfDay, format, startOfDay, subDays } from "date-fns";
 import {
@@ -291,6 +291,7 @@ export default function AdsDashboard() {
   const [adsError, setAdsError] = useState(null);
   const [adsLoading, setAdsLoading] = useState(false);
   const [adsReloadKey, setAdsReloadKey] = useState(0);
+  const adsRequestIdRef = useRef(0);
   const [instagramProfileData, setInstagramProfileData] = useState(null);
   const adAccountId = useMemo(() => {
     if (!selectedAccount) return "";
@@ -394,7 +395,10 @@ export default function AdsDashboard() {
   }, [queryAccountId, adAccountId, sinceDate?.getTime?.(), untilDate?.getTime?.()]);
 
   useEffect(() => {
+    const requestId = (adsRequestIdRef.current || 0) + 1;
+    adsRequestIdRef.current = requestId;
     let cancelled = false;
+    const isStale = () => cancelled || adsRequestIdRef.current !== requestId;
     const loadAds = async () => {
       setAdsLoading(true);
       setAdsError(
@@ -414,7 +418,7 @@ export default function AdsDashboard() {
         if (sinceDate) params.set("since", format(startOfDay(sinceDate), "yyyy-MM-dd"));
         if (untilDate) params.set("until", format(startOfDay(untilDate), "yyyy-MM-dd"));
         const resp = await apiFetch(`/api/ads/highlights?${params.toString()}`);
-        if (cancelled) return;
+        if (isStale()) return;
         if (isApiEnvelope(resp)) {
           setAdsEnvelope(resp);
           setAdsData(resp.data ?? null);
@@ -429,7 +433,7 @@ export default function AdsDashboard() {
           setAdsError(legacyError);
         }
       } catch (err) {
-        if (cancelled) return;
+        if (isStale()) return;
         setAdsData(null);
         setAdsEnvelope(null);
         setAdsError({
@@ -437,7 +441,7 @@ export default function AdsDashboard() {
           message: err?.message || "Nao foi possivel carregar dados de anuncios.",
         });
       } finally {
-        if (!cancelled) {
+        if (!isStale()) {
           setAdsLoading(false);
         }
       }

@@ -54,7 +54,12 @@ import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import WordCloudCard from "../components/WordCloudCard";
 import CustomChartTooltip from "../components/CustomChartTooltip";
 import { useAuth } from "../context/AuthContext";
-import { getDashboardCache, makeDashboardCacheKey, setDashboardCache } from "../lib/dashboardCache";
+import {
+  getDashboardCache,
+  invalidateCacheForAccount,
+  makeCacheKey,
+  setDashboardCache,
+} from "../lib/dashboardCache";
 import { getApiErrorMessage, unwrapApiData } from "../lib/apiEnvelope";
 import { formatChartDate, formatCompactNumber, formatTooltipNumber } from "../lib/chartFormatters";
 
@@ -580,629 +585,20 @@ export default function InstagramDashboard() {
   const queryAccountId = getQuery("account");
 
   useEffect(() => {
-    if (!availableAccounts.length) return;
-    if (!queryAccountId) {
-      setQuery({ account: availableAccounts[0].id });
-      return;
-    }
-    if (!accountsLoading && !availableAccounts.some((account) => account.id === queryAccountId)) {
-      setQuery({ account: availableAccounts[0].id });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [availableAccounts.length, queryAccountId, accountsLoading]);
-
-  const accountId = queryAccountId && availableAccounts.some((account) => account.id === queryAccountId)
-    ? queryAccountId
-    : availableAccounts[0]?.id || "";
-
-  const accountConfig = useMemo(
-    () => availableAccounts.find((item) => item.id === accountId) || null,
-    [availableAccounts, accountId],
-  );
-
-  const accountSnapshotKey = useMemo(
-    () => accountConfig?.instagramUserId || accountConfig?.id || "",
-    [accountConfig?.id, accountConfig?.instagramUserId],
-  );
-
-  const sinceParam = getQuery("since");
-  const untilParam = getQuery("until");
-  const metricsCacheKey = useMemo(
-    () => makeDashboardCacheKey("instagram-metrics", accountSnapshotKey, sinceParam || "auto", untilParam || "auto"),
-    [accountSnapshotKey, sinceParam, untilParam],
-  );
-  const postsCacheKey = useMemo(
-    () => makeDashboardCacheKey("instagram-posts", accountSnapshotKey, sinceParam || "auto", untilParam || "auto"),
-    [accountSnapshotKey, sinceParam, untilParam],
-  );
-  const postsInsightsCacheKey = useMemo(
-    () => makeDashboardCacheKey("instagram-posts-insights", accountSnapshotKey, POSTS_INSIGHTS_LIMIT, sinceParam || "auto", untilParam || "auto"),
-    [accountSnapshotKey, sinceParam, untilParam],
-  );
-  const audienceCacheKey = useMemo(
-    () => makeDashboardCacheKey("instagram-audience", accountSnapshotKey),
-    [accountSnapshotKey],
-  );
-  const sinceDate = useMemo(() => parseQueryDate(sinceParam), [sinceParam]);
-  const untilDate = useMemo(() => parseQueryDate(untilParam), [untilParam]);
-  const sinceIso = useMemo(() => toUtcDateString(sinceDate), [sinceDate]);
-  const untilIso = useMemo(() => toUtcDateString(untilDate), [untilDate]);
-
-  // Estado para contador de comentários da wordcloud
-  const [commentsCount, setCommentsCount] = useState(null);
-
-  useEffect(() => {
-    setCommentsCount(null);
-  }, [accountSnapshotKey]);
-
-  // Estado para controlar visualização detalhada
-  const [showDetailedView, setShowDetailedView] = useState(false);
-  const [showInteractionsDetail, setShowInteractionsDetail] = useState(false);
-  const [showFollowersDetail, setShowFollowersDetail] = useState(false);
-  const [interactionsTab, setInteractionsTab] = useState('reels'); // reels, videos, posts
-
-  const now = useMemo(() => new Date(), []);
-  const defaultEnd = useMemo(() => endOfDay(subDays(startOfDay(now), 1)), [now]);
-
-  useEffect(() => {
-    if (sinceDate && untilDate) return;
-    const defaultPreset = IG_TOPBAR_PRESETS.find((item) => item.id === "7d") || IG_TOPBAR_PRESETS[0];
-    if (!defaultPreset?.days || defaultPreset.days <= 0) return;
-    const endDate = defaultEnd;
-    const startDate = startOfDay(subDays(endDate, defaultPreset.days - 1));
-    setQuery({
-      since: toUnixSeconds(startDate),
-      until: toUnixSeconds(endDate),
-    });
-  }, [defaultEnd, setQuery, sinceDate, untilDate]);
-
-  const activePreset = useMemo(() => {
-    if (!sinceDate || !untilDate) return "custom";
-    const diff = differenceInCalendarDays(endOfDay(untilDate), startOfDay(sinceDate)) + 1;
-    const preset = IG_TOPBAR_PRESETS.find((item) => item.days === diff);
-    return preset?.id ?? "custom";
-  }, [sinceDate, untilDate]);
-
-  const handlePresetSelect = useCallback(
-    (presetId) => {
-      const preset = IG_TOPBAR_PRESETS.find((item) => item.id === presetId);
-      if (!preset?.days || preset.days <= 0) return;
-      const endDate = defaultEnd;
-      const startDate = startOfDay(subDays(endDate, preset.days - 1));
-      setQuery({
-        since: toUnixSeconds(startDate),
-        until: toUnixSeconds(endDate),
-      });
-    },
-    [defaultEnd, setQuery],
-  );
-
-  const handleDateChange = useCallback(
-    (start, end) => {
-      if (!start || !end) return;
-      const normalizedStart = startOfDay(start);
-      const normalizedEnd = endOfDay(end);
-      setQuery({
-        since: toUnixSeconds(normalizedStart),
-        until: toUnixSeconds(normalizedEnd),
-      });
-    },
-    [setQuery],
-  );
-
-  useEffect(() => {
-    if (!setTopbarConfig) return undefined;
-    setTopbarConfig({
-      hidden: false,
-      presets: IG_TOPBAR_PRESETS,
-      selectedPreset: activePreset,
-      onPresetSelect: handlePresetSelect,
-      onDateChange: handleDateChange,
-    });
-    return () => resetTopbarConfig?.();
-  }, [
-    activePreset,
-    handleDateChange,
-    handlePresetSelect,
-    resetTopbarConfig,
-    setTopbarConfig,
-  ]);
-  const [metrics, setMetrics] = useState([]);
-  const [metricsError, setMetricsError] = useState("");
-  const [metricsLoading, setMetricsLoading] = useState(false);
-  const [metricsNotice, setMetricsNotice] = useState("");
-  const [metricsFetching, setMetricsFetching] = useState(false);
-  const metricsRequestIdRef = useRef(0);
-  const lastMetricsAccountKeyRef = useRef("");
-
-  const [posts, setPosts] = useState([]);
-  const [loadingPosts, setLoadingPosts] = useState(false);
-  const [postsError, setPostsError] = useState("");
-  const [postsNotice, setPostsNotice] = useState("");
-  const [postsFetching, setPostsFetching] = useState(false);
-  const postsRequestIdRef = useRef(0);
-  const lastPostsAccountKeyRef = useRef("");
-  const [recentPosts, setRecentPosts] = useState([]);
-  const [recentPostsLoading, setRecentPostsLoading] = useState(false);
-  const [recentPostsError, setRecentPostsError] = useState("");
-  const recentPostsRequestIdRef = useRef(0);
-
-  const calendarMonthOptions = useMemo(() => {
-    const monthMap = new Map();
-    posts.forEach((post) => {
-      if (!post?.timestamp) return;
-      const dateObj = new Date(post.timestamp);
-      if (Number.isNaN(dateObj.getTime())) return;
-      const key = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, "0")}`;
-      if (monthMap.has(key)) return;
-      monthMap.set(key, {
-        value: key,
-        label: dateObj.toLocaleDateString("pt-BR", { month: "long", year: "numeric" }),
-        year: dateObj.getFullYear(),
-        month: dateObj.getMonth(),
-      });
-    });
-
-    if (!monthMap.size) {
-      return FALLBACK_CALENDAR_MONTH_OPTIONS;
-    }
-
-    return Array.from(monthMap.values()).sort((a, b) => {
-      if (a.year === b.year) return b.month - a.month;
-      return b.year - a.year;
-    });
-  }, [posts]);
-
-  const defaultCalendarValue = useMemo(() => {
-    const fallbackValue = calendarMonthOptions[0]?.value
-      || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
-
-    if (untilDate) {
-      const candidate = `${untilDate.getFullYear()}-${String(untilDate.getMonth() + 1).padStart(2, "0")}`;
-      if (calendarMonthOptions.some((option) => option.value === candidate)) {
-        return candidate;
-      }
-    }
-
-    return fallbackValue;
-  }, [calendarMonthOptions, untilDate]);
-
-  const [calendarMonth, setCalendarMonth] = useState(defaultCalendarValue);
-
-  useEffect(() => {
-    setCalendarMonth((current) => (current === defaultCalendarValue ? current : defaultCalendarValue));
-  }, [defaultCalendarValue]);
-
-const [accountInfo, setAccountInfo] = useState(null);
-const [followerSeries, setFollowerSeries] = useState([]);
-const [followerGainSeries, setFollowerGainSeries] = useState([]);
-const [audienceData, setAudienceData] = useState(null);
-const [audienceLoading, setAudienceLoading] = useState(false);
-const [audienceError, setAudienceError] = useState("");
-const audienceRequestIdRef = useRef(0);
-const [followerCounts, setFollowerCounts] = useState(null);
-const [overviewSnapshot, setOverviewSnapshot] = useState(null);
-const [reachCacheSeries, setReachCacheSeries] = useState([]);
-const [profileViewsSeries, setProfileViewsSeries] = useState([]);
-const [profileVisitorsBreakdown, setProfileVisitorsBreakdown] = useState(null);
-const [activeFollowerGrowthBar, setActiveFollowerGrowthBar] = useState(-1);
-const [activeEngagementIndex, setActiveEngagementIndex] = useState(-1);
-const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
-
-  const activeSnapshot = useMemo(
-    () => (overviewSnapshot?.accountId === accountSnapshotKey && accountSnapshotKey ? overviewSnapshot : null),
-    [accountSnapshotKey, overviewSnapshot],
-  );
-
-  useEffect(() => {
-    const currentAccountKey = accountSnapshotKey;
-    const previousAccountKey = lastMetricsAccountKeyRef.current;
-    const isFirstLoadForAccount = !previousAccountKey;
-    const accountChanged = Boolean(previousAccountKey) && previousAccountKey !== currentAccountKey;
-    lastMetricsAccountKeyRef.current = currentAccountKey;
-
-    if (!accountConfig?.instagramUserId) {
-      setMetrics([]);
-      setFollowerSeries([]);
-      setFollowerGainSeries([]);
-      setFollowerCounts(null);
-      setReachCacheSeries([]);
-      setProfileViewsSeries([]);
-      setProfileVisitorsBreakdown(null);
-      setOverviewSnapshot(null);
-      setMetricsLoading(false);
-      setMetricsFetching(false);
-      setMetricsNotice("");
-      setMetricsError("Conta do Instagram não configurada.");
-      return;
-    }
-
-    const cachedMetrics = getDashboardCache(metricsCacheKey);
-    let shouldRefreshForReach = false;
-    if (cachedMetrics) {
-      const cachedMetricsList = Array.isArray(cachedMetrics.metrics) ? cachedMetrics.metrics : [];
-      const cachedReachMetric = cachedMetricsList.find((metric) => metric?.key === "reach");
-      const cachedReachValue = extractNumber(cachedReachMetric?.value, null);
-      const cachedReachSeries = Array.isArray(cachedMetrics.reachSeries) ? cachedMetrics.reachSeries : [];
-      const cachedReachMetricSeries = Array.isArray(cachedReachMetric?.timeseries) ? cachedReachMetric.timeseries : [];
-      const hasReachTimeseries = cachedReachSeries.length > 0 || cachedReachMetricSeries.length > 0;
-      // Cache antigo/limitado pode ter o total de alcance, mas sem série diária.
-      // Nesse caso, força re-fetch para preencher o gráfico com dados reais.
-      const shouldBypassCacheForReach = cachedReachValue != null && cachedReachValue > 0 && !hasReachTimeseries;
-
-      setMetrics(Array.isArray(cachedMetrics.metrics) ? cachedMetrics.metrics : []);
-      setFollowerSeries(Array.isArray(cachedMetrics.followerSeries) ? cachedMetrics.followerSeries : []);
-      setFollowerGainSeries(Array.isArray(cachedMetrics.followerGainSeries) ? cachedMetrics.followerGainSeries : []);
-      setFollowerCounts(cachedMetrics.followerCounts ?? null);
-      setReachCacheSeries(Array.isArray(cachedMetrics.reachSeries) ? cachedMetrics.reachSeries : []);
-      const cachedViewsSeries = Array.isArray(cachedMetrics.videoViewsSeries)
-        ? cachedMetrics.videoViewsSeries
-        : Array.isArray(cachedMetrics.profileViewsSeries)
-          ? cachedMetrics.profileViewsSeries
-          : [];
-      setProfileViewsSeries(cachedViewsSeries);
-      setProfileVisitorsBreakdown(cachedMetrics.profileVisitorsBreakdown ?? null);
-      setMetricsError("");
-      setMetricsNotice("");
-      setMetricsFetching(false);
-      setMetricsLoading(false);
-
-      if (!shouldBypassCacheForReach) {
-        return undefined;
-      }
-
-      shouldRefreshForReach = true;
-    }
-
-    const preset = IG_TOPBAR_PRESETS.find((item) => item.id === "7d") || IG_TOPBAR_PRESETS[0];
-    const fallbackStart = startOfDay(subDays(defaultEnd, (preset?.days ?? 7) - 1));
-    const effectiveSince = sinceDate || fallbackStart;
-    const effectiveUntil = untilDate || defaultEnd;
-
-    const requestId = (metricsRequestIdRef.current || 0) + 1;
-    metricsRequestIdRef.current = requestId;
-
-    const SOFT_LOADING_MS = 3000;
-    const REQUEST_TIMEOUT_MS = 30000;
-    const MAX_ATTEMPTS = 2;
-    const shouldBlockUi = (isFirstLoadForAccount || accountChanged) && !cachedMetrics;
-
-    const controllers = [];
-    const timeouts = [];
-    const trackTimeout = (handle) => {
-      timeouts.push(handle);
-      return handle;
-    };
-    const clearAllTimeouts = () => {
-      timeouts.forEach((handle) => clearTimeout(handle));
-    };
-    const sleep = (ms) => new Promise((resolve) => {
-      trackTimeout(setTimeout(resolve, ms));
-    });
-
-    let cancelled = false;
-
-    const url = (() => {
-      const params = new URLSearchParams();
-      params.set("since", toUnixSeconds(startOfDay(effectiveSince)));
-      params.set("until", toUnixSeconds(endOfDay(effectiveUntil)));
-      params.set("igUserId", accountConfig.instagramUserId);
-      return `${API_BASE_URL}/api/instagram/metrics?${params.toString()}`;
-    })();
-
-    const fetchMetricsPayload = async (attempt = 0) => {
-      const controller = new AbortController();
-      controllers.push(controller);
-
-      let timedOut = false;
-      const hardTimeout = trackTimeout(setTimeout(() => {
-        timedOut = true;
-        controller.abort();
-      }, REQUEST_TIMEOUT_MS));
-
-      try {
-        const resp = await fetch(url, { signal: controller.signal });
-         const text = await resp.text();
-         const json = safeParseJson(text) || {};
-         if (!resp.ok) {
-           const error = new Error(describeApiError(json, "Falha ao carregar métricas do Instagram."));
-           error.status = resp.status;
-           throw error;
-         }
-         return unwrapApiData(json, {});
-       } catch (err) {
-         const status = err?.status;
-         const retryableStatus = status === 429 || status === 502 || status === 503 || status === 504;
-         const shouldRetry = attempt < MAX_ATTEMPTS - 1 && (timedOut || err?.name === "AbortError" || retryableStatus);
-         if (shouldRetry) {
-          await sleep(600);
-          return fetchMetricsPayload(attempt + 1);
-        }
-        throw err;
-      } finally {
-        clearTimeout(hardTimeout);
-      }
-    };
-
-    if (shouldBlockUi) {
-      setMetrics([]);
-      setFollowerSeries([]);
-      setFollowerGainSeries([]);
-      setFollowerCounts(null);
-      setReachCacheSeries([]);
-      setProfileViewsSeries([]);
-      setProfileVisitorsBreakdown(null);
-      setOverviewSnapshot(null);
-      setMetricsLoading(true);
-      setMetricsNotice("");
-    } else {
-      setMetricsLoading(false);
-      setMetricsNotice(
-        shouldRefreshForReach
-          ? "Atualizando série diária de alcance…"
-          : "Atualizando métricas do período selecionado (exibindo dados anteriores até carregar)…",
-      );
-    }
-
-    setMetricsFetching(true);
-    setMetricsError("");
-    setOverviewSnapshot(null);
-
-    if (shouldBlockUi) {
-      trackTimeout(setTimeout(() => {
-        if (cancelled || metricsRequestIdRef.current !== requestId) return;
-        setMetricsLoading(false);
-        setMetricsNotice("Atualizando métricas… isso pode levar alguns segundos na primeira vez.");
-      }, SOFT_LOADING_MS));
-    }
-
-    (async () => {
-      try {
-        const json = await fetchMetricsPayload(0);
-        if (cancelled || metricsRequestIdRef.current !== requestId) return;
-
-        const fetchedMetrics = json.metrics || [];
-        const fetchedFollowerSeries = Array.isArray(json.follower_series) ? json.follower_series : [];
-        const fetchedFollowerGainSeries = Array.isArray(json.followers_gain_series) ? json.followers_gain_series : [];
-        const fetchedFollowerCounts = json.follower_counts || null;
-        const parseNumericSeries = (series) => (
-          Array.isArray(series)
-            ? series
-              .map((entry) => {
-                if (!entry) return null;
-                const dateRaw = entry.date || entry.metric_date || entry.end_time || entry.start_time || entry.label;
-                if (!dateRaw) return null;
-                const numericValue = extractNumber(entry.value, null);
-                if (numericValue === null) return null;
-                return { date: dateRaw, value: numericValue };
-              })
-              .filter(Boolean)
-            : []
-        );
-        const reachSeries = parseNumericSeries(json.reach_timeseries);
-        const parsedVideoViewsSeries = parseNumericSeries(json.video_views_timeseries);
-        const parsedProfileViewsSeries = parseNumericSeries(json.profile_views_timeseries);
-        const resolvedViewsSeries = parsedVideoViewsSeries.length ? parsedVideoViewsSeries : parsedProfileViewsSeries;
-        const visitorsBreakdown = json.profile_visitors_breakdown || null;
-
-        setMetrics(fetchedMetrics);
-        setFollowerSeries(fetchedFollowerSeries);
-        setFollowerGainSeries(fetchedFollowerGainSeries);
-        setFollowerCounts(fetchedFollowerCounts);
-        setReachCacheSeries(reachSeries);
-        setProfileViewsSeries(resolvedViewsSeries);
-        setProfileVisitorsBreakdown(visitorsBreakdown);
-        setDashboardCache(metricsCacheKey, {
-          metrics: fetchedMetrics,
-          followerSeries: fetchedFollowerSeries,
-          followerGainSeries: fetchedFollowerGainSeries,
-          followerCounts: fetchedFollowerCounts,
-          reachSeries,
-          profileViewsSeries: resolvedViewsSeries,
-          videoViewsSeries: parsedVideoViewsSeries,
-          profileVisitorsBreakdown: visitorsBreakdown,
-        });
-
-        setMetricsNotice("");
-      } catch (err) {
-        if (cancelled || metricsRequestIdRef.current !== requestId) return;
-        if (err?.name === "AbortError") {
-          setMetricsError("Tempo esgotado ao carregar métricas do Instagram.");
-        } else {
-          setMetricsError(err?.message || "Não foi possível atualizar.");
-        }
-        setMetricsNotice("");
-
-        if (shouldBlockUi) {
-          setMetrics([]);
-          setFollowerSeries([]);
-          setFollowerGainSeries([]);
-          setFollowerCounts(null);
-          setReachCacheSeries([]);
-          setProfileViewsSeries([]);
-          setProfileVisitorsBreakdown(null);
-        }
-      } finally {
-        if (cancelled || metricsRequestIdRef.current !== requestId) return;
-        clearAllTimeouts();
-        setMetricsFetching(false);
-        setMetricsLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      clearAllTimeouts();
-      controllers.forEach((c) => c.abort());
-    };
-  }, [accountConfig?.instagramUserId, accountSnapshotKey, sinceDate, untilDate, defaultEnd, sinceParam, untilParam, metricsCacheKey]);
-
-  useEffect(() => {
-    const currentAccountKey = accountSnapshotKey;
-    const previousAccountKey = lastPostsAccountKeyRef.current;
-    const isFirstLoadForAccount = !previousAccountKey;
-    const accountChanged = Boolean(previousAccountKey) && previousAccountKey !== currentAccountKey;
-    lastPostsAccountKeyRef.current = currentAccountKey;
-
-    if (!accountConfig?.instagramUserId) {
-      setPosts([]);
-      setAccountInfo(null);
-      setPostsError("Conta do Instagram não configurada.");
-      setLoadingPosts(false);
-      setPostsFetching(false);
-      setPostsNotice("");
-      return undefined;
-    }
-
-    const cachedPosts = getDashboardCache(postsCacheKey);
-    if (cachedPosts) {
-      setPosts(Array.isArray(cachedPosts.posts) ? cachedPosts.posts : []);
-      setAccountInfo(cachedPosts.accountInfo || null);
-      setPostsError("");
-      setLoadingPosts(false);
-      setPostsFetching(false);
-      setPostsNotice("");
-      return undefined;
-    }
-
-    const requestId = (postsRequestIdRef.current || 0) + 1;
-    postsRequestIdRef.current = requestId;
-
-    const SOFT_LOADING_MS = 3000;
-    const REQUEST_TIMEOUT_MS = 30000;
-    const MAX_ATTEMPTS = 2;
-    const shouldBlockUi = (isFirstLoadForAccount || accountChanged) && !cachedPosts;
-
-    const controllers = [];
-    const timeouts = [];
-    const trackTimeout = (handle) => {
-      timeouts.push(handle);
-      return handle;
-    };
-    const clearAllTimeouts = () => {
-      timeouts.forEach((handle) => clearTimeout(handle));
-    };
-    const sleep = (ms) => new Promise((resolve) => {
-      trackTimeout(setTimeout(resolve, ms));
-    });
-
-    let cancelled = false;
-
-    const url = (() => {
-      const params = new URLSearchParams({ igUserId: accountConfig.instagramUserId, limit: "20" });
-      if (sinceParam) params.set("since", sinceParam);
-      if (untilParam) params.set("until", untilParam);
-      return `${API_BASE_URL}/api/instagram/posts?${params.toString()}`;
-    })();
-
-    const fetchPostsPayload = async (attempt = 0) => {
-      const controller = new AbortController();
-      controllers.push(controller);
-
-      let timedOut = false;
-      const hardTimeout = trackTimeout(setTimeout(() => {
-        timedOut = true;
-        controller.abort();
-      }, REQUEST_TIMEOUT_MS));
-
-      try {
-        const resp = await fetch(url, { signal: controller.signal });
-         const text = await resp.text();
-         const json = safeParseJson(text) || {};
-         if (!resp.ok) {
-           const error = new Error(describeApiError(json, "Não foi possível carregar os posts."));
-           error.status = resp.status;
-           throw error;
-         }
-         return unwrapApiData(json, {});
-       } catch (err) {
-         const status = err?.status;
-         const retryableStatus = status === 429 || status === 502 || status === 503 || status === 504;
-         const shouldRetry = attempt < MAX_ATTEMPTS - 1 && (timedOut || err?.name === "AbortError" || retryableStatus);
-         if (shouldRetry) {
-          await sleep(600);
-          return fetchPostsPayload(attempt + 1);
-        }
-        throw err;
-      } finally {
-        clearTimeout(hardTimeout);
-      }
-    };
-
-    if (shouldBlockUi) {
-      setPosts([]);
-      setAccountInfo(null);
-      setLoadingPosts(true);
-      setPostsNotice("");
-    } else {
-      setLoadingPosts(false);
-      setPostsNotice("Atualizando posts do período selecionado (exibindo dados anteriores até carregar)…");
-    }
-
-    setPostsFetching(true);
-    setPostsError("");
-
-    if (shouldBlockUi) {
-      trackTimeout(setTimeout(() => {
-        if (cancelled || postsRequestIdRef.current !== requestId) return;
-        setLoadingPosts(false);
-        setPostsNotice("Atualizando posts… isso pode levar alguns segundos na primeira vez.");
-      }, SOFT_LOADING_MS));
-    }
-
-    (async () => {
-      try {
-        const json = await fetchPostsPayload(0);
-        if (cancelled || postsRequestIdRef.current !== requestId) return;
-
-        const normalizedPosts = Array.isArray(json?.posts) ? json.posts : [];
-        const account = json?.account || null;
-        setPosts(normalizedPosts);
-        setAccountInfo(account);
-        setDashboardCache(postsCacheKey, { posts: normalizedPosts, accountInfo: account });
-        setPostsNotice("");
-      } catch (err) {
-        if (cancelled || postsRequestIdRef.current !== requestId) return;
-        if (err?.name === "AbortError") {
-          setPostsError("Tempo esgotado ao carregar os posts do Instagram.");
-        } else {
-          setPostsError(err?.message || "Não foi possível carregar os posts.");
-        }
-        setPostsNotice("");
-
-        if (shouldBlockUi) {
-          setPosts([]);
-          setAccountInfo(null);
-        }
-      } finally {
-        if (cancelled || postsRequestIdRef.current !== requestId) return;
-        clearAllTimeouts();
-        setPostsFetching(false);
-        setLoadingPosts(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      clearAllTimeouts();
-      controllers.forEach((c) => c.abort());
-    };
-  }, [accountConfig?.instagramUserId, accountSnapshotKey, sinceParam, untilParam, postsCacheKey]);
-
-  useEffect(() => {
     if (!accountConfig?.instagramUserId) {
       setRecentPosts([]);
-      setRecentPostsError("Conta do Instagram não configurada.");
+      setRecentPostsError("Conta do Instagram nao configurada.");
       setRecentPostsLoading(false);
+      setRecentPostsFetching(false);
       return undefined;
     }
 
     const cachedPosts = getDashboardCache(postsInsightsCacheKey);
+    const hasCachedPosts = Boolean(cachedPosts);
     if (cachedPosts) {
       setRecentPosts(Array.isArray(cachedPosts.posts) ? cachedPosts.posts : []);
       setRecentPostsError("");
       setRecentPostsLoading(false);
-      return undefined;
     }
 
     const requestId = (recentPostsRequestIdRef.current || 0) + 1;
@@ -1210,10 +606,17 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
     const controller = new AbortController();
     const REQUEST_TIMEOUT_MS = 15000;
     const hardTimeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    const shouldBlockUi = !hasCachedPosts;
+    let cancelled = false;
 
-    setRecentPosts([]);
-    setRecentPostsLoading(true);
+    if (shouldBlockUi) {
+      setRecentPosts([]);
+      setRecentPostsLoading(true);
+    } else {
+      setRecentPostsLoading(false);
+    }
     setRecentPostsError("");
+    setRecentPostsFetching(true);
 
     const url = (() => {
       const params = new URLSearchParams({ igUserId: accountConfig.instagramUserId, limit: String(POSTS_INSIGHTS_LIMIT) });
@@ -1228,29 +631,31 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
          const text = await resp.text();
          const json = safeParseJson(text) || {};
          if (!resp.ok) {
-           throw new Error(describeApiError(json, "Nao foi possivel carregar as publicações."));
+           throw new Error(describeApiError(json, "Nao foi possivel carregar as publicacoes."));
          }
-         if (recentPostsRequestIdRef.current !== requestId) return;
+         if (cancelled || recentPostsRequestIdRef.current !== requestId) return;
          const data = unwrapApiData(json, {});
          const normalizedPosts = Array.isArray(data?.posts) ? data.posts : [];
          setRecentPosts(normalizedPosts);
          setDashboardCache(postsInsightsCacheKey, { posts: normalizedPosts });
          setRecentPostsError("");
        } catch (err) {
-        if (recentPostsRequestIdRef.current !== requestId) return;
+        if (cancelled || recentPostsRequestIdRef.current !== requestId) return;
         if (err?.name === "AbortError") {
-          setRecentPostsError("Tempo esgotado ao carregar publicações do Instagram.");
+          setRecentPostsError("Tempo esgotado ao carregar publicacoes do Instagram.");
         } else {
-          setRecentPostsError(err?.message || "Nao foi possivel carregar as publicações.");
+          setRecentPostsError(err?.message || "Nao foi possivel carregar as publicacoes.");
         }
       } finally {
-        if (recentPostsRequestIdRef.current !== requestId) return;
+        if (cancelled || recentPostsRequestIdRef.current !== requestId) return;
         clearTimeout(hardTimeout);
         setRecentPostsLoading(false);
+        setRecentPostsFetching(false);
       }
     })();
 
     return () => {
+      cancelled = true;
       clearTimeout(hardTimeout);
       controller.abort();
     };
@@ -1261,17 +666,18 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
 
     if (!accountConfig?.instagramUserId) {
       setAudienceData(null);
-      setAudienceError("Conta do Instagram não configurada.");
+      setAudienceError("Conta do Instagram nao configurada.");
       setAudienceLoading(false);
+      setAudienceFetching(false);
       return undefined;
     }
 
     const cached = getDashboardCache(audienceCacheKey);
+    const hasCached = Boolean(cached);
     if (cached) {
       setAudienceData(cached);
       setAudienceError("");
       setAudienceLoading(false);
-      return undefined;
     }
 
     const requestId = (audienceRequestIdRef.current || 0) + 1;
@@ -1279,10 +685,17 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
     const controller = new AbortController();
     const REQUEST_TIMEOUT_MS = 15000;
     const hardTimeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    const shouldBlockUi = !hasCached;
+    let cancelled = false;
 
-    setAudienceData(null);
-    setAudienceLoading(true);
+    if (shouldBlockUi) {
+      setAudienceData(null);
+      setAudienceLoading(true);
+    } else {
+      setAudienceLoading(false);
+    }
     setAudienceError("");
+    setAudienceFetching(true);
 
     const url = `${API_BASE_URL}/api/instagram/audience?igUserId=${accountConfig.instagramUserId}`;
 
@@ -1292,28 +705,30 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
         const text = await resp.text();
         const json = safeParseJson(text) || {};
         if (!resp.ok) {
-          throw new Error(describeApiError(json, "Não foi possivel carregar a audiência."));
+          throw new Error(describeApiError(json, "Nao foi possivel carregar a audiencia."));
         }
-        if (audienceRequestIdRef.current !== requestId) return;
+        if (cancelled || audienceRequestIdRef.current !== requestId) return;
         const data = unwrapApiData(json, {});
         setAudienceData(data);
         setDashboardCache(audienceCacheKey, data);
         setAudienceError("");
       } catch (err) {
-        if (audienceRequestIdRef.current !== requestId) return;
+        if (cancelled || audienceRequestIdRef.current !== requestId) return;
         if (err?.name === "AbortError") {
-          setAudienceError("Tempo esgotado ao carregar audiência.");
+          setAudienceError("Tempo esgotado ao carregar audiencia.");
         } else {
-          setAudienceError(err?.message || "Não foi possivel carregar a audiência.");
+          setAudienceError(err?.message || "Nao foi possivel carregar a audiencia.");
         }
       } finally {
-        if (audienceRequestIdRef.current !== requestId) return;
+        if (cancelled || audienceRequestIdRef.current !== requestId) return;
         clearTimeout(hardTimeout);
         setAudienceLoading(false);
+        setAudienceFetching(false);
       }
     })();
 
     return () => {
+      cancelled = true;
       clearTimeout(hardTimeout);
       controller.abort();
     };
@@ -3168,6 +2583,9 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
         <div className="ig-clean-container">
           {/* Degradê de fundo do Instagram */}
           <div className="ig-hero-gradient" aria-hidden="true" />
+          {audienceFetching && !audienceLoading && !audienceError ? (
+            <div className="alert">Atualizando dados...</div>
+          ) : null}
 
           {/* Header com Logo Instagram */}
           <div className="ig-clean-header" style={{ marginBottom: '24px' }}>
@@ -5578,7 +4996,10 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             <div>
               <h4>Posts recentes</h4>
               <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
-                Publicações mais recentes no período filtrado
+                Publicacoes mais recentes no periodo filtrado
+                {recentPostsFetching && !recentPostsLoading ? (
+                  <span style={{ marginLeft: '8px', fontWeight: 600, color: '#9ca3af' }}>Atualizando...</span>
+                ) : null}
               </p>
             </div>
           </div>

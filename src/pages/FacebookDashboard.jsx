@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { Link, useLocation, useOutletContext } from "react-router-dom";
 import { differenceInCalendarDays, endOfDay, startOfDay, subDays } from "date-fns";
 import {
@@ -34,7 +34,13 @@ import useQueryState from "../hooks/useQueryState";
 import { useAccounts } from "../context/AccountsContext";
 import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import { useAuth } from "../context/AuthContext";
-import { getDashboardCache, makeDashboardCacheKey, mergeDashboardCache, setDashboardCache } from "../lib/dashboardCache";
+import {
+  getDashboardCache,
+  invalidateCacheForAccount,
+  makeCacheKey,
+  mergeDashboardCache,
+  setDashboardCache,
+} from "../lib/dashboardCache";
 import DataState from "../components/DataState";
 import CustomChartTooltip from "../components/CustomChartTooltip";
 import { fetchWithTimeout, isTimeoutError } from "../lib/fetchWithTimeout";
@@ -181,15 +187,34 @@ useEffect(() => {
   const sinceParam = getQuery("since");
   const untilParam = getQuery("until");
   const pageCacheKey = useMemo(
-    () => makeDashboardCacheKey("facebook-page", accountSnapshotKey || "none"),
-    [accountSnapshotKey],
+    () => makeCacheKey({
+      page: "facebook",
+      endpoint: "page-info",
+      accountId: accountSnapshotKey || "none",
+      since: sinceParam || "auto",
+      until: untilParam || "auto",
+    }),
+    [accountSnapshotKey, sinceParam, untilParam],
   );
   const overviewCacheKey = useMemo(
-    () => makeDashboardCacheKey("facebook-overview", accountSnapshotKey || "none", sinceParam || "auto", untilParam || "auto"),
+    () => makeCacheKey({
+      page: "facebook",
+      endpoint: "overview",
+      accountId: accountSnapshotKey || "none",
+      since: sinceParam || "auto",
+      until: untilParam || "auto",
+    }),
     [accountSnapshotKey, sinceParam, untilParam],
   );
   const fbPostsCacheKey = useMemo(
-    () => makeDashboardCacheKey("facebook-posts", accountSnapshotKey || "none", sinceParam || "auto", untilParam || "auto"),
+    () => makeCacheKey({
+      page: "facebook",
+      endpoint: "posts",
+      accountId: accountSnapshotKey || "none",
+      since: sinceParam || "auto",
+      until: untilParam || "auto",
+      extra: { limit: 20 },
+    }),
     [accountSnapshotKey, sinceParam, untilParam],
   );
   const sinceDate = useMemo(() => parseQueryDate(sinceParam), [sinceParam]);
@@ -275,15 +300,28 @@ useEffect(() => {
 
   const [overviewSnapshot, setOverviewSnapshot] = useState(null);
   const [overviewLoading, setOverviewLoading] = useState(false);
+  const [overviewFetching, setOverviewFetching] = useState(false);
   const [overviewSource, setOverviewSource] = useState(null);
   const [fbPosts, setFbPosts] = useState([]);
   const [fbPostsLoading, setFbPostsLoading] = useState(false);
+  const [fbPostsFetching, setFbPostsFetching] = useState(false);
   const [fbPostsError, setFbPostsError] = useState("");
+  const overviewRequestIdRef = useRef(0);
+  const postsRequestIdRef = useRef(0);
+  const lastCacheAccountKeyRef = useRef("");
 
   const activeSnapshot = useMemo(
     () => (overviewSnapshot?.accountId === accountSnapshotKey && accountSnapshotKey ? overviewSnapshot : null),
     [accountSnapshotKey, overviewSnapshot],
   );
+
+  useEffect(() => {
+    const previousKey = lastCacheAccountKeyRef.current;
+    if (previousKey && previousKey !== accountSnapshotKey) {
+      invalidateCacheForAccount(previousKey, "facebook");
+    }
+    lastCacheAccountKeyRef.current = accountSnapshotKey || "";
+  }, [accountSnapshotKey]);
 
   useEffect(() => {
     const cachedPage = getDashboardCache(pageCacheKey);
@@ -341,22 +379,29 @@ useEffect(() => {
       setReachSeries([]);
       setOverviewSource(null);
       setOverviewLoading(false);
-      setPageError("Página do Facebook não configurada.");
+      setOverviewFetching(false);
+      setPageError("Pagina do Facebook nao configurada.");
       return () => {};
     }
 
+    const requestId = (overviewRequestIdRef.current || 0) + 1;
+    overviewRequestIdRef.current = requestId;
+
     const cachedPage = getDashboardCache(pageCacheKey);
     const cachedOverview = sinceParam && untilParam ? getDashboardCache(overviewCacheKey) : null;
+    const hasCachedOverview = Boolean(cachedOverview);
 
     let cancelled = false;
+    const isStale = () => cancelled || overviewRequestIdRef.current !== requestId;
+
     const loadPageInfo = async () => {
       try {
         const resp = await apiFetch(`/api/facebook/page-info?pageId=${encodeURIComponent(accountConfig.facebookPageId)}`);
-        if (cancelled) return;
+        if (isStale()) return;
         setPageInfo(resp?.page || null);
         mergeDashboardCache(pageCacheKey, { pageInfo: resp?.page || null });
       } catch (err) {
-        if (cancelled) return;
+        if (isStale()) return;
         setPageInfo(null);
       }
     };
@@ -367,16 +412,16 @@ useEffect(() => {
         const resp = await apiFetch(
           `/api/covers?platform=facebook&account_id=${encodeURIComponent(accountConfig.facebookPageId)}`,
         );
-        if (cancelled) return;
+        if (isStale()) return;
         const cover = resp?.cover?.url || resp?.cover?.storage_url || null;
         setCoverImage(cover);
         mergeDashboardCache(pageCacheKey, { coverImage: cover });
       } catch (err) {
-        if (cancelled) return;
+        if (isStale()) return;
         setCoverImage(null);
-        setCoverError(err?.message || "Não foi possível carregar a capa.");
+        setCoverError(err?.message || "Nao foi possivel carregar a capa.");
       } finally {
-        if (!cancelled) {
+        if (!isStale()) {
           setCoverLoading(false);
         }
       }
@@ -390,7 +435,7 @@ useEffect(() => {
         if (sinceParam) params.set("since", sinceParam);
         if (untilParam) params.set("until", untilParam);
         const resp = await apiFetch(`/api/facebook/followers?${params.toString()}`);
-        if (cancelled) return;
+        if (isStale()) return;
         const val = resp?.followers?.value;
         if (val !== undefined && val !== null) {
           const followersValue = Number(val);
@@ -398,7 +443,7 @@ useEffect(() => {
           mergeDashboardCache(overviewCacheKey, { followersOverride: followersValue });
         }
       } catch (err) {
-        if (cancelled) return;
+        if (isStale()) return;
         // keep existing counts if fetch fails
       }
     };
@@ -420,6 +465,7 @@ useEffect(() => {
     if (!sinceParam || !untilParam) {
       setOverviewSource(null);
       setOverviewLoading(true);
+      setOverviewFetching(false);
       return () => { cancelled = true; };
     }
 
@@ -430,14 +476,21 @@ useEffect(() => {
       setOverviewSource(cachedOverview.overviewSource || null);
       setOverviewLoading(false);
       setPageError("");
-      return () => { cancelled = true; };
+      setFollowersOverride(
+        cachedOverview.followersOverride !== undefined ? cachedOverview.followersOverride : null,
+      );
     }
 
     const controller = new AbortController();
-    cancelled = false;
+    const shouldBlockUi = !hasCachedOverview;
 
     const loadOverviewMetrics = async () => {
-      setOverviewLoading(true);
+      if (shouldBlockUi) {
+        setOverviewLoading(true);
+      } else {
+        setOverviewLoading(false);
+      }
+      setOverviewFetching(true);
       setPageError("");
       try {
         const params = new URLSearchParams();
@@ -449,9 +502,9 @@ useEffect(() => {
         const raw = await response.text();
         const json = safeParseJson(raw) || {};
         if (!response.ok) {
-          throw new Error(describeApiError(json, "Falha ao carregar métricas do Facebook."));
+          throw new Error(describeApiError(json, "Falha ao carregar metricas do Facebook."));
         }
-        if (cancelled) return;
+        if (isStale()) return;
         const fetchedMetrics = Array.isArray(json.metrics) ? json.metrics : [];
         const fetchedFollowersSeries = Array.isArray(json.net_followers_series) ? json.net_followers_series : [];
         const reachSeriesPayload = Array.isArray(json.reach_timeseries)
@@ -471,21 +524,23 @@ useEffect(() => {
           followersOverride,
         });
       } catch (err) {
-        if (controller.signal.aborted || cancelled) return;
+        if (controller.signal.aborted || isStale()) return;
         console.error(err);
-        setPageMetrics([]);
-        setNetFollowersSeries([]);
-        setReachSeries([]);
-        setOverviewSource(null);
+        if (shouldBlockUi) {
+          setPageMetrics([]);
+          setNetFollowersSeries([]);
+          setReachSeries([]);
+          setOverviewSource(null);
+        }
         setPageError(
           isTimeoutError(err)
             ? "Tempo esgotado ao carregar metricas do Facebook."
             : err.message || "Nao foi possivel carregar as metricas do Facebook.",
         );
       } finally {
-        if (!cancelled) {
-          setOverviewLoading(false);
-        }
+        if (isStale()) return;
+        setOverviewLoading(false);
+        setOverviewFetching(false);
       }
     };
 
@@ -500,25 +555,37 @@ useEffect(() => {
     if (!accountConfig?.facebookPageId) {
       setFbPosts([]);
       setFbPostsLoading(false);
-      setFbPostsError("Página do Facebook não configurada.");
+      setFbPostsFetching(false);
+      setFbPostsError("Pagina do Facebook nao configurada.");
       return () => {};
     }
     if (!sinceParam || !untilParam) {
       setFbPosts([]);
+      setFbPostsLoading(false);
+      setFbPostsFetching(false);
       return () => {};
     }
 
     const cachedPosts = getDashboardCache(fbPostsCacheKey);
+    const hasCachedPosts = Boolean(cachedPosts);
     if (cachedPosts) {
       setFbPosts(Array.isArray(cachedPosts.posts) ? cachedPosts.posts : []);
       setFbPostsLoading(false);
       setFbPostsError("");
-      return () => {};
     }
 
+    const requestId = (postsRequestIdRef.current || 0) + 1;
+    postsRequestIdRef.current = requestId;
     let cancelled = false;
+    const shouldBlockUi = !hasCachedPosts;
+
     const loadPosts = async () => {
-      setFbPostsLoading(true);
+      if (shouldBlockUi) {
+        setFbPostsLoading(true);
+      } else {
+        setFbPostsLoading(false);
+      }
+      setFbPostsFetching(true);
       setFbPostsError("");
       try {
         const params = new URLSearchParams();
@@ -527,20 +594,24 @@ useEffect(() => {
         params.set("until", untilParam);
         params.set("limit", "8");
         const resp = await apiFetch(`/api/facebook/posts?${params.toString()}`);
-        if (cancelled) return;
+        if (cancelled || postsRequestIdRef.current !== requestId) return;
         const posts = Array.isArray(resp?.posts) ? resp.posts : [];
         setFbPosts(posts);
         setDashboardCache(fbPostsCacheKey, { posts });
       } catch (err) {
-        if (cancelled) return;
-        setFbPosts([]);
-        const rawMessage = err?.message || "";
-        const friendlyMessage = rawMessage.includes("<") ? "Não foi possível carregar os posts (erro 502)." : rawMessage;
-        setFbPostsError(friendlyMessage || "Não foi possível carregar os posts.");
-      } finally {
-        if (!cancelled) {
-          setFbPostsLoading(false);
+        if (cancelled || postsRequestIdRef.current !== requestId) return;
+        if (shouldBlockUi) {
+          setFbPosts([]);
         }
+        const rawMessage = err?.message || "";
+        const friendlyMessage = rawMessage.includes("<")
+          ? "Nao foi possivel carregar os posts (erro 502)."
+          : rawMessage;
+        setFbPostsError(friendlyMessage || "Nao foi possivel carregar os posts.");
+      } finally {
+        if (cancelled || postsRequestIdRef.current !== requestId) return;
+        setFbPostsLoading(false);
+        setFbPostsFetching(false);
       }
     };
 
@@ -851,10 +922,12 @@ useEffect(() => {
 
   const accountInitial = (accountConfig?.label || accountConfig?.name || "FB").charAt(0).toUpperCase();
   const overviewIsLoading = overviewLoading;
+  const isRefreshing = (overviewFetching && !overviewLoading) || (fbPostsFetching && !fbPostsLoading);
 
   return (
     <div className="facebook-dashboard facebook-dashboard--clean">
       {pageError && <div className="alert alert--error">{pageError}</div>}
+      {isRefreshing ? <div className="alert">Atualizando dados...</div> : null}
 
       {/* Container Limpo (fundo branco) */}
       <div className="ig-clean-container">
