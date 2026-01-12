@@ -60,8 +60,9 @@ import {
   makeCacheKey,
   setDashboardCache,
 } from "../lib/dashboardCache";
-import { getApiErrorMessage, unwrapApiData } from "../lib/apiEnvelope";
+import { getApiErrorMessage, isApiEnvelope, unwrapApiData } from "../lib/apiEnvelope";
 import { formatChartDate, formatCompactNumber, formatTooltipNumber } from "../lib/chartFormatters";
+import { normalizeSyncInfo } from "../lib/syncInfo";
 
 const API_BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 const FALLBACK_ACCOUNT_ID = DEFAULT_ACCOUNTS[0]?.id || "";
@@ -721,6 +722,8 @@ export default function InstagramDashboard() {
     [setQuery],
   );
 
+  const [metricsSync, setMetricsSync] = useState(() => normalizeSyncInfo(null));
+
   useEffect(() => {
     if (!setTopbarConfig) return undefined;
     setTopbarConfig({
@@ -729,12 +732,14 @@ export default function InstagramDashboard() {
       selectedPreset: activePreset,
       onPresetSelect: handlePresetSelect,
       onDateChange: handleDateChange,
+      syncInfo: metricsSync,
     });
     return () => resetTopbarConfig?.();
   }, [
     activePreset,
     handleDateChange,
     handlePresetSelect,
+    metricsSync,
     resetTopbarConfig,
     setTopbarConfig,
   ]);
@@ -842,6 +847,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
     const isFirstLoadForAccount = !previousAccountKey;
     const accountChanged = Boolean(previousAccountKey) && previousAccountKey !== currentAccountKey;
     lastMetricsAccountKeyRef.current = currentAccountKey;
+    setMetricsSync(normalizeSyncInfo(null));
 
     if (!accountConfig?.instagramUserId) {
       setMetrics([]);
@@ -863,6 +869,9 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
     const hasCachedMetrics = Boolean(cachedMetrics);
     let shouldRefreshForReach = false;
     if (cachedMetrics) {
+      if (cachedMetrics.sync) {
+        setMetricsSync(cachedMetrics.sync);
+      }
       const cachedMetricsList = Array.isArray(cachedMetrics.metrics) ? cachedMetrics.metrics : [];
       const cachedReachMetric = cachedMetricsList.find((metric) => metric?.key === "reach");
       const cachedReachValue = extractNumber(cachedReachMetric?.value, null);
@@ -949,7 +958,9 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
            error.status = resp.status;
            throw error;
          }
-         return unwrapApiData(json, {});
+         const payload = unwrapApiData(json, {});
+         const meta = isApiEnvelope(json) ? json.meta : json.meta || null;
+         return { payload, meta };
        } catch (err) {
          const status = err?.status;
          const retryableStatus = status === 429 || status === 502 || status === 503 || status === 504;
@@ -1000,13 +1011,16 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
 
     (async () => {
       try {
-        const json = await fetchMetricsPayload(0);
+        const { payload, meta } = await fetchMetricsPayload(0);
         if (cancelled || metricsRequestIdRef.current !== requestId) return;
 
-        const fetchedMetrics = json.metrics || [];
-        const fetchedFollowerSeries = Array.isArray(json.follower_series) ? json.follower_series : [];
-        const fetchedFollowerGainSeries = Array.isArray(json.followers_gain_series) ? json.followers_gain_series : [];
-        const fetchedFollowerCounts = json.follower_counts || null;
+        const syncInfo = normalizeSyncInfo(meta);
+        setMetricsSync(syncInfo);
+
+        const fetchedMetrics = payload.metrics || [];
+        const fetchedFollowerSeries = Array.isArray(payload.follower_series) ? payload.follower_series : [];
+        const fetchedFollowerGainSeries = Array.isArray(payload.followers_gain_series) ? payload.followers_gain_series : [];
+        const fetchedFollowerCounts = payload.follower_counts || null;
         const parseNumericSeries = (series) => (
           Array.isArray(series)
             ? series
@@ -1021,11 +1035,11 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
               .filter(Boolean)
             : []
         );
-        const reachSeries = parseNumericSeries(json.reach_timeseries);
-        const parsedVideoViewsSeries = parseNumericSeries(json.video_views_timeseries);
-        const parsedProfileViewsSeries = parseNumericSeries(json.profile_views_timeseries);
+        const reachSeries = parseNumericSeries(payload.reach_timeseries);
+        const parsedVideoViewsSeries = parseNumericSeries(payload.video_views_timeseries);
+        const parsedProfileViewsSeries = parseNumericSeries(payload.profile_views_timeseries);
         const resolvedViewsSeries = parsedVideoViewsSeries.length ? parsedVideoViewsSeries : parsedProfileViewsSeries;
-        const visitorsBreakdown = json.profile_visitors_breakdown || null;
+        const visitorsBreakdown = payload.profile_visitors_breakdown || null;
 
         setMetrics(fetchedMetrics);
         setFollowerSeries(fetchedFollowerSeries);
@@ -1043,6 +1057,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
           profileViewsSeries: resolvedViewsSeries,
           videoViewsSeries: parsedVideoViewsSeries,
           profileVisitorsBreakdown: visitorsBreakdown,
+          sync: syncInfo,
         });
 
         setMetricsNotice("");

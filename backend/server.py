@@ -348,12 +348,61 @@ def unix_range(args, default_days=DEFAULT_DAYS):
 
 
 # ================= API Envelope (v2) =================
-ENVELOPE_CACHE_SOURCES = {"cache", "stale", "refresh", "prime", "live", "cache-fallback"}
+ENVELOPE_CACHE_SOURCES = {"cache", "stale", "refresh", "prime", "live", "cache-fallback", "db"}
+SYNC_SOURCE_CACHE = {"cache", "stale", "cache-fallback"}
+SYNC_SOURCE_LIVE = {"refresh", "prime", "live"}
 
 
 def _utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
+
+def _parse_iso_datetime(value: Any) -> Optional[datetime]:
+    if isinstance(value, datetime):
+        return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(str(value))
+    except (TypeError, ValueError):
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed
+
+
+def _map_sync_source(cache_meta: Optional[Dict[str, Any]]) -> str:
+    if isinstance(cache_meta, dict):
+        raw_source = cache_meta.get("source")
+        source = str(raw_source) if raw_source is not None else ""
+        if source == "db":
+            return "db"
+        if source in SYNC_SOURCE_CACHE:
+            return "cache"
+        if source in SYNC_SOURCE_LIVE:
+            return "meta_live"
+    return "meta_live"
+
+
+def _build_sync_meta(cache_meta: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    fetched_at = None
+    expires_at = None
+    is_stale = False
+    if isinstance(cache_meta, dict):
+        fetched_at = cache_meta.get("fetched_at") or cache_meta.get("cached_at")
+        expires_at = cache_meta.get("next_refresh_at") or cache_meta.get("expires_at")
+        if cache_meta.get("stale") is not None:
+            is_stale = bool(cache_meta.get("stale"))
+
+    expires_dt = _parse_iso_datetime(expires_at)
+    if expires_dt is not None:
+        is_stale = datetime.now(timezone.utc) > expires_dt
+
+    return {
+        "fetched_at": str(fetched_at) if fetched_at is not None else None,
+        "is_stale": bool(is_stale),
+        "expires_at": str(expires_at) if expires_at is not None else None,
+    }
 
 def _normalize_envelope_cache(cache_meta: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     now_iso = _utc_now_iso()
@@ -415,6 +464,8 @@ def _build_api_envelope(
             "since": since,
             "until": until,
             "timezone": timezone_name,
+            "source": _map_sync_source(cache_meta),
+            "sync": _build_sync_meta(cache_meta),
             "cache": _normalize_envelope_cache(cache_meta),
         },
         "error": error,
@@ -445,12 +496,19 @@ def _ads_error_payload(code: str, message: Optional[str] = None) -> Dict[str, An
 def _ads_meta_payload(cache_meta: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     now_iso = _utc_now_iso()
     if not isinstance(cache_meta, dict):
-        return {"status": "live", "fetched_at": now_iso}
+        return {
+            "status": "live",
+            "fetched_at": None,
+            "source": "meta_live",
+            "sync": _build_sync_meta(cache_meta),
+        }
     status = str(cache_meta.get("source") or "live")
     fetched_at = cache_meta.get("fetched_at") or now_iso
     return {
         "status": status,
         "fetched_at": str(fetched_at) if fetched_at is not None else None,
+        "source": _map_sync_source(cache_meta),
+        "sync": _build_sync_meta(cache_meta),
     }
 
 
@@ -3109,7 +3167,14 @@ def facebook_metrics():
     try:
         if force_refresh_flag:
             payload = fetch_facebook_metrics(page_id, since, until, None)
-            meta = {"forced": True}
+            meta = {
+                "source": "live",
+                "fetched_at": _utc_now_iso(),
+                "next_refresh_at": None,
+                "stale": False,
+                "cache_key": None,
+                "forced": True,
+            }
         else:
             payload, meta = get_cached_payload(
                 "facebook_metrics",
@@ -3121,9 +3186,28 @@ def facebook_metrics():
             )
     except MetaAPIError as err:
         mark_cache_error("facebook_metrics", page_id, since, until, None, err.args[0], platform="facebook")
-        return meta_error_response(err)
+        payload = {
+            "error": err.args[0],
+            "graph": {
+                "status": err.status,
+                "code": err.code,
+                "type": err.error_type,
+            },
+            "meta": {
+                "source": _map_sync_source(None),
+                "sync": _build_sync_meta(None),
+            },
+        }
+        return jsonify(payload), 502
     except ValueError as err:
-        return jsonify({"error": str(err)}), 400
+        payload = {
+            "error": str(err),
+            "meta": {
+                "source": _map_sync_source(None),
+                "sync": _build_sync_meta(None),
+            },
+        }
+        return jsonify(payload), 400
 
     payload_obj = dict(payload or {})
     _enrich_facebook_metrics_payload(payload_obj)
@@ -3135,6 +3219,11 @@ def facebook_metrics():
             payload_obj["reach_timeseries"] = page_overview.get("reach_timeseries")
     response = dict(payload_obj)
     response["cache"] = meta
+    response["meta"] = {
+        "source": _map_sync_source(meta),
+        "sync": _build_sync_meta(meta),
+    }
+    response["error"] = None
     return jsonify(response)
 
 
@@ -3386,7 +3475,7 @@ def instagram_metrics():
         _ensure_reach_timeseries(payload_obj)
         legacy_cache = payload_obj.get("cache") if isinstance(payload_obj.get("cache"), dict) else {}
         precomputed_cache = {
-            "source": "cache",
+            "source": "db",
             "stale": False,
             "fetched_at": legacy_cache.get("fetched_at") or _utc_now_iso(),
             "next_refresh_at": None,

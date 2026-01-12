@@ -45,6 +45,7 @@ import DataState from "../components/DataState";
 import CustomChartTooltip from "../components/CustomChartTooltip";
 import { fetchWithTimeout, isTimeoutError } from "../lib/fetchWithTimeout";
 import { formatChartDate, formatCompactNumber, formatTooltipNumber } from "../lib/chartFormatters";
+import { normalizeSyncInfo } from "../lib/syncInfo";
 const API_BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 const FALLBACK_ACCOUNT_ID = DEFAULT_ACCOUNTS[0]?.id || "";
 
@@ -275,6 +276,8 @@ useEffect(() => {
     [setQuery],
   );
 
+  const [overviewSync, setOverviewSync] = useState(() => normalizeSyncInfo(null));
+
   useEffect(() => {
     if (!setTopbarConfig) return undefined;
     setTopbarConfig({
@@ -283,12 +286,14 @@ useEffect(() => {
       selectedPreset: activePreset,
       onPresetSelect: handlePresetSelect,
       onDateChange: handleDateChange,
+      syncInfo: overviewSync,
     });
     return () => resetTopbarConfig?.();
   }, [
     activePreset,
     handleDateChange,
     handlePresetSelect,
+    overviewSync,
     resetTopbarConfig,
     setTopbarConfig,
   ]);
@@ -373,6 +378,7 @@ useEffect(() => {
   }, [pageCacheKey, overviewCacheKey, fbPostsCacheKey]);
 
   useEffect(() => {
+    setOverviewSync(normalizeSyncInfo(null));
     if (!accountConfig?.facebookPageId) {
       setPageMetrics([]);
       setNetFollowersSeries([]);
@@ -390,6 +396,9 @@ useEffect(() => {
     const cachedPage = getDashboardCache(pageCacheKey);
     const cachedOverview = sinceParam && untilParam ? getDashboardCache(overviewCacheKey) : null;
     const hasCachedOverview = Boolean(cachedOverview);
+    if (cachedOverview?.sync) {
+      setOverviewSync(cachedOverview.sync);
+    }
 
     let cancelled = false;
     const isStale = () => cancelled || overviewRequestIdRef.current !== requestId;
@@ -505,6 +514,8 @@ useEffect(() => {
           throw new Error(describeApiError(json, "Falha ao carregar metricas do Facebook."));
         }
         if (isStale()) return;
+        const syncInfo = normalizeSyncInfo(json.meta || null);
+        setOverviewSync(syncInfo);
         const fetchedMetrics = Array.isArray(json.metrics) ? json.metrics : [];
         const fetchedFollowersSeries = Array.isArray(json.net_followers_series) ? json.net_followers_series : [];
         const reachSeriesPayload = Array.isArray(json.reach_timeseries)
@@ -522,6 +533,7 @@ useEffect(() => {
           reachSeries: reachSeriesPayload,
           overviewSource: json,
           followersOverride,
+          sync: syncInfo,
         });
       } catch (err) {
         if (controller.signal.aborted || isStale()) return;

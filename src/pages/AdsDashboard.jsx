@@ -46,6 +46,7 @@ import useQueryState from "../hooks/useQueryState";
 import { isApiEnvelope, unwrapApiData } from "../lib/apiEnvelope";
 import { formatChartDate, formatCompactNumber, formatTooltipNumber } from "../lib/chartFormatters";
 import { fetchWithTimeout } from "../lib/fetchWithTimeout";
+import { normalizeSyncInfo } from "../lib/syncInfo";
 
 const API_BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 const ADS_MOCK_ENABLED = false;
@@ -345,6 +346,8 @@ export default function AdsDashboard() {
     return preset?.id ?? "custom";
   }, [sinceDate, untilDate]);
 
+  const [adsSyncInfo, setAdsSyncInfo] = useState(() => normalizeSyncInfo(null));
+
   // Configure Topbar
   useEffect(() => {
     if (!setTopbarConfig) return undefined;
@@ -353,6 +356,7 @@ export default function AdsDashboard() {
       showFilters: true,
       presets: ADS_TOPBAR_PRESETS,
       selectedPreset: activePreset,
+      syncInfo: adsSyncInfo,
       onPresetSelect: (presetId) => {
         const preset = ADS_TOPBAR_PRESETS.find((item) => item.id === presetId);
         if (!preset?.days || preset.days <= 0) return;
@@ -374,7 +378,7 @@ export default function AdsDashboard() {
       },
     });
     return () => resetTopbarConfig?.();
-  }, [setTopbarConfig, resetTopbarConfig, activePreset, defaultEnd, setQuery]);
+  }, [setTopbarConfig, resetTopbarConfig, activePreset, adsSyncInfo, defaultEnd, setQuery]);
 
   useEffect(() => {
     if (sinceDate && untilDate) return;
@@ -553,6 +557,10 @@ export default function AdsDashboard() {
     }
     return null;
   }, [adsEnvelope, adsData]);
+
+  useEffect(() => {
+    setAdsSyncInfo(normalizeSyncInfo(adsMeta));
+  }, [adsMeta]);
 
   const cacheNotice = useMemo(() => {
     if (!adsMeta || typeof adsMeta !== "object") return "";

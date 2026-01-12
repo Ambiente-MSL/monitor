@@ -4,6 +4,7 @@ import { endOfDay, startOfDay, subDays, differenceInCalendarDays } from "date-fn
 import { Bell, LogOut } from "lucide-react";
 import DateRangePicker from "./DateRangePicker";
 import AccountSelect from "./AccountSelect";
+import LastSyncBadge from "./LastSyncBadge";
 import useQueryState from "../hooks/useQueryState";
 import { useAuth } from "../context/AuthContext";
 import logo from "../assets/logo-dashboard.svg";
@@ -70,6 +71,7 @@ export default function Topbar({
   notificationCount = 0,
   className = "",
   showFilters = true,
+  syncInfo,
 }) {
 
   const { signOut, user } = useAuth();
@@ -109,6 +111,7 @@ export default function Topbar({
   };
 
   const displayNotification = Number.isFinite(notificationCount) && notificationCount > 0;
+  const showSyncInfo = Boolean(syncInfo);
 
   const handleLogout = useCallback(async () => {
     if (!signOut || isLoggingOut) return;
@@ -157,6 +160,11 @@ export default function Topbar({
               <div className="topbar__range topbar__range--compact">
                 <DateRangePicker variant="compact" onRangeChange={handleRangeChange} />
               </div>
+              {showSyncInfo && (
+                <div className="topbar__sync">
+                  <LastSyncBadge {...syncInfo} />
+                </div>
+              )}
             </>
           )}
 
@@ -194,4 +202,10 @@ Topbar.propTypes = {
   notificationCount: PropTypes.number,
   className: PropTypes.string,
   showFilters: PropTypes.bool,
+  syncInfo: PropTypes.shape({
+    fetchedAt: PropTypes.string,
+    isStale: PropTypes.bool,
+    source: PropTypes.string,
+    tz: PropTypes.string,
+  }),
 };
