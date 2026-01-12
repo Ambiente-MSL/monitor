@@ -4699,9 +4699,10 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                           return (
                             <CustomChartTooltip
                               {...props}
+                              payload={props.payload.slice(0, 1)}
                               labelFormatter={() => labelValue}
                               labelMap={{ value: "Contas alcancadas" }}
-                              valueFormatter={formatTooltipNumber}
+                              valueFormatter={(value) => `: ${formatTooltipNumber(value)}`}
                               footer={footer}
                             />
                           );
