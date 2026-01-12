@@ -2994,6 +2994,168 @@ body.theme-light {
   margin-top: 8px;
 }
 
+/* Formulário inline para adicionar conta no dropdown */
+.account-dropdown__add-form {
+  padding: 4px 0;
+}
+
+.account-dropdown__add-form-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 0 4px;
+}
+
+.account-dropdown__add-form-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.account-dropdown__add-form-subtitle {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: #6b7280;
+  line-height: 1.3;
+}
+
+.account-dropdown__back-button {
+  border: none;
+  background: #f3f4f6;
+  border-radius: 8px;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  flex-shrink: 0;
+}
+
+.account-dropdown__back-button:hover:not(:disabled) {
+  background: #e5e7eb;
+}
+
+.account-dropdown__back-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.account-dropdown__form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.account-dropdown__form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.account-dropdown__form-field label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.account-dropdown__form-field input {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #111827;
+  background: white;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.account-dropdown__form-field input:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.account-dropdown__form-field input:disabled {
+  background: #f9fafb;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.account-dropdown__form-field input::placeholder {
+  color: #9ca3af;
+}
+
+.account-dropdown__form-hint {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin: 2px 0 0;
+  line-height: 1.3;
+}
+
+.account-dropdown__form-error {
+  font-size: 0.8rem;
+  color: #dc2626;
+  margin: 0;
+  padding: 8px 12px;
+  background: #fef2f2;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+}
+
+.account-dropdown__form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.account-dropdown__form-button {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: none;
+}
+
+.account-dropdown__form-button--secondary {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.account-dropdown__form-button--secondary:hover:not(:disabled) {
+  background: #e5e7eb;
+}
+
+.account-dropdown__form-button--primary {
+  background: linear-gradient(135deg, #8b5cf6, #ec4899);
+  color: white;
+}
+
+.account-dropdown__form-button--primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #7c3aed, #db2777);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.account-dropdown__form-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Ajuste no dropdown para acomodar o formulário */
+.account-dropdown__list:has(.account-dropdown__add-form) {
+  min-width: 320px;
+  max-width: 360px;
+  max-height: 500px;
+  overflow-y: auto;
+  padding: 12px;
+}
+
 .account-add-modal {
   position: fixed;
   inset: 0;

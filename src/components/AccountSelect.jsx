@@ -21,7 +21,7 @@ export default function AccountSelect() {
   const [get, set] = useQueryState({ account: FALLBACK_ACCOUNT_ID });
   const queryAccount = get("account");
   const [isOpen, setIsOpen] = useState(false);
-  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isAddFormVisible, setIsAddFormVisible] = useState(false);
   const [formData, setFormData] = useState(EMPTY_ACCOUNT_FORM);
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -92,6 +92,7 @@ export default function AccountSelect() {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
+        setIsAddFormVisible(false);
       }
     };
 
@@ -126,10 +127,10 @@ export default function AccountSelect() {
   }, [availableAccounts]);
 
   useEffect(() => {
-    if (!isAddOpen) return undefined;
+    if (!isAddFormVisible) return undefined;
     const handler = (event) => {
       if (event.key === "Escape") {
-        setIsAddOpen(false);
+        setIsAddFormVisible(false);
       }
     };
     document.addEventListener("keydown", handler);
@@ -140,7 +141,7 @@ export default function AccountSelect() {
       document.removeEventListener("keydown", handler);
       clearTimeout(focusTimeout);
     };
-  }, [isAddOpen]);
+  }, [isAddFormVisible]);
 
   useEffect(() => {
     const pending = pendingAccountRef.current;
@@ -167,10 +168,10 @@ export default function AccountSelect() {
             type="button"
             className="account-dropdown__add-button"
             onClick={() => {
-              setIsOpen(false);
               setFormError("");
               setFormData(EMPTY_ACCOUNT_FORM);
-              setIsAddOpen(true);
+              setIsAddFormVisible(true);
+              setIsOpen(true);
             }}
           >
             <Plus size={14} /> Adicionar conta
@@ -208,219 +209,216 @@ export default function AccountSelect() {
           </button>
 
           {isOpen && (
-            <ul className="account-dropdown__list" role="listbox">
-              {availableAccounts.map((account) => {
-                const accountLabel = accountsData[account.id]?.username || account.label || "";
-                return (
-                  <li key={account.id} role="option" aria-selected={account.id === currentValue}>
+            <div className="account-dropdown__list" role="listbox">
+              {!isAddFormVisible ? (
+                <>
+                  {availableAccounts.map((account) => {
+                    const accountLabel = accountsData[account.id]?.username || account.label || "";
+                    return (
+                      <div key={account.id} role="option" aria-selected={account.id === currentValue}>
+                        <button
+                          type="button"
+                          className={`account-dropdown__item${account.id === currentValue ? " account-dropdown__item--active" : ""}`}
+                          onClick={() => handleSelect(account.id)}
+                        >
+                          {accountsData[account.id]?.profilePicture ? (
+                            <img
+                              src={accountsData[account.id].profilePicture}
+                              alt={account.label}
+                              className="account-dropdown__avatar"
+                            />
+                          ) : (
+                            <span className="account-dropdown__avatar-placeholder">
+                              {getAccountInitials(account.label)}
+                            </span>
+                          )}
+                          <span
+                            className="account-dropdown__item-name"
+                            title={accountLabel || undefined}
+                          >
+                            {accountLabel}
+                          </span>
+                        </button>
+                      </div>
+                    );
+                  })}
+                  <div className="account-dropdown__divider" role="presentation" />
+                  <div role="presentation">
                     <button
                       type="button"
-                      className={`account-dropdown__item${account.id === currentValue ? " account-dropdown__item--active" : ""}`}
-                      onClick={() => handleSelect(account.id)}
+                      className="account-dropdown__add-button"
+                      onClick={() => {
+                        setFormError("");
+                        setFormData(EMPTY_ACCOUNT_FORM);
+                        setIsAddFormVisible(true);
+                      }}
                     >
-                      {accountsData[account.id]?.profilePicture ? (
-                        <img
-                          src={accountsData[account.id].profilePicture}
-                          alt={account.label}
-                          className="account-dropdown__avatar"
-                        />
-                      ) : (
-                        <span className="account-dropdown__avatar-placeholder">
-                          {getAccountInitials(account.label)}
-                        </span>
-                      )}
-                      <span
-                        className="account-dropdown__item-name"
-                        title={accountLabel || undefined}
-                      >
-                        {accountLabel}
-                      </span>
+                      <Plus size={14} /> Adicionar conta
                     </button>
-                  </li>
-                );
-              })}
-              <li className="account-dropdown__divider" role="presentation" />
-              <li role="presentation">
-                <button
-                  type="button"
-                  className="account-dropdown__add-button"
-                  onClick={() => {
-                    setIsOpen(false);
-                    setFormError("");
-                    setFormData(EMPTY_ACCOUNT_FORM);
-                    setIsAddOpen(true);
-                  }}
-                >
-                  <Plus size={14} /> Adicionar conta
-                </button>
-              </li>
-            </ul>
+                  </div>
+                </>
+              ) : (
+                <div className="account-dropdown__add-form">
+                  <div className="account-dropdown__add-form-header">
+                    <div>
+                      <h3 className="account-dropdown__add-form-title">Adicionar conta</h3>
+                      <p className="account-dropdown__add-form-subtitle">Use os mesmos dados da area de contas conectadas.</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="account-dropdown__back-button"
+                      onClick={() => {
+                        if (!isSubmitting) {
+                          setIsAddFormVisible(false);
+                          setFormError("");
+                        }
+                      }}
+                      aria-label="Voltar"
+                      disabled={isSubmitting}
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+
+                  <form
+                    className="account-dropdown__form"
+                    onSubmit={async (event) => {
+                      event.preventDefault();
+                      if (isSubmitting) return;
+                      const trimmed = {
+                        label: formData.label.trim(),
+                        facebookPageId: formData.facebookPageId.trim(),
+                        instagramUserId: formData.instagramUserId.trim(),
+                        adAccountId: formData.adAccountId.trim(),
+                      };
+                      if (!trimmed.label || !trimmed.facebookPageId || !trimmed.instagramUserId || !trimmed.adAccountId) {
+                        setFormError("Preencha todos os campos.");
+                        return;
+                      }
+                      setFormError("");
+                      setIsSubmitting(true);
+                      pendingAccountRef.current = trimmed;
+                      const clearPendingTimeout = setTimeout(() => {
+                        if (pendingAccountRef.current === trimmed) {
+                          pendingAccountRef.current = null;
+                        }
+                      }, 8000);
+                      try {
+                        await addAccount(trimmed);
+                        setFormData(EMPTY_ACCOUNT_FORM);
+                        setIsAddFormVisible(false);
+                      } catch (err) {
+                        pendingAccountRef.current = null;
+                        setFormError(err?.message || "Nao foi possivel adicionar a conta.");
+                      } finally {
+                        clearTimeout(clearPendingTimeout);
+                        setIsSubmitting(false);
+                      }
+                    }}
+                  >
+                    <div className="account-dropdown__form-field">
+                      <label htmlFor="account-name-dropdown">Nome</label>
+                      <input
+                        id="account-name-dropdown"
+                        name="label"
+                        ref={addFirstInputRef}
+                        value={formData.label}
+                        onChange={(event) => {
+                          setFormData((prev) => ({ ...prev, [event.target.name]: event.target.value }));
+                        }}
+                        placeholder="Ex: Cliente - Marca"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+
+                    <div className="account-dropdown__form-field">
+                      <label htmlFor="account-page-id-dropdown">ID da pagina</label>
+                      <input
+                        id="account-page-id-dropdown"
+                        name="facebookPageId"
+                        value={formData.facebookPageId}
+                        onChange={(event) => {
+                          setFormData((prev) => ({ ...prev, [event.target.name]: event.target.value }));
+                        }}
+                        placeholder="1234567890"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+
+                    <div className="account-dropdown__form-field">
+                      <label htmlFor="account-ig-id-dropdown">ID Instagram</label>
+                      <input
+                        id="account-ig-id-dropdown"
+                        name="instagramUserId"
+                        value={formData.instagramUserId}
+                        onChange={(event) => {
+                          setFormData((prev) => ({ ...prev, [event.target.name]: event.target.value }));
+                        }}
+                        placeholder="1784..."
+                        disabled={isSubmitting}
+                      />
+                    </div>
+
+                    <div className="account-dropdown__form-field">
+                      <label htmlFor="account-ads-id-dropdown">ID conta de anuncios</label>
+                      <input
+                        id="account-ads-id-dropdown"
+                        name="adAccountId"
+                        value={formData.adAccountId}
+                        onChange={(event) => {
+                          setFormData((prev) => ({ ...prev, [event.target.name]: event.target.value }));
+                        }}
+                        placeholder="act_..."
+                        list="ad-accounts-options-dropdown"
+                        disabled={isSubmitting}
+                      />
+                      {discoveredAdAccounts.length > 0 ? (
+                        <>
+                          <datalist id="ad-accounts-options-dropdown">
+                            {discoveredAdAccounts.map((ad) => (
+                              <option key={ad.id} value={ad.id}>
+                                {ad.name || ad.id}
+                              </option>
+                            ))}
+                          </datalist>
+                          <p className="account-dropdown__form-hint">
+                            Selecione uma conta descoberta ou digite manualmente.
+                          </p>
+                        </>
+                      ) : null}
+                    </div>
+
+                    {formError && <p className="account-dropdown__form-error" role="alert">{formError}</p>}
+
+                    <div className="account-dropdown__form-actions">
+                      <button
+                        type="button"
+                        className="account-dropdown__form-button account-dropdown__form-button--secondary"
+                        onClick={() => {
+                          if (!isSubmitting) {
+                            setIsAddFormVisible(false);
+                            setFormError("");
+                          }
+                        }}
+                        disabled={isSubmitting}
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="submit"
+                        className="account-dropdown__form-button account-dropdown__form-button--primary"
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? "Salvando..." : "Adicionar"}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+            </div>
           )}
         </>
       )}
-      {isAddOpen ? (
-        <div className="account-add-modal" role="dialog" aria-modal="true" aria-labelledby="account-add-title">
-          <div
-            className="account-add-modal__overlay"
-            onClick={() => {
-              if (!isSubmitting) {
-                setIsAddOpen(false);
-                setFormError("");
-              }
-            }}
-          />
-          <div
-            className="account-add-modal__content"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="account-add-modal__header">
-              <div>
-                <h2 className="account-add-modal__title" id="account-add-title">Adicionar conta</h2>
-                <p className="account-add-modal__subtitle">Use os mesmos dados da area de contas conectadas.</p>
-              </div>
-              <button
-                type="button"
-                className="account-add-modal__close"
-                onClick={() => {
-                  if (!isSubmitting) {
-                    setIsAddOpen(false);
-                    setFormError("");
-                  }
-                }}
-                aria-label="Fechar"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <form
-              className="accounts-form"
-              onSubmit={async (event) => {
-                event.preventDefault();
-                if (isSubmitting) return;
-                const trimmed = {
-                  label: formData.label.trim(),
-                  facebookPageId: formData.facebookPageId.trim(),
-                  instagramUserId: formData.instagramUserId.trim(),
-                  adAccountId: formData.adAccountId.trim(),
-                };
-                if (!trimmed.label || !trimmed.facebookPageId || !trimmed.instagramUserId || !trimmed.adAccountId) {
-                  setFormError("Preencha todos os campos.");
-                  return;
-                }
-                setFormError("");
-                setIsSubmitting(true);
-                pendingAccountRef.current = trimmed;
-                const clearPendingTimeout = setTimeout(() => {
-                  if (pendingAccountRef.current === trimmed) {
-                    pendingAccountRef.current = null;
-                  }
-                }, 8000);
-                try {
-                  await addAccount(trimmed);
-                  setFormData(EMPTY_ACCOUNT_FORM);
-                  setIsAddOpen(false);
-                } catch (err) {
-                  pendingAccountRef.current = null;
-                  setFormError(err?.message || "Nao foi possivel adicionar a conta.");
-                } finally {
-                  clearTimeout(clearPendingTimeout);
-                  setIsSubmitting(false);
-                }
-              }}
-            >
-              <div className="accounts-form__field">
-                <label htmlFor="account-name-dropdown">Nome</label>
-                <input
-                  id="account-name-dropdown"
-                  name="label"
-                  ref={addFirstInputRef}
-                  value={formData.label}
-                  onChange={(event) => {
-                    setFormData((prev) => ({ ...prev, [event.target.name]: event.target.value }));
-                  }}
-                  placeholder="Ex: Cliente - Marca"
-                />
-              </div>
-
-              <div className="accounts-form__field">
-                <label htmlFor="account-page-id-dropdown">ID da pagina</label>
-                <input
-                  id="account-page-id-dropdown"
-                  name="facebookPageId"
-                  value={formData.facebookPageId}
-                  onChange={(event) => {
-                    setFormData((prev) => ({ ...prev, [event.target.name]: event.target.value }));
-                  }}
-                  placeholder="1234567890"
-                />
-              </div>
-
-              <div className="accounts-form__field">
-                <label htmlFor="account-ig-id-dropdown">ID Instagram</label>
-                <input
-                  id="account-ig-id-dropdown"
-                  name="instagramUserId"
-                  value={formData.instagramUserId}
-                  onChange={(event) => {
-                    setFormData((prev) => ({ ...prev, [event.target.name]: event.target.value }));
-                  }}
-                  placeholder="1784..."
-                />
-              </div>
-
-              <div className="accounts-form__field">
-                <label htmlFor="account-ads-id-dropdown">ID conta de anuncios</label>
-                <input
-                  id="account-ads-id-dropdown"
-                  name="adAccountId"
-                  value={formData.adAccountId}
-                  onChange={(event) => {
-                    setFormData((prev) => ({ ...prev, [event.target.name]: event.target.value }));
-                  }}
-                  placeholder="act_..."
-                  list="ad-accounts-options-dropdown"
-                />
-                {discoveredAdAccounts.length > 0 ? (
-                  <>
-                    <datalist id="ad-accounts-options-dropdown">
-                      {discoveredAdAccounts.map((ad) => (
-                        <option key={ad.id} value={ad.id}>
-                          {ad.name || ad.id}
-                        </option>
-                      ))}
-                    </datalist>
-                    <p className="settings-hint">
-                      Selecione uma conta de anuncios descoberta ou digite um ID manualmente.
-                    </p>
-                  </>
-                ) : null}
-              </div>
-
-              {formError && <p className="settings-form-error" role="alert">{formError}</p>}
-
-              <div className="account-add-modal__footer">
-                <button
-                  type="button"
-                  className="settings-button settings-button--outline"
-                  onClick={() => {
-                    if (!isSubmitting) {
-                      setIsAddOpen(false);
-                      setFormError("");
-                    }
-                  }}
-                  disabled={isSubmitting}
-                >
-                  Cancelar
-                </button>
-                <button type="submit" className="settings-button" disabled={isSubmitting}>
-                  {isSubmitting ? "Salvando..." : "Adicionar conta"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }
