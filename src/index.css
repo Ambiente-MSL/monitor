@@ -11108,6 +11108,52 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   margin: 0 0 16px 0;
 }
 
+/* Scroll horizontal para Top Reels/Videos/Posts */
+.top-reels-scroll-container {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(236, 72, 153, 0.3) transparent;
+}
+
+.top-reels-scroll-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.top-reels-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 4px;
+}
+
+.top-reels-scroll-container::-webkit-scrollbar-thumb {
+  background: rgba(236, 72, 153, 0.3);
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.top-reels-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(236, 72, 153, 0.5);
+}
+
+/* Smooth scroll behavior para o container */
+.top-reels-scroll-container {
+  scroll-snap-type: x proximity;
+}
+
+.top-reels-scroll-container > div {
+  scroll-snap-align: start;
+}
+
+/* Ocultar scrollbar em mobile mantendo funcionalidade */
+@media (max-width: 768px) {
+  .top-reels-scroll-container {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .top-reels-scroll-container::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 .ig-card-dark {
   background: #374151;
   display: flex;

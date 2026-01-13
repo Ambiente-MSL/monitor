@@ -45,6 +45,8 @@ import {
   Shield,
   TrendingUp,
   TrendingDown,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import useQueryState from "../hooks/useQueryState";
 import { useAccounts } from "../context/AccountsContext";
@@ -398,6 +400,14 @@ const formatNumber = (value) => {
     return numeric.toLocaleString("pt-BR");
   }
   return numeric.toString();
+};
+
+const scrollTopReels = (direction) => {
+  const container = document.querySelector('.top-reels-scroll-container');
+  if (!container) return;
+  const scrollAmount = 280; // largura do card + gap
+  const newPosition = container.scrollLeft + (direction === 'left' ? -scrollAmount : scrollAmount);
+  container.scrollTo({ left: newPosition, behavior: 'smooth' });
 };
 
 const formatPercent = (value) => {
@@ -764,6 +774,7 @@ export default function InstagramDashboard() {
   const [recentPostsFetching, setRecentPostsFetching] = useState(false);
   const [recentPostsError, setRecentPostsError] = useState("");
   const recentPostsRequestIdRef = useRef(0);
+  const topReelsScrollRef = useRef(null);
 
   const calendarMonthOptions = useMemo(() => {
     const monthMap = new Map();
@@ -3027,36 +3038,36 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
           {/* Métricas Detalhadas por Tipo */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-            gap: '20px',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: '16px',
             marginBottom: '32px'
           }}>
             <div className="ig-card-white" style={{
-              padding: '24px',
+              padding: '18px',
               borderRadius: '12px',
               border: '1px solid #fecaca',
               background: '#fef2f2'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-                <Heart size={22} color="#ef4444" fill="#ef4444" />
-                <span style={{ fontSize: '14px', color: '#6b7280', fontWeight: 600 }}>Curtidas</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                <Heart size={18} color="#ef4444" fill="#ef4444" />
+                <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Curtidas</span>
               </div>
-              <div style={{ fontSize: '32px', fontWeight: 700, color: '#ef4444' }}>
+              <div style={{ fontSize: '26px', fontWeight: 700, color: '#ef4444' }}>
                 {formatNumber(interactionsTabBreakdown.likes)}
               </div>
             </div>
 
             <div className="ig-card-white" style={{
-              padding: '24px',
+              padding: '18px',
               borderRadius: '12px',
               border: '1px solid #bfdbfe',
               background: '#eff6ff'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-                <MessageCircle size={22} color="#3b82f6" />
-                <span style={{ fontSize: '14px', color: '#6b7280', fontWeight: 600 }}>Comentários</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                <MessageCircle size={18} color="#3b82f6" />
+                <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Comentários</span>
               </div>
-              <div style={{ fontSize: '32px', fontWeight: 700, color: '#3b82f6' }}>
+              <div style={{ fontSize: '26px', fontWeight: 700, color: '#3b82f6' }}>
                 {formatNumber(interactionsTabBreakdown.comments)}
               </div>
             </div>
@@ -3117,31 +3128,101 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             padding: '28px',
             borderRadius: '20px',
             boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
-            border: '1px solid rgba(0, 0, 0, 0.05)'
+            border: '1px solid rgba(0, 0, 0, 0.05)',
+            position: 'relative'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '10px',
-                background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                </svg>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                  </svg>
+                </div>
+                <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
+                  {interactionsTab === 'reels' ? 'Top Reels por Curtidas' : interactionsTab === 'videos' ? 'Top Videos por Curtidas' : 'Top Posts por Curtidas'}
+                </h3>
               </div>
-              <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
-                {interactionsTab === 'reels' ? 'Top Reels por Curtidas' : interactionsTab === 'videos' ? 'Top Videos por Curtidas' : 'Top Posts por Curtidas'}
-              </h3>
+
+              {/* Setas de navegação */}
+              {interactionsTabPosts.length > 3 && (
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={() => scrollTopReels('left')}
+                    style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '50%',
+                      border: '1px solid #e5e7eb',
+                      background: 'white',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#f9fafb';
+                      e.currentTarget.style.borderColor = '#ec4899';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'white';
+                      e.currentTarget.style.borderColor = '#e5e7eb';
+                    }}
+                  >
+                    <ChevronLeft size={20} color="#6b7280" />
+                  </button>
+                  <button
+                    onClick={() => scrollTopReels('right')}
+                    style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '50%',
+                      border: '1px solid #e5e7eb',
+                      background: 'white',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#f9fafb';
+                      e.currentTarget.style.borderColor = '#ec4899';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'white';
+                      e.currentTarget.style.borderColor = '#e5e7eb';
+                    }}
+                  >
+                    <ChevronRight size={20} color="#6b7280" />
+                  </button>
+                </div>
+              )}
             </div>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-              gap: '20px'
-            }}>
+
+            <div
+              className="top-reels-scroll-container"
+              style={{
+                display: 'flex',
+                gap: '16px',
+                overflowX: 'auto',
+                overflowY: 'hidden',
+                scrollBehavior: 'smooth',
+                paddingBottom: '8px',
+                scrollbarWidth: 'thin',
+                scrollbarColor: '#e5e7eb transparent'
+              }}
+            >
               {interactionsTabPosts.length ? interactionsTabPosts.map((post) => {
                 const likes = resolvePostMetric(post, "likes");
                 const comments = resolvePostMetric(post, "comments");
@@ -3159,89 +3240,122 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
 
                 return (
                   <div key={post.id || post.timestamp} style={{
+                    minWidth: '260px',
+                    maxWidth: '260px',
                     background: 'white',
-                    borderRadius: '16px',
-                    padding: '20px',
-                    border: '1px solid #e5e7eb',
-                    transition: 'all 0.2s',
-                    cursor: 'pointer'
+                    borderRadius: '20px',
+                    overflow: 'hidden',
+                    border: '2px solid #e5e7eb',
+                    transition: 'all 0.3s',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                    display: 'flex',
+                    flexDirection: 'column'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.12)';
-                    e.currentTarget.style.transform = 'translateY(-4px)';
+                    e.currentTarget.style.boxShadow = '0 12px 30px rgba(236, 72, 153, 0.25)';
+                    e.currentTarget.style.transform = 'translateY(-6px)';
+                    e.currentTarget.style.borderColor = '#ec4899';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.boxShadow = 'none';
                     e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.borderColor = '#e5e7eb';
                   }}
                   onClick={() => {
                     if (postUrl) window.open(postUrl, '_blank', 'noopener,noreferrer');
                   }}
                   >
+                    {/* Imagem no estilo story - vertical */}
                     <div style={{
-                      background: '#f9fafb',
-                      borderRadius: '12px',
+                      background: 'linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)',
                       overflow: 'hidden',
-                      marginBottom: '16px',
-                      border: '1px solid #e5e7eb',
-                      height: '200px',
+                      height: '420px',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center'
+                      justifyContent: 'center',
+                      position: 'relative'
                     }}>
                       {previewUrl ? (
                         <img
                           src={previewUrl}
                           alt="Post"
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover'
+                          }}
                         />
                       ) : (
                         <div style={{ color: '#9ca3af' }}>
-                          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                             <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                             <circle cx="8.5" cy="8.5" r="1.5" />
                             <polyline points="21 15 16 10 5 21" />
                           </svg>
                         </div>
                       )}
+                      {/* Badge do tipo de conteúdo */}
+                      <div style={{
+                        position: 'absolute',
+                        top: '12px',
+                        right: '12px',
+                        background: 'rgba(0, 0, 0, 0.7)',
+                        backdropFilter: 'blur(8px)',
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        color: 'white',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px'
+                      }}>
+                        {interactionsTab === 'reels' ? 'Reel' : interactionsTab === 'videos' ? 'Vídeo' : 'Post'}
+                      </div>
                     </div>
-                    <div style={{
-                      fontSize: '15px',
-                      color: '#374151',
-                      marginBottom: '16px',
-                      fontWeight: 500,
-                      lineHeight: 1.5,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      minHeight: '45px'
-                    }}>
-                      {post.caption || post.text || 'Sem legenda'}
-                    </div>
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(4, 1fr)',
-                      gap: '12px',
-                      paddingTop: '16px',
-                      borderTop: '1px solid #e5e7eb'
-                    }}>
-                      <div style={{ textAlign: 'center' }}>
-                        <Heart size={16} color="#ef4444" fill="#ef4444" style={{ marginBottom: '6px' }} />
-                        <div style={{ fontSize: '15px', fontWeight: 700, color: '#111827' }}>{formatNumber(likes)}</div>
+
+                    {/* Informações do post */}
+                    <div style={{ padding: '16px' }}>
+                      <div style={{
+                        fontSize: '13px',
+                        color: '#6b7280',
+                        marginBottom: '12px',
+                        fontWeight: 500,
+                        lineHeight: 1.4,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        minHeight: '36px'
+                      }}>
+                        {post.caption || post.text || 'Sem legenda'}
                       </div>
-                      <div style={{ textAlign: 'center' }}>
-                        <MessageCircle size={16} color="#3b82f6" style={{ marginBottom: '6px' }} />
-                        <div style={{ fontSize: '15px', fontWeight: 700, color: '#111827' }}>{formatNumber(comments)}</div>
-                      </div>
-                      <div style={{ textAlign: 'center' }}>
-                        <Bookmark size={16} color="#eab308" style={{ marginBottom: '6px' }} />
-                        <div style={{ fontSize: '15px', fontWeight: 700, color: '#111827' }}>{formatNumber(saves)}</div>
-                      </div>
-                      <div style={{ textAlign: 'center' }}>
-                        <Share2 size={16} color="#22c55e" style={{ marginBottom: '6px' }} />
-                        <div style={{ fontSize: '15px', fontWeight: 700, color: '#111827' }}>{formatNumber(shares)}</div>
+
+                      {/* Métricas */}
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-around',
+                        gap: '8px',
+                        paddingTop: '12px',
+                        borderTop: '1px solid #f3f4f6'
+                      }}>
+                        <div style={{ textAlign: 'center', flex: 1 }}>
+                          <Heart size={14} color="#ef4444" fill="#ef4444" style={{ marginBottom: '4px' }} />
+                          <div style={{ fontSize: '13px', fontWeight: 700, color: '#111827' }}>{formatNumber(likes)}</div>
+                        </div>
+                        <div style={{ textAlign: 'center', flex: 1 }}>
+                          <MessageCircle size={14} color="#3b82f6" style={{ marginBottom: '4px' }} />
+                          <div style={{ fontSize: '13px', fontWeight: 700, color: '#111827' }}>{formatNumber(comments)}</div>
+                        </div>
+                        <div style={{ textAlign: 'center', flex: 1 }}>
+                          <Bookmark size={14} color="#eab308" style={{ marginBottom: '4px' }} />
+                          <div style={{ fontSize: '13px', fontWeight: 700, color: '#111827' }}>{formatNumber(saves)}</div>
+                        </div>
+                        <div style={{ textAlign: 'center', flex: 1 }}>
+                          <Share2 size={14} color="#22c55e" style={{ marginBottom: '4px' }} />
+                          <div style={{ fontSize: '13px', fontWeight: 700, color: '#111827' }}>{formatNumber(shares)}</div>
+                        </div>
                       </div>
                     </div>
                   </div>
