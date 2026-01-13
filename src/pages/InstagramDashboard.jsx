@@ -1402,6 +1402,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
 const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
  const reachMetric = metricsByKey.reach;
  const followersMetric = metricsByKey.followers_total;
+ const followersGainedMetric = metricsByKey.followers_gained;
  const followerGrowthMetric = metricsByKey.follower_growth;
  const engagementRateMetric = metricsByKey.engagement_rate;
  const profileViewsMetric = metricsByKey.video_views || metricsByKey.profile_views;
@@ -1671,6 +1672,16 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
       return total > 0 ? total : 0;
     };
 
+    const gainedMetricValue = extractNumber(followersGainedMetric?.value, null);
+    if (gainedMetricValue != null) {
+      return Math.max(0, Math.round(gainedMetricValue));
+    }
+
+    const followsCount = extractNumber(followerCounts?.follows, null);
+    if (followsCount != null) {
+      return Math.max(0, Math.round(followsCount));
+    }
+
     const gainInRange = sumGainSeries(followerGainSeriesInRange);
     if (Number.isFinite(gainInRange)) {
       return Math.round(gainInRange);
@@ -1751,6 +1762,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
     return 0;
   }, [
     followerCounts,
+    followersGainedMetric?.value,
     followerGainSeriesInRange,
     followerGrowthMetric?.value,
     followerSeriesInRange,

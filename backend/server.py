@@ -1202,6 +1202,41 @@ def fetch_instagram_metrics(
                     }
                 )
 
+    follows_total = _to_float(cur.get("follows"))
+    previous_follows_total = _to_float(prev.get("follows")) if isinstance(prev, dict) else None
+    followers_gained_total = None
+    if follows_total is not None:
+        followers_gained_total = follows_total
+    elif followers_gain_series:
+        total = 0.0
+        has_value = False
+        for entry in followers_gain_series:
+            metric_value = _to_float(entry.get("value"))
+            if metric_value is None:
+                continue
+            has_value = True
+            total += max(0.0, metric_value)
+        if has_value:
+            followers_gained_total = total
+    if followers_gained_total is None:
+        follower_growth_value = _to_float(cur.get("follower_growth"))
+        if follower_growth_value is not None and follower_growth_value > 0:
+            followers_gained_total = follower_growth_value
+
+    if followers_gained_total is not None:
+        followers_gained_total = int(round(followers_gained_total))
+
+    metrics.append(
+        {
+            "key": "followers_gained",
+            "label": "SEGUIDORES GANHOS",
+            "value": followers_gained_total,
+            "deltaPct": pct(follows_total, previous_follows_total)
+            if follows_total is not None and previous_follows_total not in (None, 0)
+            else None,
+        }
+    )
+
     top_posts = _build_top_posts_payload(posts_in_period)
 
     return {
@@ -1212,6 +1247,7 @@ def fetch_instagram_metrics(
         "follower_counts": follower_counts,
         "follower_series": cur.get("follower_series") or [],
         "followers_gain_series": followers_gain_series,
+        "followers_gained_total": followers_gained_total,
         "top_posts": top_posts,
         "reach_timeseries": reach_timeseries,
         "profile_views_timeseries": profile_views_timeseries,
@@ -2409,6 +2445,34 @@ def build_instagram_metrics_from_db(ig_id: str, since_ts: int, until_ts: int) ->
         except (TypeError, ValueError):
             net_followers_growth = None
 
+    def _sum_positive_entries(rows: Sequence[Dict[str, Any]]) -> Optional[float]:
+        total = 0.0
+        has_value = False
+        for entry in rows or []:
+            metric_value = _to_float(entry.get("value"))
+            if metric_value is None:
+                continue
+            has_value = True
+            if metric_value > 0:
+                total += metric_value
+        return total if has_value else None
+
+    def _sum_positive_diffs(rows: Sequence[Dict[str, Any]]) -> Optional[float]:
+        total = 0.0
+        previous = None
+        has_value = False
+        for entry in rows or []:
+            metric_value = _to_float(entry.get("value"))
+            if metric_value is None:
+                continue
+            if previous is not None:
+                diff = metric_value - previous
+                if diff > 0 and math.isfinite(diff):
+                    total += diff
+                has_value = True
+            previous = metric_value
+        return total if has_value else None
+
     followers_end = _latest_metric(current_data, "followers_total")
     followers_previous_end = _latest_metric(previous_data, "followers_total") if previous_data else None
 
@@ -2426,8 +2490,15 @@ def build_instagram_metrics_from_db(ig_id: str, since_ts: int, until_ts: int) ->
         elif follows_total is not None or unfollows_total is not None:
             net_followers_growth = (follows_total or 0.0) - (unfollows_total or 0.0)
 
+    positive_delta_total = _sum_positive_entries(follower_delta_rows)
+    series_gain_total = _sum_positive_diffs(current_data.get("followers_total", []))
+
     if follows_total is not None:
         followers_gained_total: Optional[float] = follows_total
+    elif positive_delta_total is not None:
+        followers_gained_total = positive_delta_total
+    elif series_gain_total is not None:
+        followers_gained_total = series_gain_total
     elif net_followers_growth is not None and net_followers_growth > 0:
         followers_gained_total = net_followers_growth
     else:
@@ -2540,6 +2611,14 @@ def build_instagram_metrics_from_db(ig_id: str, since_ts: int, until_ts: int) ->
             "deltaPct": _percentage_delta(followers_end, followers_previous_end),
         },
         {
+            "key": "followers_gained",
+            "label": "SEGUIDORES GANHOS",
+            "value": _as_int(followers_gained_total),
+            "deltaPct": _percentage_delta(follows_total, previous_follows_total)
+            if follows_total is not None and previous_follows_total not in (None, 0)
+            else None,
+        },
+        {
             "key": "reach",
             "label": "ALCANCE",
             "value": _as_int(reach_total),
@@ -2621,6 +2700,7 @@ def build_instagram_metrics_from_db(ig_id: str, since_ts: int, until_ts: int) ->
         "follower_counts": follower_counts,
         "follower_series": follower_series,
         "followers_gain_series": followers_gain_series,
+        "followers_gained_total": _as_int(followers_gained_total),
         "top_posts": top_posts_payload,
         "reach_timeseries": reach_timeseries,
         "profile_views_timeseries": profile_views_timeseries,
