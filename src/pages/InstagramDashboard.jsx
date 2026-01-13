@@ -814,6 +814,7 @@ export default function InstagramDashboard() {
 const [accountInfo, setAccountInfo] = useState(null);
 const [followerSeries, setFollowerSeries] = useState([]);
 const [followerGainSeries, setFollowerGainSeries] = useState([]);
+const [followersGainedTotal, setFollowersGainedTotal] = useState(null);
 const [audienceData, setAudienceData] = useState(null);
 const [audienceLoading, setAudienceLoading] = useState(false);
 const [audienceFetching, setAudienceFetching] = useState(false);
@@ -853,6 +854,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
       setMetrics([]);
       setFollowerSeries([]);
       setFollowerGainSeries([]);
+      setFollowersGainedTotal(null);
       setFollowerCounts(null);
       setReachCacheSeries([]);
       setProfileViewsSeries([]);
@@ -885,6 +887,9 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
       setMetrics(Array.isArray(cachedMetrics.metrics) ? cachedMetrics.metrics : []);
       setFollowerSeries(Array.isArray(cachedMetrics.followerSeries) ? cachedMetrics.followerSeries : []);
       setFollowerGainSeries(Array.isArray(cachedMetrics.followerGainSeries) ? cachedMetrics.followerGainSeries : []);
+      setFollowersGainedTotal(
+        cachedMetrics.followersGainedTotal != null ? cachedMetrics.followersGainedTotal : null,
+      );
       setFollowerCounts(cachedMetrics.followerCounts ?? null);
       setReachCacheSeries(Array.isArray(cachedMetrics.reachSeries) ? cachedMetrics.reachSeries : []);
       const cachedViewsSeries = Array.isArray(cachedMetrics.videoViewsSeries)
@@ -979,6 +984,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
       setMetrics([]);
       setFollowerSeries([]);
       setFollowerGainSeries([]);
+      setFollowersGainedTotal(null);
       setFollowerCounts(null);
       setReachCacheSeries([]);
       setProfileViewsSeries([]);
@@ -1020,6 +1026,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
         const fetchedMetrics = payload.metrics || [];
         const fetchedFollowerSeries = Array.isArray(payload.follower_series) ? payload.follower_series : [];
         const fetchedFollowerGainSeries = Array.isArray(payload.followers_gain_series) ? payload.followers_gain_series : [];
+        const fetchedFollowersGainedTotal = extractNumber(payload.followers_gained_total, null);
         const fetchedFollowerCounts = payload.follower_counts || null;
         const parseNumericSeries = (series) => (
           Array.isArray(series)
@@ -1044,6 +1051,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
         setMetrics(fetchedMetrics);
         setFollowerSeries(fetchedFollowerSeries);
         setFollowerGainSeries(fetchedFollowerGainSeries);
+        setFollowersGainedTotal(fetchedFollowersGainedTotal);
         setFollowerCounts(fetchedFollowerCounts);
         setReachCacheSeries(reachSeries);
         setProfileViewsSeries(resolvedViewsSeries);
@@ -1052,6 +1060,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
           metrics: fetchedMetrics,
           followerSeries: fetchedFollowerSeries,
           followerGainSeries: fetchedFollowerGainSeries,
+          followersGainedTotal: fetchedFollowersGainedTotal,
           followerCounts: fetchedFollowerCounts,
           reachSeries,
           profileViewsSeries: resolvedViewsSeries,
@@ -1074,6 +1083,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
           setMetrics([]);
           setFollowerSeries([]);
           setFollowerGainSeries([]);
+          setFollowersGainedTotal(null);
           setFollowerCounts(null);
           setReachCacheSeries([]);
           setProfileViewsSeries([]);
@@ -1677,6 +1687,11 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
       return Math.max(0, Math.round(gainedMetricValue));
     }
 
+    const gainedTotalValue = extractNumber(followersGainedTotal, null);
+    if (gainedTotalValue != null) {
+      return Math.max(0, Math.round(gainedTotalValue));
+    }
+
     const followsCount = extractNumber(followerCounts?.follows, null);
     if (followsCount != null) {
       return Math.max(0, Math.round(followsCount));
@@ -1761,6 +1776,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
 
     return 0;
   }, [
+    followersGainedTotal,
     followerCounts,
     followersGainedMetric?.value,
     followerGainSeriesInRange,
