@@ -2676,6 +2676,9 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
     audienceGenderSeries.reduce((sum, entry) => sum + extractNumber(entry.value, 0), 0)
   ), [audienceGenderSeries]);
 
+  const audienceStatusState = audienceLoading ? "loading" : audienceError ? "error" : "empty";
+  const audienceStatusMessage = audienceLoading ? "Carregando dados..." : (audienceError || "Sem dados");
+
   // const heatmapData = useMemo(() => DEFAULT_HEATMAP_MATRIX, []);
 
   // const maxHeatmapValue = useMemo(() => (
