@@ -93,6 +93,33 @@ const DEFAULT_GENDER_STATS = [
 const POSTS_INSIGHTS_LIMIT = 10;
 const RECENT_POSTS_TABLE_LIMIT = 5;
 
+const USE_MOCK_FOLLOWERS = true;
+const MOCK_FOLLOWER_GROWTH_PATTERN = [3, 5, 2, 6, 4, 7, 3, 5, 2, 6];
+
+const buildMockFollowerGrowthSeries = (rangeStart, rangeEnd) => {
+  if (!rangeStart || !rangeEnd) return [];
+  if (Number.isNaN(rangeStart.getTime()) || Number.isNaN(rangeEnd.getTime())) return [];
+  if (rangeStart > rangeEnd) return [];
+
+  return eachDayOfInterval({ start: rangeStart, end: rangeEnd }).map((day, index) => {
+    const dateKey = day.toISOString().slice(0, 10);
+    const monthLabel = MONTH_SHORT_PT[day.getMonth()] || "";
+    const dayLabel = String(day.getDate());
+    const label = monthLabel ? `${dayLabel}/${monthLabel}` : dayLabel;
+    const tooltipDate = monthLabel
+      ? `${String(day.getDate()).padStart(2, "0")} - ${monthLabel} - ${day.getFullYear()}`
+      : dateKey;
+    const value = MOCK_FOLLOWER_GROWTH_PATTERN[index % MOCK_FOLLOWER_GROWTH_PATTERN.length];
+
+    return {
+      label,
+      value,
+      tooltipDate,
+      dateKey,
+    };
+  });
+};
+
 const DEFAULT_AUDIENCE_TYPE = [
   { name: "Não Seguidores", value: 35 },
   { name: "Seguidores", value: 65 },
@@ -1678,6 +1705,13 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
 
   // Calcula total de seguidores ganhos no período filtrado
   const followersDelta = useMemo(() => {
+    if (USE_MOCK_FOLLOWERS) {
+      const mockStart = sinceDate ? startOfDay(sinceDate) : startOfDay(subDays(new Date(), 29));
+      const mockEnd = untilDate ? startOfDay(untilDate) : startOfDay(new Date());
+      const mockSeries = buildMockFollowerGrowthSeries(mockStart, mockEnd);
+      const total = mockSeries.reduce((sum, entry) => sum + extractNumber(entry.value, 0), 0);
+      return Math.max(0, Math.round(total));
+    }
     if (metricsLoading) return null;
     const sumGainSeries = (series) => {
       if (!Array.isArray(series) || !series.length) return null;
@@ -1795,6 +1829,8 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
     followerSeriesInRange,
     followerSeriesNormalized,
     metricsLoading,
+    sinceDate,
+    untilDate,
   ]);
 
 
@@ -2280,6 +2316,11 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
   }, [followerSeriesNormalized, metricsLoading]);
 
   const followerGrowthChartData = useMemo(() => {
+    if (USE_MOCK_FOLLOWERS) {
+      const mockStart = sinceDate ? startOfDay(sinceDate) : startOfDay(subDays(new Date(), 29));
+      const mockEnd = untilDate ? startOfDay(untilDate) : startOfDay(new Date());
+      return buildMockFollowerGrowthSeries(mockStart, mockEnd);
+    }
     if (metricsLoading) return [];
     if (metricsError) return [];
     const hasGainSeries = followerGainSeriesNormalized.length > 0;
@@ -2599,6 +2640,37 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
     if (totalFromPayload != null) return totalFromPayload;
     return audienceCities.reduce((sum, entry) => sum + extractNumber(entry.value, 0), 0);
   }, [audienceCities, audienceData]);
+
+  const audienceTopCity = useMemo(() => {
+    if (!audienceCities.length) return null;
+    const top = audienceCities[0];
+    const nameValue = String(top.name || "");
+    const parts = nameValue.split(",").map((part) => part.trim()).filter(Boolean);
+    const cityName = parts[0] || nameValue;
+    return {
+      ...top,
+      cityName,
+    };
+  }, [audienceCities]);
+
+  const audienceTopCityRows = useMemo(() => (
+    audienceCities.slice(0, 4).map((city) => {
+      const nameValue = String(city.name || "");
+      const parts = nameValue.split(",").map((part) => part.trim()).filter(Boolean);
+      const cityName = parts[0] || nameValue;
+      return {
+        ...city,
+        cityName,
+      };
+    })
+  ), [audienceCities]);
+
+  const audienceCitiesChartData = useMemo(() => (
+    audienceCities.slice(0, 8).map((city, index) => ({
+      name: String(city.name || `Cidade ${index + 1}`),
+      value: extractNumber(city.value, 0),
+    }))
+  ), [audienceCities]);
 
   const audienceGenderTotalPct = useMemo(() => (
     audienceGenderSeries.reduce((sum, entry) => sum + extractNumber(entry.value, 0), 0)
@@ -5555,95 +5627,90 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             <div className="ig-analytics-card__header">
               <h4>Top Cidades</h4>
             </div>
-            <div className="ig-top-cities-new-layout">
-              <div className="ig-top-cities-new-layout__left">
-                <div style={{ marginBottom: '16px' }}>
-                  <div style={{ fontSize: '32px', fontWeight: '700', color: '#1f2937', lineHeight: '1', marginBottom: '8px' }}>
-                    1.500
+            {audienceCities.length ? (
+              <div className="ig-top-cities-new-layout">
+                <div className="ig-top-cities-new-layout__left">
+                  <div style={{ marginBottom: '16px' }}>
+                    <div style={{ fontSize: '32px', fontWeight: '700', color: '#1f2937', lineHeight: '1', marginBottom: '8px' }}>
+                      {audienceTopCity ? formatNumber(audienceTopCity.value) : '--'}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span className="ig-top-city-row__icon" style={{ backgroundColor: "#5eead4", width: '12px', height: '12px', borderRadius: '3px' }}></span>
+                      <span style={{ fontSize: '13px', fontWeight: '500', color: '#374151' }}>
+                        {audienceTopCity?.cityName || '--'}
+                      </span>
+                      {audienceTopCity ? (
+                        <svg width="14" height="14" viewBox="0 0 16 16">
+                          <path d="M8 3 L13 9 L3 9 Z" fill="#10b981" />
+                        </svg>
+                      ) : null}
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span className="ig-top-city-row__icon" style={{ backgroundColor: "#5eead4", width: '12px', height: '12px', borderRadius: '3px' }}></span>
-                    <span style={{ fontSize: '13px', fontWeight: '500', color: '#374151' }}>Crato</span>
-                    <svg width="14" height="14" viewBox="0 0 16 16">
-                      <path d="M8 3 L13 9 L3 9 Z" fill="#10b981" />
-                    </svg>
+
+                  <div className="ig-top-cities__table">
+                    {audienceTopCityRows.map((city, index) => {
+                      const colors = ["#3b82f6", "#f87171", "#fb923c", "#5eead4"];
+                      const color = colors[index % colors.length];
+                      return (
+                        <div className="ig-top-city-row" key={`${city.name || city.cityName}-${index}`}>
+                          <div className="ig-top-city-row__left">
+                            <span className="ig-top-city-row__icon" style={{ backgroundColor: color }}></span>
+                            <span className="ig-top-city-row__name">{city.cityName || '--'}</span>
+                          </div>
+                          <span className="ig-top-city-row__value">{formatNumber(city.value)}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
-                <div className="ig-top-cities__table">
-                  <div className="ig-top-city-row">
-                    <div className="ig-top-city-row__left">
-                      <span className="ig-top-city-row__icon" style={{ backgroundColor: "#3b82f6" }}></span>
-                      <span className="ig-top-city-row__name">Fortaleza</span>
-                    </div>
-                    <span className="ig-top-city-row__value">350</span>
-                  </div>
-                  <div className="ig-top-city-row">
-                    <div className="ig-top-city-row__left">
-                      <span className="ig-top-city-row__icon" style={{ backgroundColor: "#f87171" }}></span>
-                      <span className="ig-top-city-row__name">Crato</span>
-                    </div>
-                    <span className="ig-top-city-row__value">200</span>
-                  </div>
-                  <div className="ig-top-city-row">
-                    <div className="ig-top-city-row__left">
-                      <span className="ig-top-city-row__icon" style={{ backgroundColor: "#fb923c" }}></span>
-                      <span className="ig-top-city-row__name">Massape</span>
-                    </div>
-                    <span className="ig-top-city-row__value">500</span>
-                  </div>
-                  <div className="ig-top-city-row">
-                    <div className="ig-top-city-row__left">
-                      <span className="ig-top-city-row__icon" style={{ backgroundColor: "#5eead4" }}></span>
-                      <span className="ig-top-city-row__name">France</span>
-                    </div>
-                    <span className="ig-top-city-row__value">700</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="ig-top-cities-new-layout__right">
-                <ResponsiveContainer width="100%" height={120}>
-                  <ComposedChart
-                    data={[
-                      { name: '26', value: 1200 },
-                      { name: '27', value: 1350 },
-                      { name: '28', value: 1300 },
-                      { name: '29', value: 1450 },
-                      { name: '30', value: 1400 },
-                      { name: '31', value: 1550 },
-                      { name: '01', value: 1500 }
-                    ]}
-                    margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
-                  >
-                    <defs>
-                      <linearGradient id="cityGrowthGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#5eead4" stopOpacity={0.3} />
-                        <stop offset="100%" stopColor="#5eead4" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <Tooltip
-                      content={(
-                        <CustomChartTooltip
-                          labelFormatter={(value) => String(value || "")}
-                          labelMap={{ value: "Total" }}
-                          valueFormatter={formatTooltipNumber}
+                <div className="ig-top-cities-new-layout__right">
+                  {audienceCitiesChartData.length ? (
+                    <ResponsiveContainer width="100%" height={120}>
+                      <ComposedChart
+                        data={audienceCitiesChartData}
+                        margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+                      >
+                        <defs>
+                          <linearGradient id="cityGrowthGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#5eead4" stopOpacity={0.3} />
+                            <stop offset="100%" stopColor="#5eead4" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <XAxis dataKey="name" hide />
+                        <YAxis hide />
+                        <Tooltip
+                          content={(
+                            <CustomChartTooltip
+                              labelFormatter={(value) => String(value || "")}
+                              labelMap={{ value: "Total" }}
+                              valueFormatter={formatTooltipNumber}
+                            />
+                          )}
                         />
-                      )}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="value"
-                      stroke="#5eead4"
-                      strokeWidth={2}
-                      fill="url(#cityGrowthGradient)"
-                      dot={false}
-                      animationDuration={800}
-                    />
-                  </ComposedChart>
-                </ResponsiveContainer>
+                        <Area
+                          type="monotone"
+                          dataKey="value"
+                          stroke="#5eead4"
+                          strokeWidth={2}
+                          fill="url(#cityGrowthGradient)"
+                          dot={false}
+                          animationDuration={800}
+                        />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="ig-analytics-card__body">
+                      <DataState state={audienceStatusState} label={audienceStatusMessage} size="sm" />
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="ig-analytics-card__body">
+                <DataState state={audienceStatusState} label={audienceStatusMessage} size="sm" />
+              </div>
+            )}
           </section>
         </div>
               </>

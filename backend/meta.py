@@ -31,6 +31,16 @@ REQUEST_TIMEOUT = 30  # segundos
 MAX_RETRIES = 3
 IG_POSTS_MEM_CACHE_TTL_SEC = int(os.getenv("IG_POSTS_MEM_CACHE_TTL_SEC", "1800"))
 IG_POSTS_MEM_CACHE: Dict[str, Dict[str, Any]] = {}
+IG_AUDIENCE_TIMEFRAME_DEFAULT = os.getenv("IG_AUDIENCE_TIMEFRAME", "this_week")
+IG_AUDIENCE_TIMEFRAME_ALIASES = {
+    "last_7_days": "this_week",
+    "last7days": "this_week",
+    "7d": "this_week",
+    "last_30_days": "this_month",
+    "last30days": "this_month",
+    "30d": "this_month",
+}
+IG_AUDIENCE_TIMEFRAMES = {"this_week", "this_month"}
 
 
 class MetaAPIError(Exception):
@@ -267,7 +277,7 @@ def insight_value_from_list(items: List[Dict[str, Any]], name: str) -> Optional[
 
 
 def aggregate_dimension_values(payload: Dict[str, Any], target_name: str) -> Dict[str, float]:
-    """Agrupa valores de métricas com breakdown do Graph API."""
+    """Agrupa valores de metricas com breakdown do Graph API."""
     results: Dict[str, float] = {}
     if not isinstance(payload, dict):
         return results
@@ -287,7 +297,44 @@ def aggregate_dimension_values(payload: Dict[str, Any], target_name: str) -> Dic
                 if coerced is None:
                     continue
                 results["total"] = results.get("total", 0.0) + coerced
+
+    if results:
+        return results
+
+    for item in payload.get("data", []):
+        if item.get("name") != target_name:
+            continue
+        total_value = item.get("total_value") or {}
+        breakdowns = total_value.get("breakdowns") or []
+        for breakdown in breakdowns:
+            for entry in breakdown.get("results") or []:
+                dimension_values = entry.get("dimension_values") or []
+                if not dimension_values:
+                    continue
+                key = " / ".join(str(value) for value in dimension_values if value is not None)
+                if not key:
+                    continue
+                coerced = _coerce_number(entry.get("value"))
+                if coerced is None:
+                    continue
+                results[key] = results.get(key, 0.0) + coerced
+        if results:
+            return results
+        coerced_total = _coerce_number(total_value.get("value"))
+        if coerced_total is not None:
+            results["total"] = results.get("total", 0.0) + coerced_total
     return results
+
+
+def normalize_ig_audience_timeframe(value: Optional[str]) -> str:
+    if value is None or value == "":
+        value = IG_AUDIENCE_TIMEFRAME_DEFAULT
+    candidate = str(value).strip().lower()
+    candidate = IG_AUDIENCE_TIMEFRAME_ALIASES.get(candidate, candidate)
+    if candidate not in IG_AUDIENCE_TIMEFRAMES:
+        fallback = str(IG_AUDIENCE_TIMEFRAME_DEFAULT).strip().lower()
+        candidate = fallback if fallback in IG_AUDIENCE_TIMEFRAMES else "this_week"
+    return candidate
 
 
 def extract_time_series(payload: Dict[str, Any], target_name: str) -> List[Dict[str, Any]]:
@@ -1095,17 +1142,19 @@ def _safe(val, cast=float):
         return 0
 
 
-def ig_audience(ig_user_id: str) -> Dict[str, Any]:
+def ig_audience(ig_user_id: str, timeframe: Optional[str] = None) -> Dict[str, Any]:
     """Retorna distribuição de audiência (cidades, idades, gênero)."""
+    audience_timeframe = normalize_ig_audience_timeframe(timeframe)
 
     def fetch_breakdown(breakdown: str):
-        metric_candidates = ("follower_demographics", "engaged_audience_demographics", "reached_audience_demographics")
+        metric_candidates = ("reached_audience_demographics", "engaged_audience_demographics", "follower_demographics")
         for metric_name in metric_candidates:
             params = {
                 "metric": metric_name,
                 "period": "lifetime",
                 "metric_type": "total_value",
                 "breakdown": breakdown,
+                "timeframe": audience_timeframe,
             }
             try:
                 payload = gget(f"/{ig_user_id}/insights", params)

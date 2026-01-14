@@ -38,6 +38,7 @@ from meta import (
     ig_recent_posts,
     ig_recent_posts_insights,
     ig_window,
+    normalize_ig_audience_timeframe,
     gget,
 )
 from jobs.instagram_ingest import ingest_account_range, daterange
@@ -1272,9 +1273,10 @@ def fetch_instagram_audience(
     ig_id: str,
     _since_ts: Optional[int],
     _until_ts: Optional[int],
-    _extra: Optional[Dict[str, Any]],
+    extra: Optional[Dict[str, Any]],
 ) -> Dict[str, Any]:
-    return ig_audience(ig_id)
+    timeframe = normalize_ig_audience_timeframe(extra.get("timeframe") if extra else None)
+    return ig_audience(ig_id, timeframe=timeframe)
 
 
 def fetch_instagram_posts(
@@ -3846,18 +3848,33 @@ def instagram_audience():
     ig = request.args.get("igUserId", IG_ID)
     if not ig:
         return jsonify({"error": "META_IG_USER_ID is not configured"}), 500
+    timeframe = normalize_ig_audience_timeframe(request.args.get("timeframe"))
     try:
         payload, meta = get_cached_payload(
             "instagram_audience",
             ig,
             None,
             None,
+            extra={"timeframe": timeframe},
             fetcher=fetch_instagram_audience,
             platform=DEFAULT_CACHE_PLATFORM,
         )
     except MetaAPIError as err:
-        mark_cache_error("instagram_audience", ig, None, None, None, err.args[0], platform=DEFAULT_CACHE_PLATFORM)
-        fallback = get_latest_cached_payload("instagram_audience", ig, platform=DEFAULT_CACHE_PLATFORM)
+        mark_cache_error(
+            "instagram_audience",
+            ig,
+            None,
+            None,
+            {"timeframe": timeframe},
+            err.args[0],
+            platform=DEFAULT_CACHE_PLATFORM,
+        )
+        fallback = get_latest_cached_payload(
+            "instagram_audience",
+            ig,
+            extra={"timeframe": timeframe},
+            platform=DEFAULT_CACHE_PLATFORM,
+        )
         if fallback:
             payload, meta = fallback
             meta = dict(meta or {})
@@ -3869,7 +3886,12 @@ def instagram_audience():
         return meta_error_response(err)
     except Exception as err:  # noqa: BLE001
         logger.exception("Falha inesperada em instagram_audience")
-        fallback = get_latest_cached_payload("instagram_audience", ig, platform=DEFAULT_CACHE_PLATFORM)
+        fallback = get_latest_cached_payload(
+            "instagram_audience",
+            ig,
+            extra={"timeframe": timeframe},
+            platform=DEFAULT_CACHE_PLATFORM,
+        )
         if fallback:
             payload, meta = fallback
             meta = dict(meta or {})
