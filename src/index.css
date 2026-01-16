@@ -8329,9 +8329,9 @@ td.posts-table__metric + td.posts-table__metric {
 .posts-table__preview-compact {
   position: relative;
   flex-shrink: 0;
-  width: 48px;
-  height: 48px;
-  border-radius: 8px;
+  width: 60px;
+  height: 60px;
+  border-radius: 10px;
   overflow: hidden;
   background: rgba(103, 123, 170, 0.1);
 }

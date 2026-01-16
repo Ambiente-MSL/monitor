@@ -8,7 +8,6 @@ const PostsTable = ({ posts, loading, error }) => {
     'comments',
     'saves',
     'shares',
-    'plays',
     'reach',
     'interactions',
     'engagement',
@@ -79,7 +78,6 @@ const PostsTable = ({ posts, loading, error }) => {
     comments: { label: 'Comentarios', align: 'right', isMetric: true, sortable: true },
     saves: { label: 'Salvos', align: 'right', isMetric: true, sortable: true },
     shares: { label: 'Compart.', align: 'right', isMetric: true, sortable: true },
-    plays: { label: 'Plays', align: 'right', isMetric: true, sortable: true },
     reach: { label: 'Alcance', align: 'right', isMetric: true, sortable: true },
     interactions: { label: 'Interacoes', align: 'right', isMetric: true, sortable: true },
     engagement: { label: 'Engajamento', align: 'right', isMetric: true, sortable: true },
@@ -176,8 +174,6 @@ const PostsTable = ({ posts, loading, error }) => {
         return resolvePostMetric(post, 'saves', 0);
       case 'shares':
         return resolvePostMetric(post, 'shares', 0);
-      case 'plays':
-        return extractNumber(post.views ?? post.video_views ?? post.plays ?? null, 0);
       case 'reach':
         return resolvePostMetric(post, 'reach', 0);
       case 'interactions': {
@@ -338,9 +334,6 @@ const PostsTable = ({ posts, loading, error }) => {
 
       case 'shares':
         return formatNumber(resolvePostMetric(post, 'shares', 0));
-
-      case 'plays':
-        return formatNumber(extractNumber(post.views ?? post.video_views ?? post.plays ?? null, null));
 
       case 'reach':
         return formatNumber(resolvePostMetric(post, 'reach', 0));
