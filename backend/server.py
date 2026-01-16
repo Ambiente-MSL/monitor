@@ -11,6 +11,7 @@ import json
 import threading
 from collections import Counter, defaultdict
 from datetime import date, datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from typing import Any, Dict, List, Optional, Sequence, Union
 
 from flask import Flask, jsonify, request, send_from_directory
@@ -375,6 +376,28 @@ def _parse_iso_datetime(value: Any) -> Optional[datetime]:
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=timezone.utc)
     return parsed
+
+
+def _resolve_cache_timezone() -> timezone:
+    tz_name = os.getenv("CACHE_WARM_TZ") or os.getenv("INSTAGRAM_INGEST_TZ") or "America/Sao_Paulo"
+    try:
+        return ZoneInfo(tz_name)
+    except Exception:  # noqa: BLE001
+        return timezone.utc
+
+
+def _should_force_daily_refresh(fetched_at: Optional[str], tz: timezone) -> bool:
+    if not fetched_at:
+        return False
+    fetched_dt = _parse_iso_datetime(fetched_at)
+    if not fetched_dt:
+        return False
+    try:
+        fetched_local = fetched_dt.astimezone(tz).date()
+    except Exception:  # noqa: BLE001
+        fetched_local = fetched_dt.date()
+    today_local = datetime.now(tz).date()
+    return fetched_local < today_local
 
 
 def _map_sync_source(cache_meta: Optional[Dict[str, Any]]) -> str:
@@ -3991,6 +4014,19 @@ def instagram_posts():
         limit = int(limit_param) if limit_param is not None else 6
     except ValueError:
         limit = 6
+    force_refresh = request.args.get("force")
+    force_refresh_flag = str(force_refresh).lower() in ("1", "true", "yes", "y")
+    if not force_refresh_flag:
+        latest = get_latest_cached_payload(
+            "instagram_posts",
+            ig,
+            extra={"limit": limit},
+            platform=DEFAULT_CACHE_PLATFORM,
+        )
+        if latest:
+            _, latest_meta = latest
+            if _should_force_daily_refresh(latest_meta.get("fetched_at"), _resolve_cache_timezone()):
+                force_refresh_flag = True
     try:
         payload, meta = get_cached_payload(
             "instagram_posts",
@@ -4000,6 +4036,8 @@ def instagram_posts():
             extra={"limit": limit},
             fetcher=fetch_instagram_posts,
             platform=DEFAULT_CACHE_PLATFORM,
+            force=force_refresh_flag,
+            refresh_reason="daily_refresh" if force_refresh_flag else None,
         )
     except MetaAPIError as err:
         mark_cache_error("instagram_posts", ig, None, None, {"limit": limit}, err.args[0], platform=DEFAULT_CACHE_PLATFORM)

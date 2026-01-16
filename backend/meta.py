@@ -5,7 +5,8 @@ import hmac
 import hashlib
 import logging
 import copy
-from datetime import datetime
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 import requests
 from typing import Optional, List, Dict, Any, Sequence
 from urllib.parse import urlencode
@@ -40,6 +41,14 @@ IG_AUDIENCE_TIMEFRAME_ALIASES = {
     "last30days": "this_month",
     "30d": "this_month",
 }
+
+
+def _resolve_cache_timezone() -> timezone:
+    tz_name = os.getenv("CACHE_WARM_TZ") or os.getenv("INSTAGRAM_INGEST_TZ") or "America/Sao_Paulo"
+    try:
+        return ZoneInfo(tz_name)
+    except Exception:  # noqa: BLE001
+        return timezone.utc
 IG_AUDIENCE_TIMEFRAMES = {"this_week", "this_month"}
 
 
@@ -1560,7 +1569,11 @@ def ig_recent_posts(ig_user_id: str, limit: int = 6):
 
     cache_key = f"{ig_user_id}|{limit_sanitized}"
     now_ts = time.time()
+    tz = _resolve_cache_timezone()
+    today_key = datetime.now(tz).date().isoformat()
     cached = IG_POSTS_MEM_CACHE.get(cache_key)
+    if cached and cached.get("day") != today_key:
+        cached = None
     if cached and (now_ts - cached.get("ts", 0)) < IG_POSTS_MEM_CACHE_TTL_SEC:
         return copy.deepcopy(cached.get("data"))
 
@@ -1745,6 +1758,7 @@ def ig_recent_posts(ig_user_id: str, limit: int = 6):
 
     IG_POSTS_MEM_CACHE[cache_key] = {
         "ts": now_ts,
+        "day": today_key,
         "data": copy.deepcopy(result),
     }
 
