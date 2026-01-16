@@ -312,7 +312,7 @@ const PostsTable = ({ posts, loading, error }) => {
             )}
             <div className="posts-table__post-info">
               <div className="posts-table__caption-compact" title={caption}>
-                {truncate(caption, 80)}
+                {truncate(caption, 60)}
               </div>
               <div className="posts-table__post-meta">
                 <span className="posts-table__post-date">{date}</span>
