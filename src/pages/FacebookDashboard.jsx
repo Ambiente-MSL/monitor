@@ -1090,28 +1090,46 @@ useEffect(() => {
                 <div className="ig-profile-vertical__stats-grid">
                   <div className="ig-overview-stat">
                     <div className="ig-overview-stat__value">
-                      {overviewIsLoading ? "..." : formatNumber(overviewMetrics.followers)}
+                      {overviewIsLoading ? (
+                        <span className="ig-skeleton ig-skeleton--stat" aria-hidden="true" />
+                      ) : (
+                        formatNumber(overviewMetrics.followers)
+                      )}
                     </div>
                     <div className="ig-overview-stat__label">Total de seguidores</div>
                   </div>
                   <div className="ig-overview-stat">
                     <div className="ig-overview-stat__value">
-                      {overviewIsLoading ? "..." : formatNumber(overviewMetrics.reach)}
+                      {overviewIsLoading ? (
+                        <span className="ig-skeleton ig-skeleton--stat" aria-hidden="true" />
+                      ) : (
+                        formatNumber(overviewMetrics.reach)
+                      )}
                     </div>
-                    <div className="ig-overview-stat__label">
-                      {overviewIsLoading ? "Alcance (carregando)" : reachPeriodLabel}
-                    </div>
+                    <div className="ig-overview-stat__label">{reachPeriodLabel}</div>
                   </div>
                 </div>
 
                 <div className="fb-stats-grid fb-stats-grid--two-cols">
                   <div className="ig-overview-stat">
-                    <div className="ig-overview-stat__value">{formatNumber(overviewMetrics.engagement || 0)}</div>
+                    <div className="ig-overview-stat__value">
+                      {overviewIsLoading ? (
+                        <span className="ig-skeleton ig-skeleton--stat" aria-hidden="true" />
+                      ) : (
+                        formatNumber(overviewMetrics.engagement || 0)
+                      )}
+                    </div>
                     <div className="ig-overview-stat__label">Engajamento total</div>
                   </div>
 
                   <div className="ig-overview-stat">
-                    <div className="ig-overview-stat__value">{formatNumber(overviewMetrics.pageViews || 0)}</div>
+                    <div className="ig-overview-stat__value">
+                      {overviewIsLoading ? (
+                        <span className="ig-skeleton ig-skeleton--stat" aria-hidden="true" />
+                      ) : (
+                        formatNumber(overviewMetrics.pageViews || 0)
+                      )}
+                    </div>
                     <div className="ig-overview-stat__label">Visualizações de página</div>
                   </div>
 

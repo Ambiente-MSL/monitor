@@ -76,6 +76,38 @@
   --chart-grid: color-mix(in oklab, var(--border-color) 40%, transparent);
   --chart-axis: color-mix(in oklab, var(--text-secondary) 55%, transparent);
   --sidebar-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+
+  /* Instagram Dashboard Design Tokens */
+  --ig-card-bg: #ffffff;
+  --ig-card-border: rgba(0, 0, 0, 0.06);
+  --ig-card-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --ig-card-radius: 16px;
+  --ig-card-padding: 20px;
+
+  --ig-text-primary: #111827;
+  --ig-text-secondary: #6b7280;
+  --ig-text-muted: #9ca3af;
+
+  --ig-spacing-xs: 4px;
+  --ig-spacing-sm: 8px;
+  --ig-spacing-md: 16px;
+  --ig-spacing-lg: 24px;
+  --ig-spacing-xl: 32px;
+
+  --ig-gradient-pink: linear-gradient(135deg, #ec4899 0%, #f97316 100%);
+  --ig-gradient-purple: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  --ig-gradient-teal: linear-gradient(135deg, #06b6d4 0%, #0ea5e9 100%);
+  --ig-gradient-green: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+
+  --ig-skeleton-bg: #f3f4f6;
+  --ig-skeleton-shine: #e5e7eb;
+
+  --ig-font-size-xs: 0.7rem;
+  --ig-font-size-sm: 0.8rem;
+  --ig-font-size-base: 0.9rem;
+  --ig-font-size-lg: 1.1rem;
+  --ig-font-size-xl: 1.5rem;
+  --ig-font-size-2xl: 2rem;
 }
 
 :root[data-theme="light"] {
@@ -145,6 +177,16 @@
   --chart-grid: color-mix(in oklab, var(--muted) 25%, transparent);
   --chart-axis: color-mix(in oklab, var(--muted) 40%, transparent);
   --sidebar-shadow: 0 32px 64px rgba(5, 10, 20, 0.46);
+
+  /* Instagram Dashboard Dark Theme */
+  --ig-card-bg: var(--panel);
+  --ig-card-border: var(--stroke);
+  --ig-card-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --ig-text-primary: var(--fg);
+  --ig-text-secondary: var(--muted);
+  --ig-text-muted: color-mix(in oklab, var(--fg) 40%, transparent);
+  --ig-skeleton-bg: var(--panel-hover);
+  --ig-skeleton-shine: var(--panel);
 }
 
 html, body, #root {
@@ -10303,8 +10345,14 @@ body:has(.instagram-dashboard--clean) .app-main__content {
   max-width: 1400px;
   width: 100%;
   margin: 0 auto;
-  padding: 24px 24px 32px;
+  padding: var(--ig-spacing-lg) var(--ig-spacing-lg) var(--ig-spacing-xl);
   z-index: 0;
+}
+
+@media (max-width: 768px) {
+  .ig-clean-container {
+    padding: var(--ig-spacing-md);
+  }
 }
 
 .ig-hero-gradient {
@@ -10370,34 +10418,38 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: white;
-  padding: 16px 32px;
-  border-radius: 16px;
-  margin-bottom: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background: var(--ig-card-bg);
+  padding: var(--ig-spacing-md) var(--ig-spacing-xl);
+  border-radius: var(--ig-card-radius);
+  margin-bottom: var(--ig-spacing-lg);
+  box-shadow: var(--ig-card-shadow);
+  border: 1px solid var(--ig-card-border);
+  flex-wrap: wrap;
+  gap: var(--ig-spacing-md);
 }
 
 .ig-clean-header__brand {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--ig-spacing-md);
 }
 
 .ig-clean-header__logo {
-  width: 48px;
-  height: 48px;
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  width: 44px;
+  height: 44px;
+  background: var(--ig-gradient-pink);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
+  flex-shrink: 0;
 }
 
 .ig-clean-header__brand h1 {
-  font-size: 24px;
+  font-size: var(--ig-font-size-xl);
   font-weight: 700;
-  color: #111827;
+  color: var(--ig-text-primary);
   margin: 0;
 }
 
@@ -10405,26 +10457,45 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .ig-clean-tabs {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: #f3f4f6;
-  padding: 6px;
+  gap: 6px;
+  background: var(--ig-skeleton-bg);
+  padding: 5px;
   border-radius: 10px;
 }
 
 .ig-clean-tab {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
-  border-radius: 8px;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 7px;
   background: transparent;
   border: none;
-  color: #6b7280;
-  font-size: 14px;
+  color: var(--ig-text-secondary);
+  font-size: var(--ig-font-size-sm);
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
   text-decoration: none;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .ig-clean-header {
+    padding: var(--ig-spacing-md);
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ig-clean-header__brand h1 {
+    font-size: var(--ig-font-size-lg);
+  }
+
+  .ig-clean-tabs {
+    width: 100%;
+    overflow-x: auto;
+    justify-content: flex-start;
+  }
 }
 
 .ig-clean-tab:hover:not(:disabled) {
@@ -10711,7 +10782,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   display: block;
   width: 100%;
   height: 18px;
-  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background: linear-gradient(90deg, var(--ig-skeleton-bg) 25%, var(--ig-skeleton-shine) 50%, var(--ig-skeleton-bg) 75%);
   background-size: 400% 100%;
   animation: igShimmer 1.2s ease-in-out infinite;
   border-radius: 10px;
@@ -10725,10 +10796,10 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 
 .ig-chart-skeleton {
   width: 100%;
-  background: linear-gradient(90deg, #f8fafc 25%, #e5e7eb 50%, #f8fafc 75%);
+  background: linear-gradient(90deg, var(--ig-skeleton-bg) 25%, var(--ig-skeleton-shine) 50%, var(--ig-skeleton-bg) 75%);
   background-size: 400% 100%;
-  animation: igShimmer 1.3s ease-in-out infinite;
-  border-radius: 14px;
+  animation: igShimmer 1.2s ease-in-out infinite;
+  border-radius: var(--ig-card-radius);
 }
 
 .ig-chart-skeleton--tall {
@@ -11148,52 +11219,66 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 }
 
 .ig-analytics-grid {
-  margin-top: 20px;
+  margin-top: var(--ig-spacing-lg);
   display: grid;
-  gap: 20px;
+  gap: var(--ig-spacing-lg);
 }
 
 .ig-analytics-grid--pair {
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (max-width: 1024px) {
+  .ig-analytics-grid--pair {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .ig-analytics-grid {
+    gap: var(--ig-spacing-md);
+    margin-top: var(--ig-spacing-md);
+  }
 }
 
 .ig-analytics-card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--ig-spacing-sm);
 }
 
 .ig-analytics-card__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--ig-spacing-sm);
 }
 
 .ig-analytics-card__header h4 {
   margin: 0;
-  font-size: 16px;
-  color: #111827;
+  font-size: var(--ig-font-size-lg);
+  color: var(--ig-text-primary);
+  font-weight: 600;
 }
 
 .ig-analytics-card__body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--ig-spacing-sm);
   align-items: center;
   justify-content: center;
   padding: 0;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--ig-card-border);
 }
 
 .ig-analytics-legend {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 12px;
-  color: #475569;
+  font-size: var(--ig-font-size-xs);
+  color: var(--ig-text-secondary);
   width: 100%;
-  padding: 8px 16px 0 16px;
+  padding: var(--ig-spacing-sm) var(--ig-spacing-md) 0 var(--ig-spacing-md);
 }
 
 .ig-analytics-legend__item {
@@ -11373,17 +11458,23 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 }
 
 .ig-card-white {
-  background: white;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background: var(--ig-card-bg);
+  border: 1px solid var(--ig-card-border);
+  border-radius: var(--ig-card-radius);
+  padding: var(--ig-card-padding);
+  box-shadow: var(--ig-card-shadow);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.ig-card-white:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 .ig-card-white h4 {
-  font-size: 16px;
+  font-size: var(--ig-font-size-lg);
   font-weight: 700;
-  color: #111827;
-  margin: 0 0 16px 0;
+  color: var(--ig-text-primary);
+  margin: 0 0 var(--ig-spacing-md) 0;
 }
 
 /* Scroll horizontal para Top Reels/Videos/Posts */
