@@ -8,6 +8,7 @@ import secrets
 import unicodedata
 import uuid
 import json
+import threading
 from collections import Counter, defaultdict
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Sequence, Union
@@ -208,6 +209,10 @@ ACT_ID = os.getenv("META_AD_ACCOUNT_ID")
 MAX_DAYS_RANGE = int(os.getenv("MAX_DAYS_RANGE", "365"))  # Limite máximo de dias para requests
 MIN_TIMESTAMP = 946684800  # 1 Jan 2000
 DEFAULT_DAYS = 7
+INSTAGRAM_METRICS_ALLOW_PARTIAL = os.getenv("INSTAGRAM_METRICS_ALLOW_PARTIAL", "1") != "0"
+INSTAGRAM_METRICS_PARTIAL_MIN_RATIO = float(os.getenv("INSTAGRAM_METRICS_PARTIAL_MIN_RATIO", "0") or "0")
+INSTAGRAM_METRICS_PARTIAL_MIN_DAYS = int(os.getenv("INSTAGRAM_METRICS_PARTIAL_MIN_DAYS", "1") or "1")
+INSTAGRAM_METRICS_AUTO_BACKFILL = os.getenv("INSTAGRAM_METRICS_AUTO_BACKFILL", "0") != "0"
 DEFAULT_REFRESH_RESOURCES = [
     "facebook_metrics",
     "facebook_posts",
@@ -2064,6 +2069,31 @@ def _ensure_instagram_daily_metrics(ig_id: str, start_date: date, end_date: date
     )
 
 
+_instagram_backfill_lock = threading.Lock()
+_instagram_backfill_pending: set[str] = set()
+
+
+def _schedule_instagram_metrics_backfill(ig_id: str, start_date: date, end_date: date) -> None:
+    if not INSTAGRAM_METRICS_AUTO_BACKFILL:
+        return
+    if start_date > end_date:
+        return
+    key = f"{ig_id}|{start_date.isoformat()}|{end_date.isoformat()}"
+    with _instagram_backfill_lock:
+        if key in _instagram_backfill_pending:
+            return
+        _instagram_backfill_pending.add(key)
+
+    def run() -> None:
+        try:
+            _ensure_instagram_daily_metrics(ig_id, start_date, end_date)
+        finally:
+            with _instagram_backfill_lock:
+                _instagram_backfill_pending.discard(key)
+
+    threading.Thread(target=run, daemon=True).start()
+
+
 def _load_metrics_map(ig_id: str, start_date: date, end_date: date) -> Dict[str, List[Dict[str, Any]]]:
     client = get_postgres_client()
     if client is None:
@@ -2396,7 +2426,15 @@ def _to_float(value: Optional[Any]) -> Optional[float]:
         return None
 
 
-def build_instagram_metrics_from_db(ig_id: str, since_ts: int, until_ts: int) -> Optional[Dict[str, Any]]:
+def build_instagram_metrics_from_db(
+    ig_id: str,
+    since_ts: int,
+    until_ts: int,
+    *,
+    allow_partial: bool = False,
+    min_coverage_ratio: float = 0.0,
+    min_coverage_days: int = 1,
+) -> Optional[Dict[str, Any]]:
     client = get_postgres_client()
     if client is None:
         return None
@@ -2414,8 +2452,15 @@ def build_instagram_metrics_from_db(ig_id: str, since_ts: int, until_ts: int) ->
     coverage = _coverage_summary(current_data, since_date, until_date)
     if coverage["covered_days"] == 0:
         return None
-    if os.getenv("INSTAGRAM_METRICS_REQUIRE_FULL_COVERAGE", "1") != "0" and not coverage.get("has_full_coverage"):
-        return None
+    require_full_coverage = os.getenv("INSTAGRAM_METRICS_REQUIRE_FULL_COVERAGE", "1") != "0"
+    if not coverage.get("has_full_coverage"):
+        if require_full_coverage and not allow_partial:
+            return None
+        if allow_partial:
+            if coverage.get("covered_days", 0) < max(1, min_coverage_days):
+                return None
+            if coverage.get("coverage_ratio", 0) < min_coverage_ratio:
+                return None
 
     reach_total = _sum_metric(current_data, "reach")
     reach_previous = _sum_metric(previous_data, "reach") if previous_data else None
@@ -3547,21 +3592,39 @@ def instagram_metrics():
                     payload_obj["reach_timeseries"] = series
                 return
 
+    allow_partial = INSTAGRAM_METRICS_ALLOW_PARTIAL
+    min_ratio = INSTAGRAM_METRICS_PARTIAL_MIN_RATIO
+    min_days = INSTAGRAM_METRICS_PARTIAL_MIN_DAYS
+
     try:
-        db_payload = build_instagram_metrics_from_db(ig, since, until)
+        db_payload = build_instagram_metrics_from_db(
+            ig,
+            since,
+            until,
+            allow_partial=allow_partial,
+            min_coverage_ratio=min_ratio,
+            min_coverage_days=min_days,
+        )
     except Exception as err:  # noqa: BLE001
         logger.exception("Falha ao montar métricas via %s", IG_METRICS_TABLE, exc_info=err)
         db_payload = None
     if db_payload:
         payload_obj = dict(db_payload)
         _ensure_reach_timeseries(payload_obj)
+        coverage = payload_obj.get("coverage") if isinstance(payload_obj.get("coverage"), dict) else {}
+        has_full_coverage = bool(coverage.get("has_full_coverage"))
+        if not has_full_coverage:
+            _schedule_instagram_metrics_backfill(ig, _unix_to_date(since), _unix_to_date(until))
+
         legacy_cache = payload_obj.get("cache") if isinstance(payload_obj.get("cache"), dict) else {}
         precomputed_cache = {
-            "source": "db",
+            "source": "db" if has_full_coverage else "db_partial",
             "stale": False,
             "fetched_at": legacy_cache.get("fetched_at") or _utc_now_iso(),
             "next_refresh_at": None,
             "cache_key": None,
+            "partial": not has_full_coverage,
+            "coverage": coverage,
         }
         envelope = _build_api_envelope(
             payload_obj,

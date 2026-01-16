@@ -325,6 +325,21 @@ const sumInteractions = (post) => {
   return likes + comments + shares + saves;
 };
 
+const buildCoverageNotice = (coverage) => {
+  if (!coverage || typeof coverage !== "object") return "";
+  if (coverage.has_full_coverage) return "";
+  const covered = coverage.covered_days;
+  const requested = coverage.requested_days;
+  if (!Number.isFinite(covered) || !Number.isFinite(requested) || requested <= 0) {
+    return "Dados parciais: cobertura incompleta.";
+  }
+  const ratio = Number.isFinite(coverage.coverage_ratio)
+    ? Math.round(coverage.coverage_ratio * 100)
+    : null;
+  const ratioLabel = ratio != null ? ` (${ratio}%)` : "";
+  return `Dados parciais: ${covered}/${requested} dias${ratioLabel}. Rode o backfill para completar.`;
+};
+
 const truncate = (text, length = 120) => {
   if (!text) return "";
   return text.length <= length ? text : `${text.slice(0, length - 3)}...`;
@@ -1107,7 +1122,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
           sync: syncInfo,
         });
 
-        setMetricsNotice("");
+        setMetricsNotice(buildCoverageNotice(payload.coverage));
       } catch (err) {
         if (cancelled || metricsRequestIdRef.current !== requestId) return;
         if (err?.name === "AbortError") {
