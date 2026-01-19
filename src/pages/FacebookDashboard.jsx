@@ -939,7 +939,6 @@ useEffect(() => {
   return (
     <div className="facebook-dashboard facebook-dashboard--clean">
       {pageError && <div className="alert alert--error">{pageError}</div>}
-      {isRefreshing ? <div className="alert">Atualizando dados...</div> : null}
 
       {/* Container Limpo (fundo branco) */}
       <div className="ig-clean-container">

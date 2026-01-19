@@ -2800,10 +2800,6 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
         <div className="ig-clean-container">
           {/* Degradê de fundo do Instagram */}
           <div className="ig-hero-gradient" aria-hidden="true" />
-          {audienceFetching && !audienceLoading && !audienceError ? (
-            <div className="alert">Atualizando dados...</div>
-          ) : null}
-
           {/* Header com Logo Instagram */}
           <div className="ig-clean-header" style={{ marginBottom: '24px' }}>
             <div className="ig-clean-header__brand">
@@ -4534,9 +4530,6 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
       {postsError && <div className="alert alert--error">{postsError}</div>}
       {metricsNotice && <div className="alert">{metricsNotice}</div>}
       {postsNotice && <div className="alert">{postsNotice}</div>}
-      {!metricsNotice && !postsNotice && (metricsFetching || postsFetching) ? (
-        <div className="alert">Atualizando dados…</div>
-      ) : null}
 
       {/* Container Limpo (fundo branco) */}
       <div className="ig-clean-container">
