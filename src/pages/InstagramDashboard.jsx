@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useLayoutEffect } from "react";
 import { Link, useLocation, useOutletContext } from "react-router-dom";
 import { useRef } from "react";
 import {
@@ -849,23 +849,73 @@ export default function InstagramDashboard() {
     setCalendarMonth((current) => (current === defaultCalendarValue ? current : defaultCalendarValue));
   }, [defaultCalendarValue]);
 
-const [accountInfo, setAccountInfo] = useState(null);
-const [followerSeries, setFollowerSeries] = useState([]);
-const [followerGainSeries, setFollowerGainSeries] = useState([]);
-const [followersGainedTotal, setFollowersGainedTotal] = useState(null);
-const [audienceData, setAudienceData] = useState(null);
-const [audienceLoading, setAudienceLoading] = useState(false);
-const [audienceFetching, setAudienceFetching] = useState(false);
-const [audienceError, setAudienceError] = useState("");
-const audienceRequestIdRef = useRef(0);
-const [followerCounts, setFollowerCounts] = useState(null);
-const [overviewSnapshot, setOverviewSnapshot] = useState(null);
-const [reachCacheSeries, setReachCacheSeries] = useState([]);
-const [profileViewsSeries, setProfileViewsSeries] = useState([]);
-const [profileVisitorsBreakdown, setProfileVisitorsBreakdown] = useState(null);
-const [activeFollowerGrowthBar, setActiveFollowerGrowthBar] = useState(-1);
-const [activeEngagementIndex, setActiveEngagementIndex] = useState(-1);
-const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
+  const [accountInfo, setAccountInfo] = useState(null);
+  const [followerSeries, setFollowerSeries] = useState([]);
+  const [followerGainSeries, setFollowerGainSeries] = useState([]);
+  const [followersGainedTotal, setFollowersGainedTotal] = useState(null);
+  const [audienceData, setAudienceData] = useState(null);
+  const [audienceLoading, setAudienceLoading] = useState(false);
+  const [audienceFetching, setAudienceFetching] = useState(false);
+  const [audienceError, setAudienceError] = useState("");
+  const audienceRequestIdRef = useRef(0);
+  const [followerCounts, setFollowerCounts] = useState(null);
+  const [overviewSnapshot, setOverviewSnapshot] = useState(null);
+  const [reachCacheSeries, setReachCacheSeries] = useState([]);
+  const [profileViewsSeries, setProfileViewsSeries] = useState([]);
+  const [profileVisitorsBreakdown, setProfileVisitorsBreakdown] = useState(null);
+  const [activeFollowerGrowthBar, setActiveFollowerGrowthBar] = useState(-1);
+  const [activeEngagementIndex, setActiveEngagementIndex] = useState(-1);
+  const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
+  const lastUiAccountKeyRef = useRef("");
+
+  useLayoutEffect(() => {
+    const previousKey = lastUiAccountKeyRef.current;
+    if (previousKey && previousKey !== accountSnapshotKey) {
+      // Limpa estados para evitar exibir dados da conta anterior ao trocar o seletor.
+      setMetrics([]);
+      setFollowerSeries([]);
+      setFollowerGainSeries([]);
+      setFollowersGainedTotal(null);
+      setFollowerCounts(null);
+      setReachCacheSeries([]);
+      setProfileViewsSeries([]);
+      setProfileVisitorsBreakdown(null);
+      setMetricsError("");
+      setMetricsNotice("");
+      setMetricsFetching(false);
+      setMetricsLoading(false);
+      setMetricsSync(normalizeSyncInfo(null));
+      setOverviewSnapshot(null);
+
+      setPosts([]);
+      setAccountInfo(null);
+      setPostsError("");
+      setPostsNotice("");
+      setPostsFetching(false);
+      setLoadingPosts(false);
+
+      setRecentPosts([]);
+      setRecentPostsError("");
+      setRecentPostsFetching(false);
+      setRecentPostsLoading(false);
+
+      setAudienceData(null);
+      setAudienceError("");
+      setAudienceFetching(false);
+      setAudienceLoading(false);
+
+      setCoverImage(null);
+      setCoverError("");
+      setCoverLoading(false);
+
+      setCommentsCount(null);
+      setActiveFollowerGrowthBar(-1);
+      setActiveEngagementIndex(-1);
+      setActiveGenderIndex(-1);
+    }
+
+    lastUiAccountKeyRef.current = accountSnapshotKey || "";
+  }, [accountSnapshotKey]);
 
   const activeSnapshot = useMemo(
     () => (overviewSnapshot?.accountId === accountSnapshotKey && accountSnapshotKey ? overviewSnapshot : null),
