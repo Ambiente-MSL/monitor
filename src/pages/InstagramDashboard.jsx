@@ -325,21 +325,6 @@ const sumInteractions = (post) => {
   return likes + comments + shares + saves;
 };
 
-const buildCoverageNotice = (coverage) => {
-  if (!coverage || typeof coverage !== "object") return "";
-  if (coverage.has_full_coverage) return "";
-  const covered = coverage.covered_days;
-  const requested = coverage.requested_days;
-  if (!Number.isFinite(covered) || !Number.isFinite(requested) || requested <= 0) {
-    return "Dados parciais: cobertura incompleta.";
-  }
-  const ratio = Number.isFinite(coverage.coverage_ratio)
-    ? Math.round(coverage.coverage_ratio * 100)
-    : null;
-  const ratioLabel = ratio != null ? ` (${ratio}%)` : "";
-  return `Dados parciais: ${covered}/${requested} dias${ratioLabel}. Rode o backfill para completar.`;
-};
-
 const truncate = (text, length = 120) => {
   if (!text) return "";
   return text.length <= length ? text : `${text.slice(0, length - 3)}...`;
@@ -1122,7 +1107,7 @@ const [activeGenderIndex, setActiveGenderIndex] = useState(-1);
           sync: syncInfo,
         });
 
-        setMetricsNotice(buildCoverageNotice(payload.coverage));
+        setMetricsNotice("");
       } catch (err) {
         if (cancelled || metricsRequestIdRef.current !== requestId) return;
         if (err?.name === "AbortError") {
@@ -3645,14 +3630,14 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 <div style={{ height: 350 }}>
                   {followerGrowthChartData.length ? (
                     <ResponsiveContainer>
-                      <BarChart
+                      <AreaChart
                         data={followerGrowthChartData}
                         margin={{ top: 16, right: 16, bottom: 32, left: 0 }}
                       >
                         <defs>
-                          <linearGradient id="followerDetailBar" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#d8b4fe" />
-                            <stop offset="100%" stopColor="#c084fc" />
+                          <linearGradient id="followerDetailLine" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#c084fc" stopOpacity={0.4} />
+                            <stop offset="100%" stopColor="#c084fc" stopOpacity={0.05} />
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
@@ -3672,7 +3657,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                           tickFormatter={(value) => formatCompactNumber(value)}
                         />
                         <Tooltip
-                          cursor={{ fill: 'rgba(216, 180, 254, 0.25)' }}
+                          cursor={{ stroke: '#c084fc', strokeWidth: 1, strokeDasharray: '4 4' }}
                           content={(props) => {
                             const tooltipDate = props?.payload?.[0]?.payload?.tooltipDate || props?.label;
                             return (
@@ -3685,8 +3670,16 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                             );
                           }}
                         />
-                        <Bar dataKey="value" fill="url(#followerDetailBar)" radius={[8, 8, 0, 0]} />
-                      </BarChart>
+                        <Area
+                          type="monotone"
+                          dataKey="value"
+                          stroke="#a855f7"
+                          strokeWidth={2.5}
+                          fill="url(#followerDetailLine)"
+                          dot={false}
+                          activeDot={{ r: 5, fill: '#a855f7', stroke: '#fff', strokeWidth: 2 }}
+                        />
+                      </AreaChart>
                     </ResponsiveContainer>
                   ) : (
                     <div className="ig-empty-state">Sem dados disponíveis.</div>
@@ -5115,21 +5108,15 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 {metricsLoading ? (
                   <div className="ig-chart-skeleton ig-chart-skeleton--compact" aria-hidden="true" />
                 ) : followerGrowthChartData.length ? (
-                  <ResponsiveContainer width="100%" height={followerGrowthChartData.length > 15 ? 380 : 280}>
-                    <BarChart
+                  <ResponsiveContainer width="100%" height={280}>
+                    <AreaChart
                       data={followerGrowthChartData}
-                      margin={{ top: 16, right: 16, bottom: followerGrowthChartData.length > 15 ? 70 : 32, left: 0 }}
-                      barCategoryGap={followerGrowthBarCategoryGap}
+                      margin={{ top: 16, right: 16, bottom: 32, left: 0 }}
                     >
                         <defs>
-                          <linearGradient id="igFollowerGrowthBar" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#d8b4fe" />
-                            <stop offset="100%" stopColor="#c084fc" />
-                          </linearGradient>
-                          <linearGradient id="igFollowerGrowthBarActive" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#f472b6" />
-                            <stop offset="45%" stopColor="#d946ef" />
-                            <stop offset="100%" stopColor="#6366f1" />
+                          <linearGradient id="igFollowerGrowthLine" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#c084fc" stopOpacity={0.4} />
+                            <stop offset="100%" stopColor="#c084fc" stopOpacity={0.05} />
                           </linearGradient>
                         </defs>
                         <CartesianGrid stroke="#e5e7eb" strokeDasharray="4 8" vertical={false} />
@@ -5138,7 +5125,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                           tick={{ fill: "#9ca3af", fontSize: 12 }}
                           axisLine={false}
                           tickLine={false}
-                          interval={followerGrowthChartData.length > 15 ? "preserveEnd" : 0}
+                          interval="preserveStartEnd"
                           height={32}
                           minTickGap={50}
                           tickFormatter={formatAxisDate}
@@ -5152,7 +5139,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                           domain={followerGrowthDomain}
                         />
                         <Tooltip
-                          cursor={{ fill: "rgba(216, 180, 254, 0.25)" }}
+                          cursor={{ stroke: "#c084fc", strokeWidth: 1, strokeDasharray: "4 4" }}
                           content={(props) => {
                             const tooltipDate = props?.payload?.[0]?.payload?.tooltipDate || props?.label;
                             return (
@@ -5183,46 +5170,22 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                               x={highlightedFollowerGrowthPoint.label}
                               y={extractNumber(highlightedFollowerGrowthPoint.value, 0)}
                               r={6}
-                              fill="#111827"
+                              fill="#a855f7"
                               stroke="#ffffff"
                               strokeWidth={2}
                             />
                           </>
                         ) : null}
-                        <Bar
+                        <Area
+                          type="monotone"
                           dataKey="value"
-                          radius={[12, 12, 0, 0]}
-                          barSize={followerGrowthBarSize}
-                          minPointSize={6}
-                          onMouseEnter={(_, index) => setActiveFollowerGrowthBar(index)}
-                          onMouseLeave={() => setActiveFollowerGrowthBar(-1)}
-                        >
-                          {followerGrowthChartData.map((entry, index) => (
-                            <Cell
-                              key={`${entry.label || "point"}-${index}`}
-                              fill={index === highlightedFollowerGrowthIndex
-                                ? "url(#igFollowerGrowthBarActive)"
-                                : "url(#igFollowerGrowthBar)"}
-                            />
-                          ))}
-                        </Bar>
-                        {followerGrowthChartData.length > 15 && (
-                          <Brush
-                            dataKey="label"
-                            height={40}
-                            stroke="#c084fc"
-                            fill="transparent"
-                            startIndex={0}
-                            endIndex={followerGrowthChartData.length - 1}
-                            travellerWidth={14}
-                            y={280}
-                          >
-                            <BarChart>
-                              <Bar dataKey="value" fill="#e9d5ff" radius={[3, 3, 0, 0]} />
-                            </BarChart>
-                          </Brush>
-                        )}
-                      </BarChart>
+                          stroke="#a855f7"
+                          strokeWidth={2.5}
+                          fill="url(#igFollowerGrowthLine)"
+                          dot={false}
+                          activeDot={{ r: 5, fill: "#a855f7", stroke: "#fff", strokeWidth: 2 }}
+                        />
+                      </AreaChart>
                     </ResponsiveContainer>
                 ) : (
                   <div className="ig-empty-state">Sem dados disponiveis.</div>
