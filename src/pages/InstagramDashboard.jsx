@@ -4316,7 +4316,10 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   <p className="ig-card-subtitle">Ganho diário</p>
                 </div>
                 <button
-                  onClick={() => setShowFollowersDetail(true)}
+                  onClick={() => {
+                    setShowFollowersDetail(true);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                   style={{
                     padding: '8px 14px',
                     background: 'linear-gradient(135deg, #c084fc 0%, #a855f7 100%)',
@@ -4449,7 +4452,10 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '2px', marginBottom: 0 }}>Total de reproduções (Reels, Feed e Stories)</p>
               </div>
               <button
-                onClick={() => setShowDetailedView(true)}
+                onClick={() => {
+                  setShowDetailedView(true);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
                 style={{
                   padding: '8px 14px',
                   background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
@@ -4561,7 +4567,10 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '2px', marginBottom: 0 }}>Total de engajamento do público</p>
               </div>
               <button
-                onClick={() => setShowInteractionsDetail(true)}
+                onClick={() => {
+                  setShowInteractionsDetail(true);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
                 style={{
                   padding: '8px 14px',
                   background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
