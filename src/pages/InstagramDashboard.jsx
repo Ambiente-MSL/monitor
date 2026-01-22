@@ -444,6 +444,66 @@ const formatPercent = (value) => {
   return `${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}%`;
 };
 
+const formatHour = (hour) => String((hour + 24) % 24).padStart(2, "0");
+
+const buildRecommendedWindow = (peakHour) => {
+  if (!Number.isFinite(peakHour)) return "";
+  const startHour = (peakHour + 23) % 24; // 30-60 min antes do pico
+  const startLabel = `${formatHour(startHour)}:00`;
+  const endLabel = `${formatHour(startHour)}:30`;
+  return `${startLabel} - ${endLabel}`;
+};
+
+const normalizeActiveHours = (activeHours) => {
+  if (!activeHours) return [];
+  if (Array.isArray(activeHours)) {
+    if (!activeHours.length) return [];
+    if (typeof activeHours[0] !== "object") {
+      return activeHours.map((value, hour) => ({
+        hour,
+        value: extractNumber(value, 0),
+      }));
+    }
+    return activeHours
+      .map((entry, index) => {
+        if (!entry || typeof entry !== "object") return null;
+        const rawHour = entry.hour ?? entry.key ?? entry.name ?? entry.label ?? index;
+        const hour = Number(rawHour);
+        if (!Number.isFinite(hour)) return null;
+        return {
+          hour,
+          value: extractNumber(entry.value ?? entry.count ?? entry.total, 0),
+        };
+      })
+      .filter(Boolean);
+  }
+  if (typeof activeHours === "object") {
+    return Object.entries(activeHours)
+      .map(([hourKey, value]) => {
+        const hour = Number(hourKey);
+        if (!Number.isFinite(hour)) return null;
+        return { hour, value: extractNumber(value, 0) };
+      })
+      .filter(Boolean);
+  }
+  return [];
+};
+
+const pickPeakHour = (hours) => {
+  let peakHour = null;
+  let peakValue = -Infinity;
+  hours.forEach((entry) => {
+    const hour = Number(entry?.hour);
+    if (!Number.isFinite(hour)) return;
+    const value = extractNumber(entry?.value, 0);
+    if (value > peakValue) {
+      peakValue = value;
+      peakHour = hour;
+    }
+  });
+  return Number.isFinite(peakHour) ? peakHour : null;
+};
+
 const normalizePostMedia = (post) => {
   if (!post || typeof post !== "object") return post;
   const mediaType = post.mediaType ?? post.media_type;
@@ -498,13 +558,19 @@ const classifyInteractionContentType = (post) => {
   return "posts";
 };
 
-const analyzeBestTimes = (posts) => {
+const analyzeBestTimes = (posts, activeHours) => {
+  const normalizedActiveHours = normalizeActiveHours(activeHours);
+  const peakHourFromInsights = normalizedActiveHours.length
+    ? pickPeakHour(normalizedActiveHours)
+    : null;
+
   if (!Array.isArray(posts) || posts.length === 0) {
     return {
       bestDay: "",
-      bestTimeRange: "",
+      bestTimeRange: peakHourFromInsights != null ? buildRecommendedWindow(peakHourFromInsights) : "",
       avgEngagement: 0,
-      confidence: "baixa",
+      confidence: peakHourFromInsights != null ? "media" : "baixa",
+      source: peakHourFromInsights != null ? "insights" : "none",
     };
   }
 
@@ -528,25 +594,30 @@ const analyzeBestTimes = (posts) => {
   const bestDay = Array.from(dayTotals.entries())
     .sort((a, b) => b[1] - a[1])[0]?.[0] ?? "";
 
-  let bestHourStart = 0;
+  let bestHour = null;
   let bestHourValue = -Infinity;
-  for (let hour = 0; hour <= 21; hour += 1) {
-    const total = (hourTotals.get(hour) || 0)
-      + (hourTotals.get(hour + 1) || 0)
-      + (hourTotals.get(hour + 2) || 0);
-    if (total > bestHourValue) {
-      bestHourValue = total;
-      bestHourStart = hour;
+  hourTotals.forEach((value, hour) => {
+    if (value > bestHourValue) {
+      bestHourValue = value;
+      bestHour = hour;
     }
-  }
+  });
 
-  const bestTimeRange = `${String(bestHourStart).padStart(2, "0")}:00 - ${String(bestHourStart + 3).padStart(2, "0")}:00`;
+  const resolvedPeakHour = peakHourFromInsights ?? bestHour;
+  const bestTimeRange = resolvedPeakHour != null ? buildRecommendedWindow(resolvedPeakHour) : "";
   const avgEngagement = Math.round(posts.reduce((sum, post) => sum + sumInteractions(post), 0) / posts.length);
   let confidence = "baixa";
-  if (posts.length >= 30) confidence = "alta";
+  if (peakHourFromInsights != null) confidence = "alta";
+  else if (posts.length >= 30) confidence = "alta";
   else if (posts.length >= 15) confidence = "media";
 
-  return { bestDay, bestTimeRange, avgEngagement, confidence };
+  return {
+    bestDay,
+    bestTimeRange,
+    avgEngagement,
+    confidence,
+    source: peakHourFromInsights != null ? "insights" : "posts",
+  };
 };
 
 const buildKeywordFrequency = (posts) => {
@@ -1456,8 +1527,6 @@ export default function InstagramDashboard() {
   }, [accountConfig?.instagramUserId, accountSnapshotKey, sinceParam, untilParam, postsInsightsCacheKey]);
 
   useEffect(() => {
-    if (!showFollowersDetail) return undefined;
-
     if (!accountConfig?.instagramUserId) {
       setAudienceData(null);
       setAudienceError("Conta do Instagram nao configurada.");
@@ -1526,7 +1595,7 @@ export default function InstagramDashboard() {
       clearTimeout(hardTimeout);
       controller.abort();
     };
-  }, [accountConfig?.instagramUserId, audienceCacheKey, showFollowersDetail]);
+  }, [accountConfig?.instagramUserId, audienceCacheKey]);
 
 const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
  const reachMetric = metricsByKey.reach;
@@ -2412,7 +2481,20 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
     };
   }, [calendarMonth, posts]);
 
-  const bestTimes = useMemo(() => analyzeBestTimes(filteredPosts), [filteredPosts]);
+  const bestTimes = useMemo(
+    () => analyzeBestTimes(interactionPostsSource, audienceData?.active_hours ?? audienceData?.activeHours),
+    [interactionPostsSource, audienceData],
+  );
+
+  const bestTimesCaption = useMemo(() => {
+    if (bestTimes.source === "insights") {
+      return "*Baseado no horÃ¡rio em que seus seguidores estÃ£o mais ativos (Insights).";
+    }
+    if (bestTimes.source === "posts") {
+      return "*Baseado no engajamento das suas publicaÃ§Ãµes recentes.";
+    }
+    return "*Sem dados suficientes para estimar o melhor horÃ¡rio.";
+  }, [bestTimes.source]);
 
   const topPosts = useMemo(() => (filteredPosts.length
     ? [...filteredPosts].sort((a, b) => sumInteractions(b) - sumInteractions(a)).slice(0, 6)
@@ -3214,7 +3296,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                           <span className="ig-engagement-mini-card__value">{bestTimes.bestDay || "--"}</span>
                         </div>
                       </div>
-                      <p className="ig-best-time-caption">*Baseado nas publicações dos últimos 30 dias</p>
+                      <p className="ig-best-time-caption">{bestTimesCaption}</p>
                     </>
                   ) : (
                     <DataState state="empty" label="Sem dados de engajamento." size="sm" />

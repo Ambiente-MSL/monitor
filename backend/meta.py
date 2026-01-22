@@ -1151,6 +1151,83 @@ def _safe(val, cast=float):
         return 0
 
 
+def _normalize_active_hours(raw_value) -> List[Dict[str, int]]:
+    if raw_value is None:
+        return []
+    hours: Dict[int, int] = {}
+
+    if isinstance(raw_value, list):
+        # Lista simples com 24 valores (0-23)
+        if raw_value and not isinstance(raw_value[0], dict):
+            for hour, value in enumerate(raw_value):
+                try:
+                    hours[int(hour)] = int(round(float(value or 0)))
+                except (TypeError, ValueError):
+                    hours[int(hour)] = 0
+        else:
+            for entry in raw_value:
+                if not isinstance(entry, dict):
+                    continue
+                hour_raw = entry.get("hour") or entry.get("key") or entry.get("name") or entry.get("label")
+                try:
+                    hour = int(hour_raw)
+                except (TypeError, ValueError):
+                    continue
+                try:
+                    hours[hour] = int(round(float(entry.get("value") or 0)))
+                except (TypeError, ValueError):
+                    hours[hour] = 0
+    elif isinstance(raw_value, dict):
+        for key, value in raw_value.items():
+            try:
+                hour = int(key)
+            except (TypeError, ValueError):
+                continue
+            try:
+                hours[hour] = int(round(float(value or 0)))
+            except (TypeError, ValueError):
+                hours[hour] = 0
+
+    return [
+        {"hour": hour, "value": hours.get(hour, 0)}
+        for hour in sorted(hours.keys())
+        if 0 <= hour <= 23
+    ]
+
+
+def _fetch_online_followers(ig_user_id: str) -> List[Dict[str, int]]:
+    """
+    Retorna a distribuição por hora dos seguidores online, quando disponível.
+    """
+    try:
+        payload = gget(
+            f"/{ig_user_id}/insights",
+            {
+                "metric": "online_followers",
+                "period": "lifetime",
+            },
+        )
+    except MetaAPIError:
+        return []
+
+    data = payload.get("data") or []
+    for entry in data:
+        if str(entry.get("name") or "").lower() != "online_followers":
+            continue
+        values = entry.get("values")
+        if isinstance(values, list) and values:
+            first = values[0]
+            if isinstance(first, dict):
+                normalized = _normalize_active_hours(first.get("value"))
+            else:
+                normalized = _normalize_active_hours(first)
+        else:
+            normalized = _normalize_active_hours(entry.get("value"))
+        if normalized:
+            return normalized
+    return []
+
+
 def ig_audience(ig_user_id: str, timeframe: Optional[str] = None) -> Dict[str, Any]:
     """Retorna distribuição de audiência (cidades, idades, gênero)."""
     audience_timeframe = normalize_ig_audience_timeframe(timeframe)
@@ -1246,10 +1323,13 @@ def ig_audience(ig_user_id: str, timeframe: Optional[str] = None) -> Dict[str, A
         for key, amount in gender_totals.items()
     ]
 
+    active_hours = _fetch_online_followers(ig_user_id)
+
     return {
         "cities": cities,
         "ages": ages,
         "gender": gender,
+        "active_hours": active_hours,
         "totals": {
             "cities": int(round(total_city)) if total_city else 0,
             "ages": int(round(age_total)) if age_total else 0,
