@@ -2828,669 +2828,6 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
     }
   }, [accountId, apiFetch]);
 
-  // Renderização da visualização detalhada de Interações
-  if (showInteractionsDetail) {
-    return (
-      <div className="instagram-dashboard instagram-dashboard--clean">
-        <div className="ig-clean-container">
-          {/* Degradê de fundo do Instagram */}
-          <div className="ig-hero-gradient" aria-hidden="true" />
-          {/* Header com Logo Instagram */}
-          <div className="ig-clean-header" style={{ marginBottom: '24px' }}>
-            <div className="ig-clean-header__brand">
-              <div className="ig-clean-header__logo">
-                <InstagramIcon size={32} />
-              </div>
-              <h1>Instagram</h1>
-            </div>
-          </div>
-
-          {/* Hero com navegação - Tema Rosa para Interações */}
-          <div className="ig-hero" style={{ marginTop: '20px', marginBottom: '32px' }}>
-            <div className="ig-hero__background" style={{ background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)' }} />
-            <div className="ig-hero__content">
-              {/* Navegação de volta */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <button
-                  onClick={() => setShowInteractionsDetail(false)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '12px 24px',
-                    borderRadius: '12px',
-                    background: 'rgba(255, 255, 255, 0.95)',
-                    backdropFilter: 'blur(10px)',
-                    border: '2px solid white',
-                    fontSize: '14px',
-                    fontWeight: 700,
-                    color: '#ec4899',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
-                  }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.background = 'white';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.2)';
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.95)';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                  }}
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ec4899" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="15 18 9 12 15 6" />
-                  </svg>
-                  <span>Voltar ao Dashboard</span>
-                </button>
-              </div>
-
-              {/* Título da seção */}
-              <div>
-                <div style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '10px 20px',
-                  borderRadius: '12px',
-                  background: 'rgba(255, 255, 255, 0.15)',
-                  backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  marginBottom: '12px'
-                }}>
-                  <Heart size={24} color="white" fill="white" />
-                  <span style={{ fontSize: '14px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Interações</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Grade de Gráficos - Audiência e Tipo de Conteúdo */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, 1fr)',
-            gap: '20px',
-            marginBottom: '32px'
-          }}>
-            {/* Gráfico de Pizza - Interações por Audiência */}
-            <section className="ig-card-white" style={{
-              padding: '28px',
-              borderRadius: '20px',
-              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
-              border: '1px solid rgba(0, 0, 0, 0.05)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                <div style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '10px',
-                  background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                  </svg>
-                </div>
-                <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
-                  Por Audiência
-                </h3>
-              </div>
-              <div style={{ height: 300, position: 'relative' }}>
-                <ResponsiveContainer>
-                  <PieChart>
-                    <Pie
-                      data={[
-                        { name: 'Seguidores', value: 77, fill: '#6366f1' },
-                        { name: 'Não Seguidores', value: 23, fill: '#ec4899' }
-                      ]}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={70}
-                      outerRadius={110}
-                      paddingAngle={2}
-                      dataKey="value"
-                    >
-                      {[
-                        { name: 'Seguidores', value: 77, fill: '#6366f1' },
-                        { name: 'Não Seguidores', value: 23, fill: '#ec4899' }
-                      ].map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      content={(
-                        <CustomChartTooltip
-                          variant="pie"
-                          unit="%"
-                          valueFormatter={formatTooltipNumber}
-                          showPercent={false}
-                        />
-                      )}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div style={{
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  textAlign: 'center',
-                  pointerEvents: 'none'
-                }}>
-                  <div style={{ fontSize: '32px', fontWeight: 800, color: '#111827' }}>
-                    {formatNumber(interactionsBreakdown.total)}
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500, marginTop: '4px' }}>
-                    Interações
-                  </div>
-                </div>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', marginTop: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#6366f1' }} />
-                  <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Seguidores (77%)</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#ec4899' }} />
-                  <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Não Seguidores (23%)</span>
-                </div>
-              </div>
-            </section>
-
-            {/* Gráfico de Barras Horizontais - Interações por Tipo de Conteúdo */}
-            <section className="ig-card-white" style={{
-              padding: '28px',
-              borderRadius: '20px',
-              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
-              border: '1px solid rgba(0, 0, 0, 0.05)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                <div style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '10px',
-                  background: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="3" width="7" height="7" />
-                    <rect x="14" y="3" width="7" height="7" />
-                    <rect x="14" y="14" width="7" height="7" />
-                    <rect x="3" y="14" width="7" height="7" />
-                  </svg>
-                </div>
-                <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
-                  Por Tipo de Conteúdo
-                </h3>
-              </div>
-              <div style={{ height: 300 }}>
-                <ResponsiveContainer>
-                  <BarChart
-                    layout="vertical"
-                    data={[
-                      { name: 'Reels', value: 4520, fill: '#6366f1' },
-                      { name: 'Posts', value: 3280, fill: '#ec4899' },
-                      { name: 'Stories', value: 1980, fill: '#f59e0b' }
-                    ]}
-                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
-                    <XAxis
-                      type="number"
-                      tick={{ fontSize: 12, fill: '#6b7280' }}
-                      axisLine={{ stroke: '#e5e7eb' }}
-                      tickFormatter={(value) => formatCompactNumber(value)}
-                    />
-                    <YAxis type="category" dataKey="name" tick={{ fontSize: 13, fill: '#111827', fontWeight: 600 }} axisLine={{ stroke: '#e5e7eb' }} width={80} />
-                    <Tooltip
-                      content={(
-                        <CustomChartTooltip
-                          labelFormatter={(value) => String(value || "")}
-                          labelMap={{ value: "Interacoes" }}
-                          valueFormatter={formatTooltipNumber}
-                        />
-                      )}
-                    />
-                    <Bar dataKey="value" radius={[0, 8, 8, 0]}>
-                      {[
-                        { name: 'Reels', value: 4520, fill: '#6366f1' },
-                        { name: 'Posts', value: 3280, fill: '#ec4899' },
-                        { name: 'Stories', value: 1980, fill: '#f59e0b' }
-                      ].map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '20px', flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#6366f1' }} />
-                  <span style={{ fontSize: '13px', color: '#111827', fontWeight: 600 }}>Reels</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#ec4899' }} />
-                  <span style={{ fontSize: '13px', color: '#111827', fontWeight: 600 }}>Posts</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#f59e0b' }} />
-                  <span style={{ fontSize: '13px', color: '#111827', fontWeight: 600 }}>Stories</span>
-                </div>
-              </div>
-            </section>
-          </div>
-
-          {/* Tabs de Navegação */}
-          <div style={{
-            display: 'flex',
-            gap: '12px',
-            marginBottom: '28px',
-            borderBottom: '2px solid #e5e7eb',
-            overflowX: 'auto'
-          }}>
-            {INTERACTIONS_TABS.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setInteractionsTab(tab.id)}
-                style={{
-                  padding: '14px 24px',
-                  background: interactionsTab === tab.id ? '#fce7f3' : 'transparent',
-                  border: 'none',
-                  borderBottom: interactionsTab === tab.id ? '3px solid #ec4899' : '3px solid transparent',
-                  cursor: 'pointer',
-                  fontSize: '15px',
-                  fontWeight: interactionsTab === tab.id ? 700 : 500,
-                  color: interactionsTab === tab.id ? '#ec4899' : '#6b7280',
-                  transition: 'all 0.2s',
-                  whiteSpace: 'nowrap',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  marginBottom: '-2px'
-                }}
-                onMouseEnter={(e) => {
-                  if (interactionsTab !== tab.id) {
-                    e.currentTarget.style.background = '#f9fafb';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (interactionsTab !== tab.id) {
-                    e.currentTarget.style.background = 'transparent';
-                  }
-                }}
-              >
-                {tab.id === 'reels' ? (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" />
-                    <line x1="7" y1="2" x2="7" y2="22" />
-                    <line x1="17" y1="2" x2="17" y2="22" />
-                    <line x1="2" y1="12" x2="22" y2="12" />
-                    <line x1="2" y1="7" x2="7" y2="7" />
-                    <line x1="2" y1="17" x2="7" y2="17" />
-                    <line x1="17" y1="17" x2="22" y2="17" />
-                    <line x1="17" y1="7" x2="22" y2="7" />
-                  </svg>
-                ) : (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                    <circle cx="8.5" cy="8.5" r="1.5" />
-                    <polyline points="21 15 16 10 5 21" />
-                  </svg>
-                )}
-                <span>{tab.label}</span>
-              </button>
-            ))}
-          </div>
-
-          <div style={{ marginBottom: '16px', fontSize: '14px', color: '#6b7280', fontWeight: 600 }}>
-            Total de interações em {interactionsTabLabel}:{" "}
-            <span style={{ color: '#111827' }}>{formatNumber(interactionsByTypeTotals[interactionsTab] || 0)}</span>
-          </div>
-
-          {/* Métricas Detalhadas por Tipo */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-            gap: '16px',
-            marginBottom: '32px'
-          }}>
-            <div className="ig-card-white" style={{
-              padding: '18px',
-              borderRadius: '12px',
-              border: '1px solid #fecaca',
-              background: '#fef2f2'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                <Heart size={18} color="#ef4444" fill="#ef4444" />
-                <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Curtidas</span>
-              </div>
-              <div style={{ fontSize: '26px', fontWeight: 700, color: '#ef4444' }}>
-                {formatNumber(interactionsTabBreakdown.likes)}
-              </div>
-            </div>
-
-            <div className="ig-card-white" style={{
-              padding: '18px',
-              borderRadius: '12px',
-              border: '1px solid #bfdbfe',
-              background: '#eff6ff'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                <MessageCircle size={18} color="#3b82f6" />
-                <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>Comentários</span>
-              </div>
-              <div style={{ fontSize: '26px', fontWeight: 700, color: '#3b82f6' }}>
-                {formatNumber(interactionsTabBreakdown.comments)}
-              </div>
-            </div>
-
-            <div className="ig-card-white" style={{
-              padding: '24px',
-              borderRadius: '12px',
-              border: '1px solid #fde047',
-              background: '#fefce8'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-                <Bookmark size={22} color="#eab308" />
-                <span style={{ fontSize: '14px', color: '#6b7280', fontWeight: 600 }}>Salvamentos</span>
-              </div>
-              <div style={{ fontSize: '32px', fontWeight: 700, color: '#eab308' }}>
-                {formatNumber(interactionsTabBreakdown.saves)}
-              </div>
-            </div>
-
-            <div className="ig-card-white" style={{
-              padding: '24px',
-              borderRadius: '12px',
-              border: '1px solid #86efac',
-              background: '#f0fdf4'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-                <Share2 size={22} color="#22c55e" />
-                <span style={{ fontSize: '14px', color: '#6b7280', fontWeight: 600 }}>Compartilhamentos</span>
-              </div>
-              <div style={{ fontSize: '32px', fontWeight: 700, color: '#22c55e' }}>
-                {formatNumber(interactionsTabBreakdown.shares)}
-              </div>
-            </div>
-
-            <div className="ig-card-white" style={{
-              padding: '24px',
-              borderRadius: '12px',
-              border: '1px solid #c4b5fd',
-              background: '#f5f3ff'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M17 1l4 4-4 4" />
-                  <path d="M3 11V9a4 4 0 0 1 4-4h14" />
-                  <path d="M7 23l-4-4 4-4" />
-                  <path d="M21 13v2a4 4 0 0 1-4 4H3" />
-                </svg>
-                <span style={{ fontSize: '14px', color: '#6b7280', fontWeight: 600 }}>Reposts</span>
-              </div>
-              <div style={{ fontSize: '32px', fontWeight: 700, color: '#8b5cf6' }}>
-                {formatNumber(0)}
-              </div>
-            </div>
-          </div>
-
-          {/* Top Content por Curtidas */}
-          <section className="ig-card-white" style={{
-            padding: '28px',
-            borderRadius: '20px',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
-            border: '1px solid rgba(0, 0, 0, 0.05)',
-            position: 'relative'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '10px',
-                  background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                  </svg>
-                </div>
-                <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
-                  {interactionsTab === 'reels' ? 'Top Reels por Curtidas' : interactionsTab === 'videos' ? 'Top Videos por Curtidas' : 'Top Posts por Curtidas'}
-                </h3>
-              </div>
-
-              {/* Setas de navegação */}
-              {interactionsTabPosts.length > 3 && (
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    onClick={() => scrollTopReels('left')}
-                    style={{
-                      width: '36px',
-                      height: '36px',
-                      borderRadius: '50%',
-                      border: '1px solid #e5e7eb',
-                      background: 'white',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#f9fafb';
-                      e.currentTarget.style.borderColor = '#ec4899';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'white';
-                      e.currentTarget.style.borderColor = '#e5e7eb';
-                    }}
-                  >
-                    <ChevronLeft size={20} color="#6b7280" />
-                  </button>
-                  <button
-                    onClick={() => scrollTopReels('right')}
-                    style={{
-                      width: '36px',
-                      height: '36px',
-                      borderRadius: '50%',
-                      border: '1px solid #e5e7eb',
-                      background: 'white',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#f9fafb';
-                      e.currentTarget.style.borderColor = '#ec4899';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'white';
-                      e.currentTarget.style.borderColor = '#e5e7eb';
-                    }}
-                  >
-                    <ChevronRight size={20} color="#6b7280" />
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div
-              className="top-reels-scroll-container"
-              style={{
-                display: 'flex',
-                gap: '16px',
-                overflowX: 'auto',
-                overflowY: 'hidden',
-                scrollBehavior: 'smooth',
-                paddingBottom: '8px',
-                scrollbarWidth: 'thin',
-                scrollbarColor: '#e5e7eb transparent'
-              }}
-            >
-              {interactionsTabPosts.length ? interactionsTabPosts.map((post) => {
-                const likes = resolvePostMetric(post, "likes");
-                const comments = resolvePostMetric(post, "comments");
-                const saves = resolvePostMetric(post, "saves");
-                const shares = resolvePostMetric(post, "shares");
-                const previewUrl = [
-                  post.previewUrl,
-                  post.preview_url,
-                  post.thumbnailUrl,
-                  post.thumbnail_url,
-                  post.mediaUrl,
-                  post.media_url,
-                ].find((url) => url && !/\.(mp4|mov)$/i.test(url));
-                const postUrl = post.permalink || post.url || `https://www.instagram.com/p/${post.id || ''}`;
-
-                return (
-                  <div key={post.id || post.timestamp} style={{
-                    minWidth: '260px',
-                    maxWidth: '260px',
-                    background: 'white',
-                    borderRadius: '20px',
-                    overflow: 'hidden',
-                    border: '2px solid #e5e7eb',
-                    transition: 'all 0.3s',
-                    cursor: 'pointer',
-                    flexShrink: 0,
-                    display: 'flex',
-                    flexDirection: 'column'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.boxShadow = '0 12px 30px rgba(236, 72, 153, 0.25)';
-                    e.currentTarget.style.transform = 'translateY(-6px)';
-                    e.currentTarget.style.borderColor = '#ec4899';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.boxShadow = 'none';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.borderColor = '#e5e7eb';
-                  }}
-                  onClick={() => {
-                    if (postUrl) window.open(postUrl, '_blank', 'noopener,noreferrer');
-                  }}
-                  >
-                    {/* Imagem no estilo story - vertical */}
-                    <div style={{
-                      background: 'linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)',
-                      overflow: 'hidden',
-                      height: '420px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      position: 'relative'
-                    }}>
-                      {previewUrl ? (
-                        <img
-                          src={previewUrl}
-                          alt="Post"
-                          style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'cover'
-                          }}
-                        />
-                      ) : (
-                        <div style={{ color: '#9ca3af' }}>
-                          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                            <circle cx="8.5" cy="8.5" r="1.5" />
-                            <polyline points="21 15 16 10 5 21" />
-                          </svg>
-                        </div>
-                      )}
-                      {/* Badge do tipo de conteúdo */}
-                      <div style={{
-                        position: 'absolute',
-                        top: '12px',
-                        right: '12px',
-                        background: 'rgba(0, 0, 0, 0.7)',
-                        backdropFilter: 'blur(8px)',
-                        padding: '6px 12px',
-                        borderRadius: '20px',
-                        fontSize: '11px',
-                        fontWeight: 700,
-                        color: 'white',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px'
-                      }}>
-                        {interactionsTab === 'reels' ? 'Reel' : interactionsTab === 'videos' ? 'Vídeo' : 'Post'}
-                      </div>
-                    </div>
-
-                    {/* Informações do post */}
-                    <div style={{ padding: '16px' }}>
-                      <div style={{
-                        fontSize: '13px',
-                        color: '#6b7280',
-                        marginBottom: '12px',
-                        fontWeight: 500,
-                        lineHeight: 1.4,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        minHeight: '36px'
-                      }}>
-                        {post.caption || post.text || 'Sem legenda'}
-                      </div>
-
-                      {/* Métricas */}
-                      <div style={{
-                        display: 'flex',
-                        justifyContent: 'space-around',
-                        gap: '8px',
-                        paddingTop: '12px',
-                        borderTop: '1px solid #f3f4f6'
-                      }}>
-                        <div style={{ textAlign: 'center', flex: 1 }}>
-                          <Heart size={14} color="#ef4444" fill="#ef4444" style={{ marginBottom: '4px' }} />
-                          <div style={{ fontSize: '13px', fontWeight: 700, color: '#111827' }}>{formatNumber(likes)}</div>
-                        </div>
-                        <div style={{ textAlign: 'center', flex: 1 }}>
-                          <MessageCircle size={14} color="#3b82f6" style={{ marginBottom: '4px' }} />
-                          <div style={{ fontSize: '13px', fontWeight: 700, color: '#111827' }}>{formatNumber(comments)}</div>
-                        </div>
-                        <div style={{ textAlign: 'center', flex: 1 }}>
-                          <Bookmark size={14} color="#eab308" style={{ marginBottom: '4px' }} />
-                          <div style={{ fontSize: '13px', fontWeight: 700, color: '#111827' }}>{formatNumber(saves)}</div>
-                        </div>
-                        <div style={{ textAlign: 'center', flex: 1 }}>
-                          <Share2 size={14} color="#22c55e" style={{ marginBottom: '4px' }} />
-                          <div style={{ fontSize: '13px', fontWeight: 700, color: '#111827' }}>{formatNumber(shares)}</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              }) : (
-                <div className="ig-empty-state">Sem posts disponiveis.</div>
-              )}
-            </div>
-          </section>
-        </div>
-      </div>
-    );
-  }
-
   // Variáveis para visualização detalhada de Seguidores (usadas no painel direito)
   const followersGainedDisplay = followersGainedValue != null
     ? `+${formatNumber(followersGainedValue)}`
@@ -3501,574 +2838,6 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
       maximumFractionDigits: 1,
     })}%`
     : "--";
-
-  // Renderização da visualização detalhada de Visualizações
-  if (showDetailedView) {
-    return (
-      <div className="instagram-dashboard instagram-dashboard--clean">
-        <div className="ig-clean-container">
-          {/* Degradê de fundo do Instagram */}
-          <div className="ig-hero-gradient" aria-hidden="true" />
-
-          {/* Header com Logo Instagram */}
-          <div className="ig-clean-header" style={{ marginBottom: '24px' }}>
-            <div className="ig-clean-header__brand">
-              <div className="ig-clean-header__logo">
-                <InstagramIcon size={32} />
-              </div>
-              <h1>Instagram</h1>
-            </div>
-          </div>
-
-          {/* Hero com navegação */}
-          <div className="ig-hero" style={{ marginTop: '20px', marginBottom: '32px' }}>
-            <div className="ig-hero__background" />
-            <div className="ig-hero__content">
-              {/* Navegação de volta */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <button
-                  onClick={() => setShowDetailedView(false)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '12px 24px',
-                    borderRadius: '12px',
-                    background: 'rgba(255, 255, 255, 0.95)',
-                    backdropFilter: 'blur(10px)',
-                    border: '2px solid white',
-                    fontSize: '14px',
-                    fontWeight: 700,
-                    color: '#6366f1',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
-                  }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.background = 'white';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.2)';
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.95)';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                  }}
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="15 18 9 12 15 6" />
-                  </svg>
-                  <span>Voltar ao Dashboard</span>
-                </button>
-              </div>
-
-              {/* Título da seção */}
-              <div>
-                <div style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '10px 20px',
-                  borderRadius: '12px',
-                  background: 'rgba(255, 255, 255, 0.15)',
-                  backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  marginBottom: '12px'
-                }}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                  <span style={{ fontSize: '14px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Visualizações</span>
-                </div>
-              </div>
-
-              {/* Cards de KPI rápido na hero */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                gap: '16px',
-                marginTop: '24px'
-              }}>
-                <div style={{
-                  padding: '20px',
-                  borderRadius: '16px',
-                  background: 'rgba(255, 255, 255, 0.15)',
-                  backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)'
-                }}>
-                  <div style={{ fontSize: '32px', fontWeight: 700, color: 'white', marginBottom: '4px' }}>
-                    {formatNumber(profileViewsTotal ?? null)}
-                  </div>
-                  <div style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.85)', fontWeight: 500 }}>
-                    Total de Visualizações
-                  </div>
-                </div>
-                <div style={{
-                  padding: '20px',
-                  borderRadius: '16px',
-                  background: 'rgba(255, 255, 255, 0.15)',
-                  backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)'
-                }}>
-                  <div style={{ fontSize: '32px', fontWeight: 700, color: 'white', marginBottom: '4px' }}>
-                    {profileViewsAverage != null ? formatNumber(Math.round(profileViewsAverage)) : '--'}
-                  </div>
-                  <div style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.85)', fontWeight: 500 }}>
-                    Média Diária
-                  </div>
-                </div>
-                <div style={{
-                  padding: '20px',
-                  borderRadius: '16px',
-                  background: 'rgba(255, 255, 255, 0.15)',
-                  backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)'
-                }}>
-                  <div style={{ fontSize: '32px', fontWeight: 700, color: 'white', marginBottom: '4px' }}>
-                    {profileViewsDeltaPct != null ? `${profileViewsDeltaPct > 0 ? '+' : ''}${profileViewsDeltaPct}%` : '--'}
-                  </div>
-                  <div style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.85)', fontWeight: 500 }}>
-                    Crescimento (%)
-                  </div>
-                </div>
-                <div style={{
-                  padding: '20px',
-                  borderRadius: '16px',
-                  background: 'rgba(255, 255, 255, 0.15)',
-                  backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)'
-                }}>
-                  <div style={{ fontSize: '32px', fontWeight: 700, color: 'white', marginBottom: '4px' }}>
-                    {profileViewsPeak != null ? formatNumber(profileViewsPeak) : '--'}
-                  </div>
-                  <div style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.85)', fontWeight: 500 }}>
-                    Pico de Visualizações
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Layout em coluna única */}
-          <div style={{
-            padding: '0 24px 24px',
-            minHeight: 'calc(100vh - 200px)'
-          }}>
-            {/* Conteúdo principal */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '1400px', margin: '0 auto' }}>
-              {/* Card de gráfico de visualizações - Design melhorado */}
-              <section className="ig-card-white" style={{
-                padding: '28px',
-                background: 'white',
-                borderRadius: '20px',
-                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
-                border: '1px solid rgba(0, 0, 0, 0.05)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                  <div style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '10px',
-                    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-                      <polyline points="17 6 23 6 23 12" />
-                    </svg>
-                  </div>
-                  <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
-                    Crescimento de visualizações
-                  </h3>
-                </div>
-                {profileViewsChartData.length ? (
-                  <div style={{ height: 340, marginTop: '16px' }}>
-                    <ResponsiveContainer>
-                      <LineChart data={profileViewsChartData}>
-                        <defs>
-                          <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/>
-                            <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                        <XAxis
-                          dataKey="label"
-                          tick={{ fontSize: 12, fill: '#6b7280' }}
-                          axisLine={{ stroke: '#e5e7eb' }}
-                          interval="preserveStartEnd"
-                          minTickGap={50}
-                          tickFormatter={formatAxisDate}
-                        />
-                        <YAxis
-                          tick={{ fontSize: 12, fill: '#6b7280' }}
-                          axisLine={{ stroke: '#e5e7eb' }}
-                          tickFormatter={(value) => formatCompactNumber(value)}
-                        />
-                        <Tooltip
-                          content={(
-                            <CustomChartTooltip
-                              labelFormatter={formatTooltipDate}
-                              labelMap={{ value: "Visualizacoes" }}
-                              valueFormatter={formatTooltipNumber}
-                            />
-                          )}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="value"
-                          stroke="url(#gradientLine)"
-                          strokeWidth={3}
-                          dot={{ r: 4, fill: '#6366f1', strokeWidth: 2, stroke: 'white' }}
-                          activeDot={{ r: 6, strokeWidth: 2, stroke: 'white' }}
-                        />
-                        <defs>
-                          <linearGradient id="gradientLine" x1="0" y1="0" x2="1" y2="0">
-                            <stop offset="0%" stopColor="#6366f1" />
-                            <stop offset="100%" stopColor="#8b5cf6" />
-                          </linearGradient>
-                        </defs>
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                ) : (
-                  <div className="ig-empty-state" style={{ height: 300 }}>Sem dados de visualizações.</div>
-                )}
-              </section>
-
-              {/* Gráfico Donut - Seguidores vs Não Seguidores */}
-              <section className="ig-card-white" style={{
-                padding: '28px',
-                borderRadius: '20px',
-                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
-                border: '1px solid rgba(0, 0, 0, 0.05)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                  <div style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '10px',
-                    background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                      <circle cx="9" cy="7" r="4" />
-                      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                    </svg>
-                  </div>
-                  <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
-                    Por audiência
-                  </h3>
-                </div>
-                <div style={{ height: 300, position: 'relative' }}>
-                  <ResponsiveContainer>
-                    <PieChart>
-                      <Pie
-                        data={[
-                          { name: 'Seguidores', value: profileVisitorsTotals?.followers || 35, fill: '#6366f1' },
-                          { name: 'Não Seguidores', value: profileVisitorsTotals?.nonFollowers || 65, fill: '#ec4899' }
-                        ]}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={70}
-                        outerRadius={110}
-                        paddingAngle={2}
-                        dataKey="value"
-                      >
-                        {[
-                          { name: 'Seguidores', value: profileVisitorsTotals?.followers || 35, fill: '#6366f1' },
-                          { name: 'Não Seguidores', value: profileVisitorsTotals?.nonFollowers || 65, fill: '#ec4899' }
-                        ].map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.fill} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        content={(
-                          <CustomChartTooltip
-                            variant="pie"
-                            valueFormatter={formatTooltipNumber}
-                          />
-                        )}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div style={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    textAlign: 'center',
-                    pointerEvents: 'none'
-                  }}>
-                    <div style={{ fontSize: '32px', fontWeight: 800, color: '#111827' }}>
-                      {formatNumber(profileVisitorsTotals?.total || 100)}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500, marginTop: '4px' }}>
-                      Total de Visitantes
-                    </div>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', marginTop: '20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#6366f1' }} />
-                    <span style={{ fontSize: '13px', color: '#111827', fontWeight: 600 }}>Seguidores</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#ec4899' }} />
-                    <span style={{ fontSize: '13px', color: '#111827', fontWeight: 600 }}>Não Seguidores</span>
-                  </div>
-                </div>
-              </section>
-
-              {/* Gráfico de Barras - Visualizações por Tipo de Conteúdo */}
-              <section className="ig-card-white" style={{
-                padding: '28px',
-                borderRadius: '20px',
-                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
-                border: '1px solid rgba(0, 0, 0, 0.05)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                  <div style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '10px',
-                    background: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                      <line x1="9" y1="9" x2="15" y2="9" />
-                      <line x1="9" y1="15" x2="15" y2="15" />
-                    </svg>
-                  </div>
-                  <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
-                    Por tipo de conteúdo
-                  </h3>
-                </div>
-                <div style={{ height: 280 }}>
-                  <ResponsiveContainer>
-                    <BarChart
-                      data={viewsByContentType}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                      <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={{ stroke: '#e5e7eb' }} interval={0} />
-                      <YAxis
-                        tick={{ fontSize: 12, fill: '#6b7280' }}
-                        axisLine={{ stroke: '#e5e7eb' }}
-                        domain={[0, 100]}
-                        ticks={[0, 25, 50, 75, 100]}
-                        tickFormatter={(value) => formatPercent(value)}
-                      />
-                      <Tooltip
-                        content={(props) => (
-                          <CustomChartTooltip
-                            {...props}
-                            labelFormatter={(value) => String(value || "")}
-                            labelMap={{ value: "Percentual" }}
-                            valueFormatter={(value, item) => {
-                              const raw = item?.payload?.raw;
-                              const rawLabel = Number.isFinite(raw) ? ` (${formatTooltipNumber(raw)})` : "";
-                              return `${formatPercent(value)}${rawLabel}`;
-                            }}
-                          />
-                        )}
-                      />
-                      <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={36}>
-                        {viewsByContentType.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.fill} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </section>
-
-              {/* Top Posts com Visualizações - Carousel Horizontal */}
-              <section className="ig-card-white" style={{
-                padding: '28px',
-                borderRadius: '20px',
-                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
-                border: '1px solid rgba(0, 0, 0, 0.05)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                  <div style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '10px',
-                    background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                    </svg>
-                  </div>
-                  <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#111827' }}>
-                    Mais visualizados
-                  </h3>
-                </div>
-                <div style={{
-                  display: 'flex',
-                  gap: '16px',
-                  overflowX: 'auto',
-                  paddingBottom: '12px',
-                  scrollbarWidth: 'thin',
-                  scrollbarColor: '#6366f1 #f3f4f6'
-                }}>
-                  {topPostsByViews.length ? topPostsByViews.map((post) => {
-                    const views = resolvePostViews(post);
-                    const previewUrl = [
-                      post.previewUrl,
-                      post.preview_url,
-                      post.thumbnailUrl,
-                      post.thumbnail_url,
-                      post.mediaUrl,
-                      post.media_url,
-                    ].find((url) => url && !/\.(mp4|mov)$/i.test(url));
-
-                    return (
-                      <div key={post.id} style={{
-                        minWidth: '160px',
-                        width: '160px',
-                        flexShrink: 0,
-                        borderRadius: '16px',
-                        overflow: 'hidden',
-                        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.03) 0%, rgba(139, 92, 246, 0.03) 100%)',
-                        border: '1px solid rgba(99, 102, 241, 0.1)',
-                        transition: 'all 0.3s ease',
-                        cursor: 'pointer'
-                      }}
-                      onMouseOver={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-4px)';
-                        e.currentTarget.style.boxShadow = '0 8px 24px rgba(99, 102, 241, 0.2)';
-                      }}
-                      onMouseOut={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = 'none';
-                      }}
-                      onClick={() => {
-                        const postUrl = post.permalink || post.url || `https://www.instagram.com/p/${post.id || ''}`;
-                        if (postUrl) window.open(postUrl, '_blank', 'noopener,noreferrer');
-                      }}
-                      >
-                        <div style={{
-                          width: '160px',
-                          height: '284px',
-                          background: '#f3f4f6',
-                          position: 'relative',
-                          overflow: 'hidden'
-                        }}>
-                          {previewUrl ? (
-                            <img
-                              src={previewUrl}
-                              alt="Post"
-                              style={{
-                                width: '100%',
-                                height: '100%',
-                                objectFit: 'cover'
-                              }}
-                            />
-                          ) : (
-                            <div style={{
-                              width: '100%',
-                              height: '100%',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              color: '#9ca3af'
-                            }}>
-                              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                                <circle cx="8.5" cy="8.5" r="1.5" />
-                                <polyline points="21 15 16 10 5 21" />
-                              </svg>
-                            </div>
-                          )}
-                          <div style={{
-                            position: 'absolute',
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)',
-                            padding: '24px 12px 12px',
-                            color: 'white'
-                          }}>
-                            <div style={{ fontSize: '20px', fontWeight: 700 }}>
-                              {formatNumber(views)}
-                            </div>
-                            <div style={{ fontSize: '11px', opacity: 0.9, marginTop: '2px' }}>
-                              visualizações
-                            </div>
-                          </div>
-                        </div>
-                        <div style={{ padding: '12px' }}>
-                          <div style={{
-                            fontSize: '12px',
-                            color: '#6b7280',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
-                            lineHeight: '1.4',
-                            minHeight: '34px'
-                          }}>
-                            {post.caption || post.text || 'Sem legenda'}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  }) : (
-                    <div className="ig-empty-state">Sem posts disponíveis.</div>
-                  )}
-                </div>
-              </section>
-            </div>
-          </div>
-
-          {/* Responsividade e estilos customizados */}
-          <style>{`
-            @media (max-width: 1280px) {
-              .instagram-dashboard--clean .ig-clean-container > div[style*="grid-template-columns: 1fr 380px"] {
-                grid-template-columns: 1fr !important;
-              }
-            }
-            @media (max-width: 768px) {
-              .instagram-dashboard--clean .ig-hero__content > div[style*="grid-template-columns"] {
-                grid-template-columns: 1fr !important;
-              }
-            }
-
-            /* Scrollbar customizada para carousel horizontal */
-            .instagram-dashboard--clean div[style*="overflowX: auto"]::-webkit-scrollbar {
-              height: 8px;
-            }
-            .instagram-dashboard--clean div[style*="overflowX: auto"]::-webkit-scrollbar-track {
-              background: #f3f4f6;
-              border-radius: 10px;
-            }
-            .instagram-dashboard--clean div[style*="overflowX: auto"]::-webkit-scrollbar-thumb {
-              background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-              border-radius: 10px;
-            }
-            .instagram-dashboard--clean div[style*="overflowX: auto"]::-webkit-scrollbar-thumb:hover {
-              background: linear-gradient(135deg, #5558e3 0%, #7c3aed 100%);
-            }
-          `}</style>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="instagram-dashboard instagram-dashboard--clean">
@@ -4126,7 +2895,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
         </div>
 
         {/* Grid Principal */}
-          <div className="ig-clean-grid" style={(showDetailedView || showFollowersDetail) ? { display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' } : {}}>
+          <div className="ig-clean-grid" style={(showDetailedView || showFollowersDetail || showInteractionsDetail) ? { display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' } : {}}>
           <div className="ig-clean-grid__left">
             <section className="ig-profile-vertical">
               <div
@@ -4772,7 +3541,430 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   </div>
                 </section>
               </div>
-            ) : !showDetailedView ? (
+            ) : showDetailedView ? (
+              /* Conteúdo detalhado de Visualizações */
+              <div className="ig-views-detail-panel">
+                {/* Header com botão voltar */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '24px',
+                  padding: '16px 20px',
+                  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                  borderRadius: '16px',
+                  color: 'white'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <button
+                      onClick={() => setShowDetailedView(false)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '10px',
+                        background: 'rgba(255, 255, 255, 0.2)',
+                        border: 'none',
+                        color: 'white',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="15 18 9 12 15 6" />
+                      </svg>
+                    </button>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Visualizações</h3>
+                      <p style={{ margin: 0, fontSize: '13px', opacity: 0.9 }}>Análise detalhada</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* KPIs */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gap: '16px',
+                  marginBottom: '24px'
+                }}>
+                  <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '28px', fontWeight: 700, color: '#6366f1' }}>
+                      {formatNumber(profileViewsTotal ?? 0)}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Total no Período</div>
+                  </div>
+                  <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '28px', fontWeight: 700, color: '#8b5cf6' }}>
+                      {profileViewsAverage != null ? formatNumber(Math.round(profileViewsAverage)) : '--'}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Média Diária</div>
+                  </div>
+                  <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '28px', fontWeight: 700, color: '#a855f7' }}>
+                      {profileViewsPeak != null ? formatNumber(profileViewsPeak) : '--'}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Pico Diário</div>
+                  </div>
+                </div>
+
+                {/* Gráfico de Tendência */}
+                <section className="ig-card-white" style={{ marginBottom: '24px' }}>
+                  <div style={{ padding: '20px', borderBottom: '1px solid #e5e7eb' }}>
+                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827' }}>
+                      Tendência de Visualizações
+                    </h4>
+                  </div>
+                  <div style={{ padding: '20px', height: 320 }}>
+                    {profileViewsChartData.length ? (
+                      <ResponsiveContainer>
+                        <AreaChart
+                          data={profileViewsChartData}
+                          margin={{ top: 16, right: 16, bottom: 32, left: 0 }}
+                        >
+                          <defs>
+                            <linearGradient id="viewsDetailPanelGradient" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#6366f1" stopOpacity={0.4} />
+                              <stop offset="100%" stopColor="#6366f1" stopOpacity={0.05} />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                          <XAxis
+                            dataKey="label"
+                            tick={{ fontSize: 11, fill: '#6b7280' }}
+                            axisLine={{ stroke: '#e5e7eb' }}
+                            tickLine={false}
+                            interval="preserveStartEnd"
+                            minTickGap={50}
+                            tickFormatter={formatAxisDate}
+                          />
+                          <YAxis
+                            tick={{ fontSize: 11, fill: '#6b7280' }}
+                            axisLine={{ stroke: '#e5e7eb' }}
+                            tickLine={false}
+                            tickFormatter={(value) => formatCompactNumber(value)}
+                          />
+                          <Tooltip
+                            cursor={{ stroke: '#6366f1', strokeWidth: 1, strokeDasharray: '4 4' }}
+                            content={(props) => {
+                              const tooltipDate = props?.payload?.[0]?.payload?.tooltipDate || props?.label;
+                              return (
+                                <CustomChartTooltip
+                                  {...props}
+                                  labelFormatter={() => String(tooltipDate || "")}
+                                  labelMap={{ value: "Visualizações" }}
+                                  valueFormatter={formatTooltipNumber}
+                                />
+                              );
+                            }}
+                          />
+                          <Area
+                            type="monotone"
+                            dataKey="value"
+                            stroke="#6366f1"
+                            strokeWidth={2.5}
+                            fill="url(#viewsDetailPanelGradient)"
+                            dot={false}
+                            activeDot={{ r: 5, fill: '#6366f1', stroke: '#fff', strokeWidth: 2 }}
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="ig-empty-state">Sem dados disponíveis.</div>
+                    )}
+                  </div>
+                </section>
+
+                {/* Top Posts por Visualizações */}
+                <section className="ig-card-white">
+                  <div style={{ padding: '20px', borderBottom: '1px solid #e5e7eb' }}>
+                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827' }}>
+                      Posts mais Visualizados
+                    </h4>
+                  </div>
+                  <div style={{ padding: '16px' }}>
+                    {(topPostsByViews || []).length > 0 ? (
+                      <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '8px' }}>
+                        {(topPostsByViews || []).slice(0, 5).map((post, idx) => {
+                          const previewUrl = post.thumbnail_url || post.media_url || post.thumbnail;
+                          const views = post.plays ?? post.video_views ?? post.impressions ?? 0;
+                          return (
+                            <div
+                              key={post.id || idx}
+                              style={{
+                                flexShrink: 0,
+                                width: '140px',
+                                borderRadius: '12px',
+                                overflow: 'hidden',
+                                background: 'white',
+                                border: '1px solid #e5e7eb',
+                                cursor: 'pointer',
+                                transition: 'transform 0.2s'
+                              }}
+                              onClick={() => {
+                                const postUrl = post.permalink || `https://www.instagram.com/p/${post.id || ''}`;
+                                if (postUrl) window.open(postUrl, '_blank', 'noopener,noreferrer');
+                              }}
+                            >
+                              <div style={{ width: '140px', height: '140px', background: '#f3f4f6', position: 'relative' }}>
+                                {previewUrl ? (
+                                  <img src={previewUrl} alt="Post" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                ) : (
+                                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                      <circle cx="8.5" cy="8.5" r="1.5" />
+                                      <polyline points="21 15 16 10 5 21" />
+                                    </svg>
+                                  </div>
+                                )}
+                                <div style={{
+                                  position: 'absolute',
+                                  bottom: 0,
+                                  left: 0,
+                                  right: 0,
+                                  background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%)',
+                                  padding: '20px 8px 8px',
+                                  color: 'white'
+                                }}>
+                                  <div style={{ fontSize: '16px', fontWeight: 700 }}>{formatNumber(views)}</div>
+                                  <div style={{ fontSize: '10px', opacity: 0.9 }}>visualizações</div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="ig-empty-state">Sem posts disponíveis.</div>
+                    )}
+                  </div>
+                </section>
+              </div>
+            ) : showInteractionsDetail ? (
+              /* Conteúdo detalhado de Interações */
+              <div className="ig-interactions-detail-panel">
+                {/* Header com botão voltar */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '24px',
+                  padding: '16px 20px',
+                  background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
+                  borderRadius: '16px',
+                  color: 'white'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <button
+                      onClick={() => setShowInteractionsDetail(false)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '10px',
+                        background: 'rgba(255, 255, 255, 0.2)',
+                        border: 'none',
+                        color: 'white',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="15 18 9 12 15 6" />
+                      </svg>
+                    </button>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Interações</h3>
+                      <p style={{ margin: 0, fontSize: '13px', opacity: 0.9 }}>Análise detalhada</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* KPIs */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, 1fr)',
+                  gap: '16px',
+                  marginBottom: '24px'
+                }}>
+                  <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '28px', fontWeight: 700, color: '#ec4899' }}>
+                      {formatNumber(interactionsBreakdown.total)}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Total de Interações</div>
+                  </div>
+                  <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '28px', fontWeight: 700, color: '#f472b6' }}>
+                      {interactionsBreakdown.total > 0 && profileReachTotal > 0
+                        ? `${((interactionsBreakdown.total / profileReachTotal) * 100).toFixed(2)}%`
+                        : '--'}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Taxa de Engajamento</div>
+                  </div>
+                </div>
+
+                {/* Breakdown de Interações */}
+                <section className="ig-card-white" style={{ marginBottom: '24px' }}>
+                  <div style={{ padding: '20px', borderBottom: '1px solid #e5e7eb' }}>
+                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827' }}>
+                      Detalhamento por Tipo
+                    </h4>
+                  </div>
+                  <div style={{ padding: '20px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                      <div style={{ padding: '16px', background: '#fef2f2', borderRadius: '12px', textAlign: 'center' }}>
+                        <div style={{ fontSize: '24px', fontWeight: 700, color: '#ef4444', marginBottom: '4px' }}>
+                          {formatNumber(interactionsBreakdown.likes)}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500 }}>Curtidas</div>
+                      </div>
+                      <div style={{ padding: '16px', background: '#eff6ff', borderRadius: '12px', textAlign: 'center' }}>
+                        <div style={{ fontSize: '24px', fontWeight: 700, color: '#3b82f6', marginBottom: '4px' }}>
+                          {formatNumber(interactionsBreakdown.comments)}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500 }}>Comentários</div>
+                      </div>
+                      <div style={{ padding: '16px', background: '#f0fdf4', borderRadius: '12px', textAlign: 'center' }}>
+                        <div style={{ fontSize: '24px', fontWeight: 700, color: '#22c55e', marginBottom: '4px' }}>
+                          {formatNumber(interactionsBreakdown.shares)}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500 }}>Compartilhamentos</div>
+                      </div>
+                      <div style={{ padding: '16px', background: '#faf5ff', borderRadius: '12px', textAlign: 'center' }}>
+                        <div style={{ fontSize: '24px', fontWeight: 700, color: '#a855f7', marginBottom: '4px' }}>
+                          {formatNumber(interactionsBreakdown.saves)}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500 }}>Salvos</div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Gráfico de Pizza */}
+                <section className="ig-card-white" style={{ marginBottom: '24px' }}>
+                  <div style={{ padding: '20px', borderBottom: '1px solid #e5e7eb' }}>
+                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827' }}>
+                      Distribuição de Interações
+                    </h4>
+                  </div>
+                  <div style={{ padding: '20px', height: 280 }}>
+                    {interactionsBreakdown.total > 0 ? (
+                      <ResponsiveContainer>
+                        <PieChart>
+                          <Pie
+                            data={[
+                              { name: 'Curtidas', value: interactionsBreakdown.likes, color: '#ef4444' },
+                              { name: 'Comentários', value: interactionsBreakdown.comments, color: '#3b82f6' },
+                              { name: 'Compartilhamentos', value: interactionsBreakdown.shares, color: '#22c55e' },
+                              { name: 'Salvos', value: interactionsBreakdown.saves, color: '#a855f7' }
+                            ].filter(item => item.value > 0)}
+                            dataKey="value"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={50}
+                            outerRadius={90}
+                            paddingAngle={2}
+                          >
+                            {[
+                              { name: 'Curtidas', value: interactionsBreakdown.likes, color: '#ef4444' },
+                              { name: 'Comentários', value: interactionsBreakdown.comments, color: '#3b82f6' },
+                              { name: 'Compartilhamentos', value: interactionsBreakdown.shares, color: '#22c55e' },
+                              { name: 'Salvos', value: interactionsBreakdown.saves, color: '#a855f7' }
+                            ].filter(item => item.value > 0).map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            content={(
+                              <CustomChartTooltip
+                                variant="pie"
+                                valueFormatter={formatNumber}
+                              />
+                            )}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="ig-empty-state">Sem dados disponíveis.</div>
+                    )}
+                  </div>
+                </section>
+
+                {/* Top Posts por Engajamento */}
+                <section className="ig-card-white">
+                  <div style={{ padding: '20px', borderBottom: '1px solid #e5e7eb' }}>
+                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827' }}>
+                      Posts com Maior Engajamento
+                    </h4>
+                  </div>
+                  <div style={{ padding: '16px' }}>
+                    {(topPosts || []).length > 0 ? (
+                      <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '8px' }}>
+                        {(topPosts || []).slice(0, 5).map((post, idx) => {
+                          const previewUrl = post.thumbnail_url || post.media_url || post.thumbnail;
+                          const likes = post.like_count ?? post.likes ?? 0;
+                          const comments = post.comments_count ?? post.comments ?? 0;
+                          const engagement = likes + comments;
+                          return (
+                            <div
+                              key={post.id || idx}
+                              style={{
+                                flexShrink: 0,
+                                width: '140px',
+                                borderRadius: '12px',
+                                overflow: 'hidden',
+                                background: 'white',
+                                border: '1px solid #e5e7eb',
+                                cursor: 'pointer',
+                                transition: 'transform 0.2s'
+                              }}
+                              onClick={() => {
+                                const postUrl = post.permalink || `https://www.instagram.com/p/${post.id || ''}`;
+                                if (postUrl) window.open(postUrl, '_blank', 'noopener,noreferrer');
+                              }}
+                            >
+                              <div style={{ width: '140px', height: '140px', background: '#f3f4f6', position: 'relative' }}>
+                                {previewUrl ? (
+                                  <img src={previewUrl} alt="Post" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                ) : (
+                                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                      <circle cx="8.5" cy="8.5" r="1.5" />
+                                      <polyline points="21 15 16 10 5 21" />
+                                    </svg>
+                                  </div>
+                                )}
+                                <div style={{
+                                  position: 'absolute',
+                                  bottom: 0,
+                                  left: 0,
+                                  right: 0,
+                                  background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%)',
+                                  padding: '20px 8px 8px',
+                                  color: 'white'
+                                }}>
+                                  <div style={{ fontSize: '16px', fontWeight: 700 }}>{formatNumber(engagement)}</div>
+                                  <div style={{ fontSize: '10px', opacity: 0.9 }}>interações</div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="ig-empty-state">Sem posts disponíveis.</div>
+                    )}
+                  </div>
+                </section>
+              </div>
+            ) : (
               <>
             {/* Card de Crescimento do Perfil */}
             <section className="ig-growth-clean">
@@ -5532,156 +4724,8 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             )}
           </section>
         </div>
-
-            {showDetailedView && (
-        <div style={{
-          background: 'white',
-          borderRadius: '20px',
-          padding: '32px',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-          height: 'fit-content',
-          position: 'sticky',
-          top: '24px'
-        }}>
-          {/* Botão de fechar */}
-          <button
-            onClick={() => setShowDetailedView(false)}
-            style={{
-              position: 'absolute',
-              top: '20px',
-              right: '20px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '36px',
-              height: '36px',
-              borderRadius: '10px',
-              background: 'rgba(99, 102, 241, 0.1)',
-              border: '1px solid rgba(99, 102, 241, 0.2)',
-              color: '#6366f1',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              zIndex: 10
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.background = 'rgba(99, 102, 241, 0.2)';
-              e.currentTarget.style.transform = 'rotate(90deg)';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.background = 'rgba(99, 102, 241, 0.1)';
-              e.currentTarget.style.transform = 'rotate(0deg)';
-            }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-
-          {/* Header - removido para mais espaço */}
-
-          {/* KPIs Principais - mantendo apenas Média diária e Pico diário */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, 1fr)',
-            gap: '16px',
-            marginBottom: '32px'
-          }}>
-            <div style={{
-              padding: '18px',
-              borderRadius: '14px',
-              background: 'rgba(139, 92, 246, 0.05)',
-              border: '1px solid rgba(139, 92, 246, 0.1)'
-            }}>
-              <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 600, marginBottom: '6px' }}>
-                Média diária
-              </div>
-              <div style={{ fontSize: '28px', fontWeight: 700, color: '#8b5cf6' }}>
-                {profileViewsAverage != null ? formatNumber(Math.round(profileViewsAverage)) : '--'}
-              </div>
-            </div>
-
-            <div style={{
-              padding: '18px',
-              borderRadius: '14px',
-              background: 'rgba(168, 85, 247, 0.05)',
-              border: '1px solid rgba(168, 85, 247, 0.1)'
-            }}>
-              <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 600, marginBottom: '6px' }}>
-                Pico diário
-              </div>
-              <div style={{ fontSize: '28px', fontWeight: 700, color: '#a855f7' }}>
-                {profileViewsPeak != null ? formatNumber(profileViewsPeak) : '--'}
-              </div>
-            </div>
-          </div>
-
-          {/* Gráfico de tendência */}
-          <div style={{
-            padding: '24px',
-            borderRadius: '16px',
-            background: '#f9fafb',
-            border: '1px solid #e5e7eb'
-          }}>
-            <h4 style={{ margin: '0 0 20px 0', fontSize: '16px', fontWeight: 700, color: '#111827' }}>
-              ?? Tendência de Visualizações
-            </h4>
-            {profileViewsChartData.length ? (
-              <div style={{ height: 280 }}>
-                <ResponsiveContainer>
-                  <AreaChart data={profileViewsChartData}>
-                    <defs>
-                      <linearGradient id="detailedViewsGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                    <XAxis
-                      dataKey="label"
-                      tick={{ fontSize: 11, fill: '#6b7280' }}
-                      axisLine={{ stroke: '#e5e7eb' }}
-                      tickLine={false}
-                      interval="preserveStartEnd"
-                      minTickGap={50}
-                      tickFormatter={formatAxisDate}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 11, fill: '#6b7280' }}
-                      axisLine={{ stroke: '#e5e7eb' }}
-                      tickLine={false}
-                      tickFormatter={(value) => formatCompactNumber(value)}
-                    />
-                    <Tooltip
-                      content={(
-                        <CustomChartTooltip
-                          labelFormatter={formatTooltipDate}
-                          labelMap={{ value: "Visualizacoes" }}
-                          valueFormatter={formatTooltipNumber}
-                        />
-                      )}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="value"
-                      stroke="#6366f1"
-                      strokeWidth={2}
-                      fill="url(#detailedViewsGradient)"
-                      animationDuration={800}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#9ca3af' }}>
-                Sem dados de visualizações
-              </div>
-            )}
-          </div>
-        </div>
-            )}
               </>
-            ) : null}
+            )}
           </div>
         </div>
 
