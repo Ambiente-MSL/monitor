@@ -39,7 +39,6 @@ import {
 } from "lucide-react";
 import DataState from "../components/DataState";
 import CustomChartTooltip from "../components/CustomChartTooltip";
-import LastSyncBadge from "../components/LastSyncBadge";
 import { useAccounts } from "../context/AccountsContext";
 import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import { useAuth } from "../context/AuthContext";
@@ -1314,7 +1313,6 @@ export default function AdsDashboard() {
           <div style={{ flex: 1 }}>
             <div className="ig-clean-title-row">
               <h2 className="ig-clean-title" style={{ margin: 0, lineHeight: 1.2 }}>Visão Geral</h2>
-              <LastSyncBadge {...adsSyncInfo} />
             </div>
             {selectedAccount?.label && (
               <p style={{

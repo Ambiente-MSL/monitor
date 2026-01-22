@@ -4261,10 +4261,10 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 {metricsLoading ? (
                   <div className="ig-chart-skeleton ig-chart-skeleton--tall" aria-hidden="true" />
                 ) : profileReachData.length ? (
-                  <ResponsiveContainer width="100%" height={300}>
+                  <ResponsiveContainer width="100%" height={255}>
                     <ComposedChart
                       data={profileReachData}
-                      margin={{ top: 24, right: 28, left: 12, bottom: 24 }}
+                      margin={{ top: 20, right: 28, left: 12, bottom: 20 }}
                     >
                       <defs>
                         <linearGradient id="igReachGradient" x1="0" y1="0" x2="1" y2="0">
@@ -4430,10 +4430,10 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 {metricsLoading ? (
                   <div className="ig-chart-skeleton ig-chart-skeleton--compact" aria-hidden="true" />
                 ) : followerGrowthChartData.length ? (
-                  <ResponsiveContainer width="100%" height={280}>
+                  <ResponsiveContainer width="100%" height={238}>
                     <AreaChart
                       data={followerGrowthChartData}
-                      margin={{ top: 16, right: 16, bottom: 32, left: 0 }}
+                      margin={{ top: 14, right: 16, bottom: 28, left: 0 }}
                     >
                         <defs>
                           <linearGradient id="igFollowerGrowthLine" x1="0" y1="0" x2="0" y2="1">
