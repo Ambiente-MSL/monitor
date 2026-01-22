@@ -65,7 +65,7 @@ export default function CustomChartTooltip({
       <div className={className}>
         {shouldShowLabel ? <span className="ig-tooltip__title">{formattedLabel}</span> : null}
         <div className="ig-tooltip__row">
-          <span>{name}</span>
+          <span>{name}:</span>
           <strong>{`${valueText}${percentText}`}</strong>
         </div>
         {footer ? footer : null}

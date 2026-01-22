@@ -2320,9 +2320,11 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
       const kind = classifyMediaType(post);
       totals.set(kind, (totals.get(kind) || 0) + sumInteractions(post));
     });
+    const totalInteractions = Array.from(totals.values()).reduce((sum, value) => sum + value, 0);
     return Array.from(totals.entries()).map(([type, value]) => ({
       name: IG_CONTENT_LABEL[type] || type,
       value,
+      percentage: totalInteractions > 0 ? (value / totalInteractions) * 100 : 0,
     }));
   }, [contentPostsSource]);
 
@@ -3175,6 +3177,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                                 <CustomChartTooltip
                                   variant="pie"
                                   valueFormatter={formatTooltipNumber}
+                                  showPercent={false}
                                 />
                               )}
                             />
@@ -3189,7 +3192,9 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                               className="ig-engagement-legend__swatch"
                               style={{ backgroundColor: IG_DONUT_COLORS[index % IG_DONUT_COLORS.length], width: '14px', height: '14px' }}
                             />
-                            <span className="ig-engagement-legend__label">{slice.name}</span>
+                            <span className="ig-engagement-legend__label">
+                              {`${slice.name}: ${formatPercent(slice.percentage || 0)}`}
+                            </span>
                           </div>
                         ))}
                       </div>
