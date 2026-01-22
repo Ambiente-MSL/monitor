@@ -4277,70 +4277,69 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             <div className="ig-analytics-card__body">
               <div style={{
                 display: 'flex',
-                flexDirection: 'column',
                 alignItems: 'center',
-                justifyContent: 'flex-start',
-                padding: '16px 16px 18px',
-                minHeight: '200px'
+                gap: '24px',
+                padding: '12px 16px 16px'
               }}>
-                <div style={{
-                  fontSize: '42px',
-                  fontWeight: 800,
-                  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  marginBottom: '8px',
-                  lineHeight: 1
-                }}>
-                  {formatNumber(profileViewsTotal ?? null)}
-                </div>
-                <div style={{ fontSize: '13px', color: '#6b7280', marginBottom: '20px', fontWeight: 500 }}>
-                  visualizações no período
+                {/* Valor principal à esquerda */}
+                <div style={{ textAlign: 'center', flexShrink: 0 }}>
+                  <div style={{
+                    fontSize: '38px',
+                    fontWeight: 800,
+                    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    lineHeight: 1
+                  }}>
+                    {formatNumber(profileViewsTotal ?? null)}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px', fontWeight: 500 }}>
+                    visualizações
+                  </div>
                 </div>
 
-                {/* Grid de métricas secundárias */}
+                {/* Grid de métricas à direita */}
                 <div style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(3, 1fr)',
-                  gap: '12px',
-                  width: '100%',
-                  maxWidth: '400px'
+                  gap: '10px',
+                  flex: 1
                 }}>
                   <div style={{
-                    padding: '14px 12px',
+                    padding: '12px 8px',
                     borderRadius: '8px',
                     background: 'rgba(16, 185, 129, 0.05)',
                     border: '1px solid rgba(16, 185, 129, 0.1)',
                     textAlign: 'center'
                   }}>
-                    <div style={{ fontSize: '18px', fontWeight: 700, color: '#10b981', marginBottom: '4px' }}>
+                    <div style={{ fontSize: '16px', fontWeight: 700, color: '#10b981', marginBottom: '2px' }}>
                       {profileViewsDeltaPct != null ? `${profileViewsDeltaPct > 0 ? '+' : ''}${profileViewsDeltaPct}%` : '--'}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>Crescimento</div>
+                    <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>Crescimento</div>
                   </div>
                   <div style={{
-                    padding: '14px 12px',
+                    padding: '12px 8px',
                     borderRadius: '8px',
                     background: 'rgba(139, 92, 246, 0.05)',
                     border: '1px solid rgba(139, 92, 246, 0.1)',
                     textAlign: 'center'
                   }}>
-                    <div style={{ fontSize: '18px', fontWeight: 700, color: '#8b5cf6', marginBottom: '4px' }}>
+                    <div style={{ fontSize: '16px', fontWeight: 700, color: '#8b5cf6', marginBottom: '2px' }}>
                       {profileViewsAverage != null ? formatNumber(Math.round(profileViewsAverage)) : '--'}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>Média diária</div>
+                    <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>Média diária</div>
                   </div>
                   <div style={{
-                    padding: '14px 12px',
+                    padding: '12px 8px',
                     borderRadius: '8px',
                     background: 'rgba(168, 85, 247, 0.05)',
                     border: '1px solid rgba(168, 85, 247, 0.1)',
                     textAlign: 'center'
                   }}>
-                    <div style={{ fontSize: '18px', fontWeight: 700, color: '#a855f7', marginBottom: '4px' }}>
+                    <div style={{ fontSize: '16px', fontWeight: 700, color: '#a855f7', marginBottom: '2px' }}>
                       {profileViewsPeak != null ? formatNumber(profileViewsPeak) : '--'}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>Pico diário</div>
+                    <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>Pico diário</div>
                   </div>
                 </div>
               </div>
@@ -4387,59 +4386,69 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               </button>
             </div>
             <div className="ig-analytics-card__body">
-              <div style={{ textAlign: 'center', padding: '16px 16px 18px' }}>
-                <div style={{ fontSize: '42px', fontWeight: 700, color: '#ec4899', marginBottom: '4px' }}>
-                  {formatNumber(interactionsBreakdown.total)}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '24px',
+                padding: '12px 16px 16px'
+              }}>
+                {/* Valor principal à esquerda */}
+                <div style={{ textAlign: 'center', flexShrink: 0 }}>
+                  <div style={{ fontSize: '38px', fontWeight: 700, color: '#ec4899', lineHeight: 1 }}>
+                    {formatNumber(interactionsBreakdown.total)}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px', fontWeight: 500 }}>
+                    interações
+                  </div>
                 </div>
-                <div style={{ fontSize: '13px', color: '#6b7280', marginBottom: '14px' }}>
-                  Total de interações no período
-                </div>
+
+                {/* Grid 2x2 de métricas à direita */}
                 <div style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(2, 1fr)',
                   gap: '8px',
-                  marginTop: '0'
+                  flex: 1
                 }}>
                   <div style={{
-                    padding: '10px',
+                    padding: '10px 8px',
                     background: '#fef2f2',
                     borderRadius: '8px',
                     textAlign: 'center'
                   }}>
-                    <div style={{ fontSize: '18px', fontWeight: 700, color: '#ef4444', marginBottom: '2px' }}>
+                    <div style={{ fontSize: '16px', fontWeight: 700, color: '#ef4444', marginBottom: '2px' }}>
                       {formatNumber(interactionsBreakdown.likes)}
                     </div>
                     <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>Curtidas</div>
                   </div>
                   <div style={{
-                    padding: '10px',
+                    padding: '10px 8px',
                     background: '#eff6ff',
                     borderRadius: '8px',
                     textAlign: 'center'
                   }}>
-                    <div style={{ fontSize: '18px', fontWeight: 700, color: '#3b82f6', marginBottom: '2px' }}>
+                    <div style={{ fontSize: '16px', fontWeight: 700, color: '#3b82f6', marginBottom: '2px' }}>
                       {formatNumber(interactionsBreakdown.comments)}
                     </div>
                     <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>Comentários</div>
                   </div>
                   <div style={{
-                    padding: '10px',
+                    padding: '10px 8px',
                     background: '#fefce8',
                     borderRadius: '8px',
                     textAlign: 'center'
                   }}>
-                    <div style={{ fontSize: '18px', fontWeight: 700, color: '#eab308', marginBottom: '2px' }}>
+                    <div style={{ fontSize: '16px', fontWeight: 700, color: '#eab308', marginBottom: '2px' }}>
                       {formatNumber(interactionsBreakdown.saves)}
                     </div>
                     <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>Salvamentos</div>
                   </div>
                   <div style={{
-                    padding: '10px',
+                    padding: '10px 8px',
                     background: '#f0fdf4',
                     borderRadius: '8px',
                     textAlign: 'center'
                   }}>
-                    <div style={{ fontSize: '18px', fontWeight: 700, color: '#22c55e', marginBottom: '2px' }}>
+                    <div style={{ fontSize: '16px', fontWeight: 700, color: '#22c55e', marginBottom: '2px' }}>
                       {formatNumber(interactionsBreakdown.shares)}
                     </div>
                     <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>Compartilhamentos</div>
