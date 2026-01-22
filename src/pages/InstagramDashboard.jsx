@@ -55,7 +55,6 @@ import DataState from "../components/DataState";
 import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import WordCloudCard from "../components/WordCloudCard";
 import CustomChartTooltip from "../components/CustomChartTooltip";
-import LastSyncBadge from "../components/LastSyncBadge";
 import { useAuth } from "../context/AuthContext";
 import {
   getDashboardCache,
@@ -2491,7 +2490,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
       return "*Baseado no horÃ¡rio em que seus seguidores estÃ£o mais ativos (Insights).";
     }
     if (bestTimes.source === "posts") {
-      return "*Baseado no engajamento das suas publicaÃ§Ãµes recentes.";
+      return "*Baseado no engajamento das suas publicações recentes.";
     }
     return "*Sem dados suficientes para estimar o melhor horÃ¡rio.";
   }, [bestTimes.source]);
@@ -3040,7 +3039,6 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
 
         <div className="ig-clean-title-row">
           <h2 className="ig-clean-title">Visão Geral</h2>
-          <LastSyncBadge {...metricsSync} />
         </div>
 
         {/* Grid Principal */}
@@ -3286,12 +3284,12 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                         <div className="ig-engagement-summary__label">Taxa de engajamento</div>
                       </div>
 
-                      <div className="ig-engagement-mini-grid">
-                        <div className="ig-engagement-mini-card ig-engagement-mini-card--teal">
+                      <div className="ig-engagement-mini-grid" style={{ display: 'flex', gap: '12px' }}>
+                        <div className="ig-engagement-mini-card ig-engagement-mini-card--teal" style={{ flex: 1 }}>
                           <span className="ig-engagement-mini-card__label">Melhor horário para postar</span>
                           <span className="ig-engagement-mini-card__value">{bestTimes.bestTimeRange || "--"}</span>
                         </div>
-                        <div className="ig-engagement-mini-card ig-engagement-mini-card--pink">
+                        <div className="ig-engagement-mini-card ig-engagement-mini-card--pink" style={{ flex: 1 }}>
                           <span className="ig-engagement-mini-card__label">Melhor dia</span>
                           <span className="ig-engagement-mini-card__value">{bestTimes.bestDay || "--"}</span>
                         </div>
