@@ -709,6 +709,7 @@ export default function InstagramDashboard() {
   const [showDetailedView, setShowDetailedView] = useState(false);
   const [showInteractionsDetail, setShowInteractionsDetail] = useState(false);
   const [showFollowersDetail, setShowFollowersDetail] = useState(false);
+  const [showPostsDetail, setShowPostsDetail] = useState(false);
   const [interactionsTab, setInteractionsTab] = useState('reels'); // reels, videos, posts
 
   const now = useMemo(() => new Date(), []);
@@ -2895,7 +2896,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
         </div>
 
         {/* Grid Principal */}
-          <div className="ig-clean-grid" style={(showDetailedView || showFollowersDetail || showInteractionsDetail) ? { display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' } : {}}>
+          <div className="ig-clean-grid" style={(showDetailedView || showFollowersDetail || showInteractionsDetail || showPostsDetail) ? { display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' } : {}}>
           <div className="ig-clean-grid__left">
             <section className="ig-profile-vertical">
               <div
@@ -3154,7 +3155,35 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 {/* Posts em Destaque */}
                 <div className="ig-profile-vertical__divider" />
                 <div className="ig-profile-vertical__top-posts">
-                  <h4>Melhores posts</h4>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <h4 style={{ margin: 0 }}>Melhores posts</h4>
+                    <button
+                      onClick={() => setShowPostsDetail(true)}
+                      style={{
+                        padding: '6px 12px',
+                        background: 'linear-gradient(135deg, #f97316 0%, #fb923c 100%)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        boxShadow: '0 2px 6px rgba(249, 115, 22, 0.25)',
+                        whiteSpace: 'nowrap'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.boxShadow = '0 4px 10px rgba(249, 115, 22, 0.35)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 2px 6px rgba(249, 115, 22, 0.25)';
+                      }}
+                    >
+                      Ver mais
+                    </button>
+                  </div>
                   <div className="ig-top-posts-list">
                     {loadingPosts && !topPosts.length ? (
                       <DataState state="loading" label="Carregando posts..." size="sm" />
@@ -3964,6 +3993,105 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   </div>
                 </section>
               </div>
+            ) : showPostsDetail ? (
+              /* Conteúdo detalhado de Posts */
+              <div className="ig-posts-detail-panel">
+                {/* Header com botão voltar */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '24px',
+                  padding: '16px 20px',
+                  background: 'linear-gradient(135deg, #f97316 0%, #fb923c 100%)',
+                  borderRadius: '16px',
+                  color: 'white'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <button
+                      onClick={() => setShowPostsDetail(false)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '10px',
+                        background: 'rgba(255, 255, 255, 0.2)',
+                        border: 'none',
+                        color: 'white',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="15 18 9 12 15 6" />
+                      </svg>
+                    </button>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Posts</h3>
+                      <p style={{ margin: 0, fontSize: '13px', opacity: 0.9 }}>Análise detalhada</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* KPIs de Posts */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gap: '12px',
+                  marginBottom: '24px'
+                }}>
+                  <div className="ig-card-white" style={{ padding: '16px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '24px', fontWeight: 700, color: '#f97316' }}>
+                      {recentPosts?.length || 0}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>Total de Posts</div>
+                  </div>
+                  <div className="ig-card-white" style={{ padding: '16px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '24px', fontWeight: 700, color: '#fb923c' }}>
+                      {formatNumber(
+                        recentPosts?.length > 0
+                          ? Math.round(recentPosts.reduce((sum, p) => sum + (resolvePostMetric(p, 'likes', 0) + resolvePostMetric(p, 'comments', 0)), 0) / recentPosts.length)
+                          : 0
+                      )}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>Média Engajamento</div>
+                  </div>
+                  <div className="ig-card-white" style={{ padding: '16px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '24px', fontWeight: 700, color: '#fdba74' }}>
+                      {formatNumber(
+                        recentPosts?.length > 0
+                          ? Math.max(...recentPosts.map(p => resolvePostMetric(p, 'likes', 0) + resolvePostMetric(p, 'comments', 0)))
+                          : 0
+                      )}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>Maior Engajamento</div>
+                  </div>
+                </div>
+
+                {/* Tabela de Posts Recentes */}
+                <section className="ig-card-white">
+                  <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb' }}>
+                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827' }}>
+                      Posts Recentes
+                    </h4>
+                    <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#6b7280' }}>
+                      Publicações mais recentes no período filtrado
+                      {recentPostsFetching && !recentPostsLoading ? (
+                        <span style={{ marginLeft: '8px', fontWeight: 600, color: '#9ca3af' }}>Atualizando...</span>
+                      ) : null}
+                    </p>
+                  </div>
+                  <div style={{ padding: 0 }}>
+                    <PostsTable
+                      posts={recentPosts.slice(0, RECENT_POSTS_TABLE_LIMIT)}
+                      loading={recentPostsLoading}
+                      error={recentPostsError}
+                    />
+                  </div>
+                </section>
+              </div>
             ) : (
               <>
             {/* Card de Crescimento do Perfil */}
@@ -4737,30 +4865,6 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             )}
           </div>
         </div>
-
-      {/* Posts recentes - Largura Total */}
-      <div className="ig-analytics-grid ig-analytics-grid--pair" style={{ marginTop: '24px' }}>
-        <section className="ig-card-white ig-analytics-card" style={{ gridColumn: 'span 2' }}>
-          <div className="ig-analytics-card__header">
-            <div>
-              <h4>Posts recentes</h4>
-              <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
-                Publicacoes mais recentes no periodo filtrado
-                {recentPostsFetching && !recentPostsLoading ? (
-                  <span style={{ marginLeft: '8px', fontWeight: 600, color: '#9ca3af' }}>Atualizando...</span>
-                ) : null}
-              </p>
-            </div>
-          </div>
-          <div className="ig-analytics-card__body" style={{ padding: 0 }}>
-            <PostsTable
-              posts={recentPosts.slice(0, RECENT_POSTS_TABLE_LIMIT)}
-              loading={recentPostsLoading}
-              error={recentPostsError}
-            />
-          </div>
-        </section>
-      </div>
 
       {/* Palavras-chave e Hashtags - Largura Total */}
       <div className="ig-analytics-grid ig-analytics-grid--pair">
