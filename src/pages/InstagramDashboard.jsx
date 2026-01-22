@@ -444,10 +444,38 @@ const formatPercent = (value) => {
   return `${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}%`;
 };
 
+const normalizePostMedia = (post) => {
+  if (!post || typeof post !== "object") return post;
+  const mediaType = post.mediaType ?? post.media_type;
+  const mediaProductType = post.mediaProductType ?? post.media_product_type;
+  const childrenRaw = post.children;
+  const normalizedChildren = Array.isArray(childrenRaw)
+    ? childrenRaw
+    : Array.isArray(childrenRaw?.data)
+      ? childrenRaw.data
+      : null;
+
+  const normalized = { ...post };
+  if (mediaType && !post.mediaType) normalized.mediaType = mediaType;
+  if (mediaType && !post.media_type) normalized.media_type = mediaType;
+  if (mediaProductType && !post.mediaProductType) normalized.mediaProductType = mediaProductType;
+  if (mediaProductType && !post.media_product_type) normalized.media_product_type = mediaProductType;
+  if (normalizedChildren) normalized.children = normalizedChildren;
+  return normalized;
+};
+
+const normalizePostsList = (posts) => (Array.isArray(posts) ? posts.map(normalizePostMedia) : []);
+
 const classifyMediaType = (post) => {
   const rawMediaType = String(post.mediaType || post.media_type || "").toUpperCase();
   const mediaProductType = String(post.mediaProductType || post.media_product_type || "").toUpperCase();
-  const hasChildren = Array.isArray(post.children) && post.children.length > 1;
+  const childrenCount = Array.isArray(post.children)
+    ? post.children.length
+    : Array.isArray(post.children?.data)
+      ? post.children.data.length
+      : 0;
+  const carouselCount = extractNumber(post?.carouselMediaCount ?? post?.carousel_media_count, null);
+  const hasChildren = childrenCount > 0 || (carouselCount != null && carouselCount > 1);
   const isCarouselType = (value) => value.includes("CAROUSEL") || value.includes("ALBUM");
   if (isCarouselType(rawMediaType) || isCarouselType(mediaProductType) || hasChildren) return "CAROUSEL";
   if (rawMediaType === "VIDEO" || rawMediaType === "REEL" || mediaProductType === "REEL" || mediaProductType === "VIDEO") return "VIDEO";
@@ -668,7 +696,7 @@ export default function InstagramDashboard() {
       accountId: accountSnapshotKey,
       since: sinceParam || "auto",
       until: untilParam || "auto",
-      extra: { limit: 20 },
+      extra: { limit: 25 },
     }),
     [accountSnapshotKey, sinceParam, untilParam],
   );
@@ -1213,7 +1241,8 @@ export default function InstagramDashboard() {
     const cachedPosts = getDashboardCache(postsCacheKey);
     const hasCachedPosts = Boolean(cachedPosts);
     if (cachedPosts) {
-      setPosts(Array.isArray(cachedPosts.posts) ? cachedPosts.posts : []);
+      const cachedList = normalizePostsList(Array.isArray(cachedPosts.posts) ? cachedPosts.posts : []);
+      setPosts(cachedList);
       setAccountInfo(cachedPosts.accountInfo || null);
       setPostsError("");
       setLoadingPosts(false);
@@ -1244,7 +1273,7 @@ export default function InstagramDashboard() {
     let cancelled = false;
 
     const url = (() => {
-      const params = new URLSearchParams({ igUserId: accountConfig.instagramUserId, limit: "20" });
+      const params = new URLSearchParams({ igUserId: accountConfig.instagramUserId, limit: "25" });
       if (sinceParam) params.set("since", sinceParam);
       if (untilParam) params.set("until", untilParam);
       return `${API_BASE_URL}/api/instagram/posts?${params.toString()}`;
@@ -1314,7 +1343,7 @@ export default function InstagramDashboard() {
         const json = await fetchPostsPayload(0);
         if (cancelled || postsRequestIdRef.current !== requestId) return;
 
-        const normalizedPosts = Array.isArray(json?.posts) ? json.posts : [];
+        const normalizedPosts = normalizePostsList(Array.isArray(json?.posts) ? json.posts : []);
         const account = json?.account || null;
         setPosts(normalizedPosts);
         setAccountInfo(account);
@@ -1360,7 +1389,8 @@ export default function InstagramDashboard() {
     const cachedPosts = getDashboardCache(postsInsightsCacheKey);
     const hasCachedPosts = Boolean(cachedPosts);
     if (cachedPosts) {
-      setRecentPosts(Array.isArray(cachedPosts.posts) ? cachedPosts.posts : []);
+      const cachedList = normalizePostsList(Array.isArray(cachedPosts.posts) ? cachedPosts.posts : []);
+      setRecentPosts(cachedList);
       setRecentPostsError("");
       setRecentPostsLoading(false);
     }
@@ -1399,7 +1429,7 @@ export default function InstagramDashboard() {
          }
          if (cancelled || recentPostsRequestIdRef.current !== requestId) return;
          const data = unwrapApiData(json, {});
-         const normalizedPosts = Array.isArray(data?.posts) ? data.posts : [];
+         const normalizedPosts = normalizePostsList(Array.isArray(data?.posts) ? data.posts : []);
          setRecentPosts(normalizedPosts);
          setDashboardCache(postsInsightsCacheKey, { posts: normalizedPosts });
          setRecentPostsError("");
@@ -1692,6 +1722,40 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
     () => (recentPosts.length ? recentPosts : filteredPosts),
     [recentPosts, filteredPosts],
   );
+
+  const contentPostsSource = useMemo(() => {
+    if (!filteredPosts.length && !recentPosts.length) return [];
+    const byId = new Map();
+    const extras = [];
+    const mergePost = (primary, secondary) => {
+      const merged = { ...secondary, ...primary };
+      if (!merged.children && secondary.children) merged.children = secondary.children;
+      if (!merged.mediaType && secondary.mediaType) merged.mediaType = secondary.mediaType;
+      if (!merged.media_type && secondary.media_type) merged.media_type = secondary.media_type;
+      if (!merged.mediaProductType && secondary.mediaProductType) merged.mediaProductType = secondary.mediaProductType;
+      if (!merged.media_product_type && secondary.media_product_type) merged.media_product_type = secondary.media_product_type;
+      return merged;
+    };
+    const addPost = (post, preferPrimary) => {
+      if (!post) return;
+      const id = post.id;
+      if (!id) {
+        extras.push(post);
+        return;
+      }
+      const existing = byId.get(id);
+      if (!existing) {
+        byId.set(id, post);
+        return;
+      }
+      byId.set(id, preferPrimary ? mergePost(post, existing) : mergePost(existing, post));
+    };
+
+    recentPosts.forEach((post) => addPost(post, true));
+    filteredPosts.forEach((post) => addPost(post, false));
+    const merged = Array.from(byId.values());
+    return extras.length ? [...merged, ...extras] : merged;
+  }, [filteredPosts, recentPosts]);
   const interactionsDailyTotals = useMemo(() => {
     if (!interactionPostsSource.length) return [];
     const totals = new Map();
@@ -2250,9 +2314,9 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
   ), [engagementRateValue]);
 
   const contentBreakdown = useMemo(() => {
-    if (!filteredPosts.length) return [];
+    if (!contentPostsSource.length) return [];
     const totals = new Map(Object.keys(IG_CONTENT_LABEL).map((type) => [type, 0]));
-    filteredPosts.forEach((post) => {
+    contentPostsSource.forEach((post) => {
       const kind = classifyMediaType(post);
       totals.set(kind, (totals.get(kind) || 0) + sumInteractions(post));
     });
@@ -2260,7 +2324,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
       name: IG_CONTENT_LABEL[type] || type,
       value,
     }));
-  }, [filteredPosts]);
+  }, [contentPostsSource]);
 
   const viewsByContentType = useMemo(() => {
     const baseSeries = IG_VIEW_TYPE_ORDER.map((type) => ({
