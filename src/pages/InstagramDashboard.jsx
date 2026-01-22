@@ -3224,35 +3224,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 {/* Posts em Destaque */}
                 <div className="ig-profile-vertical__divider" />
                 <div className="ig-profile-vertical__top-posts">
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                    <h4 style={{ margin: 0 }}>Melhores posts</h4>
-                    <button
-                      onClick={() => setShowPostsDetail(true)}
-                      style={{
-                        padding: '6px 12px',
-                        background: 'linear-gradient(135deg, #f97316 0%, #fb923c 100%)',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        boxShadow: '0 2px 6px rgba(249, 115, 22, 0.25)',
-                        whiteSpace: 'nowrap'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-1px)';
-                        e.currentTarget.style.boxShadow = '0 4px 10px rgba(249, 115, 22, 0.35)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 2px 6px rgba(249, 115, 22, 0.25)';
-                      }}
-                    >
-                      Ver mais
-                    </button>
-                  </div>
+                  <h4>Melhores posts</h4>
                   <div className="ig-top-posts-list">
                     {loadingPosts && !topPosts.length ? (
                       <DataState state="loading" label="Carregando posts..." size="sm" />
@@ -3340,6 +3312,39 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     ) : (
                       <DataState state="empty" label="Nenhum post disponivel." size="sm" />
                     )}
+                  </div>
+
+                  {/* Botão Ver mais centralizado no final */}
+                  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
+                    <button
+                      onClick={() => {
+                        setShowPostsDetail(true);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      style={{
+                        padding: '10px 24px',
+                        background: 'linear-gradient(135deg, #f97316 0%, #fb923c 100%)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        boxShadow: '0 2px 8px rgba(249, 115, 22, 0.25)',
+                        whiteSpace: 'nowrap'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(249, 115, 22, 0.35)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(249, 115, 22, 0.25)';
+                      }}
+                    >
+                      Ver mais
+                    </button>
                   </div>
                 </div>
               </div>
