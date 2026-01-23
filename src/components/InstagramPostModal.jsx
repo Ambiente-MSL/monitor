@@ -132,13 +132,19 @@ export default function InstagramPostModal({ post, onClose, accountInfo }) {
 
   if (!post) return null;
 
-  // Priorizar thumbnail para videos, media_url para imagens
   const isVideo = post.media_type === "VIDEO" || post.media_type === "REELS" || post.is_video;
   const isCarousel = post.media_type === "CAROUSEL_ALBUM" || post.media_type === "CAROUSEL";
 
-  // Para videos, preferir thumbnail_url; para imagens, preferir media_url
-  const thumbnailUrl = post.thumbnail_url || post.thumbnail || post.media_url;
-  const mediaUrl = isVideo ? thumbnailUrl : (post.media_url || post.thumbnail_url || post.thumbnail);
+  // Usar mesma logica dos cards - buscar primeira URL valida que nao seja video
+  const mediaUrl = [
+    post.previewUrl,
+    post.preview_url,
+    post.thumbnailUrl,
+    post.thumbnail_url,
+    post.mediaUrl,
+    post.media_url,
+    post.thumbnail,
+  ].find((url) => url && !/\.(mp4|mov)$/i.test(url));
 
   // Usar resolvePostMetric para extrair metricas corretamente
   const likes = resolvePostMetric(post, "likes");
