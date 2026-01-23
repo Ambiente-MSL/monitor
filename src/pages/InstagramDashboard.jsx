@@ -52,6 +52,7 @@ import useQueryState from "../hooks/useQueryState";
 import { useAccounts } from "../context/AccountsContext";
 import PostsTable from "../components/PostsTable";
 import DataState from "../components/DataState";
+import InstagramPostModal from "../components/InstagramPostModal";
 import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import WordCloudCard from "../components/WordCloudCard";
 import CustomChartTooltip from "../components/CustomChartTooltip";
@@ -809,6 +810,9 @@ export default function InstagramDashboard() {
   const [showFollowersDetail, setShowFollowersDetail] = useState(false);
   const [showPostsDetail, setShowPostsDetail] = useState(false);
   const [interactionsTab, setInteractionsTab] = useState('reels'); // reels, videos, posts
+
+  // Estado para modal de post
+  const [selectedPost, setSelectedPost] = useState(null);
 
   const now = useMemo(() => new Date(), []);
   const defaultEnd = useMemo(() => endOfDay(subDays(startOfDay(now), 1)), [now]);
@@ -3331,9 +3335,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                         const postUrl = post.permalink || post.url || `https://www.instagram.com/p/${post.id || ''}`;
 
                         const handleThumbClick = () => {
-                          if (postUrl) {
-                            window.open(postUrl, '_blank', 'noopener,noreferrer');
-                          }
+                          setSelectedPost(post);
                         };
 
                         return (
@@ -3878,7 +3880,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                               key={post.id || idx}
                               style={{
                                 flexShrink: 0,
-                                width: '140px',
+                                width: '100px',
                                 borderRadius: '12px',
                                 overflow: 'hidden',
                                 background: 'white',
@@ -3886,12 +3888,9 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                                 cursor: 'pointer',
                                 transition: 'transform 0.2s'
                               }}
-                              onClick={() => {
-                                const postUrl = post.permalink || `https://www.instagram.com/p/${post.id || ''}`;
-                                if (postUrl) window.open(postUrl, '_blank', 'noopener,noreferrer');
-                              }}
+                              onClick={() => setSelectedPost(post)}
                             >
-                              <div style={{ width: '140px', height: '140px', background: '#f3f4f6', position: 'relative' }}>
+                              <div style={{ width: '100px', height: '178px', background: '#f3f4f6', position: 'relative' }}>
                                 {previewUrl ? (
                                   <img src={previewUrl} alt="Post" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 ) : (
@@ -3912,7 +3911,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                                   padding: '20px 8px 8px',
                                   color: 'white'
                                 }}>
-                                  <div style={{ fontSize: '16px', fontWeight: 700 }}>{formatNumber(views)}</div>
+                                  <div style={{ fontSize: '14px', fontWeight: 700 }}>{formatNumber(views)}</div>
                                   <div style={{ fontSize: '10px', opacity: 0.9 }}>visualizações</div>
                                 </div>
                               </div>
@@ -4105,10 +4104,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                                 cursor: 'pointer',
                                 transition: 'transform 0.2s'
                               }}
-                              onClick={() => {
-                                const postUrl = post.permalink || `https://www.instagram.com/p/${post.id || ''}`;
-                                if (postUrl) window.open(postUrl, '_blank', 'noopener,noreferrer');
-                              }}
+                              onClick={() => setSelectedPost(post)}
                             >
                               <div style={{ width: '100px', height: '178px', background: '#f3f4f6', position: 'relative' }}>
                                 {previewUrl ? (
@@ -5153,6 +5149,13 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
         </div>
       </div>
       </div>
+
+      {/* Modal de visualização de post */}
+      <InstagramPostModal
+        post={selectedPost}
+        onClose={() => setSelectedPost(null)}
+        accountInfo={accountInfo}
+      />
     </div>
   );
 }

@@ -1,0 +1,492 @@
+import { useEffect, useState, useCallback } from "react";
+import { X, Heart, MessageCircle, Send, Bookmark, ExternalLink, Play } from "lucide-react";
+
+const formatNumber = (num) => {
+  if (num == null || Number.isNaN(num)) return "0";
+  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
+  if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`;
+  return String(num);
+};
+
+const formatDate = (timestamp) => {
+  if (!timestamp) return "";
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+};
+
+export default function InstagramPostModal({ post, onClose, accountInfo }) {
+  const [imageError, setImageError] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  useEffect(() => {
+    if (!post) return;
+    const onEsc = (e) => e.key === "Escape" && onClose?.();
+    window.addEventListener("keydown", onEsc);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onEsc);
+      document.body.style.overflow = "";
+    };
+  }, [post, onClose]);
+
+  const handleBackdropClick = useCallback((e) => {
+    if (e.target === e.currentTarget) {
+      onClose?.();
+    }
+  }, [onClose]);
+
+  if (!post) return null;
+
+  const mediaUrl = post.media_url || post.thumbnail_url || post.thumbnail;
+  const thumbnailUrl = post.thumbnail_url || post.media_url || post.thumbnail;
+  const isVideo = post.media_type === "VIDEO" || post.media_type === "REELS" || post.is_video;
+  const isCarousel = post.media_type === "CAROUSEL_ALBUM" || post.media_type === "CAROUSEL";
+
+  const likes = post.like_count ?? post.likes ?? 0;
+  const comments = post.comments_count ?? post.comments ?? 0;
+  const shares = post.shares ?? post.shares_count ?? 0;
+  const saves = post.saved ?? post.saves ?? post.saves_count ?? 0;
+  const plays = post.plays ?? post.video_views ?? 0;
+  const reach = post.reach ?? 0;
+  const impressions = post.impressions ?? 0;
+
+  const caption = post.caption || "";
+  const permalink = post.permalink || `https://www.instagram.com/p/${post.id || ""}`;
+  const timestamp = post.timestamp;
+
+  const username = accountInfo?.username || accountInfo?.name || "Instagram";
+  const profilePic = accountInfo?.profile_picture_url;
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0, 0, 0, 0.85)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 9999,
+        padding: "20px",
+        backdropFilter: "blur(4px)"
+      }}
+      onClick={handleBackdropClick}
+    >
+      {/* Botao fechar */}
+      <button
+        onClick={onClose}
+        style={{
+          position: "absolute",
+          top: "20px",
+          right: "20px",
+          background: "rgba(255,255,255,0.1)",
+          border: "none",
+          borderRadius: "50%",
+          width: "44px",
+          height: "44px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          color: "white",
+          transition: "background 0.2s"
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.2)"}
+        onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
+        aria-label="Fechar"
+      >
+        <X size={24} />
+      </button>
+
+      {/* Container principal */}
+      <div
+        style={{
+          display: "flex",
+          maxWidth: "1100px",
+          maxHeight: "90vh",
+          width: "100%",
+          background: "white",
+          borderRadius: "12px",
+          overflow: "hidden",
+          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)"
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Lado esquerdo - Midia */}
+        <div
+          style={{
+            flex: "1 1 60%",
+            maxWidth: "600px",
+            background: "#000",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            position: "relative",
+            minHeight: "400px"
+          }}
+        >
+          {isVideo && !isPlaying ? (
+            <>
+              <img
+                src={thumbnailUrl}
+                alt="Video thumbnail"
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "90vh",
+                  objectFit: "contain"
+                }}
+                onError={() => setImageError(true)}
+              />
+              <button
+                onClick={() => setIsPlaying(true)}
+                style={{
+                  position: "absolute",
+                  width: "80px",
+                  height: "80px",
+                  borderRadius: "50%",
+                  background: "rgba(0,0,0,0.6)",
+                  border: "none",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "white",
+                  transition: "transform 0.2s, background 0.2s"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "scale(1.1)";
+                  e.currentTarget.style.background = "rgba(0,0,0,0.8)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "scale(1)";
+                  e.currentTarget.style.background = "rgba(0,0,0,0.6)";
+                }}
+              >
+                <Play size={36} fill="white" />
+              </button>
+            </>
+          ) : isVideo && isPlaying ? (
+            <video
+              src={mediaUrl}
+              controls
+              autoPlay
+              style={{
+                maxWidth: "100%",
+                maxHeight: "90vh",
+                objectFit: "contain"
+              }}
+            />
+          ) : imageError ? (
+            <div style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#666",
+              padding: "40px"
+            }}>
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
+              </svg>
+              <p style={{ marginTop: "16px", fontSize: "14px" }}>Imagem indisponivel</p>
+            </div>
+          ) : (
+            <img
+              src={mediaUrl}
+              alt="Post"
+              style={{
+                maxWidth: "100%",
+                maxHeight: "90vh",
+                objectFit: "contain"
+              }}
+              onError={() => setImageError(true)}
+            />
+          )}
+
+          {/* Badge de tipo */}
+          {(isVideo || isCarousel) && (
+            <div style={{
+              position: "absolute",
+              top: "12px",
+              right: "12px",
+              background: "rgba(0,0,0,0.7)",
+              color: "white",
+              padding: "4px 10px",
+              borderRadius: "6px",
+              fontSize: "12px",
+              fontWeight: 600
+            }}>
+              {isCarousel ? "Carrossel" : "Video"}
+            </div>
+          )}
+        </div>
+
+        {/* Lado direito - Informacoes */}
+        <div
+          style={{
+            flex: "1 1 40%",
+            minWidth: "320px",
+            maxWidth: "500px",
+            display: "flex",
+            flexDirection: "column",
+            background: "white"
+          }}
+        >
+          {/* Header com perfil */}
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            padding: "16px",
+            borderBottom: "1px solid #efefef",
+            gap: "12px"
+          }}>
+            {profilePic ? (
+              <img
+                src={profilePic}
+                alt={username}
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "50%",
+                  objectFit: "cover"
+                }}
+              />
+            ) : (
+              <div style={{
+                width: "40px",
+                height: "40px",
+                borderRadius: "50%",
+                background: "linear-gradient(135deg, #833AB4, #E1306C, #F77737)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "white",
+                fontWeight: 700,
+                fontSize: "16px"
+              }}>
+                {username.charAt(0).toUpperCase()}
+              </div>
+            )}
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 600, fontSize: "14px", color: "#262626" }}>
+                @{username}
+              </div>
+              {timestamp && (
+                <div style={{ fontSize: "12px", color: "#8e8e8e" }}>
+                  {formatDate(timestamp)}
+                </div>
+              )}
+            </div>
+            <a
+              href={permalink}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                color: "#8e8e8e",
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                fontSize: "12px",
+                textDecoration: "none"
+              }}
+              title="Abrir no Instagram"
+            >
+              <ExternalLink size={16} />
+            </a>
+          </div>
+
+          {/* Caption */}
+          <div style={{
+            flex: 1,
+            overflowY: "auto",
+            padding: "16px"
+          }}>
+            {caption ? (
+              <p style={{
+                margin: 0,
+                fontSize: "14px",
+                lineHeight: 1.5,
+                color: "#262626",
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word"
+              }}>
+                {caption.length > 500 ? `${caption.slice(0, 500)}...` : caption}
+              </p>
+            ) : (
+              <p style={{ margin: 0, fontSize: "14px", color: "#8e8e8e", fontStyle: "italic" }}>
+                Sem legenda
+              </p>
+            )}
+          </div>
+
+          {/* Metricas */}
+          <div style={{ borderTop: "1px solid #efefef" }}>
+            {/* Icones de acao */}
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              padding: "12px 16px",
+              gap: "16px"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#262626" }}>
+                <Heart size={24} />
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#262626" }}>
+                <MessageCircle size={24} />
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#262626" }}>
+                <Send size={24} />
+              </div>
+              <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "6px", color: "#262626" }}>
+                <Bookmark size={24} />
+              </div>
+            </div>
+
+            {/* Numeros */}
+            <div style={{
+              padding: "0 16px 16px",
+              display: "grid",
+              gridTemplateColumns: "repeat(2, 1fr)",
+              gap: "12px"
+            }}>
+              <div style={{
+                background: "#fafafa",
+                borderRadius: "8px",
+                padding: "12px",
+                textAlign: "center"
+              }}>
+                <div style={{ fontSize: "20px", fontWeight: 700, color: "#262626" }}>
+                  {formatNumber(likes)}
+                </div>
+                <div style={{ fontSize: "12px", color: "#8e8e8e", marginTop: "2px" }}>
+                  Curtidas
+                </div>
+              </div>
+
+              <div style={{
+                background: "#fafafa",
+                borderRadius: "8px",
+                padding: "12px",
+                textAlign: "center"
+              }}>
+                <div style={{ fontSize: "20px", fontWeight: 700, color: "#262626" }}>
+                  {formatNumber(comments)}
+                </div>
+                <div style={{ fontSize: "12px", color: "#8e8e8e", marginTop: "2px" }}>
+                  Comentarios
+                </div>
+              </div>
+
+              {saves > 0 && (
+                <div style={{
+                  background: "#fafafa",
+                  borderRadius: "8px",
+                  padding: "12px",
+                  textAlign: "center"
+                }}>
+                  <div style={{ fontSize: "20px", fontWeight: 700, color: "#262626" }}>
+                    {formatNumber(saves)}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "#8e8e8e", marginTop: "2px" }}>
+                    Salvos
+                  </div>
+                </div>
+              )}
+
+              {shares > 0 && (
+                <div style={{
+                  background: "#fafafa",
+                  borderRadius: "8px",
+                  padding: "12px",
+                  textAlign: "center"
+                }}>
+                  <div style={{ fontSize: "20px", fontWeight: 700, color: "#262626" }}>
+                    {formatNumber(shares)}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "#8e8e8e", marginTop: "2px" }}>
+                    Compartilhamentos
+                  </div>
+                </div>
+              )}
+
+              {isVideo && plays > 0 && (
+                <div style={{
+                  background: "#fafafa",
+                  borderRadius: "8px",
+                  padding: "12px",
+                  textAlign: "center"
+                }}>
+                  <div style={{ fontSize: "20px", fontWeight: 700, color: "#262626" }}>
+                    {formatNumber(plays)}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "#8e8e8e", marginTop: "2px" }}>
+                    Reproducoes
+                  </div>
+                </div>
+              )}
+
+              {reach > 0 && (
+                <div style={{
+                  background: "#fafafa",
+                  borderRadius: "8px",
+                  padding: "12px",
+                  textAlign: "center"
+                }}>
+                  <div style={{ fontSize: "20px", fontWeight: 700, color: "#262626" }}>
+                    {formatNumber(reach)}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "#8e8e8e", marginTop: "2px" }}>
+                    Alcance
+                  </div>
+                </div>
+              )}
+
+              {impressions > 0 && (
+                <div style={{
+                  background: "#fafafa",
+                  borderRadius: "8px",
+                  padding: "12px",
+                  textAlign: "center"
+                }}>
+                  <div style={{ fontSize: "20px", fontWeight: 700, color: "#262626" }}>
+                    {formatNumber(impressions)}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "#8e8e8e", marginTop: "2px" }}>
+                    Impressoes
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Total de interacoes */}
+            <div style={{
+              padding: "12px 16px",
+              borderTop: "1px solid #efefef",
+              background: "linear-gradient(135deg, #f8f9fa 0%, #fff 100%)"
+            }}>
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between"
+              }}>
+                <span style={{ fontSize: "14px", color: "#8e8e8e" }}>Total de interacoes</span>
+                <span style={{ fontSize: "18px", fontWeight: 700, color: "#262626" }}>
+                  {formatNumber(likes + comments + shares + saves)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
