@@ -3403,7 +3403,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                       }}
                       style={{
                         padding: '10px 24px',
-                        background: 'linear-gradient(135deg, #f97316 0%, #fb923c 100%)',
+                        background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
                         color: 'white',
                         border: 'none',
                         borderRadius: '8px',
@@ -3411,16 +3411,16 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                         fontWeight: 600,
                         cursor: 'pointer',
                         transition: 'all 0.2s',
-                        boxShadow: '0 2px 8px rgba(249, 115, 22, 0.25)',
+                        boxShadow: '0 2px 8px rgba(99, 102, 241, 0.25)',
                         whiteSpace: 'nowrap'
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.transform = 'translateY(-1px)';
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(249, 115, 22, 0.35)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.35)';
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(249, 115, 22, 0.25)';
+                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(99, 102, 241, 0.25)';
                       }}
                     >
                       Ver mais
@@ -4252,8 +4252,8 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             <section className="ig-growth-clean">
               <header className="ig-card-header">
                 <div>
-                  <h2 className="ig-clean-title2">Crescimento do perfil</h2>
-                  <h3>Alcance</h3>
+                  <h3>Crescimento do perfil</h3>
+                  <p className="ig-card-subtitle">Alcance</p>
                 </div>
               </header>
 
@@ -4402,7 +4402,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   }}
                   style={{
                     padding: '8px 14px',
-                    background: 'linear-gradient(135deg, #c084fc 0%, #a855f7 100%)',
+                    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
                     color: 'white',
                     border: 'none',
                     borderRadius: '8px',
@@ -4410,16 +4410,16 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     fontWeight: 600,
                     cursor: 'pointer',
                     transition: 'all 0.2s',
-                    boxShadow: '0 2px 8px rgba(192, 132, 252, 0.25)',
+                    boxShadow: '0 2px 8px rgba(99, 102, 241, 0.25)',
                     whiteSpace: 'nowrap'
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = 'translateY(-1px)';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(192, 132, 252, 0.35)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.35)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(192, 132, 252, 0.25)';
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(99, 102, 241, 0.25)';
                   }}
                 >
                   Ver mais
@@ -4463,14 +4463,20 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                         <Tooltip
                           cursor={{ stroke: "#c084fc", strokeWidth: 1, strokeDasharray: "4 4" }}
                           content={(props) => {
+                            if (!props?.active || !props?.payload?.length) return null;
                             const tooltipDate = props?.payload?.[0]?.payload?.tooltipDate || props?.label;
+                            const value = props?.payload?.[0]?.value;
                             return (
-                              <CustomChartTooltip
-                                {...props}
-                                labelFormatter={() => String(tooltipDate || "")}
-                                labelMap={{ value: "Seguidores ganhos" }}
-                                valueFormatter={formatTooltipNumber}
-                              />
+                              <div className="ig-tooltip">
+                                <span className="ig-tooltip__title">{tooltipDate}</span>
+                                <div className="ig-tooltip__row">
+                                  <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                                    <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#a855f7" }} />
+                                    Seguidores ganhos:
+                                  </span>
+                                  <strong>{formatTooltipNumber(value)}</strong>
+                                </div>
+                              </div>
                             );
                           }}
                         />
@@ -4653,7 +4659,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 }}
                 style={{
                   padding: '8px 14px',
-                  background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
+                  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
                   color: 'white',
                   border: 'none',
                   borderRadius: '8px',
@@ -4661,16 +4667,16 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   fontWeight: 600,
                   cursor: 'pointer',
                   transition: 'all 0.2s',
-                  boxShadow: '0 2px 8px rgba(236, 72, 153, 0.25)',
+                  boxShadow: '0 2px 8px rgba(99, 102, 241, 0.25)',
                   whiteSpace: 'nowrap'
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-1px)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(236, 72, 153, 0.35)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.35)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(236, 72, 153, 0.25)';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(99, 102, 241, 0.25)';
                 }}
               >
                 Ver mais
