@@ -2636,8 +2636,19 @@ body.theme-light {
   padding-top: 0 !important;
   height: auto !important;
   display: flex !important;
-  justify-content: space-between !important;
+  justify-content: center !important;
   align-items: center !important;
+  position: relative !important;
+}
+
+.rdrMonthAndYearWrapper .rdrPprevButton {
+  position: absolute !important;
+  left: 0 !important;
+}
+
+.rdrMonthAndYearWrapper .rdrNextButton {
+  position: absolute !important;
+  right: 0 !important;
 }
 
 .rdrNextPrevButton {
@@ -2681,11 +2692,12 @@ body.theme-light {
 }
 
 .rdrMonthAndYearPickers {
-  flex: 1 !important;
+  flex: none !important;
   font-size: 15px !important;
   font-weight: 600 !important;
   color: #1a1a1a !important;
   text-transform: capitalize !important;
+  text-align: center !important;
 }
 
 .rdrMonthsVertical,
