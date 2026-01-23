@@ -2297,8 +2297,8 @@ body.theme-light {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
+  gap: 6px;
+  padding: 10px 12px;
   border-radius: 12px;
   border: 1px solid rgba(0, 0, 0, 0.08);
   background: rgba(255, 255, 255, 0.95);
@@ -2310,7 +2310,7 @@ body.theme-light {
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   font-family: 'Lato', sans-serif;
-  min-width: 240px;
+  min-width: 200px;
   height: 40px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
@@ -2355,8 +2355,10 @@ body.theme-light {
 }
 
 .date-range-btn-new__icon {
-  color: #8b5cf6;
+  color: #000000;
   flex-shrink: 0;
+  width: 15px;
+  height: 15px;
 }
 
 .date-range-btn-new__text {
@@ -2366,14 +2368,15 @@ body.theme-light {
 }
 
 .date-range-btn-new__chevron {
-  color: #6b7280;
+  color: #000000;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
+  margin-left: -2px;
 }
 
 .date-range-btn-new__chevron--open {
   transform: rotate(180deg);
-  color: #8b5cf6;
+  color: #000000;
 }
 
 /* Dropdown Container */
@@ -3367,7 +3370,7 @@ body.theme-light {
 }
 
 .topbar__account .account-dropdown__icon {
-  color: #6b7280;
+  color: #000000;
 }
 
 .topbar__account .account-dropdown__list {
