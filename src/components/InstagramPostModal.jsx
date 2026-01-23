@@ -21,6 +21,90 @@ const formatDate = (timestamp) => {
   });
 };
 
+// Helper para extrair valor de caminhos aninhados
+const getNestedValue = (obj, path) => {
+  if (!obj || !Array.isArray(path)) return undefined;
+  return path.reduce((acc, key) => (acc && acc[key] !== undefined ? acc[key] : undefined), obj);
+};
+
+// Helper para extrair numero
+const extractNumber = (value) => {
+  if (value == null) return null;
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+};
+
+// Helper para pegar primeiro numero valido
+const pickFirstNumber = (candidates, fallback = 0) => {
+  for (const c of candidates) {
+    const n = extractNumber(c);
+    if (n != null) return n;
+  }
+  return fallback;
+};
+
+// Caminhos para metricas de posts
+const POST_METRIC_PATHS = {
+  likes: [
+    ["likes"],
+    ["likeCount"],
+    ["like_count"],
+    ["insights", "likes", "value"],
+  ],
+  comments: [
+    ["comments"],
+    ["commentsCount"],
+    ["comments_count"],
+    ["insights", "comments", "value"],
+  ],
+  shares: [
+    ["shares"],
+    ["shareCount"],
+    ["shares_count"],
+    ["insights", "shares", "value"],
+  ],
+  saves: [
+    ["saves"],
+    ["saveCount"],
+    ["saved"],
+    ["saved_count"],
+    ["insights", "saves", "value"],
+    ["insights", "saved", "value"],
+  ],
+  reach: [
+    ["reach"],
+    ["reachCount"],
+    ["reach_count"],
+    ["insights", "reach", "value"],
+  ],
+  views: [
+    ["views"],
+    ["viewCount"],
+    ["view_count"],
+    ["videoViews"],
+    ["video_views"],
+    ["plays"],
+    ["insights", "views", "value"],
+    ["insights", "video_views", "value"],
+  ],
+  impressions: [
+    ["impressions"],
+    ["impressionsCount"],
+    ["impressions_count"],
+    ["insights", "impressions", "value"],
+  ],
+};
+
+const resolvePostMetric = (post, metric, fallback = 0) => {
+  const paths = POST_METRIC_PATHS[metric] || [];
+  const candidates = paths.map((path) => getNestedValue(post, path));
+  return pickFirstNumber(candidates, fallback);
+};
+
 export default function InstagramPostModal({ post, onClose, accountInfo }) {
   const [imageError, setImageError] = useState(false);
 
@@ -35,6 +119,11 @@ export default function InstagramPostModal({ post, onClose, accountInfo }) {
     };
   }, [post, onClose]);
 
+  // Reset imageError quando post mudar
+  useEffect(() => {
+    setImageError(false);
+  }, [post?.id]);
+
   const handleBackdropClick = useCallback((e) => {
     if (e.target === e.currentTarget) {
       onClose?.();
@@ -43,18 +132,22 @@ export default function InstagramPostModal({ post, onClose, accountInfo }) {
 
   if (!post) return null;
 
-  const mediaUrl = post.media_url || post.thumbnail_url || post.thumbnail;
-  const thumbnailUrl = post.thumbnail_url || post.media_url || post.thumbnail;
+  // Priorizar thumbnail para videos, media_url para imagens
   const isVideo = post.media_type === "VIDEO" || post.media_type === "REELS" || post.is_video;
   const isCarousel = post.media_type === "CAROUSEL_ALBUM" || post.media_type === "CAROUSEL";
 
-  const likes = post.like_count ?? post.likes ?? 0;
-  const comments = post.comments_count ?? post.comments ?? 0;
-  const shares = post.shares ?? post.shares_count ?? 0;
-  const saves = post.saved ?? post.saves ?? post.saves_count ?? 0;
-  const plays = post.plays ?? post.video_views ?? 0;
-  const reach = post.reach ?? 0;
-  const impressions = post.impressions ?? 0;
+  // Para videos, preferir thumbnail_url; para imagens, preferir media_url
+  const thumbnailUrl = post.thumbnail_url || post.thumbnail || post.media_url;
+  const mediaUrl = isVideo ? thumbnailUrl : (post.media_url || post.thumbnail_url || post.thumbnail);
+
+  // Usar resolvePostMetric para extrair metricas corretamente
+  const likes = resolvePostMetric(post, "likes");
+  const comments = resolvePostMetric(post, "comments");
+  const shares = resolvePostMetric(post, "shares");
+  const saves = resolvePostMetric(post, "saves");
+  const plays = resolvePostMetric(post, "views");
+  const reach = resolvePostMetric(post, "reach");
+  const impressions = resolvePostMetric(post, "impressions");
 
   const caption = post.caption || "";
   const permalink = post.permalink || `https://www.instagram.com/p/${post.id || ""}`;
@@ -131,48 +224,56 @@ export default function InstagramPostModal({ post, onClose, accountInfo }) {
             minHeight: "400px"
           }}
         >
-          {imageError ? (
+          {imageError || !mediaUrl ? (
             <div style={{
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              color: "#666",
-              padding: "40px"
+              color: "#999",
+              padding: "40px",
+              textAlign: "center"
             }}>
               <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                 <circle cx="8.5" cy="8.5" r="1.5" />
                 <polyline points="21 15 16 10 5 21" />
               </svg>
-              <p style={{ marginTop: "16px", fontSize: "14px" }}>Midia indisponivel</p>
+              <p style={{ marginTop: "16px", fontSize: "14px" }}>
+                {isVideo ? "Pre-visualizacao do video indisponivel" : "Midia indisponivel"}
+              </p>
               <a
                 href={permalink}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
                   marginTop: "12px",
-                  padding: "8px 16px",
+                  padding: "10px 20px",
                   background: "linear-gradient(135deg, #833AB4, #E1306C, #F77737)",
                   color: "white",
                   borderRadius: "8px",
                   textDecoration: "none",
                   fontSize: "14px",
-                  fontWeight: 600
+                  fontWeight: 600,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px"
                 }}
               >
-                Ver no Instagram
+                {isVideo && <Play size={18} fill="white" />}
+                {isVideo ? "Assistir no Instagram" : "Ver no Instagram"}
               </a>
             </div>
           ) : (
             <>
               <img
-                src={thumbnailUrl || mediaUrl}
+                src={mediaUrl}
                 alt="Post"
                 style={{
                   maxWidth: "100%",
                   maxHeight: "90vh",
-                  objectFit: "contain"
+                  objectFit: "contain",
+                  display: "block"
                 }}
                 onError={() => setImageError(true)}
               />
