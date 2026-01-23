@@ -4091,15 +4091,13 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                       <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '8px' }}>
                         {(topPosts || []).slice(0, 5).map((post, idx) => {
                           const previewUrl = post.thumbnail_url || post.media_url || post.thumbnail;
-                          const likes = post.like_count ?? post.likes ?? 0;
-                          const comments = post.comments_count ?? post.comments ?? 0;
-                          const engagement = likes + comments;
+                          const engagement = sumInteractions(post);
                           return (
                             <div
                               key={post.id || idx}
                               style={{
                                 flexShrink: 0,
-                                width: '140px',
+                                width: '100px',
                                 borderRadius: '12px',
                                 overflow: 'hidden',
                                 background: 'white',
@@ -4112,7 +4110,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                                 if (postUrl) window.open(postUrl, '_blank', 'noopener,noreferrer');
                               }}
                             >
-                              <div style={{ width: '140px', height: '140px', background: '#f3f4f6', position: 'relative' }}>
+                              <div style={{ width: '100px', height: '178px', background: '#f3f4f6', position: 'relative' }}>
                                 {previewUrl ? (
                                   <img src={previewUrl} alt="Post" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 ) : (
@@ -4133,7 +4131,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                                   padding: '20px 8px 8px',
                                   color: 'white'
                                 }}>
-                                  <div style={{ fontSize: '16px', fontWeight: 700 }}>{formatNumber(engagement)}</div>
+                                  <div style={{ fontSize: '14px', fontWeight: 700 }}>{formatNumber(engagement)}</div>
                                   <div style={{ fontSize: '10px', opacity: 0.9 }}>interações</div>
                                 </div>
                               </div>
