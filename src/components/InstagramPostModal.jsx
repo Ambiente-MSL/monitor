@@ -23,7 +23,6 @@ const formatDate = (timestamp) => {
 
 export default function InstagramPostModal({ post, onClose, accountInfo }) {
   const [imageError, setImageError] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
     if (!post) return;
@@ -132,58 +131,7 @@ export default function InstagramPostModal({ post, onClose, accountInfo }) {
             minHeight: "400px"
           }}
         >
-          {isVideo && !isPlaying ? (
-            <>
-              <img
-                src={thumbnailUrl}
-                alt="Video thumbnail"
-                style={{
-                  maxWidth: "100%",
-                  maxHeight: "90vh",
-                  objectFit: "contain"
-                }}
-                onError={() => setImageError(true)}
-              />
-              <button
-                onClick={() => setIsPlaying(true)}
-                style={{
-                  position: "absolute",
-                  width: "80px",
-                  height: "80px",
-                  borderRadius: "50%",
-                  background: "rgba(0,0,0,0.6)",
-                  border: "none",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "white",
-                  transition: "transform 0.2s, background 0.2s"
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "scale(1.1)";
-                  e.currentTarget.style.background = "rgba(0,0,0,0.8)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "scale(1)";
-                  e.currentTarget.style.background = "rgba(0,0,0,0.6)";
-                }}
-              >
-                <Play size={36} fill="white" />
-              </button>
-            </>
-          ) : isVideo && isPlaying ? (
-            <video
-              src={mediaUrl}
-              controls
-              autoPlay
-              style={{
-                maxWidth: "100%",
-                maxHeight: "90vh",
-                objectFit: "contain"
-              }}
-            />
-          ) : imageError ? (
+          {imageError ? (
             <div style={{
               display: "flex",
               flexDirection: "column",
@@ -197,23 +145,76 @@ export default function InstagramPostModal({ post, onClose, accountInfo }) {
                 <circle cx="8.5" cy="8.5" r="1.5" />
                 <polyline points="21 15 16 10 5 21" />
               </svg>
-              <p style={{ marginTop: "16px", fontSize: "14px" }}>Imagem indisponivel</p>
+              <p style={{ marginTop: "16px", fontSize: "14px" }}>Midia indisponivel</p>
+              <a
+                href={permalink}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  marginTop: "12px",
+                  padding: "8px 16px",
+                  background: "linear-gradient(135deg, #833AB4, #E1306C, #F77737)",
+                  color: "white",
+                  borderRadius: "8px",
+                  textDecoration: "none",
+                  fontSize: "14px",
+                  fontWeight: 600
+                }}
+              >
+                Ver no Instagram
+              </a>
             </div>
           ) : (
-            <img
-              src={mediaUrl}
-              alt="Post"
-              style={{
-                maxWidth: "100%",
-                maxHeight: "90vh",
-                objectFit: "contain"
-              }}
-              onError={() => setImageError(true)}
-            />
+            <>
+              <img
+                src={thumbnailUrl || mediaUrl}
+                alt="Post"
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "90vh",
+                  objectFit: "contain"
+                }}
+                onError={() => setImageError(true)}
+              />
+              {/* Botao de play para videos - abre no Instagram */}
+              {isVideo && (
+                <a
+                  href={permalink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    position: "absolute",
+                    width: "80px",
+                    height: "80px",
+                    borderRadius: "50%",
+                    background: "rgba(0,0,0,0.6)",
+                    border: "none",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "white",
+                    transition: "transform 0.2s, background 0.2s",
+                    textDecoration: "none"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "scale(1.1)";
+                    e.currentTarget.style.background = "rgba(0,0,0,0.8)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "scale(1)";
+                    e.currentTarget.style.background = "rgba(0,0,0,0.6)";
+                  }}
+                  title="Assistir no Instagram"
+                >
+                  <Play size={36} fill="white" />
+                </a>
+              )}
+            </>
           )}
 
           {/* Badge de tipo */}
-          {(isVideo || isCarousel) && (
+          {(isVideo || isCarousel) && !imageError && (
             <div style={{
               position: "absolute",
               top: "12px",
