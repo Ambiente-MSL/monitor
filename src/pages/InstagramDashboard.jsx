@@ -4755,7 +4755,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
           </section>
         </div>
 
-      <div className="ig-analytics-grid ig-analytics-grid--stack">
+        <div className="ig-analytics-grid ig-analytics-grid--pair">
           <section className="ig-card-white ig-analytics-card">
             <div className="ig-analytics-card__header">
               <div>

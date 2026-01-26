@@ -11308,10 +11308,6 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   grid-template-columns: repeat(2, 1fr);
 }
 
-.ig-analytics-grid--stack {
-  grid-template-columns: 1fr;
-}
-
 @media (max-width: 1024px) {
   .ig-analytics-grid--pair {
     grid-template-columns: 1fr;
