@@ -3519,16 +3519,10 @@ body:has(.facebook-dashboard--clean) .topbar__account .account-dropdown__item-na
   margin: 0 auto;
   padding: 0 24px 32px;
   max-width: 1400px;
-  padding-top: 24px;
 }
 
 .admin-dashboard--clean .ig-clean-header {
   margin-top: 0;
-}
-
-.admin-dashboard--clean .ig-hero-gradient {
-  background: linear-gradient(115deg, #831843 0%, #be185d 40%, #ec4899 70%, #f472b6 100%);
-  box-shadow: 0 40px 80px rgba(236, 72, 153, 0.28);
 }
 
 .filter-button {
