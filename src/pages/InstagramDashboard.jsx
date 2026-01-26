@@ -4941,32 +4941,60 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             {audienceCities.length ? (
               <div className="ig-top-cities-new-layout">
                 <div className="ig-top-cities-new-layout__left">
-                  <div style={{ marginBottom: '16px' }}>
-                    <div style={{ fontSize: '32px', fontWeight: '700', color: '#1f2937', lineHeight: '1', marginBottom: '8px' }}>
-                      {audienceTopCity ? formatNumber(audienceTopCity.value) : '--'}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span className="ig-top-city-row__icon" style={{ backgroundColor: "#5eead4", width: '12px', height: '12px', borderRadius: '3px' }}></span>
-                      <span style={{ fontSize: '13px', fontWeight: '500', color: '#374151' }}>
-                        {audienceTopCity?.cityName || '--'}
-                      </span>
-                      {audienceTopCity ? (
-                        <svg width="14" height="14" viewBox="0 0 16 16">
-                          <path d="M8 3 L13 9 L3 9 Z" fill="#10b981" />
+                  {/* Hero - Cidade Principal */}
+                  {audienceTopCity && (
+                    <div className="ig-top-cities__hero">
+                      <div className="ig-top-cities__hero-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                          <circle cx="12" cy="10" r="3"></circle>
                         </svg>
-                      ) : null}
+                      </div>
+                      <div className="ig-top-cities__hero-content">
+                        <div className="ig-top-cities__hero-value">
+                          {formatNumber(audienceTopCity.value)}
+                        </div>
+                        <div className="ig-top-cities__hero-label">
+                          <span className="ig-top-cities__hero-name">
+                            {audienceTopCity.cityName}
+                          </span>
+                          <span className="ig-top-cities__hero-badge">
+                            <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
+                              <path d="M8 3 L13 9 L3 9 Z" />
+                            </svg>
+                            #1
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
+                  {/* Lista de Cidades */}
                   <div className="ig-top-cities__table">
                     {audienceTopCityRows.map((city, index) => {
-                      const colors = ["#3b82f6", "#f87171", "#fb923c", "#5eead4"];
+                      const colors = ["#3b82f6", "#f87171", "#fb923c", "#a78bfa", "#34d399"];
                       const color = colors[index % colors.length];
+                      const maxValue = audienceTopCityRows[0]?.value || 1;
+                      const percentage = Math.round((city.value / maxValue) * 100);
+                      const rankNum = index + 1;
+                      const rankClass = rankNum <= 3 ? `ig-top-city-row__rank--${rankNum}` : 'ig-top-city-row__rank--default';
                       return (
                         <div className="ig-top-city-row" key={`${city.name || city.cityName}-${index}`}>
+                          <span className={`ig-top-city-row__rank ${rankClass}`}>
+                            {rankNum}
+                          </span>
                           <div className="ig-top-city-row__left">
                             <span className="ig-top-city-row__icon" style={{ backgroundColor: color }}></span>
                             <span className="ig-top-city-row__name">{city.cityName || '--'}</span>
+                          </div>
+                          <div className="ig-top-city-row__bar">
+                            <div
+                              className="ig-top-city-row__bar-fill"
+                              style={{
+                                width: `${percentage}%`,
+                                background: `linear-gradient(90deg, ${color}99 0%, ${color} 100%)`
+                              }}
+                            />
                           </div>
                           <span className="ig-top-city-row__value">{formatNumber(city.value)}</span>
                         </div>
@@ -4976,6 +5004,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 </div>
 
                 <div className="ig-top-cities-new-layout__right">
+                  <div className="ig-top-cities-new-layout__chart-label">Distribuição</div>
                   {audienceCitiesChartData.length ? (
                     <ResponsiveContainer width="100%" height={120}>
                       <ComposedChart
@@ -4984,8 +5013,8 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                       >
                         <defs>
                           <linearGradient id="cityGrowthGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#5eead4" stopOpacity={0.3} />
-                            <stop offset="100%" stopColor="#5eead4" stopOpacity={0} />
+                            <stop offset="0%" stopColor="#10b981" stopOpacity={0.4} />
+                            <stop offset="100%" stopColor="#10b981" stopOpacity={0.05} />
                           </linearGradient>
                         </defs>
                         <XAxis dataKey="name" hide />
@@ -5002,7 +5031,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                         <Area
                           type="monotone"
                           dataKey="value"
-                          stroke="#5eead4"
+                          stroke="#10b981"
                           strokeWidth={2}
                           fill="url(#cityGrowthGradient)"
                           dot={false}
