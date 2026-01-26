@@ -154,11 +154,12 @@ export default function Admin() {
     return (
       <div className="admin-dashboard admin-dashboard--clean">
         <div className="ig-clean-container">
+          <div className="ig-hero-gradient" aria-hidden="true" />
           {/* Header com Logo Admin e Tabs */}
           <div className="ig-clean-header">
             <div className="ig-clean-header__brand">
               <div className="ig-clean-header__logo">
-                <Shield size={32} color="#ec4899" />
+                <Shield size={32} />
               </div>
               <h1>Admin</h1>
             </div>
@@ -206,11 +207,12 @@ export default function Admin() {
   return (
     <div className="admin-dashboard admin-dashboard--clean">
       <div className="ig-clean-container">
+        <div className="ig-hero-gradient" aria-hidden="true" />
         {/* Header com Logo Admin e Tabs */}
         <div className="ig-clean-header">
           <div className="ig-clean-header__brand">
             <div className="ig-clean-header__logo">
-              <Shield size={32} color="#ec4899" />
+              <Shield size={32} />
             </div>
             <h1>Admin</h1>
           </div>
