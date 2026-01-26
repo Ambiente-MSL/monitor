@@ -4758,62 +4758,6 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
         <div className="ig-analytics-grid ig-analytics-grid--pair">
           <section className="ig-card-white ig-analytics-card">
             <div className="ig-analytics-card__header">
-              <h4>Audiência</h4>
-              <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>Seguidores vs Não Seguidores</p>
-            </div>
-            <div className="ig-analytics-card__body">
-              <ResponsiveContainer width="100%" height={240}>
-                <PieChart>
-                  <Pie
-                    data={audienceTypeSeries}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={0}
-                    outerRadius={90}
-                    paddingAngle={2}
-                    stroke="none"
-                    isAnimationActive={true}
-                    activeIndex={activeGenderIndex}
-                    activeShape={{
-                      outerRadius: 100,
-                    }}
-                    onMouseEnter={(_, index) => setActiveGenderIndex(index)}
-                    onMouseLeave={() => setActiveGenderIndex(-1)}
-                  >
-                    {audienceTypeSeries.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={index === 0 ? "#f472b6" : "#6366f1"} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    content={(
-                      <CustomChartTooltip
-                        variant="pie"
-                        unit="%"
-                        valueFormatter={formatTooltipNumber}
-                        showPercent={false}
-                      />
-                    )}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="ig-analytics-legend" style={{ marginTop: '20px', gap: '18px' }}>
-                {audienceTypeSeries.map((slice, index) => (
-                  <div key={slice.name || index} className="ig-analytics-legend__item" style={{ fontSize: '16px', fontWeight: '500' }}>
-                    <span
-                      className="ig-analytics-legend__swatch"
-                      style={{ backgroundColor: index === 0 ? "#f472b6" : "#6366f1", width: '16px', height: '16px' }}
-                    />
-                    <span className="ig-analytics-legend__label" style={{ color: '#111827', fontWeight: 600 }}>{slice.name}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          <section className="ig-card-white ig-analytics-card">
-            <div className="ig-analytics-card__header">
               <div>
                 <h4>Quantidade de publicações por dia</h4>
                 <span className="ig-calendar__month">{postCalendar.title}</span>
@@ -4831,7 +4775,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               </select>
             </div>
             <div className="ig-analytics-card__body">
-              <div className="ig-calendar" style={{ transform: 'scale(0.85)', transformOrigin: 'top center' }}>
+              <div className="ig-calendar">
                 <div className="ig-calendar__weekdays">
                   <span className="ig-calendar__weekday">Dom</span>
                   <span className="ig-calendar__weekday">Seg</span>
@@ -4863,85 +4807,10 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               </div>
             </div>
           </section>
-        </div>
-
-        <div className="ig-analytics-grid ig-analytics-grid--pair">
-          <section className="ig-card-white ig-analytics-card">
-            <div className="ig-analytics-card__header">
-              <h4>Idade</h4>
-            </div>
-            <div className="ig-analytics-card__body">
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart
-                  data={[
-                    { age: "13-17", male: 20, female: 30 },
-                    { age: "18-24", male: 60, female: 80 },
-                    { age: "25-34", male: 70, female: 75 },
-                    { age: "35-44", male: 40, female: 35 },
-                    { age: "45++", male: 30, female: 25 },
-                  ]}
-                  layout="vertical"
-                  margin={{ left: 0, right: 20, top: 10, bottom: 10 }}
-                  barGap={4}
-                  barCategoryGap="60%"
-                >
-                  <defs>
-                    <linearGradient id="maleGradient" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stopColor="#6366f1" />
-                      <stop offset="100%" stopColor="#4f46e5" />
-                    </linearGradient>
-                    <linearGradient id="femaleGradient" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stopColor="#f472b6" />
-                      <stop offset="100%" stopColor="#ec4899" />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
-                  <XAxis
-                    type="number"
-                    tick={{ fill: '#6b7280', fontFamily: 'Lato, sans-serif' }}
-                    fontSize={12}
-                    axisLine={false}
-                    tickLine={false}
-                    tickFormatter={(value) => formatCompactNumber(value)}
-                  />
-                  <YAxis
-                    type="category"
-                    dataKey="age"
-                    tick={{ fill: '#374151', fontFamily: 'Lato, sans-serif', fontWeight: 600 }}
-                    fontSize={13}
-                    width={50}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <Tooltip
-                    cursor={{ fill: 'rgba(99, 102, 241, 0.08)' }}
-                    content={(
-                      <CustomChartTooltip
-                        labelFormatter={(value) => String(value || "")}
-                        valueFormatter={formatTooltipNumber}
-                      />
-                    )}
-                  />
-                  <Bar dataKey="male" fill="url(#maleGradient)" radius={[0, 6, 6, 0]} barSize={14} />
-                  <Bar dataKey="female" fill="url(#femaleGradient)" radius={[0, 6, 6, 0]} barSize={14} />
-                </BarChart>
-              </ResponsiveContainer>
-              <div className="ig-analytics-legend" style={{ marginTop: '4px', gap: '16px', justifyContent: 'center' }}>
-                <div className="ig-analytics-legend__item" style={{ fontSize: '13px', fontWeight: '500' }}>
-                  <span className="ig-analytics-legend__swatch" style={{ backgroundColor: '#4f46e5', width: '12px', height: '12px' }} />
-                  <span className="ig-analytics-legend__label" style={{ color: '#111827', fontWeight: 600 }}>Homens</span>
-                </div>
-                <div className="ig-analytics-legend__item" style={{ fontSize: '13px', fontWeight: '500' }}>
-                  <span className="ig-analytics-legend__swatch" style={{ backgroundColor: '#ec4899', width: '12px', height: '12px' }} />
-                  <span className="ig-analytics-legend__label" style={{ color: '#111827', fontWeight: 600 }}>Mulheres</span>
-                </div>
-              </div>
-            </div>
-          </section>
 
           <section className="ig-card-white ig-analytics-card">
             <div className="ig-analytics-card__header">
-              <h4>Top cidades</h4>
+              <h4>Top Cidades</h4>
             </div>
             {audienceCities.length ? (
               <div className="ig-top-cities-content">
