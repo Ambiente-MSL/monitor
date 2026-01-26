@@ -4810,7 +4810,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
 
           <section className="ig-card-white ig-analytics-card">
             <div className="ig-analytics-card__header">
-              <h4>Top Cidades</h4>
+              <h4>Top cidades</h4>
             </div>
             {audienceCities.length ? (
               <div className="ig-top-cities-content">
@@ -4884,7 +4884,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
         </div>
 
         {/* Palavras-chave e Hashtags - Largura Total */}
-        <div className="ig-analytics-grid ig-analytics-grid--pair">
+        <div className="ig-analytics-grid ig-analytics-grid--stack">
           <section className="ig-card-white ig-analytics-card ig-analytics-card--large">
             <div className="ig-analytics-card__header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
               <h4 style={{ margin: 0 }}>Palavras chaves mais comentadas</h4>
