@@ -4,6 +4,7 @@ import { fetchWithTimeout, isTimeoutError } from "../lib/fetchWithTimeout";
 import DataState from "./DataState";
 
 const WORD_COLORS = ["#a855f7", "#6366f1", "#f97316", "#14b8a6", "#facc15", "#22d3ee", "#34d399", "#f472b6", "#60a5fa"];
+const DETAILS_PAGE_SIZE = 40;
 
 const fetcher = async (url) => {
   let response;
@@ -62,6 +63,16 @@ const buildCloudEntries = (words) => {
   });
 };
 
+const formatDetailDate = (value) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(date);
+};
+
 export default function WordCloudCard({
   apiBaseUrl = "",
   igUserId,
@@ -73,6 +84,11 @@ export default function WordCloudCard({
 }) {
   const sanitizedBaseUrl = useMemo(() => (apiBaseUrl || "").replace(/\/$/, ""), [apiBaseUrl]);
   const [loadingSlow, setLoadingSlow] = useState(false);
+  const [selectedWord, setSelectedWord] = useState(null);
+  const [details, setDetails] = useState(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsLoadingMore, setDetailsLoadingMore] = useState(false);
+  const [detailsError, setDetailsError] = useState("");
 
   const requestKey = useMemo(() => {
     if (!igUserId) return null;
@@ -89,6 +105,85 @@ export default function WordCloudCard({
     setLoadingSlow(false);
   }, [requestKey]);
 
+  const buildDetailsUrl = (word, offset = 0) => {
+    if (!igUserId || !word) return null;
+    const params = new URLSearchParams({
+      igUserId,
+      word,
+      limit: String(DETAILS_PAGE_SIZE),
+      offset: String(offset),
+    });
+    if (since) params.set("since", since);
+    if (until) params.set("until", until);
+    const path = `/api/instagram/comments/search?${params.toString()}`;
+    return sanitizedBaseUrl ? `${sanitizedBaseUrl}${path}` : path;
+  };
+
+  const fetchWordDetails = async (word, offset = 0) => {
+    const url = buildDetailsUrl(word, offset);
+    if (!url) return null;
+    let response;
+    try {
+      response = await fetchWithTimeout(url);
+    } catch (err) {
+      if (isTimeoutError(err)) {
+        throw new Error("Tempo esgotado ao carregar comentarios.");
+      }
+      throw err;
+    }
+    if (!response.ok) {
+      const message = await response.text();
+      throw new Error(message || "Falha ao carregar comentarios.");
+    }
+    return response.json();
+  };
+
+  const closeDetails = () => {
+    setSelectedWord(null);
+    setDetails(null);
+    setDetailsError("");
+    setDetailsLoading(false);
+    setDetailsLoadingMore(false);
+  };
+
+  useEffect(() => {
+    if (!selectedWord) return undefined;
+    let cancelled = false;
+    setDetailsLoading(true);
+    setDetailsError("");
+    setDetails(null);
+    fetchWordDetails(selectedWord, 0)
+      .then((payload) => {
+        if (cancelled) return;
+        setDetails(payload);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setDetailsError(err?.message || "Falha ao carregar comentarios.");
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setDetailsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedWord, igUserId, since, until, sanitizedBaseUrl]);
+
+  useEffect(() => {
+    if (!selectedWord) return undefined;
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        closeDetails();
+      }
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
+    }
+    return undefined;
+  }, [selectedWord]);
+
   const { data, error, isLoading, isValidating } = useSWR(requestKey, fetcher, {
     revalidateOnFocus: false,
     shouldRetryOnError: false,
@@ -96,6 +191,37 @@ export default function WordCloudCard({
     loadingTimeout: 3000,
     onLoadingSlow: () => setLoadingSlow(true),
   });
+
+  const hasMoreDetails = useMemo(() => {
+    if (!details) return false;
+    const total = Number(details.total_comments || 0);
+    const current = Array.isArray(details.comments) ? details.comments.length : 0;
+    return total > current;
+  }, [details]);
+
+  const handleLoadMore = async () => {
+    if (!selectedWord || !details || detailsLoadingMore) return;
+    const currentCount = Array.isArray(details.comments) ? details.comments.length : 0;
+    setDetailsLoadingMore(true);
+    try {
+      const payload = await fetchWordDetails(selectedWord, currentCount);
+      const nextComments = Array.isArray(payload?.comments) ? payload.comments : [];
+      setDetails((prev) => {
+        if (!prev) return payload;
+        const merged = Array.isArray(prev.comments) ? [...prev.comments, ...nextComments] : nextComments;
+        return {
+          ...prev,
+          comments: merged,
+          total_comments: payload?.total_comments ?? prev.total_comments,
+          total_occurrences: payload?.total_occurrences ?? prev.total_occurrences,
+        };
+      });
+    } catch (err) {
+      setDetailsError(err?.message || "Falha ao carregar comentarios.");
+    } finally {
+      setDetailsLoadingMore(false);
+    }
+  };
 
   if (!igUserId) {
     return (
@@ -161,7 +287,7 @@ export default function WordCloudCard({
         {entries.map((item, index) => {
           if (index === 0) {
             return (
-              <span
+              <button
                 key={item.key}
                 className="ig-word-cloud__word"
                 style={{
@@ -173,23 +299,96 @@ export default function WordCloudCard({
                   textAlign: "center",
                 }}
                 title={`${item.word} (${item.count})`}
+                type="button"
+                onClick={() => setSelectedWord(item.word)}
+                aria-label={`Ver comentarios com ${item.word}`}
               >
                 {item.word}
-              </span>
+              </button>
             );
           }
           return (
-            <span
+            <button
               key={item.key}
               className="ig-word-cloud__word"
               style={item.style}
               title={`${item.word} (${item.count})`}
+              type="button"
+              onClick={() => setSelectedWord(item.word)}
+              aria-label={`Ver comentarios com ${item.word}`}
             >
               {item.word}
-            </span>
+            </button>
           );
         })}
       </div>
+
+      {selectedWord && (
+        <div className="ig-word-detail-modal" role="dialog" aria-modal="true" aria-label={`Comentarios com ${selectedWord}`}>
+          <div className="ig-word-detail-modal__backdrop" onClick={closeDetails} aria-hidden="true" />
+          <div className="ig-word-detail-modal__content">
+            <div className="ig-word-detail-modal__header">
+              <div>
+                <h3>Comentarios com "{selectedWord}"</h3>
+                {details && !detailsLoading && !detailsError ? (
+                  <p>
+                    {details.total_occurrences} ocorrencia{details.total_occurrences === 1 ? "" : "s"} em {details.total_comments} comentario{details.total_comments === 1 ? "" : "s"}.
+                  </p>
+                ) : (
+                  <p>Buscando ocorrencias no periodo selecionado.</p>
+                )}
+              </div>
+              <button type="button" className="ig-word-detail-modal__close" onClick={closeDetails} aria-label="Fechar">
+                ✕
+              </button>
+            </div>
+            <div className="ig-word-detail-modal__body">
+              {detailsLoading ? (
+                <DataState state="loading" label="Carregando comentarios..." size="sm" />
+              ) : detailsError ? (
+                <DataState state="error" label="Falha ao carregar comentarios." hint={detailsError} size="sm" />
+              ) : details && Array.isArray(details.comments) && details.comments.length ? (
+                <>
+                  <ul className="ig-word-detail-list">
+                    {details.comments.map((comment) => (
+                      <li key={comment.id || `${comment.text}-${comment.timestamp}`} className="ig-word-detail-list__item">
+                        <div className="ig-word-detail-list__meta">
+                          <span className="ig-word-detail-list__user">
+                            {comment.username ? `@${comment.username}` : "Comentario"}
+                          </span>
+                          {comment.timestamp && (
+                            <span className="ig-word-detail-list__date">
+                              {formatDetailDate(comment.timestamp)}
+                            </span>
+                          )}
+                          {comment.occurrences > 1 && (
+                            <span className="ig-word-detail-list__badge">
+                              {comment.occurrences}x
+                            </span>
+                          )}
+                        </div>
+                        <p className="ig-word-detail-list__text">{comment.text}</p>
+                      </li>
+                    ))}
+                  </ul>
+                  {hasMoreDetails && (
+                    <button
+                      type="button"
+                      className="ig-word-detail-list__more"
+                      onClick={handleLoadMore}
+                      disabled={detailsLoadingMore}
+                    >
+                      {detailsLoadingMore ? "Carregando..." : "Carregar mais"}
+                    </button>
+                  )}
+                </>
+              ) : (
+                <DataState state="empty" label="Nenhum comentario encontrado com essa palavra." size="sm" />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

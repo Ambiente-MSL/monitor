@@ -244,6 +244,7 @@ WORDCLOUD_DEFAULT_TOP = 120
 WORDCLOUD_MAX_TOP = 250
 WORDCLOUD_MAX_RANGE_DAYS = 365
 COMMENTS_INGEST_DEFAULT_DAYS = 30
+COMMENTS_SEARCH_MAX_LIMIT = 200
 WORDCLOUD_MIN_TOKEN_LEN = 3
 WORDCLOUD_STOPWORDS = {
     "a", "as", "o", "os", "um", "uma", "uns", "umas",
@@ -4519,6 +4520,99 @@ def instagram_comments_wordcloud():
         "words": words_payload,
     }
     return jsonify(response)
+
+
+@app.get("/api/instagram/comments/search")
+def instagram_comments_search():
+    ig_user_id = request.args.get("igUserId", IG_ID)
+    if not ig_user_id:
+        return jsonify({"error": "Missing igUserId"}), 400
+
+    raw_word = request.args.get("word") or request.args.get("q") or ""
+    sanitized_word = sanitize_wordcloud_token(raw_word)
+    if not sanitized_word:
+        return jsonify({"error": "word is required"}), 400
+
+    today_utc = datetime.now(timezone.utc).date()
+    default_since = today_utc - timedelta(days=COMMENTS_INGEST_DEFAULT_DAYS)
+
+    since_param = request.args.get("since")
+    until_param = request.args.get("until")
+
+    try:
+        since_date = _parse_date_param(since_param) if since_param else default_since
+    except ValueError:
+        return jsonify({"error": "since must be in YYYY-MM-DD format"}), 400
+    try:
+        until_date = _parse_date_param(until_param) if until_param else today_utc
+    except ValueError:
+        return jsonify({"error": "until must be in YYYY-MM-DD format"}), 400
+
+    if since_date > until_date:
+        return jsonify({"error": "since cannot be after until"}), 400
+
+    span_days = (until_date - since_date).days
+    if span_days > WORDCLOUD_MAX_RANGE_DAYS:
+        since_date = until_date - timedelta(days=WORDCLOUD_MAX_RANGE_DAYS)
+
+    limit_param = request.args.get("limit")
+    offset_param = request.args.get("offset")
+    try:
+        limit = int(limit_param) if limit_param is not None else 50
+    except ValueError:
+        return jsonify({"error": "limit must be an integer"}), 400
+    try:
+        offset = int(offset_param) if offset_param is not None else 0
+    except ValueError:
+        return jsonify({"error": "offset must be an integer"}), 400
+    limit = max(1, min(COMMENTS_SEARCH_MAX_LIMIT, limit))
+    offset = max(0, offset)
+
+    since_iso = datetime.combine(since_date, datetime.min.time()).replace(tzinfo=timezone.utc).isoformat()
+    until_iso = datetime.combine(until_date, datetime.max.time()).replace(tzinfo=timezone.utc).isoformat()
+
+    client = get_postgres_client()
+    if client is None:
+        return jsonify({"error": "Database client is not configured"}), 500
+
+    try:
+        rows = fetch_comments_for_wordcloud(client, ig_user_id, since_iso, until_iso)
+        matches: List[Dict[str, Any]] = []
+        total_occurrences = 0
+        for row in rows:
+            text = str((row or {}).get("text") or "")
+            tokens = tokenize_wordcloud_text(text)
+            if not tokens:
+                continue
+            occurrences = sum(1 for token in tokens if token == sanitized_word)
+            if occurrences <= 0:
+                continue
+            total_occurrences += occurrences
+            matches.append({
+                "id": row.get("id"),
+                "text": text,
+                "timestamp": row.get("timestamp"),
+                "username": row.get("username"),
+                "occurrences": occurrences,
+            })
+        matches.sort(key=lambda item: item.get("timestamp") or "", reverse=True)
+        total_comments = len(matches)
+        sliced = matches[offset: offset + limit]
+    except Exception as err:  # noqa: BLE001
+        logger.exception("Failed to search comments for wordcloud")
+        return jsonify({"error": str(err)}), 500
+
+    return jsonify({
+        "igUserId": ig_user_id,
+        "word": sanitized_word,
+        "since": since_date.isoformat(),
+        "until": until_date.isoformat(),
+        "total_comments": total_comments,
+        "total_occurrences": total_occurrences,
+        "limit": limit,
+        "offset": offset,
+        "comments": sliced,
+    })
 
 
 @app.post("/api/instagram/comments/ingest")

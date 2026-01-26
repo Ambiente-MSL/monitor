@@ -12183,12 +12183,21 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   font-weight: 700;
   line-height: 1.2;
   transition: all 0.2s ease;
-  cursor: default;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-family: inherit;
 }
 
 .ig-word-cloud__word:hover {
   transform: scale(1.1);
   opacity: 0.8;
+}
+
+.ig-word-cloud__word:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 4px;
 }
 
 .ig-word-cloud__word--xl {
@@ -12210,6 +12219,175 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .ig-word-cloud--large {
   min-height: 280px;
   padding: 30px;
+}
+
+.ig-word-detail-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.ig-word-detail-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.ig-word-detail-modal__content {
+  position: relative;
+  width: min(880px, 100%);
+  max-height: min(80vh, 720px);
+  background: var(--bg-card);
+  border-radius: 18px;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.ig-word-detail-modal__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color);
+  background: color-mix(in oklab, var(--bg-card) 96%, var(--text-primary) 4%);
+}
+
+.ig-word-detail-modal__header h3 {
+  margin: 0 0 6px 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.ig-word-detail-modal__header p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.ig-word-detail-modal__close {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.ig-word-detail-modal__close:hover {
+  color: var(--text-primary);
+  border-color: color-mix(in oklab, var(--border-color) 60%, var(--text-primary) 40%);
+}
+
+.ig-word-detail-modal__body {
+  padding: 20px 24px;
+  overflow-y: auto;
+}
+
+.ig-word-detail-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0;
+  margin: 0 0 20px 0;
+}
+
+.ig-word-detail-list__item {
+  background: color-mix(in oklab, var(--bg-card) 94%, var(--text-primary) 6%);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.ig-word-detail-list__meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.ig-word-detail-list__user {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.ig-word-detail-list__date {
+  color: var(--text-secondary);
+}
+
+.ig-word-detail-list__badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.12);
+  color: #4f46e5;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.ig-word-detail-list__text {
+  margin: 0;
+  color: var(--text-primary);
+  line-height: 1.45;
+  font-size: 0.95rem;
+}
+
+.ig-word-detail-list__more {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ig-word-detail-list__more:hover:not(:disabled) {
+  border-color: color-mix(in oklab, var(--border-color) 60%, var(--text-primary) 40%);
+  box-shadow: var(--shadow-sm);
+}
+
+.ig-word-detail-list__more:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+@media (max-width: 720px) {
+  .ig-word-detail-modal {
+    padding: 12px;
+  }
+  .ig-word-detail-modal__content {
+    max-height: 90vh;
+  }
+  .ig-word-detail-modal__header {
+    padding: 16px;
+  }
+  .ig-word-detail-modal__body {
+    padding: 16px;
+  }
 }
 
 /* Calendar */
