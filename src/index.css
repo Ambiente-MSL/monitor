@@ -12226,7 +12226,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 }
 
 .ig-calendar__weekday {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: #6b7280;
   text-align: center;
@@ -12265,7 +12265,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 }
 
 .ig-calendar__day-number {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: #111827;
   z-index: 1;

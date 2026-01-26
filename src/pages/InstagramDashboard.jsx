@@ -3804,7 +3804,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 <section className="ig-card-white" style={{ marginBottom: '24px' }}>
                   <div style={{ padding: '20px', borderBottom: '1px solid #e5e7eb' }}>
                     <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827' }}>
-                      Tendência de Visualizações
+                      Tendência de visualizações
                     </h4>
                   </div>
                   <div style={{ padding: '20px', height: 320 }}>
@@ -3871,7 +3871,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 <section className="ig-card-white">
                   <div style={{ padding: '20px', borderBottom: '1px solid #e5e7eb' }}>
                     <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827' }}>
-                      Posts mais Visualizados
+                      Posts mais visualizados
                     </h4>
                   </div>
                   <div style={{ padding: '16px' }}>
