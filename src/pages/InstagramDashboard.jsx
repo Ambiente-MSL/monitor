@@ -2983,13 +2983,25 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
       maximumFractionDigits: 1,
     })}%`
     : "--";
+  const floatingNotices = useMemo(
+    () => [metricsNotice, postsNotice].filter(Boolean),
+    [metricsNotice, postsNotice],
+  );
 
   return (
     <div className="instagram-dashboard instagram-dashboard--clean">
       {metricsError && <div className="alert alert--error">{metricsError}</div>}
       {postsError && <div className="alert alert--error">{postsError}</div>}
-      {metricsNotice && <div className="alert">{metricsNotice}</div>}
-      {postsNotice && <div className="alert">{postsNotice}</div>}
+      {floatingNotices.length > 0 && (
+        <div className="ig-floating-notice" role="status" aria-live="polite">
+          {floatingNotices.map((notice, index) => (
+            <div key={`ig-floating-notice-${index}`} className="ig-floating-notice__item">
+              <span className="ig-floating-notice__dot" aria-hidden="true" />
+              <span>{notice}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Container Limpo (fundo branco) */}
       <div className="ig-clean-container">

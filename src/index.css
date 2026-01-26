@@ -10340,6 +10340,71 @@ td.posts-table__metric + td.posts-table__metric {
   min-height: 100vh;
 }
 
+.instagram-dashboard--clean .ig-floating-notice {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: min(360px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.instagram-dashboard--clean .ig-floating-notice__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: color-mix(in oklab, var(--bg-card) 92%, var(--text-primary) 8%);
+  border: 1px solid color-mix(in oklab, var(--border-color) 70%, transparent);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  line-height: 1.35;
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.14);
+  backdrop-filter: blur(10px);
+}
+
+.instagram-dashboard--clean .ig-floating-notice__dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: var(--color-primary);
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--color-primary) 20%, transparent);
+  animation: ig-notice-pulse 1.6s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes ig-notice-pulse {
+  0%,
+  100% {
+    transform: scale(0.9);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .instagram-dashboard--clean .ig-floating-notice__dot {
+    animation: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .instagram-dashboard--clean .ig-floating-notice {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    max-width: none;
+  }
+}
+
 /* Ocultar sidebar na página do Instagram */
 body:has(.instagram-dashboard--clean) .sidebar-container {
   display: none !important;
