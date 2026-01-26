@@ -4882,80 +4882,80 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             )}
           </section>
         </div>
+
+        {/* Palavras-chave e Hashtags - Largura Total */}
+        <div className="ig-analytics-grid ig-analytics-grid--pair">
+          <section className="ig-card-white ig-analytics-card ig-analytics-card--large">
+            <div className="ig-analytics-card__header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+              <h4 style={{ margin: 0 }}>Palavras chaves mais comentadas</h4>
+              {commentsCount !== null && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '6px 16px',
+                  borderRadius: '20px',
+                  background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                  boxShadow: '0 2px 8px rgba(239, 68, 68, 0.25)',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: 'white'
+                }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                  <span>{commentsCount.toLocaleString('pt-BR')} comentário{commentsCount !== 1 ? 's' : ''} analisado{commentsCount !== 1 ? 's' : ''}</span>
+                </div>
+              )}
+            </div>
+            <div className="ig-analytics-card__body">
+              <WordCloudCard
+                apiBaseUrl={API_BASE_URL}
+                igUserId={accountConfig?.instagramUserId}
+                since={sinceIso}
+                until={untilIso}
+                top={120}
+                showCommentsCount={false}
+                onCommentsCountRender={setCommentsCount}
+              />
+            </div>
+          </section>
+          <section className="ig-card-white ig-analytics-card ig-analytics-card--large">
+            <div className="ig-analytics-card__header">
+              <h4>Hashtags mais usadas</h4>
+            </div>
+            <div className="ig-analytics-card__body">
+              <ResponsiveContainer width="100%" height={320}>
+                <BarChart data={hashtagList.slice(0, 10)} layout="vertical" margin={{ left: 12, right: 12, top: 5, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
+                  <XAxis
+                    type="number"
+                    tick={{ fill: '#111827' }}
+                    fontSize={12}
+                    allowDecimals={false}
+                    tickFormatter={(value) => formatCompactNumber(value)}
+                  />
+                  <YAxis type="category" dataKey="name" tick={{ fill: '#111827' }} fontSize={12} width={100} />
+                  <Tooltip
+                    cursor={{ fill: 'rgba(236, 72, 153, 0.1)' }}
+                    content={(
+                      <CustomChartTooltip
+                        labelFormatter={(value) => String(value || "")}
+                        labelMap={{ value: "Ocorrencias" }}
+                        valueFormatter={formatTooltipNumber}
+                      />
+                    )}
+                  />
+                  <Bar dataKey="value" fill="#ec4899" radius={[0, 6, 6, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
+        </div>
               </>
             )}
           </div>
         </div>
-
-      {/* Palavras-chave e Hashtags - Largura Total */}
-      <div className="ig-analytics-grid ig-analytics-grid--pair">
-        <section className="ig-card-white ig-analytics-card ig-analytics-card--large">
-          <div className="ig-analytics-card__header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-            <h4 style={{ margin: 0 }}>Palavras chaves mais comentadas</h4>
-            {commentsCount !== null && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '6px 16px',
-                borderRadius: '20px',
-                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                boxShadow: '0 2px 8px rgba(239, 68, 68, 0.25)',
-                fontSize: '13px',
-                fontWeight: 600,
-                color: 'white'
-              }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                </svg>
-                <span>{commentsCount.toLocaleString('pt-BR')} comentário{commentsCount !== 1 ? 's' : ''} analisado{commentsCount !== 1 ? 's' : ''}</span>
-              </div>
-            )}
-          </div>
-          <div className="ig-analytics-card__body">
-            <WordCloudCard
-              apiBaseUrl={API_BASE_URL}
-              igUserId={accountConfig?.instagramUserId}
-              since={sinceIso}
-              until={untilIso}
-              top={120}
-              showCommentsCount={false}
-              onCommentsCountRender={setCommentsCount}
-            />
-          </div>
-        </section>
-        <section className="ig-card-white ig-analytics-card ig-analytics-card--large">
-          <div className="ig-analytics-card__header">
-            <h4>Hashtags mais usadas</h4>
-          </div>
-          <div className="ig-analytics-card__body">
-            <ResponsiveContainer width="100%" height={320}>
-              <BarChart data={hashtagList.slice(0, 10)} layout="vertical" margin={{ left: 12, right: 12, top: 5, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
-                <XAxis
-                  type="number"
-                  tick={{ fill: '#111827' }}
-                  fontSize={12}
-                  allowDecimals={false}
-                  tickFormatter={(value) => formatCompactNumber(value)}
-                />
-                <YAxis type="category" dataKey="name" tick={{ fill: '#111827' }} fontSize={12} width={100} />
-                <Tooltip
-                  cursor={{ fill: 'rgba(236, 72, 153, 0.1)' }}
-                  content={(
-                    <CustomChartTooltip
-                      labelFormatter={(value) => String(value || "")}
-                      labelMap={{ value: "Ocorrencias" }}
-                      valueFormatter={formatTooltipNumber}
-                    />
-                  )}
-                />
-                <Bar dataKey="value" fill="#ec4899" radius={[0, 6, 6, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </section>
-      </div>
 
       {/* Hashtags e palavras-chave (seAAo antiga - manter para compatibilidade) */}
       <div className="ig-clean-grid" style={{ display: 'none' }}>
