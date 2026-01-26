@@ -12008,48 +12008,13 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   color: #059669;
 }
 
-/* Top Cities New Layout - Two Columns */
-.ig-top-cities-new-layout {
-  display: flex;
-  align-items: flex-start;
-  gap: 20px;
+/* Top Cities Content */
+.ig-top-cities-content {
   padding: 0 20px 20px 20px;
-}
-
-.ig-top-cities-new-layout__left {
-  flex: 1;
-  min-width: 0;
-}
-
-.ig-top-cities-new-layout__right {
-  flex-shrink: 0;
-  width: 160px;
-  padding: 12px;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border-radius: 12px;
-}
-
-.ig-top-cities-new-layout__chart-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 8px;
-  text-align: center;
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  .ig-top-cities-new-layout {
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .ig-top-cities-new-layout__right {
-    width: 100%;
-  }
-
   .ig-top-cities__hero {
     padding: 12px;
   }
