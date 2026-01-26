@@ -4,8 +4,6 @@ import { useOutletContext } from 'react-router-dom';
 
 import { ChevronDown, Edit3, Plus, Trash2, Settings as SettingsIcon, Check, X } from 'lucide-react';
 
-import { useTheme } from '../context/ThemeContext';
-
 import { useAccounts } from '../context/AccountsContext';
 
 import NavigationHero from '../components/NavigationHero';
@@ -15,7 +13,7 @@ import { buildLegalUrl } from '../lib/legalLinks';
 
 const NOTIFICATION_STORAGE_KEY = 'ui-notifications-enabled';
 
-const SECTION_STATE = { theme: true, alerts: true, accounts: true };
+const SECTION_STATE = { alerts: true, accounts: true };
 
 const ACCOUNT_FORM_INITIAL = {
 
@@ -40,8 +38,6 @@ export default function Settings() {
     setTopbarConfig({ title: "Configuracoes", showFilters: false });
     return () => resetTopbarConfig?.();
   }, [setTopbarConfig, resetTopbarConfig]);
-
-  const { theme, resolvedTheme, setTheme } = useTheme();
 
   const { accounts, addAccount, updateAccount, removeAccount } = useAccounts();
   const discoveredAdAccounts = useMemo(() => {
@@ -125,50 +121,6 @@ export default function Settings() {
 
   }, [notificationsEnabled]);
 
-
-
-  const themeOptions = useMemo(
-
-    () => [
-
-      {
-
-        value: 'light',
-
-        label: 'Claro',
-
-        description: 'Interface clara, ideal para ambientes luminosos.'
-
-      },
-
-      {
-
-        value: 'dark',
-
-        label: 'Escuro',
-
-        description: 'Realce de contrastes para trabalhar com pouca luz.'
-
-      },
-
-      {
-
-        value: 'auto',
-
-        label: 'Automatico',
-
-        description: 'Segue a preferencia de tema do sistema operacional.'
-
-      }
-
-    ],
-
-    []
-
-  );
-
-
-
   const alertExamples = useMemo(
 
     () => [
@@ -218,9 +170,6 @@ export default function Settings() {
 
 
   const activeAlerts = notificationsEnabled ? alertExamples : [];
-
-  const resolvedThemeLabel = resolvedTheme === 'dark' ? 'escuro' : 'claro';
-
 
 
   const toggleSection = (key) => {
@@ -398,88 +347,6 @@ export default function Settings() {
         <div className="page-content">
 
         <div className="settings-layout">
-
-          <section className={`settings-section ${openSections.theme ? 'is-open' : ''}`}>
-
-            <button
-
-              type="button"
-
-              className="settings-section__header"
-
-              onClick={() => toggleSection('theme')}
-
-              aria-expanded={openSections.theme}
-
-            >
-
-              <div className="settings-section__header-text">
-
-                <h2 className="settings-section__title">Tema do painel</h2>
-
-                <p className="settings-section__subtitle">Escolha como o painel e apresentado no dia a dia.</p>
-
-              </div>
-
-              <ChevronDown className={`settings-section__icon ${openSections.theme ? 'is-open' : ''}`} size={18} />
-
-            </button>
-
-            {openSections.theme && (
-
-              <div className="settings-section__body" role="radiogroup" aria-label="Tema do painel">
-
-                {themeOptions.map((option) => {
-
-                  const isActive = theme === option.value;
-
-                  return (
-
-                    <label
-
-                      key={option.value}
-
-                      className={`settings-radio ${isActive ? 'settings-radio--active' : ''}`}
-
-                    >
-
-                      <input
-
-                        type="radio"
-
-                        name="theme-preference"
-
-                        value={option.value}
-
-                        checked={theme === option.value}
-
-                        onChange={() => setTheme(option.value)}
-
-                      />
-
-                      <span className="settings-radio__label">{option.label}</span>
-
-                      <span className="settings-radio__hint">{option.description}</span>
-
-                    </label>
-
-                  );
-
-                })}
-
-                <p className="settings-hint">
-
-                  Preferencia atual: <strong>{theme}</strong>. Tema aplicado no momento: {resolvedThemeLabel}.
-
-                </p>
-
-              </div>
-
-            )}
-
-          </section>
-
-
 
           <section className={`settings-section ${openSections.alerts ? 'is-open' : ''}`}>
 
