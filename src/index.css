@@ -11956,9 +11956,9 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .ig-top-city-row__left {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex: 1;
-  min-width: 0;
+  gap: 8px;
+  min-width: 140px;
+  flex-shrink: 0;
 }
 
 .ig-top-city-row__icon {
@@ -11975,9 +11975,6 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   font-weight: 600;
   color: #334155;
   font-family: 'Lato', sans-serif;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .ig-top-city-row__bar {
@@ -11986,7 +11983,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   background: #e2e8f0;
   border-radius: 3px;
   overflow: hidden;
-  min-width: 40px;
+  min-width: 30px;
 }
 
 .ig-top-city-row__bar-fill {

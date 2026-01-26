@@ -1420,7 +1420,7 @@ useEffect(() => {
               <section className="ig-card">
                 <header className="ig-card-header">
                   <div>
-                    <h3 className="ig-clean-title2">Crescimento de Seguidores</h3>
+                    <h3 className="ig-clean-title2">Crescimento de seguidores</h3>
                     <p className="ig-card-subtitle">Evolução diária</p>
                   </div>
                 </header>
@@ -1575,7 +1575,7 @@ useEffect(() => {
               <section className="ig-card">
                 <header className="ig-card-header">
                   <div>
-                    <h3 className="ig-clean-title2">Detalhamento do Alcance</h3>
+                    <h3 className="ig-clean-title2">Detalhamento do alcance</h3>
                     <p className="ig-card-subtitle">Origem do alcance</p>
                   </div>
                 </header>

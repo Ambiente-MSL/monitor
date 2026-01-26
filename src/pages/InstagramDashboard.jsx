@@ -3475,7 +3475,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                       </svg>
                     </button>
                     <div>
-                      <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Crescimento de Seguidores</h3>
+                      <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Crescimento de seguidores</h3>
                       <p style={{ margin: 0, fontSize: '13px', opacity: 0.9 }}>Análise detalhada</p>
                     </div>
                   </div>
@@ -3581,7 +3581,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   <section className="ig-card-white">
                     <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb' }}>
                       <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: '#111827' }}>
-                        Gênero dos Seguidores
+                        Gênero dos seguidores
                       </h4>
                     </div>
                     <div style={{ padding: '20px', height: 220 }}>
@@ -3625,7 +3625,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   <section className="ig-card-white">
                     <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb' }}>
                       <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: '#111827' }}>
-                        Faixa Etária
+                        Faixa etária
                       </h4>
                     </div>
                     <div style={{ padding: '20px', height: 220 }}>
@@ -3677,7 +3677,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 <section className="ig-card-white">
                   <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb' }}>
                     <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: '#111827' }}>
-                      Principais Cidades
+                      Principais cidades
                     </h4>
                   </div>
                   <div style={{ padding: '16px', maxHeight: '300px', overflowY: 'auto' }}>
@@ -3999,7 +3999,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 <section className="ig-card-white" style={{ marginBottom: '24px' }}>
                   <div style={{ padding: '20px', borderBottom: '1px solid #e5e7eb' }}>
                     <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827' }}>
-                      Detalhamento por Tipo
+                      Detalhamento por tipo
                     </h4>
                   </div>
                   <div style={{ padding: '20px' }}>
@@ -4036,7 +4036,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 <section className="ig-card-white" style={{ marginBottom: '24px' }}>
                   <div style={{ padding: '20px', borderBottom: '1px solid #e5e7eb' }}>
                     <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827' }}>
-                      Distribuição de Interações
+                      Distribuição de interações
                     </h4>
                   </div>
                   <div style={{ padding: '20px', height: 280 }}>
@@ -4087,7 +4087,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 <section className="ig-card-white">
                   <div style={{ padding: '20px', borderBottom: '1px solid #e5e7eb' }}>
                     <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827' }}>
-                      Posts com Maior Engajamento
+                      Posts com maior engajamento
                     </h4>
                   </div>
                   <div style={{ padding: '16px' }}>
@@ -4941,7 +4941,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
 
           <section className="ig-card-white ig-analytics-card">
             <div className="ig-analytics-card__header">
-              <h4>Top Cidades</h4>
+              <h4>Top cidades</h4>
             </div>
             {audienceCities.length ? (
               <div className="ig-top-cities-content">
