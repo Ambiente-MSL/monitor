@@ -1941,6 +1941,16 @@ def _update_app_user_role(user_id: str, role: str) -> None:
     )
 
 
+def _delete_app_user(user_id: str) -> None:
+    execute(
+        f"""
+        DELETE FROM {APP_USERS_TABLE}
+        WHERE id = %(user_id)s
+        """,
+        {"user_id": user_id},
+    )
+
+
 def _estimate_data_url_size_bytes(data_url: str) -> int:
     if not data_url:
         return 0
@@ -3160,6 +3170,26 @@ def admin_update_user(user_id: str) -> Any:
     except Exception as err:  # noqa: BLE001
         logger.exception("Failed to update role for %s", user_id)
         return jsonify({"error": "could not update role"}), 500
+    return jsonify({"success": True})
+
+
+@app.delete("/api/admin/users/<user_id>")
+def admin_delete_user(user_id: str) -> Any:
+    user, error = _authenticate_request(request)
+    if error:
+        return error
+    if user.get("role") != "admin":
+        return jsonify({"error": "forbidden"}), 403
+    if user_id == user.get("id"):
+        return jsonify({"error": "cannot delete own user"}), 400
+    if not _fetch_user_by_id(user_id):
+        return jsonify({"error": "user not found"}), 404
+
+    try:
+        _delete_app_user(user_id)
+    except Exception as err:  # noqa: BLE001
+        logger.exception("Failed to delete user %s", user_id)
+        return jsonify({"error": "could not delete user"}), 500
     return jsonify({"success": True})
 
 
