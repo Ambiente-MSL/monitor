@@ -81,6 +81,8 @@ export default function WordCloudCard({
   top = 30,
   showCommentsCount = true,
   onCommentsCountRender = null,
+  onWordClick = null,
+  externalPanelMode = false,
 }) {
   const sanitizedBaseUrl = useMemo(() => (apiBaseUrl || "").replace(/\/$/, ""), [apiBaseUrl]);
   const [loadingSlow, setLoadingSlow] = useState(false);
@@ -285,6 +287,13 @@ export default function WordCloudCard({
 
       <div className="ig-word-cloud ig-word-cloud--large">
         {entries.map((item, index) => {
+          const handleWordClick = () => {
+            if (externalPanelMode && onWordClick) {
+              onWordClick(item.word, item.count);
+            } else {
+              setSelectedWord(item.word);
+            }
+          };
           if (index === 0) {
             return (
               <button
@@ -300,7 +309,7 @@ export default function WordCloudCard({
                 }}
                 title={`${item.word} (${item.count})`}
                 type="button"
-                onClick={() => setSelectedWord(item.word)}
+                onClick={handleWordClick}
                 aria-label={`Ver comentarios com ${item.word}`}
               >
                 {item.word}
@@ -314,7 +323,7 @@ export default function WordCloudCard({
               style={item.style}
               title={`${item.word} (${item.count})`}
               type="button"
-              onClick={() => setSelectedWord(item.word)}
+              onClick={handleWordClick}
               aria-label={`Ver comentarios com ${item.word}`}
             >
               {item.word}
@@ -323,7 +332,7 @@ export default function WordCloudCard({
         })}
       </div>
 
-      {selectedWord && (
+      {selectedWord && !externalPanelMode && (
         <div className="ig-word-detail-modal" role="dialog" aria-modal="true" aria-label={`Comentarios com ${selectedWord}`}>
           <div className="ig-word-detail-modal__backdrop" onClick={closeDetails} aria-hidden="true" />
           <div className="ig-word-detail-modal__content">

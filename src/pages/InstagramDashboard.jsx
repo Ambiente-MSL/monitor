@@ -809,6 +809,12 @@ export default function InstagramDashboard() {
   const [showInteractionsDetail, setShowInteractionsDetail] = useState(false);
   const [showFollowersDetail, setShowFollowersDetail] = useState(false);
   const [showPostsDetail, setShowPostsDetail] = useState(false);
+  const [showWordCloudDetail, setShowWordCloudDetail] = useState(false);
+  const [selectedWordCloud, setSelectedWordCloud] = useState(null);
+  const [wordCloudDetails, setWordCloudDetails] = useState(null);
+  const [wordCloudDetailsLoading, setWordCloudDetailsLoading] = useState(false);
+  const [wordCloudDetailsError, setWordCloudDetailsError] = useState("");
+  const [wordCloudDetailsLoadingMore, setWordCloudDetailsLoadingMore] = useState(false);
   const [interactionsTab, setInteractionsTab] = useState('reels'); // reels, videos, posts
 
   // Estado para modal de post
@@ -2886,6 +2892,113 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
   const keywordList = useMemo(() => buildKeywordFrequency(filteredPosts), [filteredPosts]);
   const hashtagList = useMemo(() => buildHashtagFrequency(filteredPosts), [filteredPosts]);
 
+  // WordCloud detail panel functions
+  const WORDCLOUD_DETAILS_PAGE_SIZE = 40;
+
+  const buildWordCloudDetailsUrl = useCallback((word, offset = 0) => {
+    if (!accountConfig?.instagramUserId || !word) return null;
+    const params = new URLSearchParams({
+      igUserId: accountConfig.instagramUserId,
+      word,
+      limit: String(WORDCLOUD_DETAILS_PAGE_SIZE),
+      offset: String(offset),
+    });
+    if (sinceIso) params.set("since", sinceIso);
+    if (untilIso) params.set("until", untilIso);
+    return `${API_BASE_URL}/api/instagram/comments/search?${params.toString()}`;
+  }, [accountConfig?.instagramUserId, sinceIso, untilIso]);
+
+  const fetchWordCloudDetails = useCallback(async (word, offset = 0) => {
+    const url = buildWordCloudDetailsUrl(word, offset);
+    if (!url) return null;
+    const response = await fetch(url);
+    if (!response.ok) {
+      const message = await response.text();
+      throw new Error(message || "Falha ao carregar comentários.");
+    }
+    return response.json();
+  }, [buildWordCloudDetailsUrl]);
+
+  const handleWordCloudWordClick = useCallback((word, count) => {
+    // Close other panels
+    setShowDetailedView(false);
+    setShowFollowersDetail(false);
+    setShowInteractionsDetail(false);
+    setShowPostsDetail(false);
+
+    // Set wordcloud panel state
+    setSelectedWordCloud({ word, count });
+    setShowWordCloudDetail(true);
+    setWordCloudDetails(null);
+    setWordCloudDetailsError("");
+    setWordCloudDetailsLoading(true);
+
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Fetch details
+    fetchWordCloudDetails(word, 0)
+      .then((payload) => {
+        setWordCloudDetails(payload);
+      })
+      .catch((err) => {
+        setWordCloudDetailsError(err?.message || "Falha ao carregar comentários.");
+      })
+      .finally(() => {
+        setWordCloudDetailsLoading(false);
+      });
+  }, [fetchWordCloudDetails]);
+
+  const handleWordCloudLoadMore = useCallback(async () => {
+    if (!selectedWordCloud?.word || !wordCloudDetails || wordCloudDetailsLoadingMore) return;
+    const currentCount = Array.isArray(wordCloudDetails.comments) ? wordCloudDetails.comments.length : 0;
+    setWordCloudDetailsLoadingMore(true);
+    try {
+      const payload = await fetchWordCloudDetails(selectedWordCloud.word, currentCount);
+      const nextComments = Array.isArray(payload?.comments) ? payload.comments : [];
+      setWordCloudDetails((prev) => {
+        if (!prev) return payload;
+        const merged = Array.isArray(prev.comments) ? [...prev.comments, ...nextComments] : nextComments;
+        return {
+          ...prev,
+          comments: merged,
+          total_comments: payload?.total_comments ?? prev.total_comments,
+          total_occurrences: payload?.total_occurrences ?? prev.total_occurrences,
+        };
+      });
+    } catch (err) {
+      setWordCloudDetailsError(err?.message || "Falha ao carregar comentários.");
+    } finally {
+      setWordCloudDetailsLoadingMore(false);
+    }
+  }, [selectedWordCloud?.word, wordCloudDetails, wordCloudDetailsLoadingMore, fetchWordCloudDetails]);
+
+  const closeWordCloudDetail = useCallback(() => {
+    setShowWordCloudDetail(false);
+    setSelectedWordCloud(null);
+    setWordCloudDetails(null);
+    setWordCloudDetailsError("");
+    setWordCloudDetailsLoading(false);
+    setWordCloudDetailsLoadingMore(false);
+  }, []);
+
+  const hasMoreWordCloudDetails = useMemo(() => {
+    if (!wordCloudDetails) return false;
+    const total = Number(wordCloudDetails.total_comments || 0);
+    const current = Array.isArray(wordCloudDetails.comments) ? wordCloudDetails.comments.length : 0;
+    return total > current;
+  }, [wordCloudDetails]);
+
+  const formatWordCloudDetailDate = (value) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return new Intl.DateTimeFormat("pt-BR", {
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(date);
+  };
+
   const accountInitial = (accountInfo?.username || accountInfo?.name || "IG").charAt(0).toUpperCase();
   const [coverImage, setCoverImage] = useState(null);
   const [coverLoading, setCoverLoading] = useState(false);
@@ -3051,7 +3164,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
         </div>
 
         {/* Grid Principal */}
-          <div className="ig-clean-grid" style={(showDetailedView || showFollowersDetail || showInteractionsDetail || showPostsDetail) ? { display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' } : {}}>
+          <div className="ig-clean-grid" style={(showDetailedView || showFollowersDetail || showInteractionsDetail || showPostsDetail || showWordCloudDetail) ? { display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' } : {}}>
           <div className="ig-clean-grid__left">
             <section className="ig-profile-vertical">
               <div
@@ -3405,6 +3518,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
                     <button
                       onClick={() => {
+                        closeWordCloudDetail();
                         setShowPostsDetail(true);
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
@@ -4245,6 +4359,160 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   </div>
                 </section>
               </div>
+            ) : showWordCloudDetail ? (
+              /* Conteúdo detalhado de Palavras-chave */
+              <div className="ig-wordcloud-detail-panel">
+                {/* Header com botão voltar */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '24px',
+                  padding: '16px 20px',
+                  background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                  borderRadius: '16px',
+                  color: 'white'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <button
+                      onClick={closeWordCloudDetail}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '10px',
+                        background: 'rgba(255, 255, 255, 0.2)',
+                        border: 'none',
+                        color: 'white',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="15 18 9 12 15 6" />
+                      </svg>
+                    </button>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Comentários com "{selectedWordCloud?.word}"</h3>
+                      <p style={{ margin: 0, fontSize: '13px', opacity: 0.9 }}>
+                        {wordCloudDetails && !wordCloudDetailsLoading && !wordCloudDetailsError
+                          ? `${wordCloudDetails.total_occurrences} ocorrência${wordCloudDetails.total_occurrences === 1 ? '' : 's'} em ${wordCloudDetails.total_comments} comentário${wordCloudDetails.total_comments === 1 ? '' : 's'}`
+                          : 'Buscando ocorrências...'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* KPIs */}
+                {wordCloudDetails && !wordCloudDetailsLoading && !wordCloudDetailsError && (
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, 1fr)',
+                    gap: '16px',
+                    marginBottom: '24px'
+                  }}>
+                    <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                      <div style={{ fontSize: '28px', fontWeight: 700, color: '#ef4444' }}>
+                        {selectedWordCloud?.count?.toLocaleString('pt-BR') || 0}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Na Wordcloud</div>
+                    </div>
+                    <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                      <div style={{ fontSize: '28px', fontWeight: 700, color: '#dc2626' }}>
+                        {wordCloudDetails.total_occurrences?.toLocaleString('pt-BR') || 0}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Ocorrências</div>
+                    </div>
+                    <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                      <div style={{ fontSize: '28px', fontWeight: 700, color: '#f87171' }}>
+                        {wordCloudDetails.total_comments?.toLocaleString('pt-BR') || 0}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Comentários</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Lista de comentários */}
+                <section className="ig-card-white" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb' }}>
+                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827' }}>
+                      Comentários encontrados
+                    </h4>
+                  </div>
+                  <div style={{ padding: '16px 20px', flex: 1, overflowY: 'auto', maxHeight: '500px' }}>
+                    {wordCloudDetailsLoading ? (
+                      <DataState state="loading" label="Carregando comentários..." size="sm" />
+                    ) : wordCloudDetailsError ? (
+                      <DataState state="error" label="Falha ao carregar comentários." hint={wordCloudDetailsError} size="sm" />
+                    ) : wordCloudDetails && Array.isArray(wordCloudDetails.comments) && wordCloudDetails.comments.length ? (
+                      <>
+                        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          {wordCloudDetails.comments.map((comment) => (
+                            <li key={comment.id || `${comment.text}-${comment.timestamp}`} style={{
+                              padding: '12px 16px',
+                              background: '#f9fafb',
+                              borderRadius: '10px',
+                              border: '1px solid #e5e7eb'
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                                <span style={{ fontWeight: 600, fontSize: '13px', color: '#111827' }}>
+                                  {comment.username ? `@${comment.username}` : 'Comentário'}
+                                </span>
+                                {comment.timestamp && (
+                                  <span style={{ fontSize: '12px', color: '#9ca3af' }}>
+                                    {formatWordCloudDetailDate(comment.timestamp)}
+                                  </span>
+                                )}
+                                {comment.occurrences > 1 && (
+                                  <span style={{
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    color: '#ef4444',
+                                    background: '#fef2f2',
+                                    padding: '2px 8px',
+                                    borderRadius: '10px'
+                                  }}>
+                                    {comment.occurrences}x
+                                  </span>
+                                )}
+                              </div>
+                              <p style={{ margin: 0, fontSize: '14px', color: '#374151', lineHeight: 1.5 }}>
+                                {comment.text}
+                              </p>
+                            </li>
+                          ))}
+                        </ul>
+                        {hasMoreWordCloudDetails && (
+                          <button
+                            type="button"
+                            onClick={handleWordCloudLoadMore}
+                            disabled={wordCloudDetailsLoadingMore}
+                            style={{
+                              width: '100%',
+                              marginTop: '16px',
+                              padding: '12px',
+                              background: wordCloudDetailsLoadingMore ? '#f3f4f6' : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                              color: wordCloudDetailsLoadingMore ? '#9ca3af' : 'white',
+                              border: 'none',
+                              borderRadius: '10px',
+                              fontSize: '14px',
+                              fontWeight: 600,
+                              cursor: wordCloudDetailsLoadingMore ? 'not-allowed' : 'pointer',
+                              transition: 'all 0.2s'
+                            }}
+                          >
+                            {wordCloudDetailsLoadingMore ? 'Carregando...' : 'Carregar mais'}
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <DataState state="empty" label="Nenhum comentário encontrado com essa palavra." size="sm" />
+                    )}
+                  </div>
+                </section>
+              </div>
             ) : (
               <>
             {/* Card de Crescimento do Perfil */}
@@ -4396,6 +4664,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 </div>
                 <button
                   onClick={() => {
+                    closeWordCloudDetail();
                     setShowFollowersDetail(true);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
@@ -4538,6 +4807,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               </div>
               <button
                 onClick={() => {
+                  closeWordCloudDetail();
                   setShowDetailedView(true);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
@@ -4653,6 +4923,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               </div>
               <button
                 onClick={() => {
+                  closeWordCloudDetail();
                   setShowInteractionsDetail(true);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
@@ -4917,6 +5188,8 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 top={120}
                 showCommentsCount={false}
                 onCommentsCountRender={setCommentsCount}
+                externalPanelMode={true}
+                onWordClick={handleWordCloudWordClick}
               />
             </div>
           </section>
