@@ -97,7 +97,7 @@ function generateAccountId(label, existing = []) {
 
 export function AccountsProvider({ children }) {
   const [accounts, setAccounts] = useState(() => createDefaultAccounts());
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const { apiFetch, token } = useAuth();
 
@@ -153,6 +153,9 @@ export function AccountsProvider({ children }) {
         const body = await response.json();
         const rawList = Array.isArray(body?.accounts) ? body.accounts : [];
         if (!rawList.length || cancelled) {
+          if (!cancelled) {
+            setLoading(false);
+          }
           return;
         }
 
@@ -172,7 +175,9 @@ export function AccountsProvider({ children }) {
         }
 
         if (!discovered.length || cancelled) {
-          setLoading(false);
+          if (!cancelled) {
+            setLoading(false);
+          }
           return;
         }
 
