@@ -314,6 +314,15 @@ def aggregate_dimension_values(payload: Dict[str, Any], target_name: str) -> Dic
         if item.get("name") != target_name:
             continue
         total_value = item.get("total_value") or {}
+        total_value_value = total_value.get("value")
+        if isinstance(total_value_value, dict):
+            for key, raw in total_value_value.items():
+                coerced = _coerce_number(raw)
+                if coerced is None:
+                    continue
+                results[key] = results.get(key, 0.0) + coerced
+            if results:
+                return results
         breakdowns = total_value.get("breakdowns") or []
         for breakdown in breakdowns:
             for entry in breakdown.get("results") or []:
@@ -368,6 +377,36 @@ def extract_time_series(payload: Dict[str, Any], target_name: str) -> List[Dict[
                 "end_time": entry.get("end_time"),
                 "start_time": entry.get("start_time"),
             })
+    series.sort(key=lambda row: (row.get("end_time") or row.get("start_time") or ""))
+    return series
+
+
+def extract_dimension_time_series(
+    payload: Dict[str, Any],
+    target_name: str,
+    value_key: str,
+) -> List[Dict[str, Any]]:
+    """Extrai série temporal de uma métrica cujo value é um dict com chaves (ex.: follows/unfollows)."""
+    series: List[Dict[str, Any]] = []
+    if not isinstance(payload, dict):
+        return series
+    for item in payload.get("data", []):
+        if item.get("name") != target_name:
+            continue
+        for entry in item.get("values") or []:
+            raw_value = entry.get("value")
+            if not isinstance(raw_value, dict):
+                continue
+            coerced = _coerce_number(raw_value.get(value_key))
+            if coerced is None:
+                continue
+            series.append(
+                {
+                    "value": coerced,
+                    "end_time": entry.get("end_time"),
+                    "start_time": entry.get("start_time"),
+                }
+            )
     series.sort(key=lambda row: (row.get("end_time") or row.get("start_time") or ""))
     return series
 
@@ -963,6 +1002,32 @@ def ig_window(ig_user_id: str, since: int, until: int) -> Dict[str, Any]:
     follower_end = None
     follows_total = None
     unfollows_total = None
+    followers_gain_series: List[Dict[str, Any]] = []
+
+    def _normalize_day(raw_ts: Optional[Any]) -> Optional[str]:
+        if not raw_ts:
+            return None
+        if isinstance(raw_ts, (int, float)):
+            return time.strftime("%Y-%m-%d", time.gmtime(int(raw_ts)))
+        try:
+            normalized = str(raw_ts).replace("Z", "+00:00")
+            return datetime.fromisoformat(normalized).date().isoformat()
+        except (TypeError, ValueError):
+            raw_str = str(raw_ts)
+            return raw_str[:10] if len(raw_str) >= 10 else None
+
+    def _series_to_daily(series: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        daily: List[Dict[str, Any]] = []
+        for entry in series:
+            date_key = _normalize_day(entry.get("end_time") or entry.get("start_time"))
+            if not date_key:
+                continue
+            value = _coerce_number(entry.get("value"))
+            if value is None:
+                continue
+            daily.append({"date": date_key, "value": int(round(value))})
+        daily.sort(key=lambda item: item["date"])
+        return daily
 
     try:
         follower_response = gget(
@@ -990,14 +1055,49 @@ def ig_window(ig_user_id: str, since: int, until: int) -> Dict[str, Any]:
                 "period": "day",
                 "since": since,
                 "until": until,
-                "metric_type": "total_value",
             },
+        )
+        follows_series = extract_dimension_time_series(
+            follows_response,
+            "follows_and_unfollows",
+            "follows",
+        )
+        unfollows_series = extract_dimension_time_series(
+            follows_response,
+            "follows_and_unfollows",
+            "unfollows",
         )
         follows_map = aggregate_dimension_values(follows_response, "follows_and_unfollows")
         follows_total = follows_map.get("follows")
         unfollows_total = follows_map.get("unfollows")
+
+        if follows_total is None and follows_series:
+            follows_total = sum_values(follows_series)
+        if unfollows_total is None and unfollows_series:
+            unfollows_total = sum_values(unfollows_series)
+
+        if follows_series:
+            followers_gain_series = _series_to_daily(follows_series)
     except MetaAPIError:
-        pass
+        try:
+            follows_response = gget(
+                f"/{ig_user_id}/insights",
+                {
+                    "metric": "follows_and_unfollows",
+                    "period": "day",
+                    "since": since,
+                    "until": until,
+                    "metric_type": "total_value",
+                },
+            )
+            follows_map = aggregate_dimension_values(follows_response, "follows_and_unfollows")
+            follows_total = follows_map.get("follows")
+            unfollows_total = follows_map.get("unfollows")
+        except MetaAPIError:
+            pass
+
+    if follower_growth is None and (follows_total is not None or unfollows_total is not None):
+        follower_growth = (follows_total or 0) - (unfollows_total or 0)
 
     profile_visitors_breakdown = None
     visitors_breakdown = {"followers": 0.0, "non_followers": 0.0, "other": 0.0}
@@ -1058,6 +1158,7 @@ def ig_window(ig_user_id: str, since: int, until: int) -> Dict[str, Any]:
         "unfollows": unfollows_total,
         "profile_visitors_breakdown": profile_visitors_breakdown,
         "follower_series": follower_series,
+        "followers_gain_series": followers_gain_series,
         "posts_detailed": post_details,
         "reach_timeseries": reach_timeseries,
     }
@@ -1101,6 +1202,7 @@ def _ig_window_chunked(ig_user_id: str, since: int, until: int, chunk_days: int 
         "unfollows": 0,
         "profile_visitors_breakdown": None,
         "follower_series": [],
+        "followers_gain_series": [],
         "posts_detailed": [],
         "reach_timeseries": [],
         "profile_views_timeseries": [],
@@ -1124,6 +1226,8 @@ def _ig_window_chunked(ig_user_id: str, since: int, until: int, chunk_days: int 
 
         if chunk.get("follower_series"):
             aggregated["follower_series"].extend(chunk["follower_series"])
+        if chunk.get("followers_gain_series"):
+            aggregated["followers_gain_series"].extend(chunk["followers_gain_series"])
         if chunk.get("posts_detailed"):
             aggregated["posts_detailed"].extend(chunk["posts_detailed"])
         if chunk.get("reach_timeseries"):

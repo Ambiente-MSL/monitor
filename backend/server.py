@@ -1206,6 +1206,25 @@ def fetch_instagram_metrics(
         _unix_to_date(until_ts),
     )
     if not followers_gain_series:
+        raw_gain_series = cur.get("followers_gain_series") or []
+        if raw_gain_series:
+            normalized_gain_series: List[Dict[str, Any]] = []
+            for entry in raw_gain_series:
+                metric_date = _isoformat_metric_date(
+                    entry.get("date") or entry.get("end_time") or entry.get("start_time")
+                )
+                metric_value = _to_float(entry.get("value"))
+                if metric_date is None or metric_value is None:
+                    continue
+                normalized_gain_series.append(
+                    {
+                        "date": metric_date,
+                        "value": int(round(max(0.0, metric_value))),
+                    }
+                )
+            normalized_gain_series.sort(key=lambda item: item["date"])
+            followers_gain_series = normalized_gain_series
+    if not followers_gain_series:
         follower_series_raw = cur.get("follower_series") or []
         if follower_series_raw:
             normalized_series: List[Dict[str, Any]] = []
