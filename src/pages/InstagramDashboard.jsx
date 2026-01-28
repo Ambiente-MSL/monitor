@@ -1979,7 +1979,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
       return Math.round(fallbackMetric);
     }
 
-    return 0;
+    return null;
   }, [
     followersGainedTotal,
     followerCounts,
@@ -2313,6 +2313,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
 
   const followerDeltaValue = useMemo(() => {
     if (metricsLoading) return null;
+    if (overviewMetrics.followersDelta == null) return null;
     const numeric = Number(overviewMetrics.followersDelta);
     return Number.isFinite(numeric) ? numeric : null;
   }, [metricsLoading, overviewMetrics.followersDelta]);

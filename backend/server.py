@@ -1250,7 +1250,7 @@ def fetch_instagram_metrics(
             followers_gained_total = total
     if followers_gained_total is None:
         follower_growth_value = _to_float(cur.get("follower_growth"))
-        if follower_growth_value is not None and follower_growth_value > 0:
+        if follower_growth_value is not None and follower_growth_value >= 0:
             followers_gained_total = follower_growth_value
 
     if followers_gained_total is not None:
@@ -2177,14 +2177,14 @@ def _load_followers_gain_series_from_db(ig_id: str, start_date: date, end_date: 
         .eq("platform", IG_METRICS_PLATFORM)
         .gte("metric_date", start_date.isoformat())
         .lte("metric_date", end_date.isoformat())
-        .in_("metric_key", ["follows", "followers_delta"])
+        .in_("metric_key", ["follows", "followers_delta", "followers_total"])
         .execute()
     )
     if getattr(response, "error", None):
         logger.warning("Falha ao carregar followers_gain_series: %s", response.error)
         return []
 
-    series_by_key: Dict[str, List[Dict[str, Any]]] = {"follows": [], "followers_delta": []}
+    series_by_key: Dict[str, List[Dict[str, Any]]] = {"follows": [], "followers_delta": [], "followers_total": []}
     for row in response.data or []:
         metric_key = row.get("metric_key")
         if metric_key not in series_by_key:
@@ -2196,14 +2196,33 @@ def _load_followers_gain_series_from_db(ig_id: str, start_date: date, end_date: 
         series_by_key[metric_key].append(
             {
                 "date": metric_date.isoformat(),
-                "value": int(round(max(0, metric_value))),
+                "value": int(round(metric_value)) if metric_key == "followers_total" else int(round(max(0, metric_value))),
             }
         )
 
     for entries in series_by_key.values():
         entries.sort(key=lambda item: item["date"])
 
-    return series_by_key["follows"] or series_by_key["followers_delta"]
+    if series_by_key["follows"]:
+        return series_by_key["follows"]
+    if series_by_key["followers_delta"]:
+        return series_by_key["followers_delta"]
+
+    # Calcula crescimento diário a partir de followers_total se não houver dados diretos
+    followers_total_series = series_by_key["followers_total"]
+    if len(followers_total_series) >= 2:
+        gain_series: List[Dict[str, Any]] = []
+        for i in range(1, len(followers_total_series)):
+            prev_entry = followers_total_series[i - 1]
+            curr_entry = followers_total_series[i]
+            diff = curr_entry["value"] - prev_entry["value"]
+            gain_series.append({
+                "date": curr_entry["date"],
+                "value": max(0, diff),
+            })
+        return gain_series
+
+    return []
 
 
 def _load_instagram_rollups(ig_id: str, end_date: date) -> Dict[str, Dict[str, Any]]:
@@ -2580,7 +2599,7 @@ def build_instagram_metrics_from_db(
         followers_gained_total = positive_delta_total
     elif series_gain_total is not None:
         followers_gained_total = series_gain_total
-    elif net_followers_growth is not None and net_followers_growth > 0:
+    elif net_followers_growth is not None and net_followers_growth >= 0:
         followers_gained_total = net_followers_growth
     else:
         followers_gained_total = None
@@ -2629,6 +2648,19 @@ def build_instagram_metrics_from_db(
     followers_gain_series = _build_followers_gain_series("follows")
     if not followers_gain_series:
         followers_gain_series = _build_followers_gain_series("followers_delta")
+
+    # Se não houver dados diretos, calcula a partir de followers_total
+    if not followers_gain_series and follower_series and len(follower_series) >= 2:
+        sorted_series = sorted(follower_series, key=lambda x: x["date"])
+        for i in range(1, len(sorted_series)):
+            prev_value = sorted_series[i - 1].get("value")
+            curr_value = sorted_series[i].get("value")
+            if prev_value is not None and curr_value is not None:
+                diff = curr_value - prev_value
+                followers_gain_series.append({
+                    "date": sorted_series[i]["date"],
+                    "value": max(0, diff),
+                })
 
     reach_timeseries = [
         {
