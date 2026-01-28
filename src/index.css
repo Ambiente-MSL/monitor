@@ -13515,7 +13515,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 /* Grid principal com 2 colunas */
 .fb-main-grid {
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 420px 1fr;
   gap: 24px;
   margin-top: 24px;
 }
