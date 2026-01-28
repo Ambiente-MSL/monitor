@@ -3992,14 +3992,22 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     {(topPostsByViews || []).length > 0 ? (
                       <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '8px' }}>
                         {(topPostsByViews || []).slice(0, 5).map((post, idx) => {
-                          const previewUrl = post.thumbnail_url || post.media_url || post.thumbnail;
+                          const previewUrl = [
+                            post.previewUrl,
+                            post.preview_url,
+                            post.thumbnailUrl,
+                            post.thumbnail_url,
+                            post.mediaUrl,
+                            post.media_url,
+                            post.thumbnail,
+                          ].find((url) => url && !/\.(mp4|mov)$/i.test(url));
                           const views = post.plays ?? post.video_views ?? post.impressions ?? 0;
                           return (
                             <div
                               key={post.id || idx}
                               style={{
                                 flexShrink: 0,
-                                width: '100px',
+                                width: '115px',
                                 borderRadius: '12px',
                                 overflow: 'hidden',
                                 background: 'white',
@@ -4009,7 +4017,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                               }}
                               onClick={() => setSelectedPost(post)}
                             >
-                              <div style={{ width: '100px', height: '178px', background: '#f3f4f6', position: 'relative' }}>
+                              <div style={{ width: '115px', height: '205px', background: '#f3f4f6', position: 'relative' }}>
                                 {previewUrl ? (
                                   <img src={previewUrl} alt="Post" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 ) : (
@@ -4208,14 +4216,22 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     {(topPosts || []).length > 0 ? (
                       <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '8px' }}>
                         {(topPosts || []).slice(0, 5).map((post, idx) => {
-                          const previewUrl = post.thumbnail_url || post.media_url || post.thumbnail;
+                          const previewUrl = [
+                            post.previewUrl,
+                            post.preview_url,
+                            post.thumbnailUrl,
+                            post.thumbnail_url,
+                            post.mediaUrl,
+                            post.media_url,
+                            post.thumbnail,
+                          ].find((url) => url && !/\.(mp4|mov)$/i.test(url));
                           const engagement = sumInteractions(post);
                           return (
                             <div
                               key={post.id || idx}
                               style={{
                                 flexShrink: 0,
-                                width: '100px',
+                                width: '115px',
                                 borderRadius: '12px',
                                 overflow: 'hidden',
                                 background: 'white',
@@ -4225,7 +4241,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                               }}
                               onClick={() => setSelectedPost(post)}
                             >
-                              <div style={{ width: '100px', height: '178px', background: '#f3f4f6', position: 'relative' }}>
+                              <div style={{ width: '115px', height: '205px', background: '#f3f4f6', position: 'relative' }}>
                                 {previewUrl ? (
                                   <img src={previewUrl} alt="Post" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 ) : (
