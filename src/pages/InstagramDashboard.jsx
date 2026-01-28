@@ -93,32 +93,6 @@ const DEFAULT_GENDER_STATS = [
 const POSTS_INSIGHTS_LIMIT = 10;
 const RECENT_POSTS_TABLE_LIMIT = 5;
 
-const USE_MOCK_FOLLOWERS = true;
-const MOCK_FOLLOWER_GROWTH_PATTERN = [3, 5, 2, 6, 4, 7, 3, 5, 2, 6];
-
-const buildMockFollowerGrowthSeries = (rangeStart, rangeEnd) => {
-  if (!rangeStart || !rangeEnd) return [];
-  if (Number.isNaN(rangeStart.getTime()) || Number.isNaN(rangeEnd.getTime())) return [];
-  if (rangeStart > rangeEnd) return [];
-
-  return eachDayOfInterval({ start: rangeStart, end: rangeEnd }).map((day, index) => {
-    const dateKey = day.toISOString().slice(0, 10);
-    const monthLabel = MONTH_SHORT_PT[day.getMonth()] || "";
-    const dayLabel = String(day.getDate());
-    const label = monthLabel ? `${dayLabel}/${monthLabel}` : dayLabel;
-    const tooltipDate = monthLabel
-      ? `${String(day.getDate()).padStart(2, "0")} - ${monthLabel} - ${day.getFullYear()}`
-      : dateKey;
-    const value = MOCK_FOLLOWER_GROWTH_PATTERN[index % MOCK_FOLLOWER_GROWTH_PATTERN.length];
-
-    return {
-      label,
-      value,
-      tooltipDate,
-      dateKey,
-    };
-  });
-};
 
 const DEFAULT_AUDIENCE_TYPE = [
   { name: "Não Seguidores", value: 35 },
@@ -1898,13 +1872,6 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
 
   // Calcula total de seguidores ganhos no período filtrado
   const followersDelta = useMemo(() => {
-    if (USE_MOCK_FOLLOWERS) {
-      const mockStart = sinceDate ? startOfDay(sinceDate) : startOfDay(subDays(new Date(), 29));
-      const mockEnd = untilDate ? startOfDay(untilDate) : startOfDay(new Date());
-      const mockSeries = buildMockFollowerGrowthSeries(mockStart, mockEnd);
-      const total = mockSeries.reduce((sum, entry) => sum + extractNumber(entry.value, 0), 0);
-      return Math.max(0, Math.round(total));
-    }
     if (metricsLoading) return null;
     const sumGainSeries = (series) => {
       if (!Array.isArray(series) || !series.length) return null;
@@ -2524,11 +2491,6 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
   }, [followerSeriesNormalized, metricsLoading]);
 
   const followerGrowthChartData = useMemo(() => {
-    if (USE_MOCK_FOLLOWERS) {
-      const mockStart = sinceDate ? startOfDay(sinceDate) : startOfDay(subDays(new Date(), 29));
-      const mockEnd = untilDate ? startOfDay(untilDate) : startOfDay(new Date());
-      return buildMockFollowerGrowthSeries(mockStart, mockEnd);
-    }
     if (metricsLoading) return [];
     if (metricsError) return [];
     const hasGainSeries = followerGainSeriesNormalized.length > 0;
