@@ -4443,7 +4443,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                       <div style={{ fontSize: '28px', fontWeight: 700, color: '#ef4444' }}>
                         {selectedWordCloud?.count?.toLocaleString('pt-BR') || 0}
                       </div>
-                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Na Wordcloud</div>
+                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Na nuvem de palavras</div>
                     </div>
                     <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
                       <div style={{ fontSize: '28px', fontWeight: 700, color: '#dc2626' }}>
