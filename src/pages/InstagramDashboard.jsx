@@ -789,6 +789,7 @@ export default function InstagramDashboard() {
   const [wordCloudDetailsLoading, setWordCloudDetailsLoading] = useState(false);
   const [wordCloudDetailsError, setWordCloudDetailsError] = useState("");
   const [wordCloudDetailsLoadingMore, setWordCloudDetailsLoadingMore] = useState(false);
+  const [wordCloudDetailsPage, setWordCloudDetailsPage] = useState(1);
   const [interactionsTab, setInteractionsTab] = useState('reels'); // reels, videos, posts
 
   // Estado para modal de post
@@ -2852,7 +2853,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
   const hashtagList = useMemo(() => buildHashtagFrequency(filteredPosts), [filteredPosts]);
 
   // WordCloud detail panel functions
-  const WORDCLOUD_DETAILS_PAGE_SIZE = 40;
+  const WORDCLOUD_DETAILS_PAGE_SIZE = 10;
 
   const buildWordCloudDetailsUrl = useCallback((word, offset = 0) => {
     if (!accountConfig?.instagramUserId || !word) return null;
@@ -2891,6 +2892,8 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
     setWordCloudDetails(null);
     setWordCloudDetailsError("");
     setWordCloudDetailsLoading(true);
+    setWordCloudDetailsLoadingMore(false);
+    setWordCloudDetailsPage(1);
 
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2899,6 +2902,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
     fetchWordCloudDetails(word, 0)
       .then((payload) => {
         setWordCloudDetails(payload);
+        setWordCloudDetailsPage(1);
       })
       .catch((err) => {
         setWordCloudDetailsError(err?.message || "Falha ao carregar comentários.");
@@ -2908,29 +2912,12 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
       });
   }, [fetchWordCloudDetails]);
 
-  const handleWordCloudLoadMore = useCallback(async () => {
-    if (!selectedWordCloud?.word || !wordCloudDetails || wordCloudDetailsLoadingMore) return;
-    const currentCount = Array.isArray(wordCloudDetails.comments) ? wordCloudDetails.comments.length : 0;
-    setWordCloudDetailsLoadingMore(true);
-    try {
-      const payload = await fetchWordCloudDetails(selectedWordCloud.word, currentCount);
-      const nextComments = Array.isArray(payload?.comments) ? payload.comments : [];
-      setWordCloudDetails((prev) => {
-        if (!prev) return payload;
-        const merged = Array.isArray(prev.comments) ? [...prev.comments, ...nextComments] : nextComments;
-        return {
-          ...prev,
-          comments: merged,
-          total_comments: payload?.total_comments ?? prev.total_comments,
-          total_occurrences: payload?.total_occurrences ?? prev.total_occurrences,
-        };
-      });
-    } catch (err) {
-      setWordCloudDetailsError(err?.message || "Falha ao carregar comentários.");
-    } finally {
-      setWordCloudDetailsLoadingMore(false);
-    }
-  }, [selectedWordCloud?.word, wordCloudDetails, wordCloudDetailsLoadingMore, fetchWordCloudDetails]);
+  const wordCloudDetailsTotalPages = useMemo(() => {
+    if (!wordCloudDetails) return 0;
+    const total = Number(wordCloudDetails.total_comments || 0);
+    return Math.ceil(total / WORDCLOUD_DETAILS_PAGE_SIZE);
+  }, [wordCloudDetails]);
+
 
   const closeWordCloudDetail = useCallback(() => {
     setShowWordCloudDetail(false);
@@ -2939,14 +2926,77 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
     setWordCloudDetailsError("");
     setWordCloudDetailsLoading(false);
     setWordCloudDetailsLoadingMore(false);
+    setWordCloudDetailsPage(1);
   }, []);
 
-  const hasMoreWordCloudDetails = useMemo(() => {
-    if (!wordCloudDetails) return false;
-    const total = Number(wordCloudDetails.total_comments || 0);
-    const current = Array.isArray(wordCloudDetails.comments) ? wordCloudDetails.comments.length : 0;
-    return total > current;
-  }, [wordCloudDetails]);
+  const wordCloudCanGoPrev = wordCloudDetailsPage > 1;
+  const wordCloudCanGoNext = wordCloudDetailsPage < wordCloudDetailsTotalPages;
+
+  const wordCloudPageNumbers = useMemo(() => {
+    const pages = [];
+    const maxVisible = 5;
+    const total = wordCloudDetailsTotalPages;
+    const current = wordCloudDetailsPage;
+
+    if (total <= maxVisible) {
+      for (let i = 1; i <= total; i++) pages.push(i);
+      return pages;
+    }
+
+    if (current <= 3) {
+      for (let i = 1; i <= Math.min(maxVisible, total); i++) pages.push(i);
+      pages.push("...");
+      pages.push(total);
+      return pages;
+    }
+
+    if (current >= total - 2) {
+      pages.push(1);
+      pages.push("...");
+      for (let i = total - maxVisible + 1; i <= total; i++) {
+        if (i > 1) pages.push(i);
+      }
+      return pages;
+    }
+
+    pages.push(1);
+    pages.push("...");
+    for (let i = current - 1; i <= current + 1; i++) {
+      pages.push(i);
+    }
+    pages.push("...");
+    pages.push(total);
+    return pages;
+  }, [wordCloudDetailsPage, wordCloudDetailsTotalPages]);
+
+  const handleWordCloudGoToPage = useCallback(async (page) => {
+    if (!selectedWordCloud?.word || wordCloudDetailsLoadingMore) return;
+    if (!wordCloudDetailsTotalPages) return;
+    const target = Math.min(Math.max(1, page), wordCloudDetailsTotalPages);
+    if (target === wordCloudDetailsPage) return;
+    setWordCloudDetailsLoadingMore(true);
+    try {
+      const offset = (target - 1) * WORDCLOUD_DETAILS_PAGE_SIZE;
+      const payload = await fetchWordCloudDetails(selectedWordCloud.word, offset);
+      setWordCloudDetails(payload);
+      setWordCloudDetailsPage(target);
+      setWordCloudDetailsError("");
+    } catch (err) {
+      setWordCloudDetailsError(err?.message || "Falha ao carregar comentários.");
+    } finally {
+      setWordCloudDetailsLoadingMore(false);
+    }
+  }, [selectedWordCloud?.word, wordCloudDetailsLoadingMore, wordCloudDetailsTotalPages, wordCloudDetailsPage, fetchWordCloudDetails]);
+
+  const handleWordCloudNextPage = useCallback(() => {
+    if (!wordCloudCanGoNext || wordCloudDetailsLoadingMore) return;
+    handleWordCloudGoToPage(wordCloudDetailsPage + 1);
+  }, [wordCloudCanGoNext, wordCloudDetailsLoadingMore, handleWordCloudGoToPage, wordCloudDetailsPage]);
+
+  const handleWordCloudPrevPage = useCallback(() => {
+    if (!wordCloudCanGoPrev || wordCloudDetailsLoadingMore) return;
+    handleWordCloudGoToPage(wordCloudDetailsPage - 1);
+  }, [wordCloudCanGoPrev, wordCloudDetailsLoadingMore, handleWordCloudGoToPage, wordCloudDetailsPage]);
 
   const formatWordCloudDetailDate = (value) => {
     if (!value) return "";
@@ -4416,7 +4466,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                       Comentários encontrados
                     </h4>
                   </div>
-                  <div style={{ padding: '16px 20px', flex: 1, overflowY: 'auto', maxHeight: '500px' }}>
+                  <div style={{ padding: '16px 20px', flex: 1 }}>
                     {wordCloudDetailsLoading ? (
                       <DataState state="loading" label="Carregando comentários..." size="sm" />
                     ) : wordCloudDetailsError ? (
@@ -4459,27 +4509,52 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                             </li>
                           ))}
                         </ul>
-                        {hasMoreWordCloudDetails && (
-                          <button
-                            type="button"
-                            onClick={handleWordCloudLoadMore}
-                            disabled={wordCloudDetailsLoadingMore}
-                            style={{
-                              width: '100%',
-                              marginTop: '16px',
-                              padding: '12px',
-                              background: wordCloudDetailsLoadingMore ? '#f3f4f6' : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                              color: wordCloudDetailsLoadingMore ? '#9ca3af' : 'white',
-                              border: 'none',
-                              borderRadius: '10px',
-                              fontSize: '14px',
-                              fontWeight: 600,
-                              cursor: wordCloudDetailsLoadingMore ? 'not-allowed' : 'pointer',
-                              transition: 'all 0.2s'
-                            }}
-                          >
-                            {wordCloudDetailsLoadingMore ? 'Carregando...' : 'Carregar mais'}
-                          </button>
+                        {wordCloudDetailsTotalPages > 1 && (
+                          <div className="ig-word-detail-pagination">
+                            <button
+                              type="button"
+                              className="ig-word-detail-pagination__btn ig-word-detail-pagination__arrow"
+                              onClick={handleWordCloudPrevPage}
+                              disabled={!wordCloudCanGoPrev || wordCloudDetailsLoadingMore}
+                              aria-label="PÃ¡gina anterior"
+                            >
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <polyline points="15 18 9 12 15 6" />
+                              </svg>
+                            </button>
+                            <div className="ig-word-detail-pagination__pages">
+                              {wordCloudDetailsLoadingMore ? (
+                                <span className="ig-word-detail-pagination__loading">Carregando...</span>
+                              ) : (
+                                wordCloudPageNumbers.map((page, index) => (
+                                  page === "..." ? (
+                                    <span key={`ellipsis-${index}`} className="ig-word-detail-pagination__ellipsis">...</span>
+                                  ) : (
+                                    <button
+                                      key={page}
+                                      type="button"
+                                      className={`ig-word-detail-pagination__page ${wordCloudDetailsPage === page ? 'ig-word-detail-pagination__page--active' : ''}`}
+                                      onClick={() => handleWordCloudGoToPage(page)}
+                                      disabled={wordCloudDetailsLoadingMore}
+                                    >
+                                      {page}
+                                    </button>
+                                  )
+                                ))
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              className="ig-word-detail-pagination__btn ig-word-detail-pagination__arrow"
+                              onClick={handleWordCloudNextPage}
+                              disabled={!wordCloudCanGoNext || wordCloudDetailsLoadingMore}
+                              aria-label="PrÃ³xima pÃ¡gina"
+                            >
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <polyline points="9 18 15 12 9 6" />
+                              </svg>
+                            </button>
+                          </div>
                         )}
                       </>
                     ) : (
