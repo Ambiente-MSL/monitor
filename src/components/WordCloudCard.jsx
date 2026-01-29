@@ -4,7 +4,8 @@ import { fetchWithTimeout, isTimeoutError } from "../lib/fetchWithTimeout";
 import DataState from "./DataState";
 
 const WORD_COLORS = ["#a855f7", "#6366f1", "#f97316", "#14b8a6", "#facc15", "#22d3ee", "#34d399", "#f472b6", "#60a5fa"];
-const DETAILS_PAGE_SIZE = 40;
+const DETAILS_PAGE_SIZE = 50;
+const COMMENTS_PER_PAGE = 10;
 
 const fetcher = async (url) => {
   let response;
@@ -91,6 +92,7 @@ export default function WordCloudCard({
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsLoadingMore, setDetailsLoadingMore] = useState(false);
   const [detailsError, setDetailsError] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const requestKey = useMemo(() => {
     if (!igUserId) return null;
@@ -146,6 +148,7 @@ export default function WordCloudCard({
     setDetailsError("");
     setDetailsLoading(false);
     setDetailsLoadingMore(false);
+    setCurrentPage(1);
   };
 
   useEffect(() => {
@@ -154,6 +157,7 @@ export default function WordCloudCard({
     setDetailsLoading(true);
     setDetailsError("");
     setDetails(null);
+    setCurrentPage(1);
     fetchWordDetails(selectedWord, 0)
       .then((payload) => {
         if (cancelled) return;
@@ -201,6 +205,26 @@ export default function WordCloudCard({
     return total > current;
   }, [details]);
 
+  const paginatedComments = useMemo(() => {
+    if (!details || !Array.isArray(details.comments)) return [];
+    const startIndex = (currentPage - 1) * COMMENTS_PER_PAGE;
+    const endIndex = startIndex + COMMENTS_PER_PAGE;
+    return details.comments.slice(startIndex, endIndex);
+  }, [details, currentPage]);
+
+  const totalLoadedPages = useMemo(() => {
+    if (!details || !Array.isArray(details.comments)) return 0;
+    return Math.ceil(details.comments.length / COMMENTS_PER_PAGE);
+  }, [details]);
+
+  const totalServerPages = useMemo(() => {
+    if (!details) return 0;
+    return Math.ceil((details.total_comments || 0) / COMMENTS_PER_PAGE);
+  }, [details]);
+
+  const canGoNext = currentPage < totalLoadedPages || hasMoreDetails;
+  const canGoPrev = currentPage > 1;
+
   const handleLoadMore = async () => {
     if (!selectedWord || !details || detailsLoadingMore) return;
     const currentCount = Array.isArray(details.comments) ? details.comments.length : 0;
@@ -222,6 +246,22 @@ export default function WordCloudCard({
       setDetailsError(err?.message || "Falha ao carregar comentarios.");
     } finally {
       setDetailsLoadingMore(false);
+    }
+  };
+
+  const handleNextPage = async () => {
+    if (detailsLoadingMore) return;
+    if (currentPage < totalLoadedPages) {
+      setCurrentPage((prev) => prev + 1);
+    } else if (hasMoreDetails) {
+      await handleLoadMore();
+      setCurrentPage((prev) => prev + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage((prev) => prev - 1);
     }
   };
 
@@ -359,7 +399,7 @@ export default function WordCloudCard({
               ) : details && Array.isArray(details.comments) && details.comments.length ? (
                 <>
                   <ul className="ig-word-detail-list">
-                    {details.comments.map((comment) => (
+                    {paginatedComments.map((comment) => (
                       <li key={comment.id || `${comment.text}-${comment.timestamp}`} className="ig-word-detail-list__item">
                         <div className="ig-word-detail-list__row">
                           <div className="ig-word-detail-list__avatar">
@@ -408,15 +448,38 @@ export default function WordCloudCard({
                       </li>
                     ))}
                   </ul>
-                  {hasMoreDetails && (
-                    <button
-                      type="button"
-                      className="ig-word-detail-list__more"
-                      onClick={handleLoadMore}
-                      disabled={detailsLoadingMore}
-                    >
-                      {detailsLoadingMore ? "Carregando..." : "Carregar mais"}
-                    </button>
+                  {(totalServerPages > 1 || hasMoreDetails) && (
+                    <div className="ig-word-detail-pagination">
+                      <button
+                        type="button"
+                        className="ig-word-detail-pagination__btn"
+                        onClick={handlePrevPage}
+                        disabled={!canGoPrev || detailsLoadingMore}
+                        aria-label="Página anterior"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="15 18 9 12 15 6" />
+                        </svg>
+                      </button>
+                      <span className="ig-word-detail-pagination__info">
+                        {detailsLoadingMore ? (
+                          "Carregando..."
+                        ) : (
+                          <>Página {currentPage} de {totalServerPages}</>
+                        )}
+                      </span>
+                      <button
+                        type="button"
+                        className="ig-word-detail-pagination__btn"
+                        onClick={handleNextPage}
+                        disabled={!canGoNext || detailsLoadingMore}
+                        aria-label="Próxima página"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="9 18 15 12 9 6" />
+                        </svg>
+                      </button>
+                    </div>
                   )}
                 </>
               ) : (

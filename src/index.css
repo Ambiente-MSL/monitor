@@ -12438,6 +12438,48 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   opacity: 0.6;
 }
 
+.ig-word-detail-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.ig-word-detail-pagination__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ig-word-detail-pagination__btn:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--bg-card) 94%, var(--text-primary) 6%);
+  border-color: color-mix(in oklab, var(--border-color) 60%, var(--text-primary) 40%);
+}
+
+.ig-word-detail-pagination__btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.ig-word-detail-pagination__info {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  min-width: 120px;
+  text-align: center;
+}
+
 @media (max-width: 720px) {
   .ig-word-detail-modal {
     padding: 12px;
@@ -12464,6 +12506,13 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   }
   .ig-word-detail-list__text {
     font-size: 0.9rem;
+  }
+  .ig-word-detail-pagination {
+    gap: 12px;
+  }
+  .ig-word-detail-pagination__info {
+    font-size: 0.8rem;
+    min-width: 100px;
   }
 }
 
