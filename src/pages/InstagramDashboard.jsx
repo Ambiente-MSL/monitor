@@ -1637,10 +1637,6 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
     if (profileViewsDays <= 0) return null;
     return profileViewsTotal / profileViewsDays;
   }, [profileViewsTotal, profileViewsDays]);
-  const profileViewsDeltaPct = useMemo(() => {
-    if (typeof profileViewsMetric?.deltaPct === "number") return profileViewsMetric.deltaPct;
-    return null;
-  }, [profileViewsMetric?.deltaPct]);
   const interactionsMetricValue = useMemo(() => extractNumber(interactionsMetric?.value, null), [interactionsMetric?.value]);
   const interactionsDeltaPct = useMemo(() => {
     if (typeof interactionsMetric?.deltaPct === "number") return interactionsMetric.deltaPct;
@@ -4843,22 +4839,10 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 {/* Grid de métricas à direita */}
                 <div style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gridTemplateColumns: 'repeat(2, 1fr)',
                   gap: '10px',
                   flex: 1
                 }}>
-                  <div style={{
-                    padding: '12px 8px',
-                    borderRadius: '8px',
-                    background: 'rgba(16, 185, 129, 0.05)',
-                    border: '1px solid rgba(16, 185, 129, 0.1)',
-                    textAlign: 'center'
-                  }}>
-                    <div style={{ fontSize: '16px', fontWeight: 700, color: '#10b981', marginBottom: '2px' }}>
-                      {profileViewsDeltaPct != null ? `${profileViewsDeltaPct > 0 ? '+' : ''}${profileViewsDeltaPct}%` : '--'}
-                    </div>
-                    <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>Crescimento</div>
-                  </div>
                   <div style={{
                     padding: '12px 8px',
                     borderRadius: '8px',
