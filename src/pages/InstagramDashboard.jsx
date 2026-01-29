@@ -4011,7 +4011,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                             post.media_url,
                             post.thumbnail,
                           ].find((url) => url && !/\.(mp4|mov)$/i.test(url));
-                          const views = post.plays ?? post.video_views ?? post.impressions ?? 0;
+                          const views = resolvePostViews(post);
                           return (
                             <div
                               key={post.id || idx}
