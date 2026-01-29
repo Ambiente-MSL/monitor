@@ -12311,41 +12311,104 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   border-radius: 14px;
   padding: 14px 16px;
   box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
 }
 
-.ig-word-detail-list__meta {
+.ig-word-detail-list__item:hover {
+  border-color: color-mix(in oklab, var(--border-color) 60%, var(--text-primary) 30%);
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.08));
+}
+
+.ig-word-detail-list__row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.ig-word-detail-list__avatar {
+  flex-shrink: 0;
+}
+
+.ig-word-detail-list__avatar-img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border-color);
+}
+
+.ig-word-detail-list__avatar-placeholder {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.ig-word-detail-list__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.ig-word-detail-list__header {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: 8px;
+  margin-bottom: 6px;
   font-size: 0.8rem;
-  color: var(--text-secondary);
 }
 
 .ig-word-detail-list__user {
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-primary);
+  font-size: 0.9rem;
 }
 
 .ig-word-detail-list__date {
   color: var(--text-secondary);
-}
-
-.ig-word-detail-list__badge {
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: rgba(99, 102, 241, 0.12);
-  color: #4f46e5;
-  font-weight: 600;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
 }
 
 .ig-word-detail-list__text {
-  margin: 0;
+  margin: 0 0 10px 0;
   color: var(--text-primary);
-  line-height: 1.45;
+  line-height: 1.5;
   font-size: 0.95rem;
+  word-break: break-word;
+}
+
+.ig-word-detail-list__footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.8rem;
+}
+
+.ig-word-detail-list__likes {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #ef4444;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.ig-word-detail-list__likes svg {
+  opacity: 0.9;
+}
+
+.ig-word-detail-list__badge {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.12);
+  color: #6366f1;
+  font-weight: 600;
+  font-size: 0.75rem;
 }
 
 .ig-word-detail-list__more {
@@ -12387,6 +12450,20 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   }
   .ig-word-detail-modal__body {
     padding: 16px;
+  }
+  .ig-word-detail-list__avatar-img,
+  .ig-word-detail-list__avatar-placeholder {
+    width: 36px;
+    height: 36px;
+  }
+  .ig-word-detail-list__row {
+    gap: 12px;
+  }
+  .ig-word-detail-list__user {
+    font-size: 0.85rem;
+  }
+  .ig-word-detail-list__text {
+    font-size: 0.9rem;
   }
 }
 

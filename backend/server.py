@@ -665,7 +665,7 @@ def fetch_comments_for_wordcloud(
     while True:
         query = (
             client.table(IG_COMMENTS_TABLE)
-            .select("id,text,timestamp,created_at")
+            .select("id,text,timestamp,created_at,username,like_count")
             .eq("account_id", account_id)
         )
         if since_iso:
@@ -4644,6 +4644,7 @@ def instagram_comments_search():
                 "text": text,
                 "timestamp": row.get("timestamp"),
                 "username": row.get("username"),
+                "like_count": row.get("like_count") or 0,
                 "occurrences": occurrences,
             })
         matches.sort(key=lambda item: item.get("timestamp") or "", reverse=True)
