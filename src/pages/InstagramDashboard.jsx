@@ -56,6 +56,7 @@ import InstagramPostModal from "../components/InstagramPostModal";
 import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import WordCloudCard from "../components/WordCloudCard";
 import CustomChartTooltip from "../components/CustomChartTooltip";
+import InfoTooltip from "../components/InfoTooltip";
 import { useAuth } from "../context/AuthContext";
 import {
   getDashboardCache,
@@ -4569,7 +4570,10 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             <section className="ig-growth-clean">
               <header className="ig-card-header">
                 <div>
-                  <h3>Crescimento do perfil</h3>
+                  <h3>
+                    Crescimento do perfil
+                    <InfoTooltip text="Alcance = número de contas únicas alcançadas no período selecionado." />
+                  </h3>
                   <p className="ig-card-subtitle">Alcance</p>
                 </div>
               </header>

@@ -4,6 +4,7 @@ import { endOfDay, startOfDay, subDays, differenceInCalendarDays } from "date-fn
 import { Bell, LogOut } from "lucide-react";
 import DateRangePicker from "./DateRangePicker";
 import AccountSelect from "./AccountSelect";
+import InfoTooltip from "./InfoTooltip";
 import useQueryState from "../hooks/useQueryState";
 import { useAuth } from "../context/AuthContext";
 import logo from "../assets/logo-dashboard.svg";
@@ -148,6 +149,7 @@ export default function Topbar({
                     type="button"
                     className={`topbar__chip${activePreset === preset.id ? " topbar__chip--active" : ""}`}
                     onClick={handlePresetClick(preset)}
+                    title="Período de data predefinido."
                   >
                     {preset.label}
                   </button>
@@ -156,12 +158,14 @@ export default function Topbar({
 
               <div className="topbar__range topbar__range--compact">
                 <DateRangePicker variant="compact" onRangeChange={handleRangeChange} />
+                <InfoTooltip text="Selecione um intervalo de datas para atualizar todos os gráficos e métricas." />
               </div>
             </>
           )}
 
           <div className="topbar__account">
             <AccountSelect />
+            <InfoTooltip text="Selecione qual Página/conta de Instagram deseja analisar." />
           </div>
           <button
             type="button"

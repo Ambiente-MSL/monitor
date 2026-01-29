@@ -14336,3 +14336,62 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .btn-action-more:hover {
   border-color: var(--border-color);
 }
+
+/* =============================================
+   InfoTooltip Component
+   ============================================= */
+.info-tooltip {
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+  position: relative;
+  vertical-align: middle;
+  margin-left: 6px;
+}
+
+.info-tooltip__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.info-tooltip:hover .info-tooltip__icon,
+.info-tooltip:focus .info-tooltip__icon {
+  opacity: 1;
+  color: var(--color-primary);
+}
+
+.info-tooltip__content {
+  position: fixed;
+  z-index: 9999;
+  max-width: 280px;
+  padding: 10px 14px;
+  background: var(--tooltip-bg);
+  color: var(--tooltip-fg);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  border-radius: 8px;
+  box-shadow: var(--tooltip-shadow);
+  border: 1px solid var(--tooltip-border);
+  pointer-events: none;
+  animation: infoTooltipFadeIn 0.15s ease;
+}
+
+@keyframes infoTooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.info-tooltip--inline {
+  margin-left: 4px;
+}
