@@ -4572,7 +4572,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 <div>
                   <h3>
                     Crescimento do perfil
-                    <InfoTooltip text="Alcance = número de contas únicas alcançadas no período selecionado." />
+                    <InfoTooltip text="Número de contas únicas alcançadas no período selecionado." />
                   </h3>
                   <p className="ig-card-subtitle">Alcance</p>
                 </div>
@@ -4713,7 +4713,10 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
             <section className="ig-growth-clean ig-growth-followers ig-follower-growth-card">
               <header className="ig-card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
-                  <h3>Crescimento de seguidores</h3>
+                  <h3>
+                    Crescimento de seguidores
+                    <InfoTooltip text="Quantidade de novos seguidores conquistados por dia no período." />
+                  </h3>
                   <p className="ig-card-subtitle">Ganho diário</p>
                 </div>
                 <button
@@ -4856,7 +4859,10 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               zIndex: 1
             }}>
               <div>
-                <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#111827' }}>Visualizações</h4>
+                <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#111827' }}>
+                  Visualizações
+                  <InfoTooltip text="Soma de todas as reproduções de Reels, Feed e Stories no período." />
+                </h4>
                 <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '2px', marginBottom: 0 }}>Total de reproduções (Reels, Feed e Stories)</p>
               </div>
               <button
@@ -4960,7 +4966,10 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
               gap: '12px'
             }}>
               <div>
-                <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#111827' }}>Interações</h4>
+                <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#111827' }}>
+                  Interações
+                  <InfoTooltip text="Soma de curtidas, comentários, salvamentos e compartilhamentos." />
+                </h4>
                 <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '2px', marginBottom: 0 }}>Total de engajamento do público</p>
               </div>
               <button
@@ -5072,7 +5081,10 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
           <section className="ig-card-white ig-analytics-card">
             <div className="ig-analytics-card__header">
               <div>
-                <h4>Quantidade de publicações por dia</h4>
+                <h4>
+                  Quantidade de publicações por dia
+                  <InfoTooltip text="Calendário visual mostrando quantas publicações foram feitas em cada dia do mês." />
+                </h4>
                 <span className="ig-calendar__month">{postCalendar.title}</span>
               </div>
               <select
@@ -5123,7 +5135,10 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
 
           <section className="ig-card-white ig-analytics-card">
             <div className="ig-analytics-card__header">
-              <h4>Top cidades</h4>
+              <h4>
+                Top cidades
+                <InfoTooltip text="Cidades com maior número de seguidores ou público alcançado." />
+              </h4>
             </div>
             {audienceCities.length ? (
               <div className="ig-top-cities-content">
@@ -5200,7 +5215,10 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
         <div className="ig-analytics-grid ig-analytics-grid--stack">
           <section className="ig-card-white ig-analytics-card ig-analytics-card--large">
             <div className="ig-analytics-card__header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-              <h4 style={{ margin: 0 }}>Palavras chaves mais comentadas</h4>
+              <h4 style={{ margin: 0 }}>
+                Palavras chaves mais comentadas
+                <InfoTooltip text="Palavras mais frequentes nos comentários das publicações." />
+              </h4>
               {commentsCount !== null && (
                 <div style={{
                   display: 'flex',
@@ -5237,7 +5255,10 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
           </section>
           <section className="ig-card-white ig-analytics-card ig-analytics-card--large">
             <div className="ig-analytics-card__header">
-              <h4>Hashtags mais usadas</h4>
+              <h4>
+                Hashtags mais usadas
+                <InfoTooltip text="Hashtags que aparecem com maior frequência nas publicações." />
+              </h4>
             </div>
             <div className="ig-analytics-card__body">
               <ResponsiveContainer width="100%" height={320}>

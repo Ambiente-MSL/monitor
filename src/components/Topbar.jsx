@@ -165,7 +165,6 @@ export default function Topbar({
 
           <div className="topbar__account">
             <AccountSelect />
-            <InfoTooltip text="Selecione qual Página/conta de Instagram deseja analisar." />
           </div>
           <button
             type="button"
