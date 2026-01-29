@@ -12439,7 +12439,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
+  gap: 8px;
   margin-top: 20px;
   padding-top: 16px;
   border-top: 1px solid var(--border-color);
@@ -12469,12 +12469,64 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   opacity: 0.4;
 }
 
-.ig-word-detail-pagination__info {
+.ig-word-detail-pagination__arrow {
+  flex-shrink: 0;
+}
+
+.ig-word-detail-pagination__pages {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ig-word-detail-pagination__page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ig-word-detail-pagination__page:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--bg-card) 94%, var(--text-primary) 6%);
+  border-color: color-mix(in oklab, var(--border-color) 60%, var(--text-primary) 40%);
+}
+
+.ig-word-detail-pagination__page--active {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  border-color: transparent;
+  color: white;
+  font-weight: 600;
+}
+
+.ig-word-detail-pagination__page--active:hover:not(:disabled) {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  border-color: transparent;
+}
+
+.ig-word-detail-pagination__ellipsis {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.ig-word-detail-pagination__loading {
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--text-secondary);
-  min-width: 120px;
-  text-align: center;
+  padding: 0 12px;
 }
 
 @media (max-width: 720px) {
@@ -12502,11 +12554,16 @@ body:has(.facebook-dashboard--clean) .app-main__content {
     font-size: 0.9rem;
   }
   .ig-word-detail-pagination {
-    gap: 12px;
+    gap: 6px;
   }
-  .ig-word-detail-pagination__info {
+  .ig-word-detail-pagination__page {
+    min-width: 32px;
+    height: 32px;
     font-size: 0.8rem;
-    min-width: 100px;
+  }
+  .ig-word-detail-pagination__btn {
+    width: 32px;
+    height: 32px;
   }
 }
 

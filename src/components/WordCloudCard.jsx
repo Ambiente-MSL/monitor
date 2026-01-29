@@ -265,6 +265,75 @@ export default function WordCloudCard({
     }
   };
 
+  const handleGoToPage = async (page) => {
+    if (detailsLoadingMore || page === currentPage) return;
+    if (page <= totalLoadedPages) {
+      setCurrentPage(page);
+    } else if (page <= totalServerPages) {
+      // Precisamos carregar mais dados antes de ir para essa página
+      const neededComments = page * COMMENTS_PER_PAGE;
+      const currentCount = Array.isArray(details?.comments) ? details.comments.length : 0;
+      if (neededComments > currentCount && hasMoreDetails) {
+        setDetailsLoadingMore(true);
+        try {
+          const payload = await fetchWordDetails(selectedWord, currentCount);
+          const nextComments = Array.isArray(payload?.comments) ? payload.comments : [];
+          setDetails((prev) => {
+            if (!prev) return payload;
+            const merged = Array.isArray(prev.comments) ? [...prev.comments, ...nextComments] : nextComments;
+            return {
+              ...prev,
+              comments: merged,
+              total_comments: payload?.total_comments ?? prev.total_comments,
+              total_occurrences: payload?.total_occurrences ?? prev.total_occurrences,
+            };
+          });
+          setCurrentPage(page);
+        } catch (err) {
+          setDetailsError(err?.message || "Falha ao carregar comentarios.");
+        } finally {
+          setDetailsLoadingMore(false);
+        }
+      }
+    }
+  };
+
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisible = 5;
+
+    if (totalServerPages <= maxVisible) {
+      for (let i = 1; i <= totalServerPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= Math.min(maxVisible, totalServerPages); i++) {
+          pages.push(i);
+        }
+        if (totalServerPages > maxVisible) {
+          pages.push('...');
+          pages.push(totalServerPages);
+        }
+      } else if (currentPage >= totalServerPages - 2) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalServerPages - maxVisible + 1; i <= totalServerPages; i++) {
+          if (i > 1) pages.push(i);
+        }
+      } else {
+        pages.push(1);
+        pages.push('...');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalServerPages);
+      }
+    }
+    return pages;
+  };
+
   if (!igUserId) {
     return (
       <DataState
@@ -452,7 +521,7 @@ export default function WordCloudCard({
                     <div className="ig-word-detail-pagination">
                       <button
                         type="button"
-                        className="ig-word-detail-pagination__btn"
+                        className="ig-word-detail-pagination__btn ig-word-detail-pagination__arrow"
                         onClick={handlePrevPage}
                         disabled={!canGoPrev || detailsLoadingMore}
                         aria-label="Página anterior"
@@ -461,16 +530,30 @@ export default function WordCloudCard({
                           <polyline points="15 18 9 12 15 6" />
                         </svg>
                       </button>
-                      <span className="ig-word-detail-pagination__info">
+                      <div className="ig-word-detail-pagination__pages">
                         {detailsLoadingMore ? (
-                          "Carregando..."
+                          <span className="ig-word-detail-pagination__loading">Carregando...</span>
                         ) : (
-                          <>Página {currentPage} de {totalServerPages}</>
+                          getPageNumbers().map((page, index) => (
+                            page === '...' ? (
+                              <span key={`ellipsis-${index}`} className="ig-word-detail-pagination__ellipsis">...</span>
+                            ) : (
+                              <button
+                                key={page}
+                                type="button"
+                                className={`ig-word-detail-pagination__page ${currentPage === page ? 'ig-word-detail-pagination__page--active' : ''}`}
+                                onClick={() => handleGoToPage(page)}
+                                disabled={detailsLoadingMore}
+                              >
+                                {page}
+                              </button>
+                            )
+                          ))
                         )}
-                      </span>
+                      </div>
                       <button
                         type="button"
-                        className="ig-word-detail-pagination__btn"
+                        className="ig-word-detail-pagination__btn ig-word-detail-pagination__arrow"
                         onClick={handleNextPage}
                         disabled={!canGoNext || detailsLoadingMore}
                         aria-label="Próxima página"
