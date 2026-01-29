@@ -12240,13 +12240,11 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .ig-word-detail-modal__content {
   position: relative;
   width: min(880px, 100%);
-  max-height: min(80vh, 720px);
   background: var(--bg-card);
   border-radius: 18px;
   box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
   z-index: 1;
 }
 
@@ -12293,7 +12291,6 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 
 .ig-word-detail-modal__body {
   padding: 20px 24px;
-  overflow-y: auto;
 }
 
 .ig-word-detail-list {
@@ -12483,9 +12480,6 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 @media (max-width: 720px) {
   .ig-word-detail-modal {
     padding: 12px;
-  }
-  .ig-word-detail-modal__content {
-    max-height: 90vh;
   }
   .ig-word-detail-modal__header {
     padding: 16px;
