@@ -32,6 +32,9 @@ REQUEST_TIMEOUT = 30  # segundos
 MAX_RETRIES = 3
 IG_POSTS_MEM_CACHE_TTL_SEC = int(os.getenv("IG_POSTS_MEM_CACHE_TTL_SEC", "1800"))
 IG_POSTS_MEM_CACHE: Dict[str, Dict[str, Any]] = {}
+FB_POST_INSIGHTS_MAX_DAYS = int(os.getenv("FB_POST_INSIGHTS_MAX_DAYS", "90"))
+FB_POST_INSIGHTS_MAX_POSTS = int(os.getenv("FB_POST_INSIGHTS_MAX_POSTS", "200"))
+FB_POST_INSIGHTS_MAX_PAGES = int(os.getenv("FB_POST_INSIGHTS_MAX_PAGES", "6"))
 IG_AUDIENCE_TIMEFRAME_DEFAULT = os.getenv("IG_AUDIENCE_TIMEFRAME", "this_week")
 IG_AUDIENCE_TIMEFRAME_ALIASES = {
     "last_7_days": "this_week",
@@ -415,6 +418,9 @@ def extract_dimension_time_series(
 
 def fb_page_window(page_id: str, since: int, until: int):
     page_token = get_page_access_token(page_id)
+    period_seconds = max(0, int(until - since))
+    period_days = period_seconds / 86400 if period_seconds else 0
+    include_post_insights = period_days <= FB_POST_INSIGHTS_MAX_DAYS
 
     # Métricas básicas (pode não retornar todas dependendo da revisão do app)
     basic_metrics = [
@@ -559,6 +565,8 @@ def fb_page_window(page_id: str, since: int, until: int):
     if video_views > 0 and video_view_time > 0:
         avg_watch_time = int(video_view_time / video_views)
 
+    fallback_reactions = int(optional_metrics.get("page_actions_post_reactions_total", 0) or 0)
+
     total_reac = 0
     total_com = 0
     total_sha = 0
@@ -569,67 +577,86 @@ def fb_page_window(page_id: str, since: int, until: int):
     post_sum_impressions = 0
     post_sum_reach = 0
     post_sum_engaged = 0
-    url = f"/{page_id}/posts"
-    post_insight_metrics = ["post_impressions", "post_impressions_unique", "post_engaged_users", "post_clicks"]
-    base_post_params = {
-        "since": since,
-        "until": until,
-        "limit": 50,
-        "fields": (
-            "id,created_time,permalink_url,"
-            "status_type,attachments{media_type},"
-            "reactions.summary(true).limit(0),comments.summary(true).limit(0),shares"
-        ),
-    }
-    page = gget(url, base_post_params, token=page_token)
-    while True:
-        for p_item in page.get("data", []):
-            reactions_count = int(((p_item.get("reactions") or {}).get("summary") or {}).get("total_count", 0) or 0)
-            comments_count = int(((p_item.get("comments") or {}).get("summary") or {}).get("total_count", 0) or 0)
-            shares_count = int((p_item.get("shares") or {}).get("count", 0) or 0)
+    posts_scanned = 0
+    post_metrics_truncated = False
 
-            total_reac += reactions_count
-            total_com += comments_count
-            total_sha += shares_count
+    if include_post_insights:
+        url = f"/{page_id}/posts"
+        post_insight_metrics = ["post_impressions", "post_impressions_unique", "post_engaged_users", "post_clicks"]
+        base_post_params = {
+            "since": since,
+            "until": until,
+            "limit": 50,
+            "fields": (
+                "id,created_time,permalink_url,"
+                "status_type,attachments{media_type},"
+                "reactions.summary(true).limit(0),comments.summary(true).limit(0),shares"
+            ),
+        }
+        page = gget(url, base_post_params, token=page_token)
+        pages_seen = 0
+        while True:
+            pages_seen += 1
+            for p_item in page.get("data", []):
+                if FB_POST_INSIGHTS_MAX_POSTS and posts_scanned >= FB_POST_INSIGHTS_MAX_POSTS:
+                    post_metrics_truncated = True
+                    break
+                posts_scanned += 1
+                reactions_count = int(((p_item.get("reactions") or {}).get("summary") or {}).get("total_count", 0) or 0)
+                comments_count = int(((p_item.get("comments") or {}).get("summary") or {}).get("total_count", 0) or 0)
+                shares_count = int((p_item.get("shares") or {}).get("count", 0) or 0)
 
-            attachments = ((p_item.get("attachments") or {}).get("data") or [])[:]
-            status_type = str(p_item.get("status_type") or "").lower()
-            is_video_post = any(
-                isinstance(att, dict) and str(att.get("media_type", "")).lower().startswith("video")
-                for att in attachments
-            ) or ("video" in status_type)
-            if is_video_post:
-                video_reac += reactions_count
-                video_com += comments_count
-                video_sha += shares_count
-            try:
-                post_insights = gget(
-                    f"/{p_item.get('id')}/insights",
-                    {"metric": ",".join(post_insight_metrics)},
-                    token=page_token,
-                )
-            except MetaAPIError:
-                post_insights = {"data": []}
-            ins_values = post_insights.get("data", [])
-            clicks_value = insight_value_from_list(ins_values, "post_clicks")
-            impressions_value = insight_value_from_list(ins_values, "post_impressions")
-            reach_value = insight_value_from_list(ins_values, "post_impressions_unique")
-            engaged_value = insight_value_from_list(ins_values, "post_engaged_users")
-            if clicks_value:
-                total_clicks += int(round(clicks_value))
-            if impressions_value:
-                post_sum_impressions += int(round(impressions_value))
-            if reach_value:
-                post_sum_reach += int(round(reach_value))
-            if engaged_value:
-                post_sum_engaged += int(round(engaged_value))
-        paging = page.get("paging") or {}
-        cursor_after = (paging.get("cursors") or {}).get("after")
-        if not cursor_after:
-            break
-        next_params = dict(base_post_params)
-        next_params["after"] = cursor_after
-        page = gget(url, next_params, token=page_token)
+                total_reac += reactions_count
+                total_com += comments_count
+                total_sha += shares_count
+
+                attachments = ((p_item.get("attachments") or {}).get("data") or [])[:]
+                status_type = str(p_item.get("status_type") or "").lower()
+                is_video_post = any(
+                    isinstance(att, dict) and str(att.get("media_type", "")).lower().startswith("video")
+                    for att in attachments
+                ) or ("video" in status_type)
+                if is_video_post:
+                    video_reac += reactions_count
+                    video_com += comments_count
+                    video_sha += shares_count
+                try:
+                    post_insights = gget(
+                        f"/{p_item.get('id')}/insights",
+                        {"metric": ",".join(post_insight_metrics)},
+                        token=page_token,
+                    )
+                except MetaAPIError:
+                    post_insights = {"data": []}
+                ins_values = post_insights.get("data", [])
+                clicks_value = insight_value_from_list(ins_values, "post_clicks")
+                impressions_value = insight_value_from_list(ins_values, "post_impressions")
+                reach_value = insight_value_from_list(ins_values, "post_impressions_unique")
+                engaged_value = insight_value_from_list(ins_values, "post_engaged_users")
+                if clicks_value:
+                    total_clicks += int(round(clicks_value))
+                if impressions_value:
+                    post_sum_impressions += int(round(impressions_value))
+                if reach_value:
+                    post_sum_reach += int(round(reach_value))
+                if engaged_value:
+                    post_sum_engaged += int(round(engaged_value))
+
+            if post_metrics_truncated:
+                break
+            if FB_POST_INSIGHTS_MAX_PAGES and pages_seen >= FB_POST_INSIGHTS_MAX_PAGES:
+                post_metrics_truncated = True
+                break
+            paging = page.get("paging") or {}
+            cursor_after = (paging.get("cursors") or {}).get("after")
+            if not cursor_after:
+                break
+            next_params = dict(base_post_params)
+            next_params["after"] = cursor_after
+            page = gget(url, next_params, token=page_token)
+    else:
+        total_reac = fallback_reactions
+        post_metrics_truncated = True
 
     if impressions <= 0 and post_sum_impressions > 0:
         impressions = post_sum_impressions
@@ -638,7 +665,7 @@ def fb_page_window(page_id: str, since: int, until: int):
     if engaged <= 0 and post_sum_engaged > 0:
         engaged = post_sum_engaged
 
-    engagement_total = total_reac + total_com + total_sha
+    engagement_total = total_reac + total_com + total_sha if include_post_insights else (engaged or total_reac)
     video_metrics = fetch_page_video_metrics(page_id, page_token, since, until)
     if video_views_3s is not None:
         video_metrics.setdefault("views_3s", video_views_3s)
@@ -676,6 +703,15 @@ def fb_page_window(page_id: str, since: int, until: int):
     except MetaAPIError:
         pass
 
+    post_metrics = {
+        "included": include_post_insights,
+        "max_days": FB_POST_INSIGHTS_MAX_DAYS,
+        "max_posts": FB_POST_INSIGHTS_MAX_POSTS if include_post_insights else 0,
+        "max_pages": FB_POST_INSIGHTS_MAX_PAGES if include_post_insights else 0,
+        "posts_scanned": posts_scanned,
+        "truncated": post_metrics_truncated,
+    }
+
     return {
         "impressions": impressions,
         "reach": reach,
@@ -707,6 +743,7 @@ def fb_page_window(page_id: str, since: int, until: int):
         },
         "net_followers_series": net_followers_series,
         "reach_timeseries": reach_timeseries,
+        "post_metrics": post_metrics,
     }
 
 
