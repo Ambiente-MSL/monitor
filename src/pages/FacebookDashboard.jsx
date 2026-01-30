@@ -18,6 +18,7 @@ import {
   LineChart,
   ReferenceDot,
   ReferenceLine,
+  Sector,
 } from "recharts";
 import {
   BarChart3,
@@ -150,6 +151,25 @@ const toUtcDateString = (date) => {
   const month = String(date.getUTCMonth() + 1).padStart(2, "0");
   const day = String(date.getUTCDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+};
+
+const renderActiveEngagementShape = (props) => {
+  const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
+
+  return (
+    <g>
+      <Sector
+        cx={cx}
+        cy={cy}
+        innerRadius={innerRadius}
+        outerRadius={outerRadius + 10}
+        startAngle={startAngle}
+        endAngle={endAngle}
+        fill={fill}
+        style={{ filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15))', transition: 'all 0.3s ease' }}
+      />
+    </g>
+  );
 };
 
 export default function FacebookDashboard() {
@@ -296,6 +316,7 @@ useEffect(() => {
   );
 
   const [overviewSync, setOverviewSync] = useState(() => normalizeSyncInfo(null));
+  const [activeEngagementIndex, setActiveEngagementIndex] = useState(-1);
 
   useEffect(() => {
     if (!setTopbarConfig) return undefined;
@@ -1160,7 +1181,7 @@ useEffect(() => {
                 <div className="ig-profile-vertical__divider" />
 
                 <div className="ig-profile-vertical__engagement">
-                  <h4>Engajamento por Conteúdo</h4>
+                  <h4>Engajamento por conteúdo</h4>
                   {overviewIsLoading ? (
                     <DataState state="loading" label="Carregando engajamento..." size="sm" />
                   ) : pageError ? (
@@ -1168,16 +1189,20 @@ useEffect(() => {
                   ) : engagementBreakdown.length ? (
                     <>
                       <div className="ig-profile-vertical__engagement-chart">
-                        <ResponsiveContainer width="100%" height={220}>
+                        <ResponsiveContainer width="100%" height={240}>
                           <PieChart>
                             <Pie
                               data={engagementBreakdown}
                               dataKey="value"
                               nameKey="name"
-                              innerRadius={55}
-                              outerRadius={85}
+                              innerRadius={60}
+                              outerRadius={90}
                               paddingAngle={3}
                               stroke="none"
+                              activeIndex={activeEngagementIndex}
+                              activeShape={renderActiveEngagementShape}
+                              onMouseEnter={(_, index) => setActiveEngagementIndex(index)}
+                              onMouseLeave={() => setActiveEngagementIndex(-1)}
                             >
                               <Cell fill="#3b82f6" />
                               <Cell fill="#fbbf24" />
