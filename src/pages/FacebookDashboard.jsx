@@ -901,7 +901,7 @@ useEffect(() => {
           const parsedDate = dateStr ? new Date(`${dateStr}T00:00:00`) : new Date();
           const adds = extractNumber(entry.adds, 0);
           const removes = extractNumber(entry.removes, 0);
-          const net = extractNumber(entry.net, adds - removes);
+          const net = extractNumber(entry.net ?? entry.value, adds - removes);
           return {
             dateKey: dateStr,
             label: SHORT_DATE_FORMATTER.format(parsedDate),
@@ -1389,78 +1389,71 @@ useEffect(() => {
               </header>
 
               <div className="ig-chart-area">
-                <ResponsiveContainer width="100%" height={240}>
-                  <ComposedChart
-                    data={[
-                      { date: '01/01', value: 64950, label: '01 de janeiro' },
-                      { date: '02/01', value: 64980, label: '02 de janeiro' },
-                      { date: '03/01', value: 65020, label: '03 de janeiro' },
-                      { date: '04/01', value: 65010, label: '04 de janeiro' },
-                      { date: '05/01', value: 65045, label: '05 de janeiro' },
-                      { date: '06/01', value: 65090, label: '06 de janeiro' },
-                      { date: '07/01', value: 65110, label: '07 de janeiro' },
-                      { date: '08/01', value: 65130, label: '08 de janeiro' },
-                      { date: '09/01', value: 65165, label: '09 de janeiro' },
-                      { date: '10/01', value: 65180, label: '10 de janeiro' },
-                      { date: '11/01', value: 65200, label: '11 de janeiro' },
-                      { date: '12/01', value: 65225, label: '12 de janeiro' },
-                      { date: '13/01', value: 65250, label: '13 de janeiro' },
-                    ]}
-                    margin={{ top: 16, right: 28, left: 12, bottom: 8 }}
-                  >
-                    <defs>
-                      <linearGradient id="fbFollowersAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#1877F2" stopOpacity={0.3} />
-                        <stop offset="100%" stopColor="#1877F2" stopOpacity={0.05} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#f3f4f6" />
-                    <XAxis
-                      dataKey="date"
-                      tick={{ fill: '#6b7280', fontSize: 11 }}
-                      tickLine={false}
-                      axisLine={{ stroke: '#e5e7eb' }}
-                      minTickGap={30}
-                      interval="preserveStartEnd"
-                      tickFormatter={formatAxisDate}
-                    />
-                    <YAxis
-                      tick={{ fill: '#6b7280', fontSize: 11 }}
-                      tickLine={false}
-                      axisLine={{ stroke: '#e5e7eb' }}
-                      tickFormatter={(val) => formatCompactNumber(val)}
-                      domain={['dataMin - 50', 'dataMax + 50']}
-                    />
-                    <Tooltip
-                      cursor={{ stroke: '#1877F2', strokeWidth: 1, strokeDasharray: '4 4' }}
-                      content={(props) => {
-                        const labelValue = props?.payload?.[0]?.payload?.label || props?.label || "";
-                        return (
-                          <CustomChartTooltip
-                            {...props}
-                            labelFormatter={() => labelValue}
-                            labelMap={{ value: "Seguidores" }}
-                            valueFormatter={formatTooltipNumber}
-                          />
-                        );
-                      }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="value"
-                      fill="url(#fbFollowersAreaGradient)"
-                      stroke="none"
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="value"
-                      stroke="#1877F2"
-                      strokeWidth={3}
-                      dot={{ fill: '#ffffff', stroke: '#1877F2', strokeWidth: 2, r: 4 }}
-                      activeDot={{ r: 6, fill: '#ffffff', stroke: '#1877F2', strokeWidth: 3 }}
-                    />
-                  </ComposedChart>
-                </ResponsiveContainer>
+                {followerGrowthSeries.length ? (
+                  <ResponsiveContainer width="100%" height={240}>
+                    <ComposedChart
+                      data={followerGrowthSeries}
+                      margin={{ top: 16, right: 28, left: 12, bottom: 8 }}
+                    >
+                      <defs>
+                        <linearGradient id="fbFollowersAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#1877F2" stopOpacity={0.3} />
+                          <stop offset="100%" stopColor="#1877F2" stopOpacity={0.05} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#f3f4f6" />
+                      <XAxis
+                        dataKey="label"
+                        tick={{ fill: '#6b7280', fontSize: 11 }}
+                        tickLine={false}
+                        axisLine={{ stroke: '#e5e7eb' }}
+                        minTickGap={30}
+                        interval="preserveStartEnd"
+                        tickFormatter={formatAxisDate}
+                      />
+                      <YAxis
+                        tick={{ fill: '#6b7280', fontSize: 11 }}
+                        tickLine={false}
+                        axisLine={{ stroke: '#e5e7eb' }}
+                        tickFormatter={(val) => formatCompactNumber(val)}
+                        domain={['dataMin - 50', 'dataMax + 50']}
+                      />
+                      <Tooltip
+                        cursor={{ stroke: '#1877F2', strokeWidth: 1, strokeDasharray: '4 4' }}
+                        content={(props) => {
+                          if (!props?.active || !props?.payload?.length) return null;
+                          const tooltipDate = props?.payload?.[0]?.payload?.tooltipDate || props?.label || "";
+                          return (
+                            <CustomChartTooltip
+                              {...props}
+                              labelFormatter={() => tooltipDate}
+                              labelMap={{ value: "Crescimento líquido" }}
+                              valueFormatter={formatTooltipNumber}
+                            />
+                          );
+                        }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="value"
+                        fill="url(#fbFollowersAreaGradient)"
+                        stroke="none"
+                        isAnimationActive={false}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="value"
+                        stroke="#1877F2"
+                        strokeWidth={3}
+                        dot={{ fill: '#ffffff', stroke: '#1877F2', strokeWidth: 2, r: 4 }}
+                        activeDot={{ r: 6, fill: '#ffffff', stroke: '#1877F2', strokeWidth: 3 }}
+                        isAnimationActive={false}
+                      />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="ig-empty-state">Sem dados disponÃ­veis</div>
+                )}
               </div>
             </section>
 
