@@ -245,6 +245,10 @@ WORDCLOUD_MAX_TOP = 250
 WORDCLOUD_MAX_RANGE_DAYS = 365
 COMMENTS_INGEST_DEFAULT_DAYS = 30
 COMMENTS_SEARCH_MAX_LIMIT = 200
+FB_WORDCLOUD_MAX_POSTS = int(os.getenv("FB_WORDCLOUD_MAX_POSTS", "120"))
+FB_WORDCLOUD_MAX_COMMENTS = int(os.getenv("FB_WORDCLOUD_MAX_COMMENTS", "4000"))
+FB_WORDCLOUD_POST_LIMIT = int(os.getenv("FB_WORDCLOUD_POST_LIMIT", "50"))
+FB_WORDCLOUD_COMMENT_LIMIT = int(os.getenv("FB_WORDCLOUD_COMMENT_LIMIT", "50"))
 WORDCLOUD_MIN_TOKEN_LEN = 3
 WORDCLOUD_STOPWORDS = {
     "a", "as", "o", "os", "um", "uma", "uns", "umas",
@@ -651,6 +655,99 @@ def tokenize_wordcloud_text(text: str) -> List[str]:
         if sanitized:
             words.append(sanitized)
     return words
+
+
+def _parse_graph_timestamp(value: Any) -> Optional[datetime]:
+    if not value:
+        return None
+    candidate = str(value).replace("Z", "+00:00")
+    if len(candidate) > 5 and candidate[-5] in {"+", "-"} and ":" not in candidate[-5:]:
+        candidate = f"{candidate[:-2]}:{candidate[-2:]}"
+    try:
+        parsed = datetime.fromisoformat(candidate)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def fetch_facebook_comments_for_wordcloud(
+    page_id: str,
+    since_dt: datetime,
+    until_dt: datetime,
+) -> Dict[str, Any]:
+    token = get_page_access_token(page_id)
+    since_ts = int(since_dt.timestamp())
+    until_ts = int(until_dt.timestamp())
+    comments: List[Dict[str, Any]] = []
+    posts_scanned = 0
+    comments_scanned = 0
+    truncated = False
+    after: Optional[str] = None
+
+    while True:
+        params = {
+            "limit": FB_WORDCLOUD_POST_LIMIT,
+            "fields": (
+                "id,created_time,"
+                f"comments.limit({FB_WORDCLOUD_COMMENT_LIMIT}){{id,message,created_time,from,like_count}}"
+            ),
+            "since": since_ts,
+            "until": until_ts,
+        }
+        if after:
+            params["after"] = after
+
+        payload = gget(f"/{page_id}/posts", params=params, token=token)
+        data = payload.get("data") or []
+        if not isinstance(data, list) or not data:
+            break
+
+        for post in data:
+            posts_scanned += 1
+            comments_edge = (post.get("comments") or {}).get("data") or []
+            for comment in comments_edge:
+                created_at = _parse_graph_timestamp(comment.get("created_time"))
+                if created_at and (created_at < since_dt or created_at > until_dt):
+                    continue
+                text = str(comment.get("message") or "").strip()
+                if not text:
+                    continue
+                comments.append({
+                    "id": comment.get("id"),
+                    "text": text,
+                    "timestamp": created_at.isoformat() if created_at else None,
+                    "username": ((comment.get("from") or {}).get("name") or ""),
+                    "like_count": int(comment.get("like_count") or 0),
+                })
+                comments_scanned += 1
+                if comments_scanned >= FB_WORDCLOUD_MAX_COMMENTS:
+                    truncated = True
+                    break
+
+            if comments_scanned >= FB_WORDCLOUD_MAX_COMMENTS or posts_scanned >= FB_WORDCLOUD_MAX_POSTS:
+                if posts_scanned >= FB_WORDCLOUD_MAX_POSTS:
+                    truncated = True
+                break
+
+        if comments_scanned >= FB_WORDCLOUD_MAX_COMMENTS or posts_scanned >= FB_WORDCLOUD_MAX_POSTS:
+            break
+
+        paging = payload.get("paging") or {}
+        cursors = paging.get("cursors") or {}
+        after = cursors.get("after")
+        if not after:
+            break
+
+    return {
+        "comments": comments,
+        "meta": {
+            "posts_scanned": posts_scanned,
+            "comments_scanned": comments_scanned,
+            "truncated": truncated,
+        },
+    }
 
 
 def fetch_comments_for_wordcloud(
@@ -4664,6 +4761,172 @@ def instagram_comments_search():
         "limit": limit,
         "offset": offset,
         "comments": sliced,
+    })
+
+
+@app.get("/api/facebook/comments/wordcloud")
+def facebook_comments_wordcloud():
+    page_id = request.args.get("pageId", PAGE_ID)
+    if not page_id:
+        return jsonify({"error": "META_PAGE_ID is not configured"}), 500
+
+    top_param = request.args.get("top")
+    top_n = WORDCLOUD_DEFAULT_TOP
+    if top_param is not None:
+        try:
+            top_n = int(top_param)
+        except ValueError:
+            return jsonify({"error": "top must be an integer"}), 400
+        top_n = max(1, min(WORDCLOUD_MAX_TOP, top_n))
+
+    today_utc = datetime.now(timezone.utc).date()
+    default_since = today_utc - timedelta(days=COMMENTS_INGEST_DEFAULT_DAYS)
+
+    since_param = request.args.get("since")
+    until_param = request.args.get("until")
+
+    try:
+        since_date = _parse_date_param(since_param) if since_param else default_since
+    except ValueError:
+        return jsonify({"error": "since must be in YYYY-MM-DD format"}), 400
+    try:
+        until_date = _parse_date_param(until_param) if until_param else today_utc
+    except ValueError:
+        return jsonify({"error": "until must be in YYYY-MM-DD format"}), 400
+
+    if since_date > until_date:
+        return jsonify({"error": "since cannot be after until"}), 400
+
+    span_days = (until_date - since_date).days
+    if span_days > WORDCLOUD_MAX_RANGE_DAYS:
+        since_date = until_date - timedelta(days=WORDCLOUD_MAX_RANGE_DAYS)
+
+    since_dt = datetime.combine(since_date, datetime.min.time()).replace(tzinfo=timezone.utc)
+    until_dt = datetime.combine(until_date, datetime.max.time()).replace(tzinfo=timezone.utc)
+
+    try:
+        payload = fetch_facebook_comments_for_wordcloud(page_id, since_dt, until_dt)
+        comments = payload.get("comments") or []
+        meta = payload.get("meta") or {}
+        counter: Counter[str] = Counter()
+        for comment in comments:
+            tokens = tokenize_wordcloud_text(str(comment.get("text") or ""))
+            if tokens:
+                counter.update(tokens)
+    except MetaAPIError as err:
+        return meta_error_response(err)
+    except Exception as err:  # noqa: BLE001
+        logger.exception("Failed to fetch Facebook comments for wordcloud")
+        return jsonify({"error": str(err)}), 500
+
+    words_payload = [
+        {"word": word, "count": count}
+        for word, count in counter.most_common(top_n)
+    ]
+
+    response = {
+        "pageId": page_id,
+        "since": since_date.isoformat(),
+        "until": until_date.isoformat(),
+        "total_comments": len(comments),
+        "words": words_payload,
+        "meta": meta,
+    }
+    return jsonify(response)
+
+
+@app.get("/api/facebook/comments/search")
+def facebook_comments_search():
+    page_id = request.args.get("pageId", PAGE_ID)
+    if not page_id:
+        return jsonify({"error": "META_PAGE_ID is not configured"}), 500
+
+    raw_word = request.args.get("word") or request.args.get("q") or ""
+    sanitized_word = sanitize_wordcloud_token(raw_word)
+    if not sanitized_word:
+        return jsonify({"error": "word is required"}), 400
+
+    today_utc = datetime.now(timezone.utc).date()
+    default_since = today_utc - timedelta(days=COMMENTS_INGEST_DEFAULT_DAYS)
+
+    since_param = request.args.get("since")
+    until_param = request.args.get("until")
+
+    try:
+        since_date = _parse_date_param(since_param) if since_param else default_since
+    except ValueError:
+        return jsonify({"error": "since must be in YYYY-MM-DD format"}), 400
+    try:
+        until_date = _parse_date_param(until_param) if until_param else today_utc
+    except ValueError:
+        return jsonify({"error": "until must be in YYYY-MM-DD format"}), 400
+
+    if since_date > until_date:
+        return jsonify({"error": "since cannot be after until"}), 400
+
+    span_days = (until_date - since_date).days
+    if span_days > WORDCLOUD_MAX_RANGE_DAYS:
+        since_date = until_date - timedelta(days=WORDCLOUD_MAX_RANGE_DAYS)
+
+    limit_param = request.args.get("limit")
+    offset_param = request.args.get("offset")
+    try:
+        limit = int(limit_param) if limit_param is not None else 50
+    except ValueError:
+        return jsonify({"error": "limit must be an integer"}), 400
+    try:
+        offset = int(offset_param) if offset_param is not None else 0
+    except ValueError:
+        return jsonify({"error": "offset must be an integer"}), 400
+    limit = max(1, min(COMMENTS_SEARCH_MAX_LIMIT, limit))
+    offset = max(0, offset)
+
+    since_dt = datetime.combine(since_date, datetime.min.time()).replace(tzinfo=timezone.utc)
+    until_dt = datetime.combine(until_date, datetime.max.time()).replace(tzinfo=timezone.utc)
+
+    try:
+        payload = fetch_facebook_comments_for_wordcloud(page_id, since_dt, until_dt)
+        comments = payload.get("comments") or []
+        meta = payload.get("meta") or {}
+        matches: List[Dict[str, Any]] = []
+        total_occurrences = 0
+        for comment in comments:
+            text = str(comment.get("text") or "")
+            tokens = tokenize_wordcloud_text(text)
+            if not tokens:
+                continue
+            occurrences = sum(1 for token in tokens if token == sanitized_word)
+            if occurrences <= 0:
+                continue
+            total_occurrences += occurrences
+            matches.append({
+                "id": comment.get("id"),
+                "text": text,
+                "timestamp": comment.get("timestamp"),
+                "username": comment.get("username"),
+                "like_count": comment.get("like_count") or 0,
+                "occurrences": occurrences,
+            })
+        matches.sort(key=lambda item: item.get("timestamp") or "", reverse=True)
+        total_comments = len(matches)
+        sliced = matches[offset: offset + limit]
+    except MetaAPIError as err:
+        return meta_error_response(err)
+    except Exception as err:  # noqa: BLE001
+        logger.exception("Failed to search Facebook comments for wordcloud")
+        return jsonify({"error": str(err)}), 500
+
+    return jsonify({
+        "pageId": page_id,
+        "word": sanitized_word,
+        "since": since_date.isoformat(),
+        "until": until_date.isoformat(),
+        "total_comments": total_comments,
+        "total_occurrences": total_occurrences,
+        "limit": limit,
+        "offset": offset,
+        "comments": sliced,
+        "meta": meta,
     })
 
 

@@ -43,6 +43,7 @@ import {
 } from "../lib/dashboardCache";
 import DataState from "../components/DataState";
 import CustomChartTooltip from "../components/CustomChartTooltip";
+import WordCloudCard from "../components/WordCloudCard";
 import { fetchWithTimeout, isTimeoutError } from "../lib/fetchWithTimeout";
 import { formatChartDate, formatCompactNumber, formatTooltipNumber } from "../lib/chartFormatters";
 import { normalizeSyncInfo } from "../lib/syncInfo";
@@ -141,6 +142,14 @@ const parseQueryDate = (value) => {
   const ms = numeric > 1_000_000_000_000 ? numeric : numeric * 1000;
   const date = new Date(ms);
   return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const toUtcDateString = (date) => {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return undefined;
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 };
 
 export default function FacebookDashboard() {
@@ -259,6 +268,8 @@ useEffect(() => {
       : startOfDay(subDays(until, DEFAULT_FACEBOOK_RANGE_DAYS - 1));
     return { since, until };
   }, [defaultEnd, sinceDate, untilDate]);
+  const sinceIso = useMemo(() => toUtcDateString(selectedRange.since), [selectedRange.since]);
+  const untilIso = useMemo(() => toUtcDateString(selectedRange.until), [selectedRange.until]);
 
   useEffect(() => {
     if (sinceParam && untilParam) return;
@@ -1859,27 +1870,15 @@ useEffect(() => {
               <h4>Palavras chaves mais comentadas</h4>
             </div>
             <div className="ig-analytics-card__body">
-              <div className="ig-word-cloud fb-word-cloud--large">
-                <span className="ig-word-cloud__word fb-word-cloud__word--xl" style={{ color: '#1877F2' }}>eventos</span>
-                <span className="ig-word-cloud__word fb-word-cloud__word--lg" style={{ color: '#0A66C2' }}>negócios</span>
-                <span className="ig-word-cloud__word fb-word-cloud__word--lg" style={{ color: '#42A5F5' }}>comunidade</span>
-                <span className="ig-word-cloud__word fb-word-cloud__word--md" style={{ color: '#1976D2' }}>produtos</span>
-                <span className="ig-word-cloud__word fb-word-cloud__word--md" style={{ color: '#0A66C2' }}>ofertas</span>
-                <span className="ig-word-cloud__word fb-word-cloud__word--sm" style={{ color: '#42A5F5' }}>promoção</span>
-                <span className="ig-word-cloud__word fb-word-cloud__word--md" style={{ color: '#1877F2' }}>família</span>
-                <span className="ig-word-cloud__word fb-word-cloud__word--sm" style={{ color: '#42A5F5' }}>vida</span>
-                <span className="ig-word-cloud__word fb-word-cloud__word--xl" style={{ color: '#0A66C2' }}>amigos</span>
-                <span className="ig-word-cloud__word fb-word-cloud__word--sm" style={{ color: '#1976D2' }}>grupo</span>
-                <span className="ig-word-cloud__word fb-word-cloud__word--md" style={{ color: '#1877F2' }}>curtir</span>
-                <span className="ig-word-cloud__word fb-word-cloud__word--lg" style={{ color: '#42A5F5' }}>compartilhar</span>
-                <span className="ig-word-cloud__word fb-word-cloud__word--sm" style={{ color: '#0A66C2' }}>seguir</span>
-                <span className="ig-word-cloud__word fb-word-cloud__word--md" style={{ color: '#1976D2' }}>página</span>
-                <span className="ig-word-cloud__word fb-word-cloud__word--sm" style={{ color: '#1877F2' }}>post</span>
-                <span className="ig-word-cloud__word fb-word-cloud__word--md" style={{ color: '#0A66C2' }}>conteúdo</span>
-                <span className="ig-word-cloud__word fb-word-cloud__word--sm" style={{ color: '#42A5F5' }}>notícias</span>
-                <span className="ig-word-cloud__word fb-word-cloud__word--lg" style={{ color: '#1877F2' }}>atualização</span>
-                <span className="ig-word-cloud__word fb-word-cloud__word--sm" style={{ color: '#1976D2' }}>novidade</span>
-              </div>
+              <WordCloudCard
+                apiBaseUrl={API_BASE_URL}
+                platform="facebook"
+                pageId={accountConfig?.facebookPageId}
+                since={sinceIso}
+                until={untilIso}
+                top={120}
+                showCommentsCount={false}
+              />
             </div>
           </section>
         </div>

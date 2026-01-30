@@ -76,7 +76,10 @@ const formatDetailDate = (value) => {
 
 export default function WordCloudCard({
   apiBaseUrl = "",
+  platform = "instagram",
   igUserId,
+  pageId,
+  accountId,
   since,
   until,
   top = 30,
@@ -85,6 +88,10 @@ export default function WordCloudCard({
   onWordClick = null,
   externalPanelMode = false,
 }) {
+  const resolvedPlatform = platform === "facebook" ? "facebook" : "instagram";
+  const resolvedAccountId = resolvedPlatform === "facebook"
+    ? (pageId || accountId)
+    : (igUserId || accountId);
   const sanitizedBaseUrl = useMemo(() => (apiBaseUrl || "").replace(/\/$/, ""), [apiBaseUrl]);
   const [loadingSlow, setLoadingSlow] = useState(false);
   const [selectedWord, setSelectedWord] = useState(null);
@@ -95,31 +102,33 @@ export default function WordCloudCard({
   const [currentPage, setCurrentPage] = useState(1);
 
   const requestKey = useMemo(() => {
-    if (!igUserId) return null;
-    const params = new URLSearchParams({ igUserId });
+    if (!resolvedAccountId) return null;
+    const accountParam = resolvedPlatform === "facebook" ? "pageId" : "igUserId";
+    const params = new URLSearchParams({ [accountParam]: resolvedAccountId });
     if (since) params.set("since", since);
     if (until) params.set("until", until);
     const limitedTop = Math.min(Math.max(top || 30, 1), 30);
     params.set("top", String(limitedTop));
-    const path = `/api/instagram/comments/wordcloud?${params.toString()}`;
+    const path = `/api/${resolvedPlatform}/comments/wordcloud?${params.toString()}`;
     return sanitizedBaseUrl ? `${sanitizedBaseUrl}${path}` : path;
-  }, [igUserId, since, until, top, sanitizedBaseUrl]);
+  }, [resolvedAccountId, resolvedPlatform, since, until, top, sanitizedBaseUrl]);
 
   useEffect(() => {
     setLoadingSlow(false);
   }, [requestKey]);
 
   const buildDetailsUrl = (word, offset = 0) => {
-    if (!igUserId || !word) return null;
+    if (!resolvedAccountId || !word) return null;
+    const accountParam = resolvedPlatform === "facebook" ? "pageId" : "igUserId";
     const params = new URLSearchParams({
-      igUserId,
+      [accountParam]: resolvedAccountId,
       word,
       limit: String(DETAILS_PAGE_SIZE),
       offset: String(offset),
     });
     if (since) params.set("since", since);
     if (until) params.set("until", until);
-    const path = `/api/instagram/comments/search?${params.toString()}`;
+    const path = `/api/${resolvedPlatform}/comments/search?${params.toString()}`;
     return sanitizedBaseUrl ? `${sanitizedBaseUrl}${path}` : path;
   };
 
@@ -174,7 +183,7 @@ export default function WordCloudCard({
     return () => {
       cancelled = true;
     };
-  }, [selectedWord, igUserId, since, until, sanitizedBaseUrl]);
+  }, [selectedWord, resolvedAccountId, resolvedPlatform, since, until, sanitizedBaseUrl]);
 
   useEffect(() => {
     if (!selectedWord) return undefined;
@@ -334,7 +343,7 @@ export default function WordCloudCard({
     return pages;
   };
 
-  if (!igUserId) {
+  if (!resolvedAccountId) {
     return (
       <DataState
         state="empty"
