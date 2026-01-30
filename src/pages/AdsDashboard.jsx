@@ -36,6 +36,12 @@ import {
   Settings,
   Shield,
   Info,
+  Heart,
+  MessageCircle,
+  Share2,
+  Bookmark,
+  Image,
+  Play,
 } from "lucide-react";
 import DataState from "../components/DataState";
 import CustomChartTooltip from "../components/CustomChartTooltip";
@@ -1289,13 +1295,13 @@ export default function AdsDashboard() {
                 className="ig-profile-vertical__cover"
                 style={{
                   background: 'linear-gradient(135deg, #002147 0%, #1e3a5f 50%, #002d52 100%)',
-                  minHeight: '80px',
+                  minHeight: '120px',
                   borderRadius: '16px 16px 0 0',
                 }}
               />
 
               {/* Avatar */}
-              <div className="ig-profile-vertical__avatar-wrapper" style={{ marginTop: '-40px' }}>
+              <div className="ig-profile-vertical__avatar-wrapper">
                 <div className="ig-profile-vertical__avatar">
                   {instagramProfileData?.profilePicture ? (
                     <img
@@ -1314,8 +1320,8 @@ export default function AdsDashboard() {
               </div>
 
               {/* Nome da conta */}
-              <div className="ig-profile-vertical__body" style={{ paddingTop: '8px', paddingBottom: '0' }}>
-                <h3 className="ig-profile-vertical__username" style={{ marginTop: '0', marginBottom: '12px' }}>
+              <div className="ig-profile-vertical__body">
+                <h3 className="ig-profile-vertical__username" style={{ marginTop: '-10px' }}>
                   {selectedAccount?.label || 'Conta de Anúncios'}
                 </h3>
               </div>
@@ -2188,10 +2194,10 @@ export default function AdsDashboard() {
                     onAction={adsFallbackProps.onAction}
                   />
                 ) : performanceSeries.length ? (
-                <ResponsiveContainer width="100%" height={performanceSeries.length > 15 ? 380 : 280}>
+                <ResponsiveContainer width="100%" height={240}>
                   <ComposedChart
                     data={performanceSeries}
-                    margin={{ top: 16, right: 16, bottom: performanceSeries.length > 15 ? 70 : 32, left: 0 }}
+                    margin={{ top: 16, right: 28, left: 12, bottom: 8 }}
                   >
                     <defs>
                       <linearGradient id="impressionsGradient" x1="0" y1="0" x2="0" y2="1">
@@ -2263,132 +2269,249 @@ export default function AdsDashboard() {
               </div>
             </section>
 
-            {/* 2.3 Investimento por cidade */}
+            {/* 2.3 Posts Recentes */}
             <section className="ig-growth-clean">
               <header className="ig-card-header">
                 <div>
-                  <h3>Investimento por cidade</h3>
-                  <p className="ig-card-subtitle">Distribuição dos investimentos por município</p>
+                  <h3>Posts recentes</h3>
+                  <p className="ig-card-subtitle">Últimas publicações da conta</p>
                 </div>
               </header>
 
-              <div style={{ marginTop: '24px' }}>
-                {shouldShowAdsFallback && adsFallbackProps ? (
-                  <DataState
-                    state={adsFallbackProps.state}
-                    label={adsFallbackProps.label}
-                    hint={adsFallbackProps.hint}
-                    size="sm"
-                    actionLabel={adsFallbackProps.actionLabel}
-                    onAction={adsFallbackProps.onAction}
-                  />
-                ) : spendByCity.length ? (
+              <div style={{ marginTop: '16px' }}>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                  gap: '16px'
+                }}>
+                  {/* Post 1 */}
                   <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                    gap: '24px',
-                    alignItems: 'start'
+                    background: 'white',
+                    borderRadius: '12px',
+                    border: '1px solid #e5e7eb',
+                    overflow: 'hidden',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
                   }}>
                     <div style={{
-                      background: 'white',
-                      borderRadius: '12px',
-                      padding: '20px',
-                      border: '1px solid #e5e7eb',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
+                      height: '160px',
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      position: 'relative'
                     }}>
-                      <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                        Top cidades
-                      </h4>
-                      <ResponsiveContainer width="100%" height={topCitiesHeight}>
-                        <BarChart data={topCities} layout="vertical" margin={{ left: 0, right: 10, top: 0, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
-                          <XAxis
-                            type="number"
-                            tick={{ fill: '#6b7280', fontSize: 11 }}
-                            axisLine={false}
-                            tickLine={false}
-                            tickFormatter={(value) => `R$ ${formatCompactNumber(value)}`}
-                          />
-                          <YAxis
-                            type="category"
-                            dataKey="name"
-                            tick={{ fill: '#374151', fontSize: 12, fontWeight: 600 }}
-                            width={110}
-                            axisLine={false}
-                            tickLine={false}
-                            tickFormatter={formatCityLabel}
-                          />
-                          <Tooltip
-                            cursor={{ fill: 'rgba(99, 102, 241, 0.08)' }}
-                            content={(
-                              <CustomChartTooltip
-                                labelFormatter={formatCityLabel}
-                                labelMap={{ value: "Investimento" }}
-                                valueFormatter={(value) => formatCurrency(Number(value))}
-                              />
-                            )}
-                          />
-                          <Bar dataKey="value" fill="#6366f1" radius={[0, 6, 6, 0]} barSize={14} />
-                        </BarChart>
-                      </ResponsiveContainer>
+                      <Image size={40} color="rgba(255,255,255,0.6)" />
+                      <span style={{
+                        position: 'absolute',
+                        top: '8px',
+                        right: '8px',
+                        background: 'rgba(0,0,0,0.5)',
+                        color: 'white',
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        fontSize: '11px',
+                        fontWeight: 600
+                      }}>Imagem</span>
                     </div>
-
-                    <div style={{
-                      background: 'white',
-                      borderRadius: '12px',
-                      padding: '20px',
-                      border: '1px solid #e5e7eb',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
-                    }}>
-                      <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                        Todas as cidades
-                      </h4>
-                      <div style={{ maxHeight: 360, overflowY: 'auto', paddingRight: '8px' }}>
-                        <div style={{ height: allCitiesHeight }}>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={spendByCity} layout="vertical" margin={{ left: 0, right: 10, top: 0, bottom: 0 }}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
-                              <XAxis
-                                type="number"
-                                tick={{ fill: '#6b7280', fontSize: 11 }}
-                                axisLine={false}
-                                tickLine={false}
-                                tickFormatter={(value) => `R$ ${formatCompactNumber(value)}`}
-                              />
-                              <YAxis
-                                type="category"
-                                dataKey="name"
-                                tick={{ fill: '#374151', fontSize: 11, fontWeight: 600 }}
-                                width={120}
-                                axisLine={false}
-                                tickLine={false}
-                                tickFormatter={formatCityLabel}
-                              />
-                              <Tooltip
-                                cursor={{ fill: 'rgba(99, 102, 241, 0.08)' }}
-                                content={(
-                                  <CustomChartTooltip
-                                    labelFormatter={formatCityLabel}
-                                    labelMap={{ value: "Investimento" }}
-                                    valueFormatter={(value) => formatCurrency(Number(value))}
-                                  />
-                                )}
-                              />
-                              <Bar dataKey="value" fill="#8b5cf6" radius={[0, 6, 6, 0]} barSize={12} />
-                            </BarChart>
-                          </ResponsiveContainer>
+                    <div style={{ padding: '14px' }}>
+                      <p style={{ fontSize: '13px', color: '#374151', marginBottom: '12px', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                        Novo lançamento! Confira as novidades que preparamos para você neste mês...
+                      </p>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Heart size={14} color="#ef4444" fill="#ef4444" />
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>1.2k</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <MessageCircle size={14} color="#3b82f6" />
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>89</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Share2 size={14} color="#10b981" />
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>45</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Bookmark size={14} color="#f59e0b" />
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>120</span>
+                          </div>
                         </div>
+                        <span style={{ fontSize: '11px', color: '#9ca3af' }}>há 2h</span>
                       </div>
                     </div>
                   </div>
-                ) : (
-                  <DataState
-                    state="empty"
-                    label="Sem dados por cidade no periodo"
-                    hint="Tente outro periodo ou conta"
-                    size="sm"
-                  />
-                )}
+
+                  {/* Post 2 */}
+                  <div style={{
+                    background: 'white',
+                    borderRadius: '12px',
+                    border: '1px solid #e5e7eb',
+                    overflow: 'hidden',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
+                  }}>
+                    <div style={{
+                      height: '160px',
+                      background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      position: 'relative'
+                    }}>
+                      <Play size={40} color="rgba(255,255,255,0.8)" fill="rgba(255,255,255,0.6)" />
+                      <span style={{
+                        position: 'absolute',
+                        top: '8px',
+                        right: '8px',
+                        background: 'rgba(0,0,0,0.5)',
+                        color: 'white',
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        fontSize: '11px',
+                        fontWeight: 600
+                      }}>Vídeo</span>
+                    </div>
+                    <div style={{ padding: '14px' }}>
+                      <p style={{ fontSize: '13px', color: '#374151', marginBottom: '12px', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                        Bastidores do nosso evento especial! Veja como foi incrível...
+                      </p>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Heart size={14} color="#ef4444" fill="#ef4444" />
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>3.5k</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <MessageCircle size={14} color="#3b82f6" />
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>256</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Share2 size={14} color="#10b981" />
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>178</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Bookmark size={14} color="#f59e0b" />
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>89</span>
+                          </div>
+                        </div>
+                        <span style={{ fontSize: '11px', color: '#9ca3af' }}>há 1d</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Post 3 */}
+                  <div style={{
+                    background: 'white',
+                    borderRadius: '12px',
+                    border: '1px solid #e5e7eb',
+                    overflow: 'hidden',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
+                  }}>
+                    <div style={{
+                      height: '160px',
+                      background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      position: 'relative'
+                    }}>
+                      <Image size={40} color="rgba(255,255,255,0.6)" />
+                      <span style={{
+                        position: 'absolute',
+                        top: '8px',
+                        right: '8px',
+                        background: 'rgba(0,0,0,0.5)',
+                        color: 'white',
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        fontSize: '11px',
+                        fontWeight: 600
+                      }}>Carrossel</span>
+                    </div>
+                    <div style={{ padding: '14px' }}>
+                      <p style={{ fontSize: '13px', color: '#374151', marginBottom: '12px', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                        5 dicas essenciais para o seu negócio crescer em 2025! Arraste para o lado...
+                      </p>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Heart size={14} color="#ef4444" fill="#ef4444" />
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>890</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <MessageCircle size={14} color="#3b82f6" />
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>67</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Share2 size={14} color="#10b981" />
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>34</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Bookmark size={14} color="#f59e0b" />
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>210</span>
+                          </div>
+                        </div>
+                        <span style={{ fontSize: '11px', color: '#9ca3af' }}>há 3d</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Post 4 */}
+                  <div style={{
+                    background: 'white',
+                    borderRadius: '12px',
+                    border: '1px solid #e5e7eb',
+                    overflow: 'hidden',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
+                  }}>
+                    <div style={{
+                      height: '160px',
+                      background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      position: 'relative'
+                    }}>
+                      <Image size={40} color="rgba(255,255,255,0.6)" />
+                      <span style={{
+                        position: 'absolute',
+                        top: '8px',
+                        right: '8px',
+                        background: 'rgba(0,0,0,0.5)',
+                        color: 'white',
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        fontSize: '11px',
+                        fontWeight: 600
+                      }}>Imagem</span>
+                    </div>
+                    <div style={{ padding: '14px' }}>
+                      <p style={{ fontSize: '13px', color: '#374151', marginBottom: '12px', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                        Promoção especial de fim de mês! Não perca essa oportunidade única...
+                      </p>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Heart size={14} color="#ef4444" fill="#ef4444" />
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>2.1k</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <MessageCircle size={14} color="#3b82f6" />
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>145</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Share2 size={14} color="#10b981" />
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>92</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Bookmark size={14} color="#f59e0b" />
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>156</span>
+                          </div>
+                        </div>
+                        <span style={{ fontSize: '11px', color: '#9ca3af' }}>há 5d</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </section>
 
