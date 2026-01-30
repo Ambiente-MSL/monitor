@@ -1262,76 +1262,10 @@ export default function AdsDashboard() {
           </nav>
         </div>
 
-        {/* Título com Foto de Perfil e Nome da Conta */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '16px',
-          marginBottom: '24px'
-        }}>
-          {/* Foto de Perfil do Instagram */}
-          <div style={{
-            width: '48px',
-            height: '48px',
-            borderRadius: '50%',
-            overflow: 'hidden',
-            border: '2px solid rgba(99, 102, 241, 0.2)',
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-            flexShrink: 0
-          }}>
-            {instagramProfileData?.profilePicture ? (
-              <img
-                src={instagramProfileData.profilePicture}
-                alt={selectedAccount.label || 'Perfil'}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover'
-                }}
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  e.target.nextSibling.style.display = 'flex';
-                }}
-              />
-            ) : null}
-            <div style={{
-              width: '100%',
-              height: '100%',
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-              display: instagramProfileData?.profilePicture ? 'none' : 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontSize: '18px',
-              fontWeight: 700
-            }}>
-              {selectedAccount?.label?.charAt(0)?.toUpperCase() || 'A'}
-            </div>
-          </div>
-
-          {/* Título e Nome da Conta */}
-          <div style={{ flex: 1 }}>
-            <div className="ig-clean-title-row">
-              <h2 className="ig-clean-title" style={{ margin: 0, lineHeight: 1.2 }}>Visão Geral</h2>
-            </div>
-            {selectedAccount?.label && (
-              <p style={{
-                margin: '4px 0 0 0',
-                fontSize: '14px',
-                color: 'white',
-                fontWeight: 500
-              }}>
-                {selectedAccount.label}
-              </p>
-            )}
-          </div>
+        <div className="ig-clean-title-row">
+          <h2 className="ig-clean-title">Visão Geral</h2>
         </div>
 
-        {cacheNotice ? (
-          <div style={{ marginBottom: "16px", fontSize: "12px", color: "#6b7280" }}>
-            {cacheNotice}
-          </div>
-        ) : null}
         {adsWarningProps ? (
           <div style={{ marginBottom: "16px" }}>
             <DataState
@@ -1350,6 +1284,42 @@ export default function AdsDashboard() {
           {/* Left Column - Overview Card */}
           <div className="ig-clean-grid__left">
             <section className="ig-profile-vertical">
+              {/* Cover com gradiente Ads */}
+              <div
+                className="ig-profile-vertical__cover"
+                style={{
+                  background: 'linear-gradient(135deg, #002147 0%, #1e3a5f 50%, #002d52 100%)',
+                  minHeight: '100px',
+                  borderRadius: '16px 16px 0 0',
+                }}
+              />
+
+              {/* Avatar */}
+              <div className="ig-profile-vertical__avatar-wrapper">
+                <div className="ig-profile-vertical__avatar">
+                  {instagramProfileData?.profilePicture ? (
+                    <img
+                      src={instagramProfileData.profilePicture}
+                      alt={selectedAccount?.label || 'Perfil'}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <span style={{ display: instagramProfileData?.profilePicture ? 'none' : 'flex' }}>
+                    {selectedAccount?.label?.charAt(0)?.toUpperCase() || 'A'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Nome da conta */}
+              <div className="ig-profile-vertical__body">
+                <h3 className="ig-profile-vertical__username" style={{ marginTop: '-10px' }}>
+                  {selectedAccount?.label || 'Conta de Anúncios'}
+                </h3>
+              </div>
+
               {/* Grid 3x3 de Métricas */}
               <div style={{
                 display: 'grid',
