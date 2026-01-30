@@ -218,6 +218,14 @@ useEffect(() => {
     }),
     [accountSnapshotKey, sinceParam, untilParam],
   );
+  const followersCacheKey = useMemo(
+    () => makeCacheKey({
+      page: "facebook",
+      endpoint: "followers",
+      accountId: accountSnapshotKey || "none",
+    }),
+    [accountSnapshotKey],
+  );
   const sinceDate = useMemo(() => parseQueryDate(sinceParam), [sinceParam]);
   const untilDate = useMemo(() => parseQueryDate(untilParam), [untilParam]);
   const now = useMemo(() => new Date(), []);
@@ -312,6 +320,7 @@ useEffect(() => {
   const [fbPostsError, setFbPostsError] = useState("");
   const overviewRequestIdRef = useRef(0);
   const postsRequestIdRef = useRef(0);
+  const followersRequestIdRef = useRef(0);
   const lastCacheAccountKeyRef = useRef("");
 
   const activeSnapshot = useMemo(
@@ -341,6 +350,13 @@ useEffect(() => {
       setCoverLoading(false);
     }
 
+    const cachedFollowers = getDashboardCache(followersCacheKey);
+    if (cachedFollowers && cachedFollowers.value !== undefined) {
+      setFollowersOverride(cachedFollowers.value);
+    } else {
+      setFollowersOverride(null);
+    }
+
     const cachedOverview = getDashboardCache(overviewCacheKey);
     if (cachedOverview) {
       setPageMetrics(Array.isArray(cachedOverview.pageMetrics) ? cachedOverview.pageMetrics : []);
@@ -350,9 +366,6 @@ useEffect(() => {
       setOverviewSource(cachedOverview.overviewSource || null);
       setOverviewLoading(false);
       setPageError("");
-      setFollowersOverride(
-        cachedOverview.followersOverride !== undefined ? cachedOverview.followersOverride : null,
-      );
     } else {
       setPageMetrics([]);
       setNetFollowersSeries([]);
@@ -361,7 +374,6 @@ useEffect(() => {
       setOverviewSource(null);
       setOverviewLoading(false);
       setPageError("");
-      setFollowersOverride(null);
     }
 
     const cachedPosts = getDashboardCache(fbPostsCacheKey);
@@ -374,7 +386,7 @@ useEffect(() => {
       setFbPostsError("");
       setFbPostsLoading(false);
     }
-  }, [pageCacheKey, overviewCacheKey, fbPostsCacheKey]);
+  }, [pageCacheKey, overviewCacheKey, fbPostsCacheKey, followersCacheKey]);
 
   useEffect(() => {
     setOverviewSync(normalizeSyncInfo(null));
@@ -435,27 +447,6 @@ useEffect(() => {
       }
     };
 
-    const loadFollowers = async () => {
-      if (!accountConfig?.facebookPageId) return;
-      try {
-        const params = new URLSearchParams();
-        params.set("pageId", accountConfig.facebookPageId);
-        if (sinceParam) params.set("since", sinceParam);
-        if (untilParam) params.set("until", untilParam);
-        const resp = await apiFetch(`/api/facebook/followers?${params.toString()}`);
-        if (isStale()) return;
-        const val = resp?.followers?.value;
-        if (val !== undefined && val !== null) {
-          const followersValue = Number(val);
-          setFollowersOverride(followersValue);
-          mergeDashboardCache(overviewCacheKey, { followersOverride: followersValue });
-        }
-      } catch (err) {
-        if (isStale()) return;
-        // keep existing counts if fetch fails
-      }
-    };
-
     const shouldLoadPageInfo = !cachedPage || cachedPage.pageInfo === undefined;
     const shouldLoadCover = !cachedPage || cachedPage.coverImage === undefined;
     if (shouldLoadPageInfo) {
@@ -463,11 +454,6 @@ useEffect(() => {
     }
     if (shouldLoadCover) {
       loadCover();
-    }
-    if (!cachedOverview || cachedOverview.followersOverride === undefined) {
-      loadFollowers();
-    } else if (cachedOverview.followersOverride !== undefined) {
-      setFollowersOverride(cachedOverview.followersOverride);
     }
 
     if (!sinceParam || !untilParam) {
@@ -484,9 +470,6 @@ useEffect(() => {
       setOverviewSource(cachedOverview.overviewSource || null);
       setOverviewLoading(false);
       setPageError("");
-      setFollowersOverride(
-        cachedOverview.followersOverride !== undefined ? cachedOverview.followersOverride : null,
-      );
     }
 
     const controller = new AbortController();
@@ -561,6 +544,41 @@ useEffect(() => {
       controller.abort();
     };
   }, [accountConfig?.facebookPageId, sinceParam, untilParam, apiFetch, pageCacheKey, overviewCacheKey]);
+
+  useEffect(() => {
+    if (!accountConfig?.facebookPageId) {
+      setFollowersOverride(null);
+      return () => {};
+    }
+
+    const requestId = (followersRequestIdRef.current || 0) + 1;
+    followersRequestIdRef.current = requestId;
+    let cancelled = false;
+    const isStale = () => cancelled || followersRequestIdRef.current !== requestId;
+
+    const loadFollowers = async () => {
+      try {
+        const params = new URLSearchParams();
+        params.set("pageId", accountConfig.facebookPageId);
+        const resp = await apiFetch(`/api/facebook/followers?${params.toString()}`);
+        if (isStale()) return;
+        const val = resp?.followers?.value;
+        if (val !== undefined && val !== null) {
+          const followersValue = Number(val);
+          setFollowersOverride(followersValue);
+          setDashboardCache(followersCacheKey, { value: followersValue });
+        }
+      } catch (err) {
+        if (isStale()) return;
+        // keep existing counts if fetch fails
+      }
+    };
+
+    loadFollowers();
+    return () => {
+      cancelled = true;
+    };
+  }, [accountConfig?.facebookPageId, apiFetch, followersCacheKey]);
 
   useEffect(() => {
     if (!accountConfig?.facebookPageId) {
@@ -712,11 +730,7 @@ useEffect(() => {
   }, [pageMetrics]);
 
   // Calculate overview metrics
-  const followersFallback = extractNumber(
-    followersOverride,
-    extractNumber(overviewSource?.page_overview?.followers_total, 0)
-  );
-  const totalFollowers = extractNumber(pageMetricsByKey.followers_total?.value, followersFallback);
+  const totalFollowers = Number.isFinite(followersOverride) ? followersOverride : null;
   const reachValue = extractNumber(
     pageMetricsByKey.reach?.value,
     extractNumber(overviewSource?.reach, 0),
