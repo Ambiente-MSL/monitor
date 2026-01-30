@@ -1505,7 +1505,7 @@ useEffect(() => {
                     </ComposedChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="ig-empty-state">Sem dados disponÃ­veis</div>
+                  <div className="ig-empty-state">Sem dados disponíveis</div>
                 )}
               </div>
             </section>

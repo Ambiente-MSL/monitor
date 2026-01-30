@@ -1539,29 +1539,9 @@ export default function AdsDashboard() {
               <div className="ig-profile-vertical__divider" />
 
               <div className="ig-profile-vertical__engagement" style={{ position: "relative" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 14,
-                      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      boxShadow: "0 4px 12px rgba(102, 126, 234, 0.3)"
-                    }}>
-                      <Activity size={24} color="white" />
-                    </div>
-                    <div>
-                      <h4 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>📹 Performance de Vídeos</h4>
-                      <p style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>Visualizações, retenção e engajamento</p>
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#6b7280", fontSize: 12 }}>
-                    <Info size={14} />
-                    <span>Anúncios pagos no período</span>
-                  </div>
+                <div style={{ marginBottom: 16 }}>
+                  <h4 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Performance de Vídeos</h4>
+                  <p style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>Visualizações e retenção</p>
                 </div>
 
                 {shouldShowAdsFallback && adsFallbackProps ? (
@@ -1575,301 +1555,48 @@ export default function AdsDashboard() {
                   />
                 ) : hasVideoMetrics ? (
                   <div style={{ display: "grid", gap: 20 }}>
-                    {/* Cards de Visualizações - Estilo Instagram Professional */}
-                    <div style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-                      gap: 16
-                    }}>
-                      {/* Card 3s */}
-                      <div style={{
-                        background: "white",
-                        border: "1px solid #e5e7eb",
-                        borderRadius: 16,
-                        padding: 20,
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-                        position: "relative",
-                        overflow: "hidden"
-                      }}>
-                        <div style={{
-                          position: "absolute",
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          height: 4,
-                          background: "linear-gradient(90deg, #0ea5e9, #06b6d4)"
-                        }} />
-                        <div style={{ fontSize: 13, color: "#6b7280", fontWeight: 600, marginBottom: 8 }}>
-                          Visualizações de 3s
-                        </div>
-                        <div style={{ fontSize: 32, fontWeight: 800, color: "#111827", marginBottom: 4 }}>
-                          {formatNumber(videoViews3s)}
-                        </div>
-                        <div style={{ fontSize: 12, color: "#9ca3af" }}>
-                          Alcance inicial
-                        </div>
-                      </div>
-
-                      {/* Card 10s */}
-                      <div style={{
-                        background: "white",
-                        border: "1px solid #e5e7eb",
-                        borderRadius: 16,
-                        padding: 20,
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-                        position: "relative",
-                        overflow: "hidden"
-                      }}>
-                        <div style={{
-                          position: "absolute",
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          height: 4,
-                          background: "linear-gradient(90deg, #6366f1, #8b5cf6)"
-                        }} />
-                        <div style={{ fontSize: 13, color: "#6b7280", fontWeight: 600, marginBottom: 8 }}>
-                          Visualizações de 10s
-                        </div>
-                        <div style={{ fontSize: 32, fontWeight: 800, color: "#111827", marginBottom: 4 }}>
-                          {formatNumber(videoViews10s)}
-                        </div>
-                        <div style={{ fontSize: 12, color: "#9ca3af" }}>
-                          {videoViews3s > 0 ? `${((videoViews10s / videoViews3s) * 100).toFixed(1)}% retidos` : "--"}
-                        </div>
-                      </div>
-
-                      {/* Card 15s */}
-                      <div style={{
-                        background: "white",
-                        border: "1px solid #e5e7eb",
-                        borderRadius: 16,
-                        padding: 20,
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-                        position: "relative",
-                        overflow: "hidden"
-                      }}>
-                        <div style={{
-                          position: "absolute",
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          height: 4,
-                          background: "linear-gradient(90deg, #a855f7, #c084fc)"
-                        }} />
-                        <div style={{ fontSize: 13, color: "#6b7280", fontWeight: 600, marginBottom: 8 }}>
-                          Visualizações de 15s
-                        </div>
-                        <div style={{ fontSize: 32, fontWeight: 800, color: "#111827", marginBottom: 4 }}>
-                          {formatNumber(videoViews15s)}
-                        </div>
-                        <div style={{ fontSize: 12, color: "#9ca3af" }}>
-                          {videoViews3s > 0 ? `${((videoViews15s / videoViews3s) * 100).toFixed(1)}% retidos` : "--"}
-                        </div>
-                      </div>
-
-                      {/* Card 30s */}
-                      <div style={{
-                        background: "white",
-                        border: "1px solid #e5e7eb",
-                        borderRadius: 16,
-                        padding: 20,
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-                        position: "relative",
-                        overflow: "hidden"
-                      }}>
-                        <div style={{
-                          position: "absolute",
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          height: 4,
-                          background: "linear-gradient(90deg, #ec4899, #f472b6)"
-                        }} />
-                        <div style={{ fontSize: 13, color: "#6b7280", fontWeight: 600, marginBottom: 8 }}>
-                          Visualizações de 30s
-                        </div>
-                        <div style={{ fontSize: 32, fontWeight: 800, color: "#111827", marginBottom: 4 }}>
-                          {formatNumber(videoViews30s)}
-                        </div>
-                        <div style={{ fontSize: 12, color: "#9ca3af" }}>
-                          {videoViews3s > 0 ? `${((videoViews30s / videoViews3s) * 100).toFixed(1)}% retidos` : "--"}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Card de Tempo Médio */}
-                    {Number.isFinite(videoAvgTime) && videoAvgTime > 0 && (
-                      <div style={{
-                        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                        borderRadius: 16,
-                        padding: 24,
-                        color: "white",
-                        boxShadow: "0 8px 24px rgba(102, 126, 234, 0.25)"
-                      }}>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
-                          <div>
-                            <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8, fontWeight: 600 }}>
-                              ⏱️ Tempo Médio Assistido
-                            </div>
-                            <div style={{ fontSize: 48, fontWeight: 800, marginBottom: 4 }}>
-                              {formatDuration(videoAvgTime)}
-                            </div>
-                            <div style={{ fontSize: 12, opacity: 0.8 }}>
-                              Por visualização de vídeo
-                            </div>
-                          </div>
-                          {avgVideoViews > 0 && (
-                            <div style={{
-                              background: "rgba(255,255,255,0.15)",
-                              borderRadius: 12,
-                              padding: 16,
-                              backdropFilter: "blur(10px)"
-                            }}>
-                              <div style={{ fontSize: 11, opacity: 0.9, marginBottom: 4, fontWeight: 600 }}>
-                                Média por Anúncio
-                              </div>
-                              <div style={{ fontSize: 24, fontWeight: 700 }}>
-                                {avgVideoViewsDisplay}
-                              </div>
-                              <div style={{ fontSize: 10, opacity: 0.8 }}>
-                                views (3s)
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Views por duração */}
+                    {/* Card Visualização de 3s com Retenção */}
                     <div style={{
                       background: "white",
                       border: "1px solid #e5e7eb",
                       borderRadius: 16,
-                      padding: 20,
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.04)"
+                      padding: 24,
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                      position: "relative",
+                      overflow: "hidden"
                     }}>
-                      <h5 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700, color: "#111827" }}>
-                        ⏱️ Views por duração
-                      </h5>
-                      <div style={{ height: 200 }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart
-                            data={videoViewSeries}
-                            layout="vertical"
-                            margin={{ top: 10, right: 30, bottom: 10, left: 50 }}
-                          >
-                            <defs>
-                              <linearGradient id="durationGradient" x1="0" y1="0" x2="1" y2="0">
-                                <stop offset="0%" stopColor="#0ea5e9" />
-                                <stop offset="50%" stopColor="#6366f1" />
-                                <stop offset="100%" stopColor="#a855f7" />
-                              </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
-                            <XAxis
-                              type="number"
-                              tick={{ fill: "#6b7280", fontSize: 11 }}
-                              axisLine={false}
-                              tickLine={false}
-                              tickFormatter={(value) => formatCompactNumber(value)}
-                            />
-                            <YAxis
-                              type="category"
-                              dataKey="label"
-                              width={45}
-                              tick={{ fill: "#111827", fontWeight: 700, fontSize: 13 }}
-                              axisLine={false}
-                              tickLine={false}
-                            />
-                            <Tooltip
-                              cursor={{ fill: "rgba(14,165,233,0.08)" }}
-                              content={(
-                                <CustomChartTooltip
-                                  labelFormatter={(value) => (value ? `Views ${value}` : "Views")}
-                                  labelMap={{ value: "Total" }}
-                                  valueFormatter={formatTooltipNumber}
-                                />
-                              )}
-                            />
-                            <Bar dataKey="value" radius={[0, 8, 8, 0]} fill="url(#durationGradient)" maxBarSize={35} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-
-                    <div style={{
-                      background: "white",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: 16,
-                      padding: 20,
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.04)"
-                    }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
-                        <h5 style={{ margin: "0", fontSize: 16, fontWeight: 700, color: "#111827" }}>
-                          Crescimento por anuncio
-                        </h5>
-                        {videoAdsGrowth.lines.length ? (
-                          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", fontSize: 11, color: "#111827", fontWeight: 600 }}>
-                            {videoAdsGrowth.lines.map((line) => (
-                              <div key={line.key} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                <span style={{ width: 10, height: 10, borderRadius: "50%", background: line.color }} />
-                                <span style={{ maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                  {line.name}
-                                </span>
-                              </div>
-                            ))}
+                      <div style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: 4,
+                        background: "linear-gradient(90deg, #0ea5e9, #06b6d4)"
+                      }} />
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
+                        <div>
+                          <div style={{ fontSize: 13, color: "#6b7280", fontWeight: 600, marginBottom: 8 }}>
+                            Visualização de 3s
                           </div>
-                        ) : null}
-                      </div>
-                      {videoAdsGrowth.data.length ? (
-                        <div style={{ height: 240 }}>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={videoAdsGrowth.data} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
-                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                              <XAxis
-                                dataKey="date"
-                                tick={{ fill: "#6b7280", fontSize: 11 }}
-                                axisLine={false}
-                                tickLine={false}
-                                interval="preserveStartEnd"
-                                minTickGap={50}
-                                tickFormatter={formatShortDate}
-                              />
-                              <YAxis
-                                tick={{ fill: "#6b7280", fontSize: 11 }}
-                                axisLine={false}
-                                tickLine={false}
-                                tickFormatter={(value) => formatCompactNumber(value)}
-                              />
-                              <Tooltip
-                                cursor={{ stroke: "rgba(99,102,241,0.2)" }}
-                                content={(
-                                  <CustomChartTooltip
-                                    labelFormatter={formatTooltipDate}
-                                    labelMap={videoAdsLabelMap}
-                                    valueFormatter={formatTooltipNumber}
-                                  />
-                                )}
-                              />
-                              {videoAdsGrowth.lines.map((line) => (
-                                <Line
-                                  key={line.key}
-                                  type="monotone"
-                                  dataKey={line.key}
-                                  stroke={line.color}
-                                  strokeWidth={2}
-                                  dot={false}
-                                />
-                              ))}
-                            </LineChart>
-                          </ResponsiveContainer>
+                          <div style={{ fontSize: 36, fontWeight: 800, color: "#111827" }}>
+                            {formatNumber(videoViews3s)}
+                          </div>
                         </div>
-                      ) : (
-                        <DataState state="empty" label="Sem dados de crescimento por anuncio" size="sm" />
-                      )}
-                    </div>
-
+                        <div style={{
+                          background: "linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%)",
+                          borderRadius: 12,
+                          padding: "12px 20px",
+                          color: "white",
+                          textAlign: "center"
+                        }}>
+                          <div style={{ fontSize: 11, opacity: 0.9, marginBottom: 2 }}>Retenção</div>
+                          <div style={{ fontSize: 24, fontWeight: 800 }}>
+                            {videoViews3s > 0 && videoViews10s > 0
+                              ? `${((videoViews10s / videoViews3s) * 100).toFixed(1)}%`
+                              : "100%"}
+                          </div>
+                        </div>
+                      </div>
                   </div>
                 ) : (
                   <DataState
