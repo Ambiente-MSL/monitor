@@ -1260,10 +1260,10 @@ useEffect(() => {
 
               <div className="ig-chart-area">
                 {reachTimelineData.length ? (
-                  <ResponsiveContainer width="100%" height={300}>
+                  <ResponsiveContainer width="100%" height={240}>
                     <ComposedChart
                       data={reachTimelineData}
-                      margin={{ top: 24, right: 28, left: 12, bottom: 12 }}
+                      margin={{ top: 16, right: 28, left: 12, bottom: 8 }}
                     >
                       <defs>
                         <linearGradient id="fbReachGradient" x1="0" y1="0" x2="1" y2="0">
@@ -1379,142 +1379,139 @@ useEffect(() => {
               </div>
             </section>
 
-            {/* NOVA SEÇÃO: Seguidores (MOCK) */}
-            <div className="fb-followers-section">
-              {/* Card A: Seguidores (Resumo) */}
-              <section className="ig-card">
-                <header className="ig-card-header">
-                  <div>
-                    <h3 className="ig-clean-title2">Seguidores</h3>
-                    <p className="ig-card-subtitle">Resumo do período</p>
+            {/* Card de Crescimento de Seguidores - logo abaixo de Crescimento do perfil */}
+            <section className="ig-growth-clean">
+              <header className="ig-card-header">
+                <div>
+                  <h3 className="ig-clean-title2">Crescimento de seguidores</h3>
+                  <p className="ig-card-subtitle">Evolução diária</p>
+                </div>
+              </header>
+
+              <div className="ig-chart-area">
+                <ResponsiveContainer width="100%" height={240}>
+                  <ComposedChart
+                    data={[
+                      { date: '01/01', value: 64950, label: '01 de janeiro' },
+                      { date: '02/01', value: 64980, label: '02 de janeiro' },
+                      { date: '03/01', value: 65020, label: '03 de janeiro' },
+                      { date: '04/01', value: 65010, label: '04 de janeiro' },
+                      { date: '05/01', value: 65045, label: '05 de janeiro' },
+                      { date: '06/01', value: 65090, label: '06 de janeiro' },
+                      { date: '07/01', value: 65110, label: '07 de janeiro' },
+                      { date: '08/01', value: 65130, label: '08 de janeiro' },
+                      { date: '09/01', value: 65165, label: '09 de janeiro' },
+                      { date: '10/01', value: 65180, label: '10 de janeiro' },
+                      { date: '11/01', value: 65200, label: '11 de janeiro' },
+                      { date: '12/01', value: 65225, label: '12 de janeiro' },
+                      { date: '13/01', value: 65250, label: '13 de janeiro' },
+                    ]}
+                    margin={{ top: 16, right: 28, left: 12, bottom: 8 }}
+                  >
+                    <defs>
+                      <linearGradient id="fbFollowersAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#1877F2" stopOpacity={0.3} />
+                        <stop offset="100%" stopColor="#1877F2" stopOpacity={0.05} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#f3f4f6" />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fill: '#6b7280', fontSize: 11 }}
+                      tickLine={false}
+                      axisLine={{ stroke: '#e5e7eb' }}
+                      minTickGap={30}
+                      interval="preserveStartEnd"
+                      tickFormatter={formatAxisDate}
+                    />
+                    <YAxis
+                      tick={{ fill: '#6b7280', fontSize: 11 }}
+                      tickLine={false}
+                      axisLine={{ stroke: '#e5e7eb' }}
+                      tickFormatter={(val) => formatCompactNumber(val)}
+                      domain={['dataMin - 50', 'dataMax + 50']}
+                    />
+                    <Tooltip
+                      cursor={{ stroke: '#1877F2', strokeWidth: 1, strokeDasharray: '4 4' }}
+                      content={(props) => {
+                        const labelValue = props?.payload?.[0]?.payload?.label || props?.label || "";
+                        return (
+                          <CustomChartTooltip
+                            {...props}
+                            labelFormatter={() => labelValue}
+                            labelMap={{ value: "Seguidores" }}
+                            valueFormatter={formatTooltipNumber}
+                          />
+                        );
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="value"
+                      fill="url(#fbFollowersAreaGradient)"
+                      stroke="none"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      stroke="#1877F2"
+                      strokeWidth={3}
+                      dot={{ fill: '#ffffff', stroke: '#1877F2', strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, fill: '#ffffff', stroke: '#1877F2', strokeWidth: 3 }}
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            </section>
+
+            {/* Card de Seguidores - abaixo do gráfico de crescimento */}
+            <section className="ig-card">
+              <header className="ig-card-header">
+                <div>
+                  <h3 className="ig-clean-title2">Seguidores</h3>
+                  <p className="ig-card-subtitle">Resumo do período</p>
+                </div>
+              </header>
+
+              <div className="fb-card-body">
+                <div className="fb-followers-kpis">
+                  {/* Total de seguidores */}
+                  <div className="fb-follower-kpi fb-follower-kpi--primary">
+                    <div className="fb-follower-kpi__value">65.250</div>
+                    <div className="fb-follower-kpi__label">Total de seguidores</div>
                   </div>
-                </header>
 
-                <div className="fb-card-body">
-                  <div className="fb-followers-kpis">
-                    {/* Total de seguidores */}
-                    <div className="fb-follower-kpi fb-follower-kpi--primary">
-                      <div className="fb-follower-kpi__value">65.250</div>
-                      <div className="fb-follower-kpi__label">Total de seguidores</div>
+                  {/* Novos seguidores */}
+                  <div className="fb-follower-kpi">
+                    <div className="fb-follower-kpi__value fb-follower-kpi__value--positive">
+                      +320
                     </div>
+                    <div className="fb-follower-kpi__label">Novos seguidores</div>
+                  </div>
 
-                    {/* Novos seguidores */}
-                    <div className="fb-follower-kpi">
-                      <div className="fb-follower-kpi__value fb-follower-kpi__value--positive">
-                        +320
-                      </div>
-                      <div className="fb-follower-kpi__label">Novos seguidores</div>
+                  {/* Deixaram de seguir */}
+                  <div className="fb-follower-kpi">
+                    <div className="fb-follower-kpi__value fb-follower-kpi__value--negative">
+                      -85
                     </div>
+                    <div className="fb-follower-kpi__label">Deixaram de seguir</div>
+                  </div>
 
-                    {/* Deixaram de seguir */}
-                    <div className="fb-follower-kpi">
-                      <div className="fb-follower-kpi__value fb-follower-kpi__value--negative">
-                        -85
-                      </div>
-                      <div className="fb-follower-kpi__label">Deixaram de seguir</div>
+                  {/* Crescimento líquido */}
+                  <div className="fb-follower-kpi fb-follower-kpi--highlight">
+                    <div className="fb-follower-kpi__value fb-follower-kpi__value--positive">
+                      +235
                     </div>
-
-                    {/* Crescimento líquido */}
-                    <div className="fb-follower-kpi fb-follower-kpi--highlight">
-                      <div className="fb-follower-kpi__value fb-follower-kpi__value--positive">
-                        +235
-                      </div>
-                      <div className="fb-follower-kpi__label">Crescimento líquido</div>
-                      <div className="fb-follower-kpi__change">
-                        <span className="fb-follower-kpi__change-icon">↗</span>
-                        <span className="fb-follower-kpi__change-value">+3,2%</span>
-                        <span className="fb-follower-kpi__change-label">vs período anterior</span>
-                      </div>
+                    <div className="fb-follower-kpi__label">Crescimento líquido</div>
+                    <div className="fb-follower-kpi__change">
+                      <span className="fb-follower-kpi__change-icon">↗</span>
+                      <span className="fb-follower-kpi__change-value">+3,2%</span>
+                      <span className="fb-follower-kpi__change-label">vs período anterior</span>
                     </div>
                   </div>
                 </div>
-              </section>
-
-              {/* Card B: Crescimento de Seguidores */}
-              <section className="ig-card">
-                <header className="ig-card-header">
-                  <div>
-                    <h3 className="ig-clean-title2">Crescimento de seguidores</h3>
-                    <p className="ig-card-subtitle">Evolução diária</p>
-                  </div>
-                </header>
-
-                <div className="fb-card-body">
-                  <ResponsiveContainer width="100%" height={260}>
-                    <ComposedChart
-                      data={[
-                        { date: '01/01', value: 64950, label: '01 de janeiro' },
-                        { date: '02/01', value: 64980, label: '02 de janeiro' },
-                        { date: '03/01', value: 65020, label: '03 de janeiro' },
-                        { date: '04/01', value: 65010, label: '04 de janeiro' },
-                        { date: '05/01', value: 65045, label: '05 de janeiro' },
-                        { date: '06/01', value: 65090, label: '06 de janeiro' },
-                        { date: '07/01', value: 65110, label: '07 de janeiro' },
-                        { date: '08/01', value: 65130, label: '08 de janeiro' },
-                        { date: '09/01', value: 65165, label: '09 de janeiro' },
-                        { date: '10/01', value: 65180, label: '10 de janeiro' },
-                        { date: '11/01', value: 65200, label: '11 de janeiro' },
-                        { date: '12/01', value: 65225, label: '12 de janeiro' },
-                        { date: '13/01', value: 65250, label: '13 de janeiro' },
-                      ]}
-                      margin={{ top: 20, right: 20, left: -10, bottom: 10 }}
-                    >
-                      <defs>
-                        <linearGradient id="fbFollowersAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#1877F2" stopOpacity={0.3} />
-                          <stop offset="100%" stopColor="#1877F2" stopOpacity={0.05} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#f3f4f6" />
-                      <XAxis
-                        dataKey="date"
-                        tick={{ fill: '#6b7280', fontSize: 11 }}
-                        tickLine={false}
-                        axisLine={{ stroke: '#e5e7eb' }}
-                        minTickGap={30}
-                        interval="preserveStartEnd"
-                        tickFormatter={formatAxisDate}
-                      />
-                      <YAxis
-                        tick={{ fill: '#6b7280', fontSize: 11 }}
-                        tickLine={false}
-                        axisLine={{ stroke: '#e5e7eb' }}
-                        tickFormatter={(val) => formatCompactNumber(val)}
-                        domain={['dataMin - 50', 'dataMax + 50']}
-                      />
-                      <Tooltip
-                        cursor={{ stroke: '#1877F2', strokeWidth: 1, strokeDasharray: '4 4' }}
-                        content={(props) => {
-                          const labelValue = props?.payload?.[0]?.payload?.label || props?.label || "";
-                          return (
-                            <CustomChartTooltip
-                              {...props}
-                              labelFormatter={() => labelValue}
-                              labelMap={{ value: "Seguidores" }}
-                              valueFormatter={formatTooltipNumber}
-                            />
-                          );
-                        }}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="value"
-                        fill="url(#fbFollowersAreaGradient)"
-                        stroke="none"
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="value"
-                        stroke="#1877F2"
-                        strokeWidth={3}
-                        dot={{ fill: '#ffffff', stroke: '#1877F2', strokeWidth: 2, r: 4 }}
-                        activeDot={{ r: 6, fill: '#ffffff', stroke: '#1877F2', strokeWidth: 3 }}
-                      />
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                </div>
-              </section>
-            </div>
+              </div>
+            </section>
 
             {/* NOVA SEÇÃO: Alcance (MOCK) */}
             <div className="fb-followers-section">
