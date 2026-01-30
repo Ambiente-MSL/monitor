@@ -1289,13 +1289,13 @@ export default function AdsDashboard() {
                 className="ig-profile-vertical__cover"
                 style={{
                   background: 'linear-gradient(135deg, #002147 0%, #1e3a5f 50%, #002d52 100%)',
-                  minHeight: '100px',
+                  minHeight: '80px',
                   borderRadius: '16px 16px 0 0',
                 }}
               />
 
               {/* Avatar */}
-              <div className="ig-profile-vertical__avatar-wrapper">
+              <div className="ig-profile-vertical__avatar-wrapper" style={{ marginTop: '-40px' }}>
                 <div className="ig-profile-vertical__avatar">
                   {instagramProfileData?.profilePicture ? (
                     <img
@@ -1314,8 +1314,8 @@ export default function AdsDashboard() {
               </div>
 
               {/* Nome da conta */}
-              <div className="ig-profile-vertical__body">
-                <h3 className="ig-profile-vertical__username" style={{ marginTop: '-10px' }}>
+              <div className="ig-profile-vertical__body" style={{ paddingTop: '8px', paddingBottom: '0' }}>
+                <h3 className="ig-profile-vertical__username" style={{ marginTop: '0', marginBottom: '12px' }}>
                   {selectedAccount?.label || 'Conta de Anúncios'}
                 </h3>
               </div>
@@ -1324,8 +1324,8 @@ export default function AdsDashboard() {
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
-                gap: '12px',
-                padding: '20px 24px'
+                gap: '10px',
+                padding: '12px 20px 16px'
               }}>
                 {shouldShowAdsFallback && adsFallbackProps ? (
                   <div style={{ gridColumn: "1 / -1" }}>
@@ -2058,10 +2058,10 @@ export default function AdsDashboard() {
                     onAction={adsFallbackProps.onAction}
                   />
                 ) : spendSeries.length ? (
-                <ResponsiveContainer width="100%" height={spendSeries.length > 15 ? 380 : 280}>
+                <ResponsiveContainer width="100%" height={240}>
                   <BarChart
                     data={spendSeries}
-                    margin={{ top: 16, right: 16, bottom: spendSeries.length > 15 ? 70 : 32, left: 0 }}
+                    margin={{ top: 16, right: 28, left: 12, bottom: 8 }}
                     barCategoryGap="35%"
                   >
                         <defs>

@@ -59,6 +59,8 @@ const FB_TOPBAR_PRESETS = [
   { id: "1y", label: "1 ano", days: 365 },
 ];
 const DEFAULT_FACEBOOK_RANGE_DAYS = 7;
+const FB_METRICS_TIMEOUT_MS = 60000;
+const FB_METRICS_RETRY_TIMEOUT_MS = 90000;
 
 const WEEKDAY_LABELS = ["D", "S", "T", "Q", "Q", "S", "S"];
 const DEFAULT_WEEKLY_FOLLOWERS = [3, 4, 5, 6, 7, 5, 4];
@@ -521,11 +523,24 @@ useEffect(() => {
         params.set("since", sinceParam);
         params.set("until", untilParam);
         const url = `${API_BASE_URL}/api/facebook/metrics?${params.toString()}`;
-        const response = await fetchWithTimeout(url, { signal: controller.signal });
-        const raw = await response.text();
-        const json = safeParseJson(raw) || {};
-        if (!response.ok) {
-          throw new Error(describeApiError(json, "Falha ao carregar metricas do Facebook."));
+        const fetchMetrics = async (timeoutMs) => {
+          const response = await fetchWithTimeout(url, { signal: controller.signal }, timeoutMs);
+          const raw = await response.text();
+          const json = safeParseJson(raw) || {};
+          if (!response.ok) {
+            throw new Error(describeApiError(json, "Falha ao carregar metricas do Facebook."));
+          }
+          return json;
+        };
+        let json;
+        try {
+          json = await fetchMetrics(FB_METRICS_TIMEOUT_MS);
+        } catch (err) {
+          if (isTimeoutError(err) && !controller.signal.aborted) {
+            json = await fetchMetrics(FB_METRICS_RETRY_TIMEOUT_MS);
+          } else {
+            throw err;
+          }
         }
         if (isStale()) return;
         const syncInfo = normalizeSyncInfo(json.meta || null);
@@ -557,12 +572,14 @@ useEffect(() => {
           setNetFollowersSeries([]);
           setReachSeries([]);
           setOverviewSource(null);
+          setPageError(
+            isTimeoutError(err)
+              ? "Tempo esgotado ao carregar metricas do Facebook."
+              : err.message || "Nao foi possivel carregar as metricas do Facebook.",
+          );
+        } else {
+          setPageError("");
         }
-        setPageError(
-          isTimeoutError(err)
-            ? "Tempo esgotado ao carregar metricas do Facebook."
-            : err.message || "Nao foi possivel carregar as metricas do Facebook.",
-        );
       } finally {
         if (isStale()) return;
         setOverviewLoading(false);
