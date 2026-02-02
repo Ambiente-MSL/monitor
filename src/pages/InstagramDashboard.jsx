@@ -3926,10 +3926,19 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
 
                 {/* Gráfico de Tendência */}
                 <section className="ig-card-white" style={{ marginBottom: '24px' }}>
-                  <div style={{ padding: '20px', borderBottom: '1px solid #e5e7eb' }}>
-                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827' }}>
+                  <div style={{ padding: '20px 24px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#111827' }}>
                       Tendência de visualizações
                     </h4>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{
+                        width: '12px',
+                        height: '12px',
+                        borderRadius: '3px',
+                        background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'
+                      }} />
+                      <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Visualizações</span>
+                    </div>
                   </div>
                   <div style={{ padding: '20px', height: 320 }}>
                     {profileViewsChartData.length ? (
@@ -4000,7 +4009,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   </div>
                   <div style={{ padding: '16px' }}>
                     {(topPostsByViews || []).length > 0 ? (
-                      <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '8px' }}>
+                      <div style={{ display: 'flex', gap: '14px', overflowX: 'auto', paddingBottom: '8px' }}>
                         {(topPostsByViews || []).slice(0, 5).map((post, idx) => {
                           const previewUrl = [
                             post.previewUrl,
@@ -4017,7 +4026,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                               key={post.id || idx}
                               style={{
                                 flexShrink: 0,
-                                width: '115px',
+                                width: '132px',
                                 borderRadius: '12px',
                                 overflow: 'hidden',
                                 background: 'white',
@@ -4027,12 +4036,12 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                               }}
                               onClick={() => setSelectedPost(post)}
                             >
-                              <div style={{ width: '115px', height: '205px', background: '#f3f4f6', position: 'relative' }}>
+                              <div style={{ width: '132px', height: '236px', background: '#f3f4f6', position: 'relative' }}>
                                 {previewUrl ? (
                                   <img src={previewUrl} alt="Post" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 ) : (
                                   <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
-                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                       <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                                       <circle cx="8.5" cy="8.5" r="1.5" />
                                       <polyline points="21 15 16 10 5 21" />
@@ -4045,11 +4054,11 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                                   left: 0,
                                   right: 0,
                                   background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%)',
-                                  padding: '20px 8px 8px',
+                                  padding: '24px 10px 10px',
                                   color: 'white'
                                 }}>
-                                  <div style={{ fontSize: '14px', fontWeight: 700 }}>{formatNumber(views)}</div>
-                                  <div style={{ fontSize: '10px', opacity: 0.9 }}>visualizações</div>
+                                  <div style={{ fontSize: '15px', fontWeight: 700 }}>{formatNumber(views)}</div>
+                                  <div style={{ fontSize: '11px', opacity: 0.9 }}>visualizações</div>
                                 </div>
                               </div>
                             </div>
