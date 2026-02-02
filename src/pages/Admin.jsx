@@ -212,7 +212,7 @@ export default function Admin() {
                   onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#ec4899'}
                 >
                   <UserPlus size={18} />
-                  Adicionar Usuário
+                  Adicionar usuário
                 </button>
               </div>
 
@@ -257,8 +257,8 @@ export default function Admin() {
                 <tr>
                   <th>Nome</th>
                   <th>Email</th>
-                  <th>Role Atual</th>
-                  <th>Data de Criação</th>
+                  <th>Role atual</th>
+                  <th>Data de criação</th>
                   <th>Ações</th>
                 </tr>
               </thead>
