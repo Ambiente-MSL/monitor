@@ -187,7 +187,7 @@ export default function Admin() {
               <section className="ig-card-white" style={{ marginBottom: '2rem' }}>
               <div className="ig-analytics-card__header" style={{ borderBottom: '1px solid #e5e7eb', paddingBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <h4 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827' }}>Gerenciamento de Usuários</h4>
+                  <h4 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827' }}>Gerenciamento de usuários</h4>
                   <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>
                     Gerencie roles e permissões dos usuários do sistema.
                   </p>
@@ -258,21 +258,21 @@ export default function Admin() {
                   <th>Nome</th>
                   <th>Email</th>
                   <th>Role Atual</th>
-                  <th>Data de Criacao</th>
-                  <th>Acoes</th>
+                  <th>Data de Criação</th>
+                  <th>Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
                     <td colSpan={5} style={{ textAlign: 'center', padding: '2rem' }}>
-                      <DataState state="loading" label="Carregando usuarios..." size="sm" inline />
+                      <DataState state="loading" label="Carregando usuários..." size="sm" inline />
                     </td>
                   </tr>
                 ) : users.length === 0 ? (
                   <tr>
                     <td colSpan={5} style={{ textAlign: 'center', padding: '2rem', fontStyle: 'italic', color: 'var(--muted)' }}>
-                      Nenhum usuario cadastrado.
+                      Nenhum usuário cadastrado.
                     </td>
                   </tr>
                 ) : (
@@ -361,7 +361,7 @@ export default function Admin() {
             fontSize: '0.875rem',
             color: '#6b7280'
           }}>
-            <strong style={{ color: '#111827' }}>Informações sobre Roles:</strong>
+            <strong style={{ color: '#111827' }}>Informações sobre roles:</strong>
             <ul style={{ marginTop: '0.5rem', paddingLeft: '1.5rem' }}>
               <li><strong>Analista:</strong> Pode visualizar dashboards e relatórios.</li>
               <li><strong>Admin:</strong> Tem acesso total, incluindo gerenciamento de usuários.</li>
@@ -413,13 +413,13 @@ export default function Admin() {
               </button>
 
               <h3 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1.5rem', color: '#111827' }}>
-                Adicionar Novo Usuário
+                Adicionar novo usuário
               </h3>
 
               <form onSubmit={handleAddUser}>
                 <div style={{ marginBottom: '1rem' }}>
                   <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem', color: '#374151' }}>
-                    Nome Completo
+                    Nome completo
                   </label>
                   <input
                     type="text"
@@ -525,7 +525,7 @@ export default function Admin() {
                       cursor: 'pointer'
                     }}
                   >
-                    Adicionar Usuário
+                    Adicionar usuário
                   </button>
                 </div>
               </form>
@@ -576,13 +576,13 @@ export default function Admin() {
               </button>
 
               <h3 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1.5rem', color: '#111827' }}>
-                Editar Usuário
+                Editar usuário
               </h3>
 
               <form onSubmit={handleEditUser}>
                 <div style={{ marginBottom: '1rem' }}>
                   <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem', color: '#374151' }}>
-                    Nome Completo
+                    Nome completo
                   </label>
                   <input
                     type="text"
@@ -620,7 +620,7 @@ export default function Admin() {
 
                 <div style={{ marginBottom: '1rem' }}>
                   <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem', color: '#374151' }}>
-                    Nova Senha (deixe em branco para manter a atual)
+                    Nova senha (deixe em branco para manter a atual)
                   </label>
                   <input
                     type="password"
@@ -699,7 +699,7 @@ export default function Admin() {
                       cursor: 'pointer'
                     }}
                   >
-                    Salvar Alterações
+                    Salvar alterações
                   </button>
                 </div>
               </form>
