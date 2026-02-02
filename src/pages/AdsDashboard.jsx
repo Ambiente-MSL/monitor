@@ -1597,6 +1597,7 @@ export default function AdsDashboard() {
                           </div>
                         </div>
                       </div>
+                    </div>
                   </div>
                 ) : (
                   <DataState
