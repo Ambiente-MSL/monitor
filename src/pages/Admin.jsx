@@ -1,21 +1,20 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Shield, UserCog, AlertCircle, CheckCircle, BarChart3, FileText, Settings, Instagram as InstagramIcon, Facebook, UserPlus, Edit2, Trash2, X } from 'lucide-react';
+import { useOutletContext } from 'react-router-dom';
+import { Shield, UserCog, AlertCircle, CheckCircle, UserPlus, Edit2, Trash2, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import DataState from '../components/DataState';
-
-const HERO_TABS = [
-  { id: "instagram", label: "Instagram", href: "/instagram", icon: InstagramIcon, iconClass: "hero-icon-instagram" },
-  { id: "facebook", label: "Facebook", href: "/facebook", icon: Facebook, iconClass: "hero-icon-facebook" },
-  { id: "ads", label: "Ads", href: "/ads", icon: BarChart3, iconClass: "hero-icon-ads" },
-  { id: "reports", label: "Relatórios", href: "/relatorios", icon: FileText, iconClass: "hero-icon-reports" },
-  { id: "settings", label: "Configurações", href: "/configuracoes", icon: Settings, iconClass: "hero-icon-settings" },
-  { id: "admin", label: "Admin", href: "/admin", icon: Shield, iconClass: "hero-icon-admin" },
-];
+import NavigationHero from '../components/NavigationHero';
 
 export default function Admin() {
-  const location = useLocation();
+  const outletContext = useOutletContext() || {};
+  const { setTopbarConfig, resetTopbarConfig } = outletContext;
   const { user, role, apiFetch } = useAuth();
+
+  useEffect(() => {
+    if (!setTopbarConfig) return undefined;
+    setTopbarConfig({ title: "Admin", showFilters: false });
+    return () => resetTopbarConfig?.();
+  }, [setTopbarConfig, resetTopbarConfig]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -152,49 +151,23 @@ export default function Admin() {
 
   if (role !== 'admin') {
     return (
-      <div className="admin-dashboard admin-dashboard--clean">
+      <div className="instagram-dashboard--clean">
         <div className="ig-clean-container">
-          {/* Header com Logo Admin e Tabs */}
-          <div className="ig-clean-header">
-            <div className="ig-clean-header__brand">
-              <div className="ig-clean-header__logo">
-                <Shield size={32} color="#ec4899" />
-              </div>
-              <h1>Admin</h1>
-            </div>
+          <NavigationHero title="Admin" icon={Shield} showGradient={false} />
 
-            <nav className="ig-clean-tabs">
-              {HERO_TABS.map((tab) => {
-                const Icon = tab.icon;
-                const isActive = tab.href ? location.pathname === tab.href : tab.id === "admin";
-                const linkTarget = tab.href
-                  ? (location.search ? { pathname: tab.href, search: location.search } : tab.href)
-                  : null;
-                return tab.href ? (
-                  <Link
-                    key={tab.id}
-                    to={linkTarget}
-                    className={`ig-clean-tab${isActive ? " ig-clean-tab--active" : ""}`}
-                  >
-                    <Icon size={18} className={tab.iconClass} />
-                    <span>{tab.label}</span>
-                  </Link>
-                ) : null;
-              })}
-            </nav>
-          </div>
-
-          <div className="ig-main-layout">
-            <div className="ig-content-area">
-              <div className="ig-card-white" style={{ textAlign: 'center', padding: '3rem' }}>
-                <Shield size={48} style={{ marginBottom: '1rem', color: '#ec4899' }} />
-                <h2 style={{ marginBottom: '1rem', fontSize: '1.5rem', fontWeight: '600' }}>Acesso Negado</h2>
-                <p style={{ color: '#6b7280', marginBottom: '0.5rem' }}>
-                  Você não tem permissão para acessar esta página.
-                </p>
-                <p style={{ fontSize: '0.875rem', color: '#9ca3af' }}>
-                  Apenas usuários com role <strong>admin</strong> podem gerenciar usuários.
-                </p>
+          <div className="page-content">
+            <div className="ig-main-layout">
+              <div className="ig-content-area">
+                <div className="ig-card-white" style={{ textAlign: 'center', padding: '3rem' }}>
+                  <Shield size={48} style={{ marginBottom: '1rem', color: '#ec4899' }} />
+                  <h2 style={{ marginBottom: '1rem', fontSize: '1.5rem', fontWeight: '600' }}>Acesso Negado</h2>
+                  <p style={{ color: '#6b7280', marginBottom: '0.5rem' }}>
+                    Você não tem permissão para acessar esta página.
+                  </p>
+                  <p style={{ fontSize: '0.875rem', color: '#9ca3af' }}>
+                    Apenas usuários com role <strong>admin</strong> podem gerenciar usuários.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -204,41 +177,14 @@ export default function Admin() {
   }
 
   return (
-    <div className="admin-dashboard admin-dashboard--clean">
+    <div className="instagram-dashboard--clean">
       <div className="ig-clean-container">
-        {/* Header com Logo Admin e Tabs */}
-        <div className="ig-clean-header">
-          <div className="ig-clean-header__brand">
-            <div className="ig-clean-header__logo">
-              <Shield size={32} color="#ec4899" />
-            </div>
-            <h1>Admin</h1>
-          </div>
+        <NavigationHero title="Admin" icon={Shield} showGradient={false} />
 
-          <nav className="ig-clean-tabs">
-            {HERO_TABS.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = tab.href ? location.pathname === tab.href : tab.id === "admin";
-              const linkTarget = tab.href
-                ? (location.search ? { pathname: tab.href, search: location.search } : tab.href)
-                : null;
-              return tab.href ? (
-                <Link
-                  key={tab.id}
-                  to={linkTarget}
-                  className={`ig-clean-tab${isActive ? " ig-clean-tab--active" : ""}`}
-                >
-                  <Icon size={18} className={tab.iconClass} />
-                  <span>{tab.label}</span>
-                </Link>
-              ) : null;
-            })}
-          </nav>
-        </div>
-
-        <div className="ig-main-layout">
-          <div className="ig-content-area">
-            <section className="ig-card-white" style={{ marginBottom: '2rem' }}>
+        <div className="page-content">
+          <div className="ig-main-layout">
+            <div className="ig-content-area">
+              <section className="ig-card-white" style={{ marginBottom: '2rem' }}>
               <div className="ig-analytics-card__header" style={{ borderBottom: '1px solid #e5e7eb', paddingBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <h4 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827' }}>Gerenciamento de Usuários</h4>
@@ -423,6 +369,7 @@ export default function Admin() {
           </div>
               </div>
             </section>
+            </div>
           </div>
         </div>
 
