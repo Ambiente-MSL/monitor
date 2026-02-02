@@ -2,6 +2,13 @@ import { useEffect, useMemo, useState, useCallback, useLayoutEffect } from "reac
 import { Link, useLocation, useOutletContext } from "react-router-dom";
 import { useRef } from "react";
 import {
+  ComposableMap,
+  Geographies,
+  Geography,
+  Marker,
+  ZoomableGroup
+} from "react-simple-maps";
+import {
   differenceInCalendarDays,
   endOfDay,
   endOfMonth,
@@ -785,6 +792,7 @@ export default function InstagramDashboard() {
   const [showFollowersDetail, setShowFollowersDetail] = useState(false);
   const [showPostsDetail, setShowPostsDetail] = useState(false);
   const [showWordCloudDetail, setShowWordCloudDetail] = useState(false);
+  const [showCitiesDetail, setShowCitiesDetail] = useState(false);
   const [selectedWordCloud, setSelectedWordCloud] = useState(null);
   const [wordCloudDetails, setWordCloudDetails] = useState(null);
   const [wordCloudDetailsLoading, setWordCloudDetailsLoading] = useState(false);
@@ -2886,6 +2894,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
     setShowFollowersDetail(false);
     setShowInteractionsDetail(false);
     setShowPostsDetail(false);
+    setShowCitiesDetail(false);
 
     // Set wordcloud panel state
     setSelectedWordCloud({ word, count });
@@ -2928,6 +2937,19 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
     setWordCloudDetailsLoading(false);
     setWordCloudDetailsLoadingMore(false);
     setWordCloudDetailsPage(1);
+  }, []);
+
+  const handleShowCitiesDetail = useCallback(() => {
+    // Close other panels
+    setShowDetailedView(false);
+    setShowFollowersDetail(false);
+    setShowInteractionsDetail(false);
+    setShowPostsDetail(false);
+    setShowWordCloudDetail(false);
+    setSelectedWordCloud(null);
+    // Open cities panel
+    setShowCitiesDetail(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   const wordCloudCanGoPrev = wordCloudDetailsPage > 1;
@@ -3174,7 +3196,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
         </div>
 
         {/* Grid Principal */}
-          <div className="ig-clean-grid" style={(showDetailedView || showFollowersDetail || showInteractionsDetail || showPostsDetail || showWordCloudDetail) ? { display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' } : {}}>
+          <div className="ig-clean-grid" style={(showDetailedView || showFollowersDetail || showInteractionsDetail || showPostsDetail || showWordCloudDetail || showCitiesDetail) ? { display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' } : {}}>
           <div className="ig-clean-grid__left">
             <section className="ig-profile-vertical">
               <div
@@ -4645,6 +4667,551 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   </div>
                 </section>
               </div>
+            ) : showCitiesDetail ? (
+              /* Conteúdo detalhado de Top Cidades */
+              <div className="ig-cities-detail-panel">
+                {/* Header com botão voltar */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '24px',
+                  padding: '16px 20px',
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',
+                  borderRadius: '16px',
+                  color: 'white'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <button
+                      onClick={() => setShowCitiesDetail(false)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '10px',
+                        background: 'rgba(255, 255, 255, 0.2)',
+                        border: 'none',
+                        color: 'white',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="15 18 9 12 15 6" />
+                      </svg>
+                    </button>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Top Cidades</h3>
+                      <p style={{ margin: 0, fontSize: '13px', opacity: 0.9 }}>Distribuição geográfica do público</p>
+                    </div>
+                  </div>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 12px',
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: 600
+                  }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                      <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    {audienceCities.length} cidades
+                  </div>
+                </div>
+
+                {/* KPIs de Resumo */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gap: '16px',
+                  marginBottom: '24px'
+                }}>
+                  <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '28px', fontWeight: 700, color: '#3b82f6' }}>
+                      {audienceCities.length}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Total de Cidades</div>
+                  </div>
+                  <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '28px', fontWeight: 700, color: '#6366f1' }}>
+                      {formatNumber(audienceCitiesTotal)}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Total de Seguidores</div>
+                  </div>
+                  <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '28px', fontWeight: 700, color: '#8b5cf6' }}>
+                      {audienceTopCity?.cityName || '--'}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Cidade Principal</div>
+                  </div>
+                </div>
+
+                {/* Mapa do Brasil com Cidades */}
+                <section className="ig-card-white" style={{ marginBottom: '24px' }}>
+                  <div style={{ padding: '20px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#111827' }}>
+                      Mapa de distribuição
+                    </h4>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#3b82f6' }} />
+                        <span style={{ fontSize: '12px', color: '#6b7280' }}>Menor</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: '16px', height: '16px', borderRadius: '50%', background: '#6366f1' }} />
+                        <span style={{ fontSize: '12px', color: '#6b7280' }}>Médio</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#8b5cf6' }} />
+                        <span style={{ fontSize: '12px', color: '#6b7280' }}>Maior</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ padding: '20px', height: 420, position: 'relative' }}>
+                    {audienceCities.length > 0 ? (
+                      <ComposableMap
+                        projection="geoMercator"
+                        projectionConfig={{
+                          scale: 650,
+                          center: [-52, -15]
+                        }}
+                        style={{ width: '100%', height: '100%' }}
+                      >
+                        <ZoomableGroup center={[-52, -15]} zoom={1}>
+                          <Geographies geography="https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/brazil-states.geojson">
+                            {({ geographies }) =>
+                              geographies.map((geo) => (
+                                <Geography
+                                  key={geo.rsmKey}
+                                  geography={geo}
+                                  fill="#e5e7eb"
+                                  stroke="#fff"
+                                  strokeWidth={0.5}
+                                  style={{
+                                    default: { outline: 'none' },
+                                    hover: { fill: '#d1d5db', outline: 'none' },
+                                    pressed: { outline: 'none' }
+                                  }}
+                                />
+                              ))
+                            }
+                          </Geographies>
+                          {/* Marcadores das cidades */}
+                          {(() => {
+                            // Coordenadas das principais cidades brasileiras
+                            const cityCoordinates = {
+                              'São Paulo': [-46.6333, -23.5505],
+                              'Sao Paulo': [-46.6333, -23.5505],
+                              'Rio de Janeiro': [-43.1729, -22.9068],
+                              'Brasília': [-47.9292, -15.7801],
+                              'Brasilia': [-47.9292, -15.7801],
+                              'Salvador': [-38.5016, -12.9714],
+                              'Fortaleza': [-38.5434, -3.7172],
+                              'Belo Horizonte': [-43.9378, -19.9167],
+                              'Manaus': [-60.0217, -3.1190],
+                              'Curitiba': [-49.2654, -25.4290],
+                              'Recife': [-34.8813, -8.0476],
+                              'Porto Alegre': [-51.2177, -30.0346],
+                              'Belém': [-48.5044, -1.4558],
+                              'Belem': [-48.5044, -1.4558],
+                              'Goiânia': [-49.2533, -16.6869],
+                              'Goiania': [-49.2533, -16.6869],
+                              'Guarulhos': [-46.5333, -23.4628],
+                              'Campinas': [-47.0608, -22.9099],
+                              'São Luís': [-44.3028, -2.5297],
+                              'Sao Luis': [-44.3028, -2.5297],
+                              'São Gonçalo': [-43.0347, -22.8268],
+                              'Sao Goncalo': [-43.0347, -22.8268],
+                              'Maceió': [-35.7353, -9.6498],
+                              'Maceio': [-35.7353, -9.6498],
+                              'Duque de Caxias': [-43.3115, -22.7858],
+                              'Natal': [-35.2091, -5.7945],
+                              'Teresina': [-42.8019, -5.0892],
+                              'Campo Grande': [-54.6464, -20.4697],
+                              'São Bernardo do Campo': [-46.5650, -23.6914],
+                              'Sao Bernardo do Campo': [-46.5650, -23.6914],
+                              'João Pessoa': [-34.8631, -7.1195],
+                              'Joao Pessoa': [-34.8631, -7.1195],
+                              'Santo André': [-46.5322, -23.6639],
+                              'Santo Andre': [-46.5322, -23.6639],
+                              'Osasco': [-46.7917, -23.5325],
+                              'Ribeirão Preto': [-47.8103, -21.1775],
+                              'Ribeirao Preto': [-47.8103, -21.1775],
+                              'Uberlândia': [-48.2891, -18.9186],
+                              'Uberlandia': [-48.2891, -18.9186],
+                              'Sorocaba': [-47.4581, -23.5015],
+                              'Contagem': [-44.0539, -19.9319],
+                              'Aracaju': [-37.0731, -10.9472],
+                              'Feira de Santana': [-38.9663, -12.2664],
+                              'Cuiabá': [-56.0974, -15.6014],
+                              'Cuiaba': [-56.0974, -15.6014],
+                              'Joinville': [-48.8488, -26.3045],
+                              'Juiz de Fora': [-43.3503, -21.7642],
+                              'Londrina': [-51.1628, -23.3103],
+                              'Aparecida de Goiânia': [-49.2469, -16.8198],
+                              'Aparecida de Goiania': [-49.2469, -16.8198],
+                              'Niterói': [-43.1036, -22.8833],
+                              'Niteroi': [-43.1036, -22.8833],
+                              'Porto Velho': [-63.8999, -8.7612],
+                              'Florianópolis': [-48.5482, -27.5954],
+                              'Florianopolis': [-48.5482, -27.5954],
+                              'Serra': [-40.3078, -20.1281],
+                              'Caxias do Sul': [-51.1792, -29.1634],
+                              'Vitória': [-40.2976, -20.3155],
+                              'Vitoria': [-40.2976, -20.3155],
+                              'Macapá': [-51.0669, 0.0349],
+                              'Macapa': [-51.0669, 0.0349],
+                              'Boa Vista': [-60.6753, 2.8235],
+                              'Rio Branco': [-67.8076, -9.9754],
+                              'Palmas': [-48.3558, -10.1689],
+                              'Santos': [-46.3289, -23.9608],
+                              'Mogi das Cruzes': [-46.1897, -23.5225],
+                              'Betim': [-44.1983, -19.9678],
+                              'Diadema': [-46.6228, -23.6814],
+                              'Jundiaí': [-46.8822, -23.1864],
+                              'Jundiai': [-46.8822, -23.1864],
+                              'Piracicaba': [-47.6494, -22.7256],
+                              'Carapicuíba': [-46.8406, -23.5225],
+                              'Carapicuiba': [-46.8406, -23.5225],
+                              'Olinda': [-34.8558, -8.0089],
+                              'Montes Claros': [-43.8617, -16.7350],
+                              'Anápolis': [-48.9528, -16.3281],
+                              'Anapolis': [-48.9528, -16.3281],
+                              'São José dos Campos': [-45.8864, -23.1896],
+                              'Sao Jose dos Campos': [-45.8864, -23.1896],
+                              'Maringá': [-51.9333, -23.4253],
+                              'Maringa': [-51.9333, -23.4253],
+                              'Blumenau': [-49.0661, -26.9194],
+                              'Bauru': [-49.0606, -22.3147],
+                              'Ponta Grossa': [-50.1619, -25.0994],
+                              'Cascavel': [-53.4550, -24.9578],
+                              'Pelotas': [-52.3425, -31.7654],
+                              'Canoas': [-51.1739, -29.9178],
+                              'Franca': [-47.4008, -20.5389],
+                              'Itaquaquecetuba': [-46.3486, -23.4867],
+                              'Praia Grande': [-46.4022, -24.0058],
+                              'Petrolina': [-40.5008, -9.3986],
+                              'Petrópolis': [-43.1786, -22.5050],
+                              'Petropolis': [-43.1786, -22.5050],
+                              'Limeira': [-47.4017, -22.5642],
+                              'São José do Rio Preto': [-49.3794, -20.8197],
+                              'Sao Jose do Rio Preto': [-49.3794, -20.8197],
+                              'Foz do Iguaçu': [-54.5853, -25.5478],
+                              'Foz do Iguacu': [-54.5853, -25.5478],
+                              'Taubaté': [-45.5556, -23.0261],
+                              'Taubate': [-45.5556, -23.0261],
+                              'Chapecó': [-52.6186, -27.1006],
+                              'Chapeco': [-52.6186, -27.1006],
+                              'Novo Hamburgo': [-51.1308, -29.6783],
+                              'Santa Maria': [-53.8008, -29.6868],
+                              'Suzano': [-46.3106, -23.5425],
+                              'Governador Valadares': [-41.9489, -18.8511],
+                              'Volta Redonda': [-44.1042, -22.5231],
+                              'Gravataí': [-50.9919, -29.9436],
+                              'Gravatai': [-50.9919, -29.9436],
+                              'Mossoró': [-37.3442, -5.1878],
+                              'Mossoro': [-37.3442, -5.1878],
+                              'Americana': [-47.3331, -22.7392],
+                              'Várzea Grande': [-56.1325, -15.6469],
+                              'Varzea Grande': [-56.1325, -15.6469],
+                              'Imperatriz': [-47.4919, -5.5264],
+                              'Caruaru': [-35.9761, -8.2850],
+                              'Dourados': [-54.8056, -22.2211],
+                              'Rondonópolis': [-54.6372, -16.4703],
+                              'Rondonopolis': [-54.6372, -16.4703],
+                              'Itajaí': [-48.6617, -26.9078],
+                              'Itajai': [-48.6617, -26.9078],
+                              'Marabá': [-49.1178, -5.3686],
+                              'Maraba': [-49.1178, -5.3686],
+                              'São José': [-48.6361, -27.6136],
+                              'Sao Jose': [-48.6361, -27.6136],
+                              'Uberaba': [-47.9319, -19.7478],
+                              'Rio Grande': [-52.0986, -32.0350],
+                              'Caucaia': [-38.6531, -3.7361],
+                              'Itabuna': [-39.2803, -14.7856],
+                              'Parnaíba': [-41.7769, -2.9053],
+                              'Parnaiba': [-41.7769, -2.9053],
+                              'Juazeiro do Norte': [-39.3153, -7.2131],
+                              'Sobral': [-40.3481, -3.6897],
+                              'Vitória da Conquista': [-40.8394, -14.8619],
+                              'Vitoria da Conquista': [-40.8394, -14.8619],
+                              'Ilhéus': [-39.0464, -14.7936],
+                              'Ilheus': [-39.0464, -14.7936],
+                              'Juazeiro': [-40.5003, -9.4164],
+                              'Lages': [-50.3258, -27.8161],
+                              'Criciúma': [-49.3694, -28.6775],
+                              'Criciuma': [-49.3694, -28.6775],
+                              'Passo Fundo': [-52.4067, -28.2622],
+                              'Divinópolis': [-44.8836, -20.1389],
+                              'Divinopolis': [-44.8836, -20.1389],
+                              'Sete Lagoas': [-44.2469, -19.4658],
+                              'Ipatinga': [-42.5361, -19.4686],
+                              'Santarém': [-54.7081, -2.4431],
+                              'Santarem': [-54.7081, -2.4431],
+                              'Camaçari': [-38.3247, -12.6975],
+                              'Camacari': [-38.3247, -12.6975],
+                              'Sinop': [-55.5033, -11.8642],
+                              'Rio Verde': [-50.9281, -17.7928],
+                              'Patos de Minas': [-46.5181, -18.5789]
+                            };
+
+                            const maxValue = audienceCities[0]?.value || 1;
+
+                            return audienceCities.slice(0, 20).map((city, index) => {
+                              const nameValue = String(city.name || "");
+                              const parts = nameValue.split(",").map((part) => part.trim()).filter(Boolean);
+                              const cityName = parts[0] || nameValue;
+
+                              // Procura coordenadas
+                              const coords = cityCoordinates[cityName];
+                              if (!coords) return null;
+
+                              // Calcula tamanho do marcador baseado no valor
+                              const ratio = city.value / maxValue;
+                              const minSize = 6;
+                              const maxSize = 20;
+                              const size = minSize + (ratio * (maxSize - minSize));
+
+                              // Cor baseada no ranking
+                              const colors = ['#8b5cf6', '#6366f1', '#3b82f6', '#60a5fa', '#93c5fd'];
+                              const color = colors[Math.min(index, colors.length - 1)];
+                              const pct = audienceCitiesTotal > 0 ? ((city.value / audienceCitiesTotal) * 100).toFixed(1) : 0;
+
+                              return (
+                                <Marker key={cityName} coordinates={coords}>
+                                  <circle
+                                    r={size}
+                                    fill={color}
+                                    fillOpacity={0.8}
+                                    stroke="#fff"
+                                    strokeWidth={1.5}
+                                    style={{ cursor: 'pointer' }}
+                                  />
+                                  <title>{`${cityName}: ${pct}% (${formatNumber(city.value)} seguidores)`}</title>
+                                </Marker>
+                              );
+                            }).filter(Boolean);
+                          })()}
+                        </ZoomableGroup>
+                      </ComposableMap>
+                    ) : (
+                      <div className="ig-empty-state">Sem dados disponíveis para o mapa.</div>
+                    )}
+                  </div>
+                  {/* Lista das top 5 cidades no mapa */}
+                  <div style={{
+                    padding: '16px 20px',
+                    borderTop: '1px solid #e5e7eb',
+                    display: 'flex',
+                    gap: '16px',
+                    flexWrap: 'wrap',
+                    justifyContent: 'center'
+                  }}>
+                    {audienceCities.slice(0, 5).map((city, index) => {
+                      const nameValue = String(city.name || "");
+                      const parts = nameValue.split(",").map((part) => part.trim()).filter(Boolean);
+                      const cityName = parts[0] || nameValue;
+                      const pct = audienceCitiesTotal > 0 ? ((city.value / audienceCitiesTotal) * 100).toFixed(1) : 0;
+                      const colors = ['#8b5cf6', '#6366f1', '#3b82f6', '#60a5fa', '#93c5fd'];
+
+                      return (
+                        <div key={cityName} style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px 12px',
+                          background: '#f9fafb',
+                          borderRadius: '8px',
+                          border: '1px solid #e5e7eb'
+                        }}>
+                          <span style={{
+                            width: '10px',
+                            height: '10px',
+                            borderRadius: '50%',
+                            background: colors[index]
+                          }} />
+                          <span style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>{cityName}</span>
+                          <span style={{ fontSize: '12px', color: '#6b7280' }}>{pct}%</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+
+                {/* Gráfico de Barras Horizontal */}
+                <section className="ig-card-white" style={{ marginBottom: '24px' }}>
+                  <div style={{ padding: '20px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#111827' }}>
+                      Distribuição por cidade
+                    </h4>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)' }} />
+                      <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Seguidores</span>
+                    </div>
+                  </div>
+                  <div style={{ padding: '20px', height: 400 }}>
+                    {audienceCities.length > 0 ? (
+                      <ResponsiveContainer>
+                        <BarChart
+                          data={audienceCities.slice(0, 15).map(city => {
+                            const nameValue = String(city.name || "");
+                            const parts = nameValue.split(",").map((part) => part.trim()).filter(Boolean);
+                            const cityName = parts[0] || nameValue;
+                            const pct = audienceCitiesTotal > 0 ? ((city.value / audienceCitiesTotal) * 100) : 0;
+                            return {
+                              name: cityName.length > 15 ? cityName.substring(0, 15) + '...' : cityName,
+                              fullName: cityName,
+                              value: city.value,
+                              percentage: pct
+                            };
+                          })}
+                          layout="vertical"
+                          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
+                          <XAxis
+                            type="number"
+                            tick={{ fill: '#6b7280', fontSize: 11 }}
+                            axisLine={{ stroke: '#e5e7eb' }}
+                            tickLine={false}
+                            tickFormatter={(value) => `${value.toFixed(0)}%`}
+                          />
+                          <YAxis
+                            type="category"
+                            dataKey="name"
+                            tick={{ fill: '#374151', fontSize: 12 }}
+                            axisLine={{ stroke: '#e5e7eb' }}
+                            tickLine={false}
+                            width={120}
+                          />
+                          <Tooltip
+                            cursor={{ fill: 'rgba(59, 130, 246, 0.1)' }}
+                            content={({ active, payload }) => {
+                              if (!active || !payload?.length) return null;
+                              const data = payload[0].payload;
+                              return (
+                                <div className="ig-tooltip">
+                                  <span className="ig-tooltip__title">{data.fullName}</span>
+                                  <div className="ig-tooltip__row">
+                                    <span>Seguidores:</span>
+                                    <strong>{formatNumber(data.value)}</strong>
+                                  </div>
+                                  <div className="ig-tooltip__row">
+                                    <span>Percentual:</span>
+                                    <strong>{data.percentage.toFixed(2)}%</strong>
+                                  </div>
+                                </div>
+                              );
+                            }}
+                          />
+                          <Bar
+                            dataKey="percentage"
+                            fill="url(#citiesGradient)"
+                            radius={[0, 6, 6, 0]}
+                          />
+                          <defs>
+                            <linearGradient id="citiesGradient" x1="0" y1="0" x2="1" y2="0">
+                              <stop offset="0%" stopColor="#3b82f6" />
+                              <stop offset="100%" stopColor="#6366f1" />
+                            </linearGradient>
+                          </defs>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="ig-empty-state">Sem dados disponíveis.</div>
+                    )}
+                  </div>
+                </section>
+
+                {/* Lista Completa de Cidades */}
+                <section className="ig-card-white">
+                  <div style={{ padding: '20px', borderBottom: '1px solid #e5e7eb' }}>
+                    <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#111827' }}>
+                      Ranking completo de cidades
+                    </h4>
+                    <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#6b7280' }}>
+                      Todas as cidades ordenadas por número de seguidores
+                    </p>
+                  </div>
+                  <div style={{ padding: '16px', maxHeight: '400px', overflowY: 'auto' }}>
+                    {audienceCities.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {audienceCities.map((city, index) => {
+                          const nameValue = String(city.name || "");
+                          const parts = nameValue.split(",").map((part) => part.trim()).filter(Boolean);
+                          const cityName = parts[0] || nameValue;
+                          const regionName = parts.length > 1 ? parts.slice(1).join(", ") : "";
+                          const pct = audienceCitiesTotal > 0 ? ((city.value / audienceCitiesTotal) * 100) : 0;
+                          const colors = ["#3b82f6", "#6366f1", "#8b5cf6", "#a855f7", "#c084fc"];
+                          const color = colors[index % colors.length];
+                          const maxPct = audienceCitiesTotal > 0 ? ((audienceCities[0]?.value / audienceCitiesTotal) * 100) : 1;
+                          const barWidth = maxPct > 0 ? Math.round((pct / maxPct) * 100) : 0;
+
+                          return (
+                            <div
+                              key={`${city.name}-${index}`}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                padding: '12px 16px',
+                                background: index < 3 ? 'rgba(59, 130, 246, 0.05)' : '#f9fafb',
+                                borderRadius: '10px',
+                                border: index < 3 ? '1px solid rgba(59, 130, 246, 0.15)' : '1px solid #e5e7eb'
+                              }}
+                            >
+                              <div style={{
+                                width: '32px',
+                                height: '32px',
+                                borderRadius: '8px',
+                                background: index < 3 ? `linear-gradient(135deg, ${color} 0%, ${colors[(index + 1) % colors.length]} 100%)` : '#e5e7eb',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: index < 3 ? 'white' : '#6b7280',
+                                fontSize: '13px',
+                                fontWeight: 700,
+                                flexShrink: 0
+                              }}>
+                                {index + 1}
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: '14px', fontWeight: 600, color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {cityName}
+                                </div>
+                                {regionName && (
+                                  <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {regionName}
+                                  </div>
+                                )}
+                                <div style={{ marginTop: '6px', height: '4px', background: '#e5e7eb', borderRadius: '2px', overflow: 'hidden' }}>
+                                  <div style={{ height: '100%', width: `${barWidth}%`, background: `linear-gradient(90deg, ${color} 0%, ${colors[(index + 1) % colors.length]} 100%)`, borderRadius: '2px' }} />
+                                </div>
+                              </div>
+                              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                <div style={{ fontSize: '15px', fontWeight: 700, color: color }}>
+                                  {pct.toFixed(1)}%
+                                </div>
+                                <div style={{ fontSize: '11px', color: '#9ca3af' }}>
+                                  {formatNumber(city.value)}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="ig-empty-state">Sem cidades disponíveis.</div>
+                    )}
+                  </div>
+                </section>
+              </div>
             ) : (
               <>
             {/* Card de Crescimento do Perfil */}
@@ -5234,7 +5801,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     </div>
                     <div className="ig-top-cities__hero-content">
                       <div className="ig-top-cities__hero-value">
-                        {formatNumber(audienceTopCity.value)}
+                        {audienceCitiesTotal > 0 ? `${((audienceTopCity.value / audienceCitiesTotal) * 100).toFixed(1)}%` : '--'}
                       </div>
                       <div className="ig-top-cities__hero-label">
                         <span className="ig-top-cities__hero-name">
@@ -5256,8 +5823,9 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   {audienceTopCityRows.map((city, index) => {
                     const colors = ["#3b82f6", "#f87171", "#fb923c", "#a78bfa", "#34d399"];
                     const color = colors[index % colors.length];
-                    const maxValue = audienceTopCityRows[0]?.value || 1;
-                    const percentage = Math.round((city.value / maxValue) * 100);
+                    const cityPercentage = audienceCitiesTotal > 0 ? ((city.value / audienceCitiesTotal) * 100) : 0;
+                    const maxPercentage = audienceCitiesTotal > 0 ? ((audienceTopCityRows[0]?.value / audienceCitiesTotal) * 100) : 1;
+                    const barWidth = maxPercentage > 0 ? Math.round((cityPercentage / maxPercentage) * 100) : 0;
                     const rankNum = index + 1;
                     const rankClass = rankNum <= 3 ? `ig-top-city-row__rank--${rankNum}` : 'ig-top-city-row__rank--default';
                     return (
@@ -5273,15 +5841,37 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                           <div
                             className="ig-top-city-row__bar-fill"
                             style={{
-                              width: `${percentage}%`,
+                              width: `${barWidth}%`,
                               background: `linear-gradient(90deg, ${color}99 0%, ${color} 100%)`
                             }}
                           />
                         </div>
-                        <span className="ig-top-city-row__value">{formatNumber(city.value)}</span>
+                        <span className="ig-top-city-row__value">{cityPercentage.toFixed(1)}%</span>
                       </div>
                     );
                   })}
+                </div>
+
+                {/* Botão Ver mais */}
+                <div style={{ padding: '16px', borderTop: '1px solid #e5e7eb' }}>
+                  <button
+                    onClick={handleShowCitiesDetail}
+                    style={{
+                      width: '100%',
+                      padding: '10px 16px',
+                      background: 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      boxShadow: '0 2px 8px rgba(59, 130, 246, 0.25)'
+                    }}
+                  >
+                    Ver mais
+                  </button>
                 </div>
               </div>
             ) : (
