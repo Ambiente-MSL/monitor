@@ -4902,7 +4902,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 display: 'flex',
                 alignItems: 'center',
                 gap: '24px',
-                padding: '36px 16px 24px'
+                padding: '44px 16px 24px'
               }}>
                 {/* Valor principal à esquerda */}
                 <div style={{ textAlign: 'center', flexShrink: 0 }}>
