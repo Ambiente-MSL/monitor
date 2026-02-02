@@ -53,7 +53,7 @@ export default function PlatformCard({
         <div className="platform-card__metrics">
           {metrics?.reach != null && (
             <div className="platform-card__metric">
-              <span className="platform-card__metric-label">Alcance</span>
+              <span className="platform-card__metric-label">Alcance.</span>
               <div className="platform-card__metric-value">
                 {formatNumber(metrics.reach)}
                 {metrics.reachGrowth != null && (
