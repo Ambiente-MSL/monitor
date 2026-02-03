@@ -12198,7 +12198,11 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   border: none;
   padding: 0;
   white-space: nowrap;
-  text-transform: lowercase;
+  text-transform: lowercase !important;
+}
+
+.ig-word-cloud__word::first-letter {
+  text-transform: lowercase !important;
 }
 
 .ig-word-cloud:not(.ig-word-cloud--packed) .ig-word-cloud__word:hover {
