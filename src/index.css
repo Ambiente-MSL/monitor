@@ -12219,16 +12219,21 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 }
 
 .ig-word-cloud--large {
-  min-height: 280px;
-  padding: 30px;
+  min-height: 300px;
+  padding: 24px 32px;
 }
 
 .ig-word-cloud--packed {
   position: relative;
   display: block;
-  min-height: 320px;
-  padding: 16px 18px;
+  min-height: 340px;
+  padding: 20px 24px;
   overflow: hidden;
+}
+
+.ig-word-cloud--packed.ig-word-cloud--large {
+  min-height: 380px;
+  padding: 24px 32px;
 }
 
 .ig-word-cloud--packed .ig-word-cloud__word {

@@ -1,112 +1,127 @@
-# 📊 MSL Monitor – Dashboard de Insights Sociais
+# MSL Monitor - Dashboard de Insights Sociais
 
-- Um dashboard profissional para monitorar métricas orgânicas e pagas do Facebook e Instagram, com exportação de relatórios e visual moderno.
+Dashboard para monitorar métricas orgânicas e pagas de Facebook e Instagram, com relatórios, exportações e visual moderno.
 
-# Funcionalidades:
-✅ Conexão direta com a Meta Graph API
-✅ Métricas orgânicas (Facebook e Instagram) e pagas (Ads)
-✅ Gráficos interativos (linhas, pizza, comparativos)
-✅ Cache inteligente para carregamento rápido
-✅ Exportação de dados (CSV, PDF, Excel)
-✅ Relatórios por período customizado
-✅ Dark/Light mode
-✅ Estrutura modular (backend em Flask + frontend em React)
+## Principais recursos
+- Integração com a Meta Graph API
+- Dashboards de Instagram, Facebook e Ads
+- Gráficos interativos, mapas e nuvem de palavras
+- Exportação de dados (CSV, XLSX, PDF)
+- Filtros de período e comparativos
+- Cache em memória + Postgres com scheduler
+- Autenticação com papéis (analista/admin)
+- Docker para produção
 
-# Tecnologias Utilizadas: 
-- Frontend
-⚛️ React + Vite
-📈 Recharts (gráficos)
-🎨 Tailwind CSS (estilo moderno e responsivo)
-- Backend
-🐍 Python + Flask
-🔗 Integração com Meta Graph API
-🌍 Flask-CORS
-⚡ Cache em memória (TTL)
+## Stack
+- Frontend: React (Create React App), React Router, SWR, Recharts, date-fns, PostCSS
+- Backend: Python + Flask, Flask-CORS, APScheduler, Facebook Business SDK, Requests
+- Banco: PostgreSQL
+- Infra: Gunicorn + Nginx + Docker Compose
 
-# Configuração
-1. Clonar o projeto
-git clone https://github.com/seuusuario/msl-monitor.git
-cd msl-monitor
+## Estrutura do projeto
+- `src/` - frontend React
+- `backend/` - API Flask, jobs e scheduler
+- `deploy/backend.env` - variáveis de produção (Docker)
+- `docker-compose.yml` - stack completa
+- `docs/` - documentação interna
 
-2. Configurar o Backend
+## Rodar localmente
 
-Criar ambiente virtual e instalar dependências:
-
+### Backend
+```
 cd backend
 python -m venv .venv
-source .venv/bin/activate   # Linux/macOS
-.venv\Scripts\activate      # Windows
-
+# Windows
+.venv\Scripts\activate
+# Linux/macOS
+source .venv/bin/activate
 pip install -r requirements.txt
+```
 
-
-Copiar .env.example → .env e preencher:
-
+Crie `backend/.env` com pelo menos:
+```
 META_GRAPH_VERSION=v23.0
 META_SYSTEM_USER_TOKEN=SEU_TOKEN
 META_APP_SECRET=SEU_SECRET
-META_PAGE_ID=123456789
-META_IG_USER_ID=123456789
-META_AD_ACCOUNT_ID=act_123456
+META_PAGE_ID=123
+META_IG_USER_ID=123
+META_AD_ACCOUNT_ID=act_123
+FRONTEND_ORIGINS=http://localhost:3010
+AUTH_SECRET_KEY=troque-isto
+DATABASE_URL=postgresql://usuario:senha@localhost:5432/monitor_db
+```
 
+Ou use variáveis separadas:
+```
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_NAME=monitor_db
+DATABASE_USER=postgres
+DATABASE_PASSWORD=senha
+DATABASE_SSLMODE=disable
+```
 
-Banco de dados PostgreSQL:
-
-1. Configure as variáveis `DATABASE_*` e `AUTH_SECRET_KEY` no arquivo `backend/.env` para apontar para o seu servidor Postgres (ou defina `DATABASE_URL` diretamente).
-2. Execute o script `backend/sql/app_tables.sql` em seu banco para criar as tabelas `app_users`, `report_templates` e `reports` utilizadas pelo backend:
-   ```
-   psql "postgresql://usuario:senha@host:5432/monitor_db" -f backend/sql/app_tables.sql
-   ```
-3. Crie o primeiro usuário diretamente na tabela `app_users` ou usando o endpoint `/api/auth/register`. O backend utiliza o campo `role` para liberar o painel de administração (`analista` ou `admin`).
-4. Para redefinir senhas existentes (ou criar usuários rapidamente) use o utilitário `backend/scripts/update_user_password.py`:
-   ```
-   cd backend
-   python scripts/update_user_password.py usuario@empresa.com "NovaSenhaForte123"
-   # ou crie um usuário admin caso ele ainda não exista
-   python scripts/update_user_password.py admin@empresa.com "SenhaSecreta!" --nome "Administrador" --role admin --create
-   ```
-   O script aplica o mesmo algoritmo PBKDF2 usado pela API e atualiza o registro no Postgres automaticamente.
-
-
-Rodar backend:
-
+Rodar API:
+```
 python server.py
+```
+API em `http://localhost:3001`.
 
-
-Disponível em http://localhost:3001
-
-3. Configurar o Frontend
-cd my-app
+### Frontend
+```
 npm install
-cp .env.example .env # defina REACT_APP_API_URL=http://localhost:3001 (ou URL do backend)
-npm run dev
+```
 
+Crie `.env` na raiz:
+```
+PORT=3010
+REACT_APP_API_URL=http://localhost:3001
+REACT_APP_FACEBOOK_APP_ID=SEU_APP_ID
+REACT_APP_FACEBOOK_CONFIG_ID=SEU_CONFIG_ID
+```
 
-# 🔗 Passo a passo para atualizar commits no Docker🔗 #
+Rodar:
+```
+npm start
+```
+App em `http://localhost:3010`.
 
-cd /root/DashboardSocial
+## Banco de dados (Postgres)
+1) Crie as tabelas:
+```
+psql "postgresql://usuario:senha@host:5432/monitor_db" -f backend/sql/app_tables.sql
+```
+2) Crie um usuário na tabela `app_users` ou via `/api/auth/register`.
+3) Para atualizar/criar senha:
+```
+cd backend
+python scripts/update_user_password.py usuario@empresa.com "NovaSenhaForte123"
+python scripts/update_user_password.py admin@empresa.com "SenhaSecreta!" --nome "Administrador" --role admin --create
+```
 
- 1) Salvar suas mudanças locais
-git add -A
-git commit -m "WIP: alterações locais no servidor"  # se houver algo a commitar
-Se houver um merge inacabado:
-git merge --abort 2>/dev/null || true
+## Docker (produção ou staging)
+1) Configure `deploy/backend.env` com suas variáveis.
+2) Suba a stack:
+```
+docker compose up -d --build --remove-orphans
+```
 
- 2) Rebase com remoto
-git pull
+Serviços:
+- `backend` (Flask + Gunicorn)
+- `worker` (scheduler `scheduler_runner.py`)
+- `frontend` (build do React servido por Nginx)
 
- (Se aparecer conflitos, edite os arquivos, git add <arquivo>, e continue)
- git rebase --continue
+## Deploy via GitHub Actions
+O workflow em `.github/workflows/deploy.yml` faz deploy por SSH e roda:
+```
+git fetch origin main
+git reset --hard origin/main
+docker compose up -d --build --remove-orphans
+```
+Garanta que o repo no servidor esteja em `/root/monitor` (ou ajuste o workflow).
 
- 3) Rebuildar e subir
-docker compose build --pull
-docker compose up -d
-docker compose ps
-
-
-## Performance (carregamento rápido)
-
-- O cache em Postgres é mantido por um scheduler. Em produção, rode o serviço `worker` do `docker-compose.yml` (ele executa `python scheduler_runner.py`).
-- O backend pode iniciar o scheduler internamente via `META_SYNC_AUTOSTART=1` (não recomendado com múltiplos workers). No `docker-compose.yml` o recomendado é `META_SYNC_AUTOSTART=0` e manter o scheduler no `worker`.
-- Para alinhar o prewarm do cache ao mesmo range do frontend, defina `CACHE_WARM_TZ=America/Sao_Paulo` (ou o fuso usado pelos usuários).
-- Para evitar que a primeira carga do Instagram force ingestão/Meta API, faça backfill de histórico: `python backend/jobs/backfill_instagram.py --ensure-standard` (ou ajuste `--days`).
+## Performance e cache
+- O scheduler roda no serviço `worker` para manter cache e ingestões.
+- Para evitar scheduler duplicado, mantenha `META_SYNC_AUTOSTART=0` no backend.
+- Para alinhar o prewarm ao fuso, defina `CACHE_WARM_TZ=America/Sao_Paulo`.
+- Para backfill de histórico: `python backend/jobs/backfill_instagram.py --ensure-standard`.

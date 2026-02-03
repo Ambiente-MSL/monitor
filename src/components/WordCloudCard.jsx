@@ -125,15 +125,16 @@ const buildCloudLayout = (entries, bounds) => {
   const ctx = canvas.getContext("2d");
   if (!ctx) return [];
 
-  const margin = 12;
-  const width = Math.max(bounds.width - margin * 2, 120);
-  const height = Math.max(bounds.height - margin * 2, 120);
+  const margin = 16;
+  const width = Math.max(bounds.width - margin * 2, 200);
+  const height = Math.max(bounds.height - margin * 2, 160);
   const centerX = width / 2 + margin;
   const centerY = height / 2 + margin;
-  const maxRadius = Math.min(width, height) / 2;
-  const angleStep = 0.35;
-  const radiusStep = 3.6;
-  const maxAttempts = 900;
+  // Usar proporção horizontal maior para expandir mais na largura
+  const aspectRatio = width / height;
+  const maxRadiusX = width / 2 - margin;
+  const maxRadiusY = height / 2 - margin;
+  const maxAttempts = 1200;
 
   const placed = [];
   entries.forEach((entry, index) => {
@@ -152,11 +153,15 @@ const buildCloudLayout = (entries, bounds) => {
     let placedOk = index === 0;
 
     if (!placedOk) {
+      // Espiral de Arquimedes com expansão horizontal
       for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-        const angle = attempt * angleStep;
-        const radius = Math.min(maxRadius, radiusStep * angle);
-        x = centerX + radius * Math.cos(angle);
-        y = centerY + radius * Math.sin(angle);
+        const angle = attempt * 0.5; // Ângulo maior para espiral mais aberta
+        const baseRadius = 4 + attempt * 2.5; // Raio crescente mais rápido
+        // Expandir mais horizontalmente que verticalmente
+        const radiusX = Math.min(maxRadiusX, baseRadius * Math.max(1, aspectRatio * 0.7));
+        const radiusY = Math.min(maxRadiusY, baseRadius * 0.8);
+        x = centerX + radiusX * Math.cos(angle);
+        y = centerY + radiusY * Math.sin(angle);
         const rect = {
           x: x - wordWidth / 2,
           y: y - wordHeight / 2,
@@ -171,7 +176,7 @@ const buildCloudLayout = (entries, bounds) => {
         ) {
           continue;
         }
-        if (!hasCollision(rect, placed, 6)) {
+        if (!hasCollision(rect, placed, 8)) {
           placedOk = true;
           break;
         }
@@ -179,10 +184,12 @@ const buildCloudLayout = (entries, bounds) => {
     }
 
     if (!placedOk) {
-      const fallbackAngle = index * 0.9;
-      const fallbackRadius = Math.min(maxRadius, 12 + index * 4);
-      x = centerX + fallbackRadius * Math.cos(fallbackAngle);
-      y = centerY + fallbackRadius * Math.sin(fallbackAngle);
+      // Fallback: distribuir em grid elíptico
+      const fallbackAngle = index * 0.7 + Math.PI / 4;
+      const fallbackRadiusX = Math.min(maxRadiusX * 0.8, 20 + index * 8);
+      const fallbackRadiusY = Math.min(maxRadiusY * 0.8, 15 + index * 5);
+      x = centerX + fallbackRadiusX * Math.cos(fallbackAngle);
+      y = centerY + fallbackRadiusY * Math.sin(fallbackAngle);
     }
 
     placed.push({
