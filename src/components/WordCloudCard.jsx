@@ -77,9 +77,9 @@ const buildCloudEntries = (words) => {
   const counts = limited.map((item) => item.count || 0);
   const maxCount = Math.max(...counts);
   const minCount = Math.min(...counts);
-  // Escala de tamanhos como na referência - palavra principal MUITO grande
-  const minFont = 10;
-  const maxFont = 48;
+  // Escala maior para ocupar melhor o card
+  const minFont = 18;
+  const maxFont = 72;
 
   return limited.map((item, index) => {
     const seed = hashString(item.word || `${index}`);
@@ -88,9 +88,9 @@ const buildCloudEntries = (words) => {
     // Top 1 = muito grande, top 2 = grande, resto proporcional
     let fontSize;
     if (index === 0) {
-      fontSize = 72; // Palavra principal bem grande como "caminhoneiros"
+      fontSize = 96; // Palavra principal maior
     } else if (index === 1) {
-      fontSize = 52; // Segunda palavra grande como "greve"
+      fontSize = 78; // Segunda palavra grande
     } else {
       fontSize = baseFont;
     }
@@ -127,7 +127,7 @@ const measureWord = (ctx, word, fontSize, fontWeight) => {
 };
 
 // Verifica colisão entre retângulos usando coordenadas do canto superior esquerdo
-const hasCollision = (newRect, placed, padding = 6) => {
+const hasCollision = (newRect, placed, padding = 5) => {
   for (const item of placed) {
     // Converter centro para canto superior esquerdo para comparação
     const itemLeft = item.x - item.width / 2;
@@ -151,6 +151,43 @@ const hasCollision = (newRect, placed, padding = 6) => {
   return false;
 };
 
+const spreadLayoutToFill = (layout, bounds, margin = 16) => {
+  if (!Array.isArray(layout) || !layout.length) return layout;
+  if (!bounds?.width || !bounds?.height) return layout;
+
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+
+  layout.forEach((item) => {
+    const left = item.x - item.width / 2;
+    const right = item.x + item.width / 2;
+    const top = item.y - item.height / 2;
+    const bottom = item.y + item.height / 2;
+    minX = Math.min(minX, left);
+    maxX = Math.max(maxX, right);
+    minY = Math.min(minY, top);
+    maxY = Math.max(maxY, bottom);
+  });
+
+  const boxWidth = Math.max(1, maxX - minX);
+  const boxHeight = Math.max(1, maxY - minY);
+  const targetWidth = Math.max(1, bounds.width - margin * 2);
+  const targetHeight = Math.max(1, bounds.height - margin * 2);
+  const scale = Math.min(targetWidth / boxWidth, targetHeight / boxHeight, 1.35);
+
+  if (scale <= 1.01) return layout;
+
+  const centerX = bounds.width / 2;
+  const centerY = bounds.height / 2;
+  return layout.map((item) => ({
+    ...item,
+    x: centerX + (item.x - centerX) * scale,
+    y: centerY + (item.y - centerY) * scale,
+  }));
+};
+
 const buildCloudLayout = (entries, bounds) => {
   if (!entries.length) return [];
   if (!bounds?.width || bounds.width < 200 || !bounds?.height || bounds.height < 150) return [];
@@ -164,7 +201,7 @@ const buildCloudLayout = (entries, bounds) => {
   const height = bounds.height;
   const centerX = width / 2;
   const centerY = height / 2;
-  const margin = 18;
+  const margin = 16;
 
   const placed = [];
 
@@ -206,7 +243,7 @@ const buildCloudLayout = (entries, bounds) => {
     // Espiral de Arquimedes - busca posição livre mais próxima do centro
     if (!placedOk) {
       // Espiral com passos pequenos para layout denso
-      for (let step = 0; step < 3600 && !placedOk; step += 1) {
+      for (let step = 0; step < 5200 && !placedOk; step += 1) {
         const angle = step * 0.32;
         const radius = 2 + step * 0.9;
 
@@ -226,7 +263,7 @@ const buildCloudLayout = (entries, bounds) => {
 
         // Verificar colisão com palavras já posicionadas
         const testRect = { left, top, width: wordWidth, height: wordHeight };
-        if (!hasCollision(testRect, placed, 6)) {
+        if (!hasCollision(testRect, placed, 5)) {
           bestX = testX;
           bestY = testY;
           placedOk = true;
@@ -246,7 +283,7 @@ const buildCloudLayout = (entries, bounds) => {
     }
   });
 
-  return placed;
+  return spreadLayoutToFill(placed, bounds, margin);
 };
 
 const hasLayoutOverlap = (layout, padding = 2) => {
