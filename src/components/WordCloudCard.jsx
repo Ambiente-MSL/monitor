@@ -126,13 +126,30 @@ const measureWord = (ctx, word, fontSize, fontWeight) => {
   };
 };
 
-// Verifica colisão entre retângulos com padding
-const hasCollision = (rect, placed, padding = 3) => placed.some((item) => (
-  rect.x < item.x + item.width + padding
-    && rect.x + rect.width + padding > item.x
-    && rect.y < item.y + item.height + padding
-    && rect.y + rect.height + padding > item.y
-));
+// Verifica colisão entre retângulos usando coordenadas do canto superior esquerdo
+const hasCollision = (newRect, placed, padding = 4) => {
+  for (const item of placed) {
+    // Converter centro para canto superior esquerdo para comparação
+    const itemLeft = item.x - item.width / 2;
+    const itemTop = item.y - item.height / 2;
+    const itemRight = itemLeft + item.width;
+    const itemBottom = itemTop + item.height;
+
+    const newLeft = newRect.left;
+    const newTop = newRect.top;
+    const newRight = newLeft + newRect.width;
+    const newBottom = newTop + newRect.height;
+
+    // Verificar sobreposição com padding
+    if (newLeft < itemRight + padding &&
+        newRight > itemLeft - padding &&
+        newTop < itemBottom + padding &&
+        newBottom > itemTop - padding) {
+      return true;
+    }
+  }
+  return false;
+};
 
 const buildCloudLayout = (entries, bounds) => {
   if (!entries.length) return [];
@@ -147,7 +164,7 @@ const buildCloudLayout = (entries, bounds) => {
   const height = bounds.height;
   const centerX = width / 2;
   const centerY = height / 2;
-  const margin = 10;
+  const margin = 15;
 
   const placed = [];
 
@@ -176,52 +193,42 @@ const buildCloudLayout = (entries, bounds) => {
 
     // Primeira palavra centralizada
     if (index === 0) {
-      const rect = {
-        x: centerX - wordWidth / 2,
-        y: centerY - wordHeight / 2,
-        width: wordWidth,
-        height: wordHeight,
-      };
-      if (rect.x >= margin && rect.y >= margin &&
-          rect.x + rect.width <= width - margin &&
-          rect.y + rect.height <= height - margin) {
+      const left = centerX - wordWidth / 2;
+      const top = centerY - wordHeight / 2;
+      if (left >= margin && top >= margin &&
+          left + wordWidth <= width - margin &&
+          top + wordHeight <= height - margin) {
         placedOk = true;
       }
     }
 
     // Espiral de Arquimedes - busca posição livre mais próxima do centro
     if (!placedOk) {
-      // Espiral com passos pequenos para encontrar posição bem encaixada
-      for (let r = 0; r < 500 && !placedOk; r += 1) {
-        const radius = r * 1.5;
-        // Mais pontos por volta para encontrar encaixes
-        const pointsInCircle = Math.max(1, Math.floor(radius * 0.5));
+      // Espiral com passos pequenos para layout denso
+      for (let step = 0; step < 3000 && !placedOk; step += 1) {
+        const angle = step * 0.3;
+        const radius = 2 + step * 0.8;
 
-        for (let p = 0; p < pointsInCircle && !placedOk; p += 1) {
-          const angle = (p / pointsInCircle) * Math.PI * 2;
-          const testX = centerX + radius * Math.cos(angle);
-          const testY = centerY + radius * Math.sin(angle);
+        const testX = centerX + radius * Math.cos(angle);
+        const testY = centerY + radius * Math.sin(angle);
 
-          const rect = {
-            x: testX - wordWidth / 2,
-            y: testY - wordHeight / 2,
-            width: wordWidth,
-            height: wordHeight,
-          };
+        // Calcular bounding box
+        const left = testX - wordWidth / 2;
+        const top = testY - wordHeight / 2;
 
-          // Verificar limites
-          if (rect.x < margin || rect.y < margin ||
-              rect.x + rect.width > width - margin ||
-              rect.y + rect.height > height - margin) {
-            continue;
-          }
+        // Verificar limites do container
+        if (left < margin || top < margin ||
+            left + wordWidth > width - margin ||
+            top + wordHeight > height - margin) {
+          continue;
+        }
 
-          // Verificar colisão - padding pequeno para ficar bem próximo
-          if (!hasCollision(rect, placed, 3)) {
-            bestX = testX;
-            bestY = testY;
-            placedOk = true;
-          }
+        // Verificar colisão com palavras já posicionadas
+        const testRect = { left, top, width: wordWidth, height: wordHeight };
+        if (!hasCollision(testRect, placed, 4)) {
+          bestX = testX;
+          bestY = testY;
+          placedOk = true;
         }
       }
     }
