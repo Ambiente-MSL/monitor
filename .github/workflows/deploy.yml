@@ -5,10 +5,14 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+concurrency:
+  group: deploy-monitor
+  cancel-in-progress: true
+
 jobs:
   deploy:
     name: Deploy Monitor
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
     - name: 🚀 Deploy via SSH
