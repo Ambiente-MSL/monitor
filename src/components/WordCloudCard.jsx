@@ -68,24 +68,26 @@ const buildCloudEntries = (words) => {
   const limited = words
     .filter((item) => item && item.word)
     .sort((a, b) => (b.count || 0) - (a.count || 0))
-    .slice(0, 30);
+    .slice(0, 40);
 
   const counts = limited.map((item) => item.count || 0);
   const maxCount = Math.max(...counts);
   const minCount = Math.min(...counts);
-  const minFont = 14;
-  const maxFont = Math.max(minFont + 18, 72);
+  // Tamanhos menores para caber mais palavras
+  const minFont = 12;
+  const maxFont = 42;
 
   return limited.map((item, index) => {
     const seed = hashString(item.word || `${index}`);
     const rng = createSeededRandom(seed);
     const baseFont = scaleFont(item.count || 0, minCount, maxCount, minFont, maxFont);
-    const fontSize = index === 0 ? Math.min(baseFont + 8, 84) : baseFont;
+    // Palavra principal um pouco maior, mas não exagerado
+    const fontSize = index === 0 ? Math.min(baseFont + 6, 48) : baseFont;
     const color = index === 0 ? "#4d7c0f" : WORD_COLORS[Math.floor(rng() * WORD_COLORS.length)];
     const opacity = 0.85 + ((item.count || 0) / (maxCount || 1)) * 0.15;
-    const rotateRoll = rng();
-    const rotate = rotateRoll < 0.14 ? (rng() < 0.5 ? -90 : 90) : 0;
-    const fontWeight = index === 0 ? 900 : item.count === maxCount ? 800 : item.count >= (minCount + maxCount) / 2 ? 700 : 600;
+    // Sem rotação para evitar sobreposição vertical
+    const rotate = 0;
+    const fontWeight = index === 0 ? 800 : item.count === maxCount ? 700 : item.count >= (minCount + maxCount) / 2 ? 600 : 500;
     return {
       key: `${item.word}-${index}`,
       word: item.word,
@@ -125,18 +127,14 @@ const buildCloudLayout = (entries, bounds) => {
   const ctx = canvas.getContext("2d");
   if (!ctx) return [];
 
-  const margin = 16;
-  const width = Math.max(bounds.width - margin * 2, 200);
-  const height = Math.max(bounds.height - margin * 2, 160);
-  const centerX = width / 2 + margin;
-  const centerY = height / 2 + margin;
-  // Usar proporção horizontal maior para expandir mais na largura
-  const aspectRatio = width / height;
-  const maxRadiusX = width / 2 - margin;
-  const maxRadiusY = height / 2 - margin;
-  const maxAttempts = 1200;
+  const padding = 12;
+  const availableWidth = Math.max(bounds.width - padding * 2, 300);
+  const availableHeight = Math.max(bounds.height - padding * 2, 200);
+  const centerX = availableWidth / 2 + padding;
+  const centerY = availableHeight / 2 + padding;
 
   const placed = [];
+
   entries.forEach((entry, index) => {
     const { width: textWidth, height: textHeight } = measureWord(
       ctx,
@@ -144,61 +142,83 @@ const buildCloudLayout = (entries, bounds) => {
       entry.style.fontSize,
       entry.style.fontWeight,
     );
-    const rotated = Math.abs(entry.rotate) === 90;
-    const wordWidth = rotated ? textHeight : textWidth;
-    const wordHeight = rotated ? textWidth : textHeight;
+    const wordWidth = textWidth + 4;
+    const wordHeight = textHeight + 2;
 
-    let x = centerX;
-    let y = centerY;
-    let placedOk = index === 0;
+    let bestX = centerX;
+    let bestY = centerY;
+    let placedOk = false;
 
+    // Primeira palavra no centro
+    if (index === 0) {
+      const rect = {
+        x: centerX - wordWidth / 2,
+        y: centerY - wordHeight / 2,
+        width: wordWidth,
+        height: wordHeight,
+      };
+      if (rect.x >= padding && rect.y >= padding &&
+          rect.x + rect.width <= availableWidth + padding &&
+          rect.y + rect.height <= availableHeight + padding) {
+        placedOk = true;
+      }
+    }
+
+    // Busca em espiral com prioridade horizontal
     if (!placedOk) {
-      // Espiral de Arquimedes com expansão horizontal
-      for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-        const angle = attempt * 0.5; // Ângulo maior para espiral mais aberta
-        const baseRadius = 4 + attempt * 2.5; // Raio crescente mais rápido
-        // Expandir mais horizontalmente que verticalmente
-        const radiusX = Math.min(maxRadiusX, baseRadius * Math.max(1, aspectRatio * 0.7));
-        const radiusY = Math.min(maxRadiusY, baseRadius * 0.8);
-        x = centerX + radiusX * Math.cos(angle);
-        y = centerY + radiusY * Math.sin(angle);
+      const maxAttempts = 2000;
+      for (let attempt = 1; attempt < maxAttempts && !placedOk; attempt += 1) {
+        // Espiral com expansão horizontal maior
+        const angle = attempt * 0.3;
+        const radius = 8 + attempt * 1.8;
+        // Multiplicador horizontal para espalhar mais na largura
+        const xMultiplier = 2.2;
+        const yMultiplier = 1.0;
+
+        const testX = centerX + radius * Math.cos(angle) * xMultiplier;
+        const testY = centerY + radius * Math.sin(angle) * yMultiplier;
+
         const rect = {
-          x: x - wordWidth / 2,
-          y: y - wordHeight / 2,
+          x: testX - wordWidth / 2,
+          y: testY - wordHeight / 2,
           width: wordWidth,
           height: wordHeight,
         };
-        if (
-          rect.x < margin
-          || rect.y < margin
-          || rect.x + rect.width > width + margin
-          || rect.y + rect.height > height + margin
-        ) {
+
+        // Verificar limites
+        if (rect.x < padding || rect.y < padding ||
+            rect.x + rect.width > availableWidth + padding ||
+            rect.y + rect.height > availableHeight + padding) {
           continue;
         }
-        if (!hasCollision(rect, placed, 8)) {
+
+        // Verificar colisão
+        if (!hasCollision(rect, placed, 6)) {
+          bestX = testX;
+          bestY = testY;
           placedOk = true;
-          break;
         }
       }
     }
 
+    // Fallback: posição baseada em grid
     if (!placedOk) {
-      // Fallback: distribuir em grid elíptico
-      const fallbackAngle = index * 0.7 + Math.PI / 4;
-      const fallbackRadiusX = Math.min(maxRadiusX * 0.8, 20 + index * 8);
-      const fallbackRadiusY = Math.min(maxRadiusY * 0.8, 15 + index * 5);
-      x = centerX + fallbackRadiusX * Math.cos(fallbackAngle);
-      y = centerY + fallbackRadiusY * Math.sin(fallbackAngle);
+      const cols = Math.ceil(Math.sqrt(entries.length * 2));
+      const row = Math.floor(index / cols);
+      const col = index % cols;
+      const cellWidth = availableWidth / cols;
+      const cellHeight = availableHeight / Math.ceil(entries.length / cols);
+      bestX = padding + cellWidth * (col + 0.5);
+      bestY = padding + cellHeight * (row + 0.5);
     }
 
     placed.push({
       ...entry,
-      x,
-      y,
+      x: bestX,
+      y: bestY,
       width: wordWidth,
       height: wordHeight,
-      zIndex: Math.round(entry.style.fontSize || 0),
+      zIndex: 100 - index,
     });
   });
 
