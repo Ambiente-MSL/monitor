@@ -103,7 +103,7 @@ const buildCloudEntries = (words) => {
     const fontWeight = 300;
     return {
       key: `${item.word}-${index}`,
-      word: item.word,
+      word: item.word.toLowerCase(), // Palavras em minúsculo
       count: item.count,
       rotate,
       style: {
@@ -201,7 +201,11 @@ const buildCloudLayout = (entries, bounds) => {
   const height = bounds.height;
   const centerX = width / 2;
   const centerY = height / 2;
-  const margin = 10;
+  const margin = 8;
+
+  // Fator oval: expande mais na horizontal que na vertical
+  const ovalFactorX = 1.6;
+  const ovalFactorY = 1.0;
 
   const placed = [];
 
@@ -240,15 +244,15 @@ const buildCloudLayout = (entries, bounds) => {
       }
     }
 
-    // Espiral de Arquimedes - busca posição livre mais próxima do centro
+    // Espiral elíptica (oval) - mais larga que alta
     if (!placedOk) {
-      // Espiral com passos pequenos para layout denso
-      for (let step = 0; step < 5200 && !placedOk; step += 1) {
-        const angle = step * 0.32;
-        const radius = 2 + step * 0.9;
+      for (let step = 0; step < 6000 && !placedOk; step += 1) {
+        const angle = step * 0.25;
+        const baseRadius = 1 + step * 0.7;
 
-        const testX = centerX + radius * Math.cos(angle);
-        const testY = centerY + radius * Math.sin(angle);
+        // Aplicar fator oval para expandir mais horizontalmente
+        const testX = centerX + baseRadius * ovalFactorX * Math.cos(angle);
+        const testY = centerY + baseRadius * ovalFactorY * Math.sin(angle);
 
         // Calcular bounding box
         const left = testX - wordWidth / 2;
@@ -261,9 +265,9 @@ const buildCloudLayout = (entries, bounds) => {
           continue;
         }
 
-        // Verificar colisão com palavras já posicionadas
+        // Verificar colisão - padding mínimo para palavras bem próximas
         const testRect = { left, top, width: wordWidth, height: wordHeight };
-        if (!hasCollision(testRect, placed, 2)) {
+        if (!hasCollision(testRect, placed, 1)) {
           bestX = testX;
           bestY = testY;
           placedOk = true;
