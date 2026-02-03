@@ -3,18 +3,22 @@ import useSWR from "swr";
 import { fetchWithTimeout, isTimeoutError } from "../lib/fetchWithTimeout";
 import DataState from "./DataState";
 
+// Cores como na imagem de referência - verdes, laranjas, vermelhos, pretos
 const WORD_COLORS = [
-  "#4d7c0f",
-  "#65a30d",
-  "#15803d",
-  "#a16207",
-  "#b45309",
-  "#ea580c",
-  "#f59e0b",
-  "#b91c1c",
-  "#7c2d12",
+  "#2d5016", // verde escuro
+  "#4d7c0f", // verde
+  "#65a30d", // verde claro
+  "#15803d", // verde médio
+  "#b45309", // laranja escuro
+  "#ea580c", // laranja
+  "#f59e0b", // amarelo/laranja
+  "#dc2626", // vermelho
+  "#b91c1c", // vermelho escuro
+  "#1f2937", // preto/cinza escuro
+  "#374151", // cinza
 ];
-const CLOUD_FONT_FAMILY = "'Lato', 'Segoe UI', sans-serif";
+// Fonte similar à da referência - Impact ou similar
+const CLOUD_FONT_FAMILY = "Impact, 'Arial Black', 'Helvetica Neue', sans-serif";
 const DETAILS_PAGE_SIZE = 50;
 const COMMENTS_PER_PAGE = 10;
 
@@ -68,27 +72,35 @@ const buildCloudEntries = (words) => {
   const limited = words
     .filter((item) => item && item.word)
     .sort((a, b) => (b.count || 0) - (a.count || 0))
-    .slice(0, 60);
+    .slice(0, 80); // Mais palavras como na referência
 
   const counts = limited.map((item) => item.count || 0);
   const maxCount = Math.max(...counts);
   const minCount = Math.min(...counts);
-  // Tamanhos variados como na referência - palavra principal bem grande
-  const minFont = 11;
-  const maxFont = 64;
+  // Escala de tamanhos como na referência - palavra principal MUITO grande
+  const minFont = 10;
+  const maxFont = 48;
 
   return limited.map((item, index) => {
     const seed = hashString(item.word || `${index}`);
     const rng = createSeededRandom(seed);
     const baseFont = scaleFont(item.count || 0, minCount, maxCount, minFont, maxFont);
-    // Palavra principal bem maior (como "caminhoneiros" na referência)
-    const fontSize = index === 0 ? Math.min(baseFont + 20, 72) : baseFont;
+    // Top 1 = muito grande, top 2 = grande, resto proporcional
+    let fontSize;
+    if (index === 0) {
+      fontSize = 72; // Palavra principal bem grande como "caminhoneiros"
+    } else if (index === 1) {
+      fontSize = 52; // Segunda palavra grande como "greve"
+    } else {
+      fontSize = baseFont;
+    }
     const color = WORD_COLORS[Math.floor(rng() * WORD_COLORS.length)];
-    const opacity = 0.9 + ((item.count || 0) / (maxCount || 1)) * 0.1;
-    // Algumas palavras rotacionadas verticalmente (como na referência)
-    const rotateRoll = rng();
-    const rotate = rotateRoll < 0.15 ? -90 : 0;
-    const fontWeight = index === 0 ? 700 : item.count === maxCount ? 600 : 500;
+    // Sem variação de opacidade - todas sólidas como na referência
+    const opacity = 1;
+    // Sem rotação por enquanto para evitar sobreposição
+    const rotate = 0;
+    // Fonte normal (Impact já é bold)
+    const fontWeight = 400;
     return {
       key: `${item.word}-${index}`,
       word: item.word,
@@ -97,7 +109,7 @@ const buildCloudEntries = (words) => {
       style: {
         fontSize,
         color,
-        opacity: Math.min(1, opacity),
+        opacity,
         fontWeight,
         fontFamily: CLOUD_FONT_FAMILY,
       },
@@ -114,7 +126,8 @@ const measureWord = (ctx, word, fontSize, fontWeight) => {
   };
 };
 
-const hasCollision = (rect, placed, padding = 2) => placed.some((item) => (
+// Verifica colisão entre retângulos com padding
+const hasCollision = (rect, placed, padding = 3) => placed.some((item) => (
   rect.x < item.x + item.width + padding
     && rect.x + rect.width + padding > item.x
     && rect.y < item.y + item.height + padding
@@ -123,40 +136,45 @@ const hasCollision = (rect, placed, padding = 2) => placed.some((item) => (
 
 const buildCloudLayout = (entries, bounds) => {
   if (!entries.length) return [];
-  // Precisa de dimensões válidas
-  if (!bounds?.width || bounds.width < 100 || !bounds?.height || bounds.height < 100) return [];
+  if (!bounds?.width || bounds.width < 200 || !bounds?.height || bounds.height < 150) return [];
   if (typeof document === "undefined") return [];
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
   if (!ctx) return [];
 
-  // Usar todo o espaço disponível com margem mínima
-  const margin = 15;
   const width = bounds.width;
   const height = bounds.height;
   const centerX = width / 2;
   const centerY = height / 2;
+  const margin = 10;
 
   const placed = [];
 
-  entries.forEach((entry, index) => {
+  // Medir todas as palavras primeiro
+  const measured = entries.map((entry) => {
     const { width: textWidth, height: textHeight } = measureWord(
       ctx,
       entry.word,
       entry.style.fontSize,
       entry.style.fontWeight,
     );
-    // Ajustar dimensões para palavras rotacionadas
-    const isRotated = Math.abs(entry.rotate) === 90;
-    const wordWidth = isRotated ? textHeight : textWidth;
-    const wordHeight = isRotated ? textWidth : textHeight;
+    return {
+      ...entry,
+      textWidth,
+      textHeight,
+    };
+  });
+
+  measured.forEach((entry, index) => {
+    const wordWidth = entry.textWidth;
+    const wordHeight = entry.textHeight;
 
     let bestX = centerX;
     let bestY = centerY;
     let placedOk = false;
 
-    // Primeira palavra (maior) centralizada
+    // Primeira palavra centralizada
     if (index === 0) {
       const rect = {
         x: centerX - wordWidth / 2,
@@ -171,44 +189,43 @@ const buildCloudLayout = (entries, bounds) => {
       }
     }
 
-    // Espiral de Arquimedes - layout denso como na referência
+    // Espiral de Arquimedes - busca posição livre mais próxima do centro
     if (!placedOk) {
-      const maxAttempts = 8000;
-      // Parâmetros ajustados para melhor distribuição
-      const spiralStep = 0.4;
-      const radiusGrowth = 2.0;
+      // Espiral com passos pequenos para encontrar posição bem encaixada
+      for (let r = 0; r < 500 && !placedOk; r += 1) {
+        const radius = r * 1.5;
+        // Mais pontos por volta para encontrar encaixes
+        const pointsInCircle = Math.max(1, Math.floor(radius * 0.5));
 
-      for (let attempt = 1; attempt < maxAttempts && !placedOk; attempt += 1) {
-        const angle = attempt * spiralStep;
-        const radius = radiusGrowth * Math.sqrt(attempt);
+        for (let p = 0; p < pointsInCircle && !placedOk; p += 1) {
+          const angle = (p / pointsInCircle) * Math.PI * 2;
+          const testX = centerX + radius * Math.cos(angle);
+          const testY = centerY + radius * Math.sin(angle);
 
-        const testX = centerX + radius * Math.cos(angle);
-        const testY = centerY + radius * Math.sin(angle);
+          const rect = {
+            x: testX - wordWidth / 2,
+            y: testY - wordHeight / 2,
+            width: wordWidth,
+            height: wordHeight,
+          };
 
-        const rect = {
-          x: testX - wordWidth / 2,
-          y: testY - wordHeight / 2,
-          width: wordWidth,
-          height: wordHeight,
-        };
+          // Verificar limites
+          if (rect.x < margin || rect.y < margin ||
+              rect.x + rect.width > width - margin ||
+              rect.y + rect.height > height - margin) {
+            continue;
+          }
 
-        // Verificar limites - palavras devem ficar completamente dentro
-        if (rect.x < margin || rect.y < margin ||
-            rect.x + rect.width > width - margin ||
-            rect.y + rect.height > height - margin) {
-          continue;
-        }
-
-        // Verificar colisão com padding mínimo para ficar denso
-        if (!hasCollision(rect, placed, 4)) {
-          bestX = testX;
-          bestY = testY;
-          placedOk = true;
+          // Verificar colisão - padding pequeno para ficar bem próximo
+          if (!hasCollision(rect, placed, 3)) {
+            bestX = testX;
+            bestY = testY;
+            placedOk = true;
+          }
         }
       }
     }
 
-    // Só adiciona se encontrou posição válida dentro dos limites
     if (placedOk) {
       placed.push({
         ...entry,
@@ -620,7 +637,6 @@ export default function WordCloudCard({
             left: item.x,
             top: item.y,
             zIndex: item.zIndex,
-            "--wc-rotate": `${item.rotate || 0}deg`,
           } : item.style;
           return (
             <button
