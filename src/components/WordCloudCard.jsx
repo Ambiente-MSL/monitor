@@ -127,7 +127,7 @@ const measureWord = (ctx, word, fontSize, fontWeight) => {
 };
 
 // Verifica colisão entre retângulos usando coordenadas do canto superior esquerdo
-const hasCollision = (newRect, placed, padding = 4) => {
+const hasCollision = (newRect, placed, padding = 6) => {
   for (const item of placed) {
     // Converter centro para canto superior esquerdo para comparação
     const itemLeft = item.x - item.width / 2;
@@ -164,7 +164,7 @@ const buildCloudLayout = (entries, bounds) => {
   const height = bounds.height;
   const centerX = width / 2;
   const centerY = height / 2;
-  const margin = 15;
+  const margin = 18;
 
   const placed = [];
 
@@ -184,8 +184,9 @@ const buildCloudLayout = (entries, bounds) => {
   });
 
   measured.forEach((entry, index) => {
-    const wordWidth = entry.textWidth;
-    const wordHeight = entry.textHeight;
+    const rotated = Math.abs(entry.rotate || 0) === 90;
+    const wordWidth = rotated ? entry.textHeight : entry.textWidth;
+    const wordHeight = rotated ? entry.textWidth : entry.textHeight;
 
     let bestX = centerX;
     let bestY = centerY;
@@ -205,9 +206,9 @@ const buildCloudLayout = (entries, bounds) => {
     // Espiral de Arquimedes - busca posição livre mais próxima do centro
     if (!placedOk) {
       // Espiral com passos pequenos para layout denso
-      for (let step = 0; step < 3000 && !placedOk; step += 1) {
-        const angle = step * 0.3;
-        const radius = 2 + step * 0.8;
+      for (let step = 0; step < 3600 && !placedOk; step += 1) {
+        const angle = step * 0.32;
+        const radius = 2 + step * 0.9;
 
         const testX = centerX + radius * Math.cos(angle);
         const testY = centerY + radius * Math.sin(angle);
@@ -225,7 +226,7 @@ const buildCloudLayout = (entries, bounds) => {
 
         // Verificar colisão com palavras já posicionadas
         const testRect = { left, top, width: wordWidth, height: wordHeight };
-        if (!hasCollision(testRect, placed, 4)) {
+        if (!hasCollision(testRect, placed, 6)) {
           bestX = testX;
           bestY = testY;
           placedOk = true;
@@ -246,6 +247,32 @@ const buildCloudLayout = (entries, bounds) => {
   });
 
   return placed;
+};
+
+const hasLayoutOverlap = (layout, padding = 2) => {
+  if (!Array.isArray(layout) || layout.length < 2) return false;
+  for (let i = 0; i < layout.length; i += 1) {
+    const a = layout[i];
+    const aLeft = a.x - a.width / 2;
+    const aTop = a.y - a.height / 2;
+    const aRight = aLeft + a.width;
+    const aBottom = aTop + a.height;
+    for (let j = i + 1; j < layout.length; j += 1) {
+      const b = layout[j];
+      const bLeft = b.x - b.width / 2;
+      const bTop = b.y - b.height / 2;
+      const bRight = bLeft + b.width;
+      const bBottom = bTop + b.height;
+      const overlaps = (
+        aLeft < bRight + padding &&
+        aRight + padding > bLeft &&
+        aTop < bBottom + padding &&
+        aBottom + padding > bTop
+      );
+      if (overlaps) return true;
+    }
+  }
+  return false;
 };
 
 const formatDetailDate = (value) => {
@@ -395,7 +422,8 @@ export default function WordCloudCard({
 
   const entries = useMemo(() => buildCloudEntries(data?.words || []), [data]);
   const packedLayout = useMemo(() => buildCloudLayout(entries, cloudSize), [entries, cloudSize]);
-  const usePackedLayout = packedLayout.length > 0 && packedLayout.length === entries.length;
+  const packedHasOverlap = useMemo(() => hasLayoutOverlap(packedLayout, 2), [packedLayout]);
+  const usePackedLayout = packedLayout.length > 0 && packedLayout.length === entries.length && !packedHasOverlap;
   const cloudEntries = usePackedLayout ? packedLayout : entries;
   const cloudClassName = `ig-word-cloud ig-word-cloud--large${usePackedLayout ? " ig-word-cloud--packed" : ""}`;
 

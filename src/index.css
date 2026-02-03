@@ -12237,8 +12237,8 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   position: relative;
   display: block;
   width: 100%;
-  min-height: 420px;
-  height: 420px;
+  min-height: 480px;
+  height: auto;
   padding: 0;
   overflow: hidden;
   background: #fff;
@@ -12246,8 +12246,8 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 }
 
 .ig-word-cloud--packed.ig-word-cloud--large {
-  min-height: 450px;
-  height: 450px;
+  min-height: 520px;
+  height: auto;
 }
 
 .ig-word-cloud--packed .ig-word-cloud__word {
