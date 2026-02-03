@@ -13911,6 +13911,112 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   border-top: 1px solid #f3f4f6;
 }
 
+/* Card de Desempenho de Vídeos */
+.fb-video-stats-card {
+  overflow: hidden;
+}
+
+.fb-video-stats {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.fb-video-stats__highlight {
+  text-align: center;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.12) 100%);
+  border-radius: 16px;
+  border: 1px solid rgba(99, 102, 241, 0.15);
+}
+
+.fb-video-stats__highlight-value {
+  font-size: 42px;
+  font-weight: 700;
+  color: #4f46e5;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.fb-video-stats__highlight-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #6366f1;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.fb-video-stats__funnel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fb-video-stats__funnel-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fb-video-stats__funnel-bar {
+  height: 36px;
+  background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 12px;
+  min-width: 60px;
+  transition: width 0.5s ease;
+}
+
+.fb-video-stats__funnel-item--base .fb-video-stats__funnel-bar {
+  background: linear-gradient(90deg, #1d4ed8 0%, #3b82f6 100%);
+}
+
+.fb-video-stats__funnel-item:nth-child(2) .fb-video-stats__funnel-bar {
+  background: linear-gradient(90deg, #2563eb 0%, #60a5fa 100%);
+}
+
+.fb-video-stats__funnel-item:nth-child(3) .fb-video-stats__funnel-bar {
+  background: linear-gradient(90deg, #3b82f6 0%, #93c5fd 100%);
+}
+
+.fb-video-stats__funnel-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.fb-video-stats__funnel-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 4px;
+}
+
+.fb-video-stats__funnel-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.fb-video-stats__funnel-percent {
+  font-size: 13px;
+  font-weight: 700;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.fb-video-stats__funnel-item--base .fb-video-stats__funnel-percent {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
 /* Detalhamento do Alcance - Card D */
 .fb-reach-details {
   display: flex;

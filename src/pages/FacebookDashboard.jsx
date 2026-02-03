@@ -894,11 +894,18 @@ useEffect(() => {
     const views10s = extractNumber(videoData.views_10s ?? pageVideo.video_views_10s, null);
     const views30s = extractNumber(videoData.views_30s ?? pageVideo.video_views_30s, null);
     const avgWatchSec = extractNumber(videoData.avg_watch_time ?? pageVideo.avg_watch_time, null);
+
+    // Calcular porcentagens de retenção baseado em views3s como base (100%)
+    const retention10s = views3s > 0 && views10s !== null ? Math.round((views10s / views3s) * 100) : null;
+    const retention30s = views3s > 0 && views30s !== null ? Math.round((views30s / views3s) * 100) : null;
+
     return {
       views3s,
       views10s,
       views30s,
       avgWatchSec,
+      retention10s,
+      retention30s,
     };
   }, [overviewSource]);
 
@@ -1261,11 +1268,11 @@ useEffect(() => {
               </div>
             </section>
 
-            <section className="ig-card">
+            <section className="ig-card fb-video-stats-card">
               <header className="ig-card-header">
                 <div>
-                  <h3 className="ig-clean-title2">Visão de vídeos</h3>
-                  <p className="ig-card-subtitle">Views por duração (período filtrado)</p>
+                  <h3 className="ig-clean-title2">Desempenho de Vídeos</h3>
+                  <p className="ig-card-subtitle">Retenção de audiência no período</p>
                 </div>
               </header>
               {overviewIsLoading ? (
@@ -1273,29 +1280,60 @@ useEffect(() => {
               ) : pageError ? (
                 <DataState state="error" label={pageError} size="sm" />
               ) : hasVideoWatchData ? (
-                <div
-                  className="ig-overview-activity"
-                  style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "12px" }}
-                >
-                  <div className="ig-overview-stat">
-                    <div className="ig-overview-stat__value">{formatNumber(videoWatchStats.views3s)}</div>
-                    <div className="ig-overview-stat__label">Views 3s</div>
+                <div className="fb-video-stats">
+                  {/* Tempo médio em destaque */}
+                  <div className="fb-video-stats__highlight">
+                    <div className="fb-video-stats__highlight-value">
+                      {formatDurationSeconds(videoWatchStats.avgWatchSec)}
+                    </div>
+                    <div className="fb-video-stats__highlight-label">Tempo médio assistido</div>
                   </div>
-                  <div className="ig-overview-stat">
-                    <div className="ig-overview-stat__value">{formatNumber(videoWatchStats.views10s)}</div>
-                    <div className="ig-overview-stat__label">Views 10s</div>
-                  </div>
-                  <div className="ig-overview-stat">
-                    <div className="ig-overview-stat__value">{formatNumber(videoWatchStats.views30s)}</div>
-                    <div className="ig-overview-stat__label">Views 30s</div>
-                  </div>
-                  <div className="ig-overview-stat">
-                    <div className="ig-overview-stat__value">{formatDurationSeconds(videoWatchStats.avgWatchSec)}</div>
-                    <div className="ig-overview-stat__label">Tempo médio assistido</div>
+
+                  {/* Funil de retenção */}
+                  <div className="fb-video-stats__funnel">
+                    <div className="fb-video-stats__funnel-item fb-video-stats__funnel-item--base">
+                      <div className="fb-video-stats__funnel-bar" style={{ width: '100%' }}>
+                        <span className="fb-video-stats__funnel-value">{formatNumber(videoWatchStats.views3s)}</span>
+                      </div>
+                      <div className="fb-video-stats__funnel-info">
+                        <span className="fb-video-stats__funnel-label">Views 3s</span>
+                        <span className="fb-video-stats__funnel-percent">100%</span>
+                      </div>
+                    </div>
+
+                    <div className="fb-video-stats__funnel-item">
+                      <div
+                        className="fb-video-stats__funnel-bar"
+                        style={{ width: `${videoWatchStats.retention10s || 0}%` }}
+                      >
+                        <span className="fb-video-stats__funnel-value">{formatNumber(videoWatchStats.views10s)}</span>
+                      </div>
+                      <div className="fb-video-stats__funnel-info">
+                        <span className="fb-video-stats__funnel-label">Views 10s</span>
+                        <span className="fb-video-stats__funnel-percent">
+                          {videoWatchStats.retention10s !== null ? `${videoWatchStats.retention10s}%` : '-'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="fb-video-stats__funnel-item">
+                      <div
+                        className="fb-video-stats__funnel-bar"
+                        style={{ width: `${videoWatchStats.retention30s || 0}%` }}
+                      >
+                        <span className="fb-video-stats__funnel-value">{formatNumber(videoWatchStats.views30s)}</span>
+                      </div>
+                      <div className="fb-video-stats__funnel-info">
+                        <span className="fb-video-stats__funnel-label">Views 30s</span>
+                        <span className="fb-video-stats__funnel-percent">
+                          {videoWatchStats.retention30s !== null ? `${videoWatchStats.retention30s}%` : '-'}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ) : (
-                <DataState state="empty" label="Sem dados de video para o periodo." size="sm" />
+                <DataState state="empty" label="Sem dados de vídeo para o período." size="sm" />
               )}
             </section>
           </div>
@@ -1507,55 +1545,6 @@ useEffect(() => {
                 ) : (
                   <div className="ig-empty-state">Sem dados disponíveis</div>
                 )}
-              </div>
-            </section>
-
-            {/* Card de Seguidores - abaixo do gráfico de crescimento */}
-            <section className="ig-card">
-              <header className="ig-card-header">
-                <div>
-                  <h3 className="ig-clean-title2">Seguidores</h3>
-                  <p className="ig-card-subtitle">Resumo do período</p>
-                </div>
-              </header>
-
-              <div className="fb-card-body">
-                <div className="fb-followers-kpis">
-                  {/* Total de seguidores */}
-                  <div className="fb-follower-kpi fb-follower-kpi--primary">
-                    <div className="fb-follower-kpi__value">65.250</div>
-                    <div className="fb-follower-kpi__label">Total de seguidores</div>
-                  </div>
-
-                  {/* Novos seguidores */}
-                  <div className="fb-follower-kpi">
-                    <div className="fb-follower-kpi__value fb-follower-kpi__value--positive">
-                      +320
-                    </div>
-                    <div className="fb-follower-kpi__label">Novos seguidores</div>
-                  </div>
-
-                  {/* Deixaram de seguir */}
-                  <div className="fb-follower-kpi">
-                    <div className="fb-follower-kpi__value fb-follower-kpi__value--negative">
-                      -85
-                    </div>
-                    <div className="fb-follower-kpi__label">Deixaram de seguir</div>
-                  </div>
-
-                  {/* Crescimento líquido */}
-                  <div className="fb-follower-kpi fb-follower-kpi--highlight">
-                    <div className="fb-follower-kpi__value fb-follower-kpi__value--positive">
-                      +235
-                    </div>
-                    <div className="fb-follower-kpi__label">Crescimento líquido</div>
-                    <div className="fb-follower-kpi__change">
-                      <span className="fb-follower-kpi__change-icon">↗</span>
-                      <span className="fb-follower-kpi__change-value">+3,2%</span>
-                      <span className="fb-follower-kpi__change-label">vs período anterior</span>
-                    </div>
-                  </div>
-                </div>
               </div>
             </section>
 
