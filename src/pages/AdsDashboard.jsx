@@ -45,6 +45,7 @@ import {
 } from "lucide-react";
 import DataState from "../components/DataState";
 import CustomChartTooltip from "../components/CustomChartTooltip";
+import DateRangeIndicator from "../components/DateRangeIndicator";
 import { useAccounts } from "../context/AccountsContext";
 import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import { useAuth } from "../context/AuthContext";
@@ -1270,6 +1271,7 @@ export default function AdsDashboard() {
 
         <div className="ig-clean-title-row">
           <h2 className="ig-clean-title">Visão Geral</h2>
+          <DateRangeIndicator />
         </div>
 
         {adsWarningProps ? (

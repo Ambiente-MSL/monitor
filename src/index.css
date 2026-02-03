@@ -5381,82 +5381,49 @@ input:focus {
 
 
 
-/* Date Range Indicator */
+/* Date Range Indicator - Modern Minimalist Style */
 
 .date-range-indicator {
-
   display: inline-flex;
-
   align-items: center;
-
-  gap: 10px;
-
-  padding: 8px 16px;
-
-  background: var(--panel);
-
-  border: 1px solid var(--stroke);
-
-  border-radius: 12px;
-
-  margin-bottom: 20px;
-
+  gap: 8px;
+  padding: 6px 14px;
+  background: rgba(99, 102, 241, 0.08);
+  border: none;
+  border-radius: 20px;
+  margin: 0;
 }
-
-
 
 .date-range-indicator__icon {
-
-  color: var(--accent);
-
+  color: #6366f1;
   flex-shrink: 0;
-
+  opacity: 0.85;
 }
-
-
 
 .date-range-indicator__content {
-
   display: flex;
-
   align-items: center;
-
-  gap: 8px;
-
+  gap: 6px;
   flex-wrap: wrap;
-
   font-size: 13px;
-
+  letter-spacing: -0.01em;
 }
-
-
 
 .date-range-indicator__label {
-
-  color: var(--muted);
-
-  font-weight: 600;
-
+  color: #6366f1;
+  font-weight: 500;
 }
-
-
 
 .date-range-indicator__dates {
-
   color: var(--fg);
-
-  font-weight: 700;
-
+  font-weight: 600;
 }
 
-
-
 .date-range-indicator__days {
-
   color: var(--muted);
-
   font-size: 12px;
-
+  font-weight: 500;
+  opacity: 0.8;
 }
 
 

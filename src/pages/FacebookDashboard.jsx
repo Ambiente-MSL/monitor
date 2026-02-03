@@ -45,6 +45,7 @@ import {
 import DataState from "../components/DataState";
 import CustomChartTooltip from "../components/CustomChartTooltip";
 import WordCloudCard from "../components/WordCloudCard";
+import DateRangeIndicator from "../components/DateRangeIndicator";
 import { fetchWithTimeout, isTimeoutError } from "../lib/fetchWithTimeout";
 import { formatChartDate, formatCompactNumber, formatTooltipNumber } from "../lib/chartFormatters";
 import { normalizeSyncInfo } from "../lib/syncInfo";
@@ -1054,6 +1055,7 @@ useEffect(() => {
 
         <div className="ig-clean-title-row">
           <h2 className="ig-clean-title">Visão Geral</h2>
+          <DateRangeIndicator />
         </div>
 
         {/* Grid Principal - Layout 2 Colunas */}

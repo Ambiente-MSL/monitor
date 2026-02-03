@@ -64,6 +64,7 @@ import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import WordCloudCard from "../components/WordCloudCard";
 import CustomChartTooltip from "../components/CustomChartTooltip";
 import InfoTooltip from "../components/InfoTooltip";
+import DateRangeIndicator from "../components/DateRangeIndicator";
 import { useAuth } from "../context/AuthContext";
 import {
   getDashboardCache,
@@ -3207,6 +3208,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
 
         <div className="ig-clean-title-row">
           <h2 className="ig-clean-title">Visão Geral</h2>
+          <DateRangeIndicator />
         </div>
 
         {/* Grid Principal */}
