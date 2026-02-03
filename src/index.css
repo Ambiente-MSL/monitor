@@ -12182,15 +12182,17 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .ig-word-cloud__word {
   font-weight: 700;
   line-height: 1.2;
-  transition: all 0.2s ease;
+  transition: transform 0.2s ease, opacity 0.2s ease;
   cursor: pointer;
   background: transparent;
   border: none;
   padding: 0;
   font-family: inherit;
+  white-space: nowrap;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
-.ig-word-cloud__word:hover {
+.ig-word-cloud:not(.ig-word-cloud--packed) .ig-word-cloud__word:hover {
   transform: scale(1.1);
   opacity: 0.8;
 }
@@ -12219,6 +12221,26 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .ig-word-cloud--large {
   min-height: 280px;
   padding: 30px;
+}
+
+.ig-word-cloud--packed {
+  position: relative;
+  display: block;
+  min-height: 320px;
+  padding: 16px 18px;
+  overflow: hidden;
+}
+
+.ig-word-cloud--packed .ig-word-cloud__word {
+  position: absolute;
+  transform: translate(-50%, -50%) rotate(var(--wc-rotate, 0deg)) scale(var(--wc-scale, 1));
+  transform-origin: center;
+}
+
+.ig-word-cloud--packed .ig-word-cloud__word:hover {
+  --wc-scale: 1.06;
+  opacity: 0.9;
+  z-index: 5;
 }
 
 .ig-word-detail-modal {

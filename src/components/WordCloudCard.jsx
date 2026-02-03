@@ -1,9 +1,20 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { fetchWithTimeout, isTimeoutError } from "../lib/fetchWithTimeout";
 import DataState from "./DataState";
 
-const WORD_COLORS = ["#a855f7", "#6366f1", "#f97316", "#14b8a6", "#facc15", "#22d3ee", "#34d399", "#f472b6", "#60a5fa"];
+const WORD_COLORS = [
+  "#4d7c0f",
+  "#65a30d",
+  "#15803d",
+  "#a16207",
+  "#b45309",
+  "#ea580c",
+  "#f59e0b",
+  "#b91c1c",
+  "#7c2d12",
+];
+const CLOUD_FONT_FAMILY = "'Lato', 'Segoe UI', sans-serif";
 const DETAILS_PAGE_SIZE = 50;
 const COMMENTS_PER_PAGE = 10;
 
@@ -28,8 +39,28 @@ const scaleFont = (count, min, max, minSize, maxSize) => {
   if (!Number.isFinite(count)) return minSize;
   if (max <= min) return Math.round((minSize + maxSize) / 2);
   const normalized = (count - min) / (max - min);
-  const weighted = Math.pow(normalized, 0.9);
+  const weighted = Math.pow(normalized, 0.75);
   return Math.round(minSize + weighted * (maxSize - minSize));
+};
+
+const hashString = (value) => {
+  let hash = 0;
+  const text = String(value || "");
+  for (let i = 0; i < text.length; i += 1) {
+    hash = ((hash << 5) - hash) + text.charCodeAt(i);
+    hash |= 0;
+  }
+  return hash >>> 0;
+};
+
+const createSeededRandom = (seed) => {
+  let t = seed >>> 0;
+  return () => {
+    t += 0x6d2b79f5;
+    let r = Math.imul(t ^ (t >>> 15), t | 1);
+    r ^= r + Math.imul(r ^ (r >>> 7), r | 61);
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
 };
 
 const buildCloudEntries = (words) => {
@@ -42,26 +73,129 @@ const buildCloudEntries = (words) => {
   const counts = limited.map((item) => item.count || 0);
   const maxCount = Math.max(...counts);
   const minCount = Math.min(...counts);
-  const minFont = 16;
-  const maxFont = Math.max(minFont + 10, 60);
+  const minFont = 14;
+  const maxFont = Math.max(minFont + 18, 72);
 
   return limited.map((item, index) => {
-    const fontSize = scaleFont(item.count || 0, minCount, maxCount, minFont, maxFont);
-    const color = WORD_COLORS[index % WORD_COLORS.length];
-    const opacity = 0.8 + ((item.count || 0) / (maxCount || 1)) * 0.2;
-    const fontWeight = item.count === maxCount ? 800 : item.count >= (minCount + maxCount) / 2 ? 700 : 500;
+    const seed = hashString(item.word || `${index}`);
+    const rng = createSeededRandom(seed);
+    const baseFont = scaleFont(item.count || 0, minCount, maxCount, minFont, maxFont);
+    const fontSize = index === 0 ? Math.min(baseFont + 8, 84) : baseFont;
+    const color = index === 0 ? "#4d7c0f" : WORD_COLORS[Math.floor(rng() * WORD_COLORS.length)];
+    const opacity = 0.85 + ((item.count || 0) / (maxCount || 1)) * 0.15;
+    const rotateRoll = rng();
+    const rotate = rotateRoll < 0.14 ? (rng() < 0.5 ? -90 : 90) : 0;
+    const fontWeight = index === 0 ? 900 : item.count === maxCount ? 800 : item.count >= (minCount + maxCount) / 2 ? 700 : 600;
     return {
       key: `${item.word}-${index}`,
       word: item.word,
       count: item.count,
+      rotate,
       style: {
         fontSize,
         color,
         opacity: Math.min(1, opacity),
         fontWeight,
+        fontFamily: CLOUD_FONT_FAMILY,
       },
     };
   });
+};
+
+const measureWord = (ctx, word, fontSize, fontWeight) => {
+  ctx.font = `${fontWeight || 600} ${fontSize}px ${CLOUD_FONT_FAMILY}`;
+  const metrics = ctx.measureText(word);
+  return {
+    width: Math.ceil(metrics.width),
+    height: Math.ceil(fontSize * 1.05),
+  };
+};
+
+const hasCollision = (rect, placed, padding = 6) => placed.some((item) => (
+  rect.x < item.x + item.width + padding
+    && rect.x + rect.width + padding > item.x
+    && rect.y < item.y + item.height + padding
+    && rect.y + rect.height + padding > item.y
+));
+
+const buildCloudLayout = (entries, bounds) => {
+  if (!entries.length || !bounds?.width || !bounds?.height) return [];
+  if (typeof document === "undefined") return [];
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return [];
+
+  const margin = 12;
+  const width = Math.max(bounds.width - margin * 2, 120);
+  const height = Math.max(bounds.height - margin * 2, 120);
+  const centerX = width / 2 + margin;
+  const centerY = height / 2 + margin;
+  const maxRadius = Math.min(width, height) / 2;
+  const angleStep = 0.35;
+  const radiusStep = 3.6;
+  const maxAttempts = 900;
+
+  const placed = [];
+  entries.forEach((entry, index) => {
+    const { width: textWidth, height: textHeight } = measureWord(
+      ctx,
+      entry.word,
+      entry.style.fontSize,
+      entry.style.fontWeight,
+    );
+    const rotated = Math.abs(entry.rotate) === 90;
+    const wordWidth = rotated ? textHeight : textWidth;
+    const wordHeight = rotated ? textWidth : textHeight;
+
+    let x = centerX;
+    let y = centerY;
+    let placedOk = index === 0;
+
+    if (!placedOk) {
+      for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        const angle = attempt * angleStep;
+        const radius = Math.min(maxRadius, radiusStep * angle);
+        x = centerX + radius * Math.cos(angle);
+        y = centerY + radius * Math.sin(angle);
+        const rect = {
+          x: x - wordWidth / 2,
+          y: y - wordHeight / 2,
+          width: wordWidth,
+          height: wordHeight,
+        };
+        if (
+          rect.x < margin
+          || rect.y < margin
+          || rect.x + rect.width > width + margin
+          || rect.y + rect.height > height + margin
+        ) {
+          continue;
+        }
+        if (!hasCollision(rect, placed, 6)) {
+          placedOk = true;
+          break;
+        }
+      }
+    }
+
+    if (!placedOk) {
+      const fallbackAngle = index * 0.9;
+      const fallbackRadius = Math.min(maxRadius, 12 + index * 4);
+      x = centerX + fallbackRadius * Math.cos(fallbackAngle);
+      y = centerY + fallbackRadius * Math.sin(fallbackAngle);
+    }
+
+    placed.push({
+      ...entry,
+      x,
+      y,
+      width: wordWidth,
+      height: wordHeight,
+      zIndex: Math.round(entry.style.fontSize || 0),
+    });
+  });
+
+  return placed;
 };
 
 const formatDetailDate = (value) => {
@@ -100,6 +234,8 @@ export default function WordCloudCard({
   const [detailsLoadingMore, setDetailsLoadingMore] = useState(false);
   const [detailsError, setDetailsError] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const cloudRef = useRef(null);
+  const [cloudSize, setCloudSize] = useState({ width: 0, height: 0 });
 
   const requestKey = useMemo(() => {
     if (!resolvedAccountId) return null;
@@ -206,6 +342,49 @@ export default function WordCloudCard({
     loadingTimeout: 3000,
     onLoadingSlow: () => setLoadingSlow(true),
   });
+
+  const entries = useMemo(() => buildCloudEntries(data?.words || []), [data]);
+  const packedLayout = useMemo(() => buildCloudLayout(entries, cloudSize), [entries, cloudSize]);
+  const usePackedLayout = packedLayout.length > 0 && packedLayout.length === entries.length;
+  const cloudEntries = usePackedLayout ? packedLayout : entries;
+  const cloudClassName = `ig-word-cloud ig-word-cloud--large${usePackedLayout ? " ig-word-cloud--packed" : ""}`;
+
+  useEffect(() => {
+    const node = cloudRef.current;
+    if (!node) return undefined;
+
+    const updateSize = () => {
+      const rect = node.getBoundingClientRect();
+      setCloudSize((prev) => {
+        const next = { width: rect.width, height: rect.height };
+        if (Math.abs(prev.width - next.width) < 1 && Math.abs(prev.height - next.height) < 1) {
+          return prev;
+        }
+        return next;
+      });
+    };
+
+    updateSize();
+
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", updateSize);
+      return () => window.removeEventListener("resize", updateSize);
+    }
+
+    const observer = new ResizeObserver((entries) => {
+      if (!entries || !entries.length) return;
+      const { width, height } = entries[0].contentRect || {};
+      if (!width || !height) return;
+      setCloudSize((prev) => {
+        if (Math.abs(prev.width - width) < 1 && Math.abs(prev.height - height) < 1) {
+          return prev;
+        }
+        return { width, height };
+      });
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [entries.length]);
 
   const hasMoreDetails = useMemo(() => {
     if (!details) return false;
@@ -375,8 +554,6 @@ export default function WordCloudCard({
     );
   }
 
-  const entries = buildCloudEntries(data?.words || []);
-
   // Chama callback com o total de comentarios se fornecido
   if (onCommentsCountRender && typeof data?.total_comments === "number") {
     onCommentsCountRender(data.total_comments);
@@ -403,8 +580,8 @@ export default function WordCloudCard({
         </div>
       ) : null}
 
-      <div className="ig-word-cloud ig-word-cloud--large">
-        {entries.map((item, index) => {
+      <div className={cloudClassName} ref={cloudRef}>
+        {cloudEntries.map((item) => {
           const handleWordClick = () => {
             if (externalPanelMode && onWordClick) {
               onWordClick(item.word, item.count);
@@ -412,33 +589,18 @@ export default function WordCloudCard({
               setSelectedWord(item.word);
             }
           };
-          if (index === 0) {
-            return (
-              <button
-                key={item.key}
-                className="ig-word-cloud__word"
-                style={{
-                  ...item.style,
-                  color: "#ef4444",
-                  fontSize: Math.max(item.style.fontSize, 64),
-                  fontWeight: 900,
-                  width: "100%",
-                  textAlign: "center",
-                }}
-                title={`${item.word} (${item.count})`}
-                type="button"
-                onClick={handleWordClick}
-                aria-label={`Ver comentarios com ${item.word}`}
-              >
-                {item.word}
-              </button>
-            );
-          }
+          const wordStyle = usePackedLayout ? {
+            ...item.style,
+            left: item.x,
+            top: item.y,
+            zIndex: item.zIndex,
+            "--wc-rotate": `${item.rotate || 0}deg`,
+          } : item.style;
           return (
             <button
               key={item.key}
               className="ig-word-cloud__word"
-              style={item.style}
+              style={wordStyle}
               title={`${item.word} (${item.count})`}
               type="button"
               onClick={handleWordClick}
