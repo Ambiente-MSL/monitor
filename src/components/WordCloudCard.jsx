@@ -78,8 +78,8 @@ const buildCloudEntries = (words) => {
   const maxCount = Math.max(...counts);
   const minCount = Math.min(...counts);
   // Escala maior para ocupar melhor o card
-  const minFont = 18;
-  const maxFont = 72;
+  const minFont = 16;
+  const maxFont = 68;
 
   return limited.map((item, index) => {
     const seed = hashString(item.word || `${index}`);
@@ -100,7 +100,7 @@ const buildCloudEntries = (words) => {
     // Sem rotação por enquanto para evitar sobreposição
     const rotate = 0;
     // Fonte normal (Impact já é bold)
-    const fontWeight = 400;
+    const fontWeight = 300;
     return {
       key: `${item.word}-${index}`,
       word: item.word,
@@ -127,7 +127,7 @@ const measureWord = (ctx, word, fontSize, fontWeight) => {
 };
 
 // Verifica colisão entre retângulos usando coordenadas do canto superior esquerdo
-const hasCollision = (newRect, placed, padding = 5) => {
+const hasCollision = (newRect, placed, padding = 2) => {
   for (const item of placed) {
     // Converter centro para canto superior esquerdo para comparação
     const itemLeft = item.x - item.width / 2;
@@ -151,7 +151,7 @@ const hasCollision = (newRect, placed, padding = 5) => {
   return false;
 };
 
-const spreadLayoutToFill = (layout, bounds, margin = 16) => {
+const spreadLayoutToFill = (layout, bounds, margin = 10) => {
   if (!Array.isArray(layout) || !layout.length) return layout;
   if (!bounds?.width || !bounds?.height) return layout;
 
@@ -175,7 +175,7 @@ const spreadLayoutToFill = (layout, bounds, margin = 16) => {
   const boxHeight = Math.max(1, maxY - minY);
   const targetWidth = Math.max(1, bounds.width - margin * 2);
   const targetHeight = Math.max(1, bounds.height - margin * 2);
-  const scale = Math.min(targetWidth / boxWidth, targetHeight / boxHeight, 1.35);
+  const scale = Math.min(targetWidth / boxWidth, targetHeight / boxHeight, 1.18);
 
   if (scale <= 1.01) return layout;
 
@@ -201,7 +201,7 @@ const buildCloudLayout = (entries, bounds) => {
   const height = bounds.height;
   const centerX = width / 2;
   const centerY = height / 2;
-  const margin = 16;
+  const margin = 10;
 
   const placed = [];
 
@@ -263,7 +263,7 @@ const buildCloudLayout = (entries, bounds) => {
 
         // Verificar colisão com palavras já posicionadas
         const testRect = { left, top, width: wordWidth, height: wordHeight };
-        if (!hasCollision(testRect, placed, 5)) {
+        if (!hasCollision(testRect, placed, 2)) {
           bestX = testX;
           bestY = testY;
           placedOk = true;
