@@ -127,7 +127,8 @@ const measureWord = (ctx, word, fontSize, fontWeight) => {
 };
 
 // Verifica colisão entre retângulos usando coordenadas do canto superior esquerdo
-const hasCollision = (newRect, placed, padding = 1) => {
+// Padding proporcional (5% da menor dimensão entre as duas palavras)
+const hasCollision = (newRect, placed, paddingPercent = 5) => {
   for (const item of placed) {
     // Converter centro para canto superior esquerdo para comparação
     const itemLeft = item.x - item.width / 2;
@@ -140,8 +141,10 @@ const hasCollision = (newRect, placed, padding = 1) => {
     const newRight = newLeft + newRect.width;
     const newBottom = newTop + newRect.height;
 
-    // Verificar sobreposição - padding mínimo para palavras coladas
-    const p = Math.max(0, padding);
+    // Padding proporcional: 5% da menor altura entre as duas palavras
+    const minHeight = Math.min(item.height, newRect.height);
+    const p = Math.max(1, Math.round(minHeight * (paddingPercent / 100)));
+
     if (newLeft < itemRight + p &&
         newRight > itemLeft - p &&
         newTop < itemBottom + p &&
@@ -245,29 +248,29 @@ const buildCloudLayout = (entries, bounds) => {
     // Segunda palavra: abaixo e levemente à esquerda da primeira (como "greve" na referência)
     if (index === 1 && !placedOk && placed.length > 0) {
       const first = placed[0];
-      bestX = first.x - wordWidth * 0.15;
-      bestY = first.y + first.height * 0.5 + wordHeight * 0.3;
+      bestX = first.x - wordWidth * 0.1;
+      bestY = first.y + first.height * 0.45 + wordHeight * 0.25;
       const left = bestX - wordWidth / 2;
       const top = bestY - wordHeight / 2;
       const testRect = { left, top, width: wordWidth, height: wordHeight };
       if (left >= margin && top >= margin &&
           left + wordWidth <= width - margin &&
           top + wordHeight <= height - margin &&
-          !hasCollision(testRect, placed, 0)) {
+          !hasCollision(testRect, placed, 5)) {
         placedOk = true;
       }
     }
 
     // Demais palavras: espiral muito compacta preenchendo os espaços
     if (!placedOk) {
-      // Espiral com passos muito pequenos para encaixe preciso
-      for (let step = 0; step < 10000 && !placedOk; step += 1) {
-        const angle = step * 0.2;
-        const baseRadius = step * 0.5;
+      // Espiral com passos pequenos para encaixe preciso e formato oval
+      for (let step = 0; step < 12000 && !placedOk; step += 1) {
+        const angle = step * 0.18;
+        const baseRadius = step * 0.45;
 
-        // Elipse horizontal (oval) para formato mais largo
-        const testX = centerX + baseRadius * 1.8 * Math.cos(angle);
-        const testY = centerY + baseRadius * 0.9 * Math.sin(angle);
+        // Elipse horizontal (oval) - mais larga que alta
+        const testX = centerX + baseRadius * 2.0 * Math.cos(angle);
+        const testY = centerY + baseRadius * 0.85 * Math.sin(angle);
 
         const left = testX - wordWidth / 2;
         const top = testY - wordHeight / 2;
@@ -279,9 +282,9 @@ const buildCloudLayout = (entries, bounds) => {
           continue;
         }
 
-        // Colisão com padding 0 para máxima proximidade
+        // Colisão com padding de 5% para proximidade ideal
         const testRect = { left, top, width: wordWidth, height: wordHeight };
-        if (!hasCollision(testRect, placed, 0)) {
+        if (!hasCollision(testRect, placed, 5)) {
           bestX = testX;
           bestY = testY;
           placedOk = true;
@@ -304,9 +307,8 @@ const buildCloudLayout = (entries, bounds) => {
   return spreadLayoutToFill(placed, bounds, margin);
 };
 
-const hasLayoutOverlap = (layout, padding = 0) => {
+const hasLayoutOverlap = (layout) => {
   if (!Array.isArray(layout) || layout.length < 2) return false;
-  const p = Math.max(0, padding);
   for (let i = 0; i < layout.length; i += 1) {
     const a = layout[i];
     const aLeft = a.x - a.width / 2;
@@ -319,11 +321,12 @@ const hasLayoutOverlap = (layout, padding = 0) => {
       const bTop = b.y - b.height / 2;
       const bRight = bLeft + b.width;
       const bBottom = bTop + b.height;
+      // Verifica sobreposição real (sem padding - palavras podem estar coladas)
       const overlaps = (
-        aLeft < bRight + p &&
-        aRight + p > bLeft &&
-        aTop < bBottom + p &&
-        aBottom + p > bTop
+        aLeft < bRight &&
+        aRight > bLeft &&
+        aTop < bBottom &&
+        aBottom > bTop
       );
       if (overlaps) return true;
     }
@@ -478,7 +481,7 @@ export default function WordCloudCard({
 
   const entries = useMemo(() => buildCloudEntries(data?.words || []), [data]);
   const packedLayout = useMemo(() => buildCloudLayout(entries, cloudSize), [entries, cloudSize]);
-  const packedHasOverlap = useMemo(() => hasLayoutOverlap(packedLayout, 2), [packedLayout]);
+  const packedHasOverlap = useMemo(() => hasLayoutOverlap(packedLayout), [packedLayout]);
   const usePackedLayout = packedLayout.length > 0 && packedLayout.length === entries.length && !packedHasOverlap;
   const cloudEntries = usePackedLayout ? packedLayout : entries;
   const cloudClassName = `ig-word-cloud ig-word-cloud--large${usePackedLayout ? " ig-word-cloud--packed" : ""}`;

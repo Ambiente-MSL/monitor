@@ -12198,6 +12198,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   border: none;
   padding: 0;
   white-space: nowrap;
+  text-transform: lowercase;
 }
 
 .ig-word-cloud:not(.ig-word-cloud--packed) .ig-word-cloud__word:hover {
