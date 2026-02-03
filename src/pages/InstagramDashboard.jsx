@@ -4552,16 +4552,10 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 {wordCloudDetails && !wordCloudDetailsLoading && !wordCloudDetailsError && (
                   <div style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(3, 1fr)',
+                    gridTemplateColumns: 'repeat(2, 1fr)',
                     gap: '16px',
                     marginBottom: '24px'
                   }}>
-                    <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
-                      <div style={{ fontSize: '28px', fontWeight: 700, color: '#ef4444' }}>
-                        {selectedWordCloud?.count?.toLocaleString('pt-BR') || 0}
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Na nuvem de palavras</div>
-                    </div>
                     <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
                       <div style={{ fontSize: '28px', fontWeight: 700, color: '#dc2626' }}>
                         {wordCloudDetails.total_occurrences?.toLocaleString('pt-BR') || 0}
@@ -4580,7 +4574,10 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 {/* Lista de comentários */}
                 <section className="ig-card-white" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                   <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb' }}>
-                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827' }}>
+                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                      </svg>
                       Comentários encontrados
                     </h4>
                   </div>
