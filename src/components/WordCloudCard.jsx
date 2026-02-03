@@ -127,7 +127,7 @@ const measureWord = (ctx, word, fontSize, fontWeight) => {
 };
 
 // Verifica colisão entre retângulos usando coordenadas do canto superior esquerdo
-const hasCollision = (newRect, placed, padding = 2) => {
+const hasCollision = (newRect, placed, padding = 1) => {
   for (const item of placed) {
     // Converter centro para canto superior esquerdo para comparação
     const itemLeft = item.x - item.width / 2;
@@ -140,11 +140,12 @@ const hasCollision = (newRect, placed, padding = 2) => {
     const newRight = newLeft + newRect.width;
     const newBottom = newTop + newRect.height;
 
-    // Verificar sobreposição com padding
-    if (newLeft < itemRight + padding &&
-        newRight > itemLeft - padding &&
-        newTop < itemBottom + padding &&
-        newBottom > itemTop - padding) {
+    // Verificar sobreposição - padding mínimo para palavras coladas
+    const p = Math.max(0, padding);
+    if (newLeft < itemRight + p &&
+        newRight > itemLeft - p &&
+        newTop < itemBottom + p &&
+        newBottom > itemTop - p) {
       return true;
     }
   }
@@ -201,11 +202,7 @@ const buildCloudLayout = (entries, bounds) => {
   const height = bounds.height;
   const centerX = width / 2;
   const centerY = height / 2;
-  const margin = 8;
-
-  // Fator oval: expande mais na horizontal que na vertical
-  const ovalFactorX = 1.6;
-  const ovalFactorY = 1.0;
+  const margin = 5;
 
   const placed = [];
 
@@ -233,10 +230,11 @@ const buildCloudLayout = (entries, bounds) => {
     let bestY = centerY;
     let placedOk = false;
 
-    // Primeira palavra centralizada
+    // Primeira palavra: centralizada horizontalmente, um pouco acima do centro
     if (index === 0) {
+      bestY = centerY - wordHeight * 0.3;
       const left = centerX - wordWidth / 2;
-      const top = centerY - wordHeight / 2;
+      const top = bestY - wordHeight / 2;
       if (left >= margin && top >= margin &&
           left + wordWidth <= width - margin &&
           top + wordHeight <= height - margin) {
@@ -244,30 +242,46 @@ const buildCloudLayout = (entries, bounds) => {
       }
     }
 
-    // Espiral elíptica (oval) - mais larga que alta
+    // Segunda palavra: abaixo e levemente à esquerda da primeira (como "greve" na referência)
+    if (index === 1 && !placedOk && placed.length > 0) {
+      const first = placed[0];
+      bestX = first.x - wordWidth * 0.15;
+      bestY = first.y + first.height * 0.5 + wordHeight * 0.3;
+      const left = bestX - wordWidth / 2;
+      const top = bestY - wordHeight / 2;
+      const testRect = { left, top, width: wordWidth, height: wordHeight };
+      if (left >= margin && top >= margin &&
+          left + wordWidth <= width - margin &&
+          top + wordHeight <= height - margin &&
+          !hasCollision(testRect, placed, 0)) {
+        placedOk = true;
+      }
+    }
+
+    // Demais palavras: espiral muito compacta preenchendo os espaços
     if (!placedOk) {
-      for (let step = 0; step < 6000 && !placedOk; step += 1) {
-        const angle = step * 0.25;
-        const baseRadius = 1 + step * 0.7;
+      // Espiral com passos muito pequenos para encaixe preciso
+      for (let step = 0; step < 10000 && !placedOk; step += 1) {
+        const angle = step * 0.2;
+        const baseRadius = step * 0.5;
 
-        // Aplicar fator oval para expandir mais horizontalmente
-        const testX = centerX + baseRadius * ovalFactorX * Math.cos(angle);
-        const testY = centerY + baseRadius * ovalFactorY * Math.sin(angle);
+        // Elipse horizontal (oval) para formato mais largo
+        const testX = centerX + baseRadius * 1.8 * Math.cos(angle);
+        const testY = centerY + baseRadius * 0.9 * Math.sin(angle);
 
-        // Calcular bounding box
         const left = testX - wordWidth / 2;
         const top = testY - wordHeight / 2;
 
-        // Verificar limites do container
+        // Verificar limites
         if (left < margin || top < margin ||
             left + wordWidth > width - margin ||
             top + wordHeight > height - margin) {
           continue;
         }
 
-        // Verificar colisão - padding mínimo para palavras bem próximas
+        // Colisão com padding 0 para máxima proximidade
         const testRect = { left, top, width: wordWidth, height: wordHeight };
-        if (!hasCollision(testRect, placed, 1)) {
+        if (!hasCollision(testRect, placed, 0)) {
           bestX = testX;
           bestY = testY;
           placedOk = true;
@@ -290,8 +304,9 @@ const buildCloudLayout = (entries, bounds) => {
   return spreadLayoutToFill(placed, bounds, margin);
 };
 
-const hasLayoutOverlap = (layout, padding = 2) => {
+const hasLayoutOverlap = (layout, padding = 0) => {
   if (!Array.isArray(layout) || layout.length < 2) return false;
+  const p = Math.max(0, padding);
   for (let i = 0; i < layout.length; i += 1) {
     const a = layout[i];
     const aLeft = a.x - a.width / 2;
@@ -305,10 +320,10 @@ const hasLayoutOverlap = (layout, padding = 2) => {
       const bRight = bLeft + b.width;
       const bBottom = bTop + b.height;
       const overlaps = (
-        aLeft < bRight + padding &&
-        aRight + padding > bLeft &&
-        aTop < bBottom + padding &&
-        aBottom + padding > bTop
+        aLeft < bRight + p &&
+        aRight + p > bLeft &&
+        aTop < bBottom + p &&
+        aBottom + p > bTop
       );
       if (overlaps) return true;
     }
