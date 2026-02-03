@@ -764,6 +764,19 @@ export default function InstagramDashboard() {
     }),
     [accountSnapshotKey, sinceParam, untilParam],
   );
+  const sinceDate = useMemo(() => parseQueryDate(sinceParam), [sinceParam]);
+  const untilDate = useMemo(() => parseQueryDate(untilParam), [untilParam]);
+  const sinceIso = useMemo(() => toUtcDateString(sinceDate), [sinceDate]);
+  const untilIso = useMemo(() => toUtcDateString(untilDate), [untilDate]);
+  const audienceTimeframe = useMemo(() => {
+    if (!sinceDate || !untilDate) return "this_week";
+    const diff = differenceInCalendarDays(endOfDay(untilDate), startOfDay(sinceDate)) + 1;
+    return diff <= 7 ? "this_week" : "this_month";
+  }, [sinceDate, untilDate]);
+  const audienceTimeframeLabel = useMemo(
+    () => (audienceTimeframe === "this_month" ? "Últimos 30 dias" : "Últimos 7 dias"),
+    [audienceTimeframe],
+  );
   const audienceCacheKey = useMemo(
     () => makeCacheKey({
       page: "instagram",
@@ -771,13 +784,10 @@ export default function InstagramDashboard() {
       accountId: accountSnapshotKey,
       since: sinceParam || "auto",
       until: untilParam || "auto",
+      extra: { timeframe: audienceTimeframe },
     }),
-    [accountSnapshotKey, sinceParam, untilParam],
+    [accountSnapshotKey, sinceParam, untilParam, audienceTimeframe],
   );
-  const sinceDate = useMemo(() => parseQueryDate(sinceParam), [sinceParam]);
-  const untilDate = useMemo(() => parseQueryDate(untilParam), [untilParam]);
-  const sinceIso = useMemo(() => toUtcDateString(sinceDate), [sinceDate]);
-  const untilIso = useMemo(() => toUtcDateString(untilDate), [untilDate]);
 
   // Estado para contador de comentários da wordcloud
   const [commentsCount, setCommentsCount] = useState(null);
@@ -1553,7 +1563,11 @@ export default function InstagramDashboard() {
     setAudienceError("");
     setAudienceFetching(true);
 
-    const url = `${API_BASE_URL}/api/instagram/audience?igUserId=${accountConfig.instagramUserId}`;
+    const audienceParams = new URLSearchParams({
+      igUserId: accountConfig.instagramUserId,
+      timeframe: audienceTimeframe,
+    });
+    const url = `${API_BASE_URL}/api/instagram/audience?${audienceParams.toString()}`;
 
     (async () => {
       try {
@@ -1588,7 +1602,7 @@ export default function InstagramDashboard() {
       clearTimeout(hardTimeout);
       controller.abort();
     };
-  }, [accountConfig?.instagramUserId, audienceCacheKey]);
+  }, [accountConfig?.instagramUserId, audienceCacheKey, audienceTimeframe]);
 
 const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
  const reachMetric = metricsByKey.reach;
@@ -4704,7 +4718,9 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     </button>
                     <div>
                       <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Top Cidades</h3>
-                      <p style={{ margin: 0, fontSize: '13px', opacity: 0.9 }}>Distribuição geográfica do público</p>
+                      <p style={{ margin: 0, fontSize: '13px', opacity: 0.9 }}>
+                        Distribuição geográfica do público · {audienceTimeframeLabel}
+                      </p>
                     </div>
                   </div>
                   <div style={{
@@ -5787,6 +5803,19 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 Top cidades
                 <InfoTooltip text="Cidades com maior número de seguidores ou público alcançado." />
               </h4>
+              <span
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '999px',
+                  background: 'rgba(99, 102, 241, 0.12)',
+                  color: '#4f46e5',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  letterSpacing: '0.2px'
+                }}
+              >
+                {audienceTimeframeLabel}
+              </span>
             </div>
             {audienceCities.length ? (
               <div className="ig-top-cities-content">
