@@ -11351,6 +11351,14 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   border-top: 1px solid var(--ig-card-border);
 }
 
+.ig-analytics-card__body > .flex.w-full {
+  width: 100%;
+}
+
+.ig-analytics-card__body .ig-word-cloud {
+  width: 100%;
+}
+
 .ig-analytics-legend {
   display: flex;
   flex-direction: column;
@@ -12219,35 +12227,41 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 }
 
 .ig-word-cloud--large {
-  min-height: 320px;
-  padding: 20px 24px;
+  min-height: 380px;
+  padding: 16px;
+  width: 100%;
 }
 
 .ig-word-cloud--packed {
   position: relative;
   display: block;
-  min-height: 420px;
-  height: 420px;
-  padding: 16px 20px;
-  overflow: visible;
+  width: 100%;
+  min-height: 400px;
+  height: 400px;
+  padding: 20px;
+  overflow: hidden;
+  background: #fff;
+  box-sizing: border-box;
 }
 
 .ig-word-cloud--packed.ig-word-cloud--large {
-  min-height: 450px;
-  height: 450px;
-  padding: 20px 24px;
+  min-height: 420px;
+  height: 420px;
 }
 
 .ig-word-cloud--packed .ig-word-cloud__word {
   position: absolute;
   transform: translate(-50%, -50%) rotate(var(--wc-rotate, 0deg)) scale(var(--wc-scale, 1));
   transform-origin: center;
+  line-height: 1;
+  text-shadow: none;
+  will-change: transform;
 }
 
 .ig-word-cloud--packed .ig-word-cloud__word:hover {
-  --wc-scale: 1.06;
-  opacity: 0.9;
-  z-index: 5;
+  --wc-scale: 1.08;
+  opacity: 0.85;
+  z-index: 100 !important;
 }
 
 .ig-word-detail-modal {

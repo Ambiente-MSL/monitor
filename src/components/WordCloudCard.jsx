@@ -68,26 +68,27 @@ const buildCloudEntries = (words) => {
   const limited = words
     .filter((item) => item && item.word)
     .sort((a, b) => (b.count || 0) - (a.count || 0))
-    .slice(0, 40);
+    .slice(0, 60);
 
   const counts = limited.map((item) => item.count || 0);
   const maxCount = Math.max(...counts);
   const minCount = Math.min(...counts);
-  // Tamanhos menores para caber mais palavras
-  const minFont = 12;
-  const maxFont = 42;
+  // Tamanhos variados como na referência - palavra principal bem grande
+  const minFont = 11;
+  const maxFont = 64;
 
   return limited.map((item, index) => {
     const seed = hashString(item.word || `${index}`);
     const rng = createSeededRandom(seed);
     const baseFont = scaleFont(item.count || 0, minCount, maxCount, minFont, maxFont);
-    // Palavra principal um pouco maior, mas não exagerado
-    const fontSize = index === 0 ? Math.min(baseFont + 6, 48) : baseFont;
-    const color = index === 0 ? "#4d7c0f" : WORD_COLORS[Math.floor(rng() * WORD_COLORS.length)];
-    const opacity = 0.85 + ((item.count || 0) / (maxCount || 1)) * 0.15;
-    // Sem rotação para evitar sobreposição vertical
-    const rotate = 0;
-    const fontWeight = index === 0 ? 800 : item.count === maxCount ? 700 : item.count >= (minCount + maxCount) / 2 ? 600 : 500;
+    // Palavra principal bem maior (como "caminhoneiros" na referência)
+    const fontSize = index === 0 ? Math.min(baseFont + 20, 72) : baseFont;
+    const color = WORD_COLORS[Math.floor(rng() * WORD_COLORS.length)];
+    const opacity = 0.9 + ((item.count || 0) / (maxCount || 1)) * 0.1;
+    // Algumas palavras rotacionadas verticalmente (como na referência)
+    const rotateRoll = rng();
+    const rotate = rotateRoll < 0.15 ? -90 : 0;
+    const fontWeight = index === 0 ? 700 : item.count === maxCount ? 600 : 500;
     return {
       key: `${item.word}-${index}`,
       word: item.word,
@@ -113,7 +114,7 @@ const measureWord = (ctx, word, fontSize, fontWeight) => {
   };
 };
 
-const hasCollision = (rect, placed, padding = 6) => placed.some((item) => (
+const hasCollision = (rect, placed, padding = 2) => placed.some((item) => (
   rect.x < item.x + item.width + padding
     && rect.x + rect.width + padding > item.x
     && rect.y < item.y + item.height + padding
@@ -121,17 +122,21 @@ const hasCollision = (rect, placed, padding = 6) => placed.some((item) => (
 ));
 
 const buildCloudLayout = (entries, bounds) => {
-  if (!entries.length || !bounds?.width || !bounds?.height) return [];
+  if (!entries.length) return [];
+  // Precisa de dimensões válidas
+  if (!bounds?.width || bounds.width < 100 || !bounds?.height || bounds.height < 100) return [];
   if (typeof document === "undefined") return [];
+
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
   if (!ctx) return [];
 
-  const padding = 12;
-  const availableWidth = Math.max(bounds.width - padding * 2, 300);
-  const availableHeight = Math.max(bounds.height - padding * 2, 200);
-  const centerX = availableWidth / 2 + padding;
-  const centerY = availableHeight / 2 + padding;
+  // Usar todo o espaço disponível com margem mínima
+  const margin = 15;
+  const width = bounds.width;
+  const height = bounds.height;
+  const centerX = width / 2;
+  const centerY = height / 2;
 
   const placed = [];
 
@@ -142,14 +147,16 @@ const buildCloudLayout = (entries, bounds) => {
       entry.style.fontSize,
       entry.style.fontWeight,
     );
-    const wordWidth = textWidth + 4;
-    const wordHeight = textHeight + 2;
+    // Ajustar dimensões para palavras rotacionadas
+    const isRotated = Math.abs(entry.rotate) === 90;
+    const wordWidth = isRotated ? textHeight : textWidth;
+    const wordHeight = isRotated ? textWidth : textHeight;
 
     let bestX = centerX;
     let bestY = centerY;
     let placedOk = false;
 
-    // Primeira palavra no centro
+    // Primeira palavra (maior) centralizada
     if (index === 0) {
       const rect = {
         x: centerX - wordWidth / 2,
@@ -157,26 +164,26 @@ const buildCloudLayout = (entries, bounds) => {
         width: wordWidth,
         height: wordHeight,
       };
-      if (rect.x >= padding && rect.y >= padding &&
-          rect.x + rect.width <= availableWidth + padding &&
-          rect.y + rect.height <= availableHeight + padding) {
+      if (rect.x >= margin && rect.y >= margin &&
+          rect.x + rect.width <= width - margin &&
+          rect.y + rect.height <= height - margin) {
         placedOk = true;
       }
     }
 
-    // Busca em espiral com prioridade horizontal
+    // Espiral de Arquimedes - layout denso como na referência
     if (!placedOk) {
-      const maxAttempts = 2000;
-      for (let attempt = 1; attempt < maxAttempts && !placedOk; attempt += 1) {
-        // Espiral com expansão horizontal maior
-        const angle = attempt * 0.3;
-        const radius = 8 + attempt * 1.8;
-        // Multiplicador horizontal para espalhar mais na largura
-        const xMultiplier = 2.2;
-        const yMultiplier = 1.0;
+      const maxAttempts = 8000;
+      // Parâmetros ajustados para melhor distribuição
+      const spiralStep = 0.4;
+      const radiusGrowth = 2.0;
 
-        const testX = centerX + radius * Math.cos(angle) * xMultiplier;
-        const testY = centerY + radius * Math.sin(angle) * yMultiplier;
+      for (let attempt = 1; attempt < maxAttempts && !placedOk; attempt += 1) {
+        const angle = attempt * spiralStep;
+        const radius = radiusGrowth * Math.sqrt(attempt);
+
+        const testX = centerX + radius * Math.cos(angle);
+        const testY = centerY + radius * Math.sin(angle);
 
         const rect = {
           x: testX - wordWidth / 2,
@@ -185,15 +192,15 @@ const buildCloudLayout = (entries, bounds) => {
           height: wordHeight,
         };
 
-        // Verificar limites
-        if (rect.x < padding || rect.y < padding ||
-            rect.x + rect.width > availableWidth + padding ||
-            rect.y + rect.height > availableHeight + padding) {
+        // Verificar limites - palavras devem ficar completamente dentro
+        if (rect.x < margin || rect.y < margin ||
+            rect.x + rect.width > width - margin ||
+            rect.y + rect.height > height - margin) {
           continue;
         }
 
-        // Verificar colisão
-        if (!hasCollision(rect, placed, 6)) {
+        // Verificar colisão com padding mínimo para ficar denso
+        if (!hasCollision(rect, placed, 4)) {
           bestX = testX;
           bestY = testY;
           placedOk = true;
@@ -201,25 +208,17 @@ const buildCloudLayout = (entries, bounds) => {
       }
     }
 
-    // Fallback: posição baseada em grid
-    if (!placedOk) {
-      const cols = Math.ceil(Math.sqrt(entries.length * 2));
-      const row = Math.floor(index / cols);
-      const col = index % cols;
-      const cellWidth = availableWidth / cols;
-      const cellHeight = availableHeight / Math.ceil(entries.length / cols);
-      bestX = padding + cellWidth * (col + 0.5);
-      bestY = padding + cellHeight * (row + 0.5);
+    // Só adiciona se encontrou posição válida dentro dos limites
+    if (placedOk) {
+      placed.push({
+        ...entry,
+        x: bestX,
+        y: bestY,
+        width: wordWidth,
+        height: wordHeight,
+        zIndex: entries.length - index,
+      });
     }
-
-    placed.push({
-      ...entry,
-      x: bestX,
-      y: bestY,
-      width: wordWidth,
-      height: wordHeight,
-      zIndex: 100 - index,
-    });
   });
 
   return placed;
