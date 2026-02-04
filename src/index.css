@@ -5381,23 +5381,23 @@ input:focus {
 
 
 
-/* Date Range Indicator - Modern Minimalist Style */
+/* Date Range Indicator - High Contrast Style */
 
 .date-range-indicator {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 14px;
-  background: rgba(99, 102, 241, 0.08);
+  padding: 0;
+  background: transparent;
   border: none;
-  border-radius: 20px;
   margin: 0;
+  margin-left: 8px;
 }
 
 .date-range-indicator__icon {
-  color: #6366f1;
+  color: #ffffff;
   flex-shrink: 0;
-  opacity: 0.85;
+  opacity: 0.6;
 }
 
 .date-range-indicator__content {
@@ -5405,25 +5405,24 @@ input:focus {
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
-  font-size: 13px;
+  font-size: 14px;
   letter-spacing: -0.01em;
 }
 
 .date-range-indicator__label {
-  color: #6366f1;
+  color: rgba(255, 255, 255, 0.6);
   font-weight: 500;
 }
 
 .date-range-indicator__dates {
-  color: var(--fg);
+  color: #ffffff;
   font-weight: 600;
 }
 
 .date-range-indicator__days {
-  color: var(--muted);
-  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
   font-weight: 500;
-  opacity: 0.8;
 }
 
 

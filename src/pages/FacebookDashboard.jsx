@@ -1054,7 +1054,7 @@ useEffect(() => {
         </div>
 
         <div className="ig-clean-title-row">
-          <h2 className="ig-clean-title">Visão Geral</h2>
+          <h2 className="ig-clean-title">Visão geral</h2>
           <DateRangeIndicator />
         </div>
 
