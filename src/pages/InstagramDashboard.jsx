@@ -6051,6 +6051,8 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                 onCommentsCountRender={setCommentsCount}
                 externalPanelMode={true}
                 onWordClick={handleWordCloudWordClick}
+                wordGap="0.1cm"
+                packedPaddingPercent={1}
               />
             </div>
           </section>

@@ -192,7 +192,7 @@ const spreadLayoutToFill = (layout, bounds, margin = 10) => {
   }));
 };
 
-const buildCloudLayout = (entries, bounds) => {
+const buildCloudLayout = (entries, bounds, paddingPercent = 5) => {
   if (!entries.length) return [];
   if (!bounds?.width || bounds.width < 200 || !bounds?.height || bounds.height < 150) return [];
   if (typeof document === "undefined") return [];
@@ -256,7 +256,7 @@ const buildCloudLayout = (entries, bounds) => {
       if (left >= margin && top >= margin &&
           left + wordWidth <= width - margin &&
           top + wordHeight <= height - margin &&
-          !hasCollision(testRect, placed, 5)) {
+          !hasCollision(testRect, placed, paddingPercent)) {
         placedOk = true;
       }
     }
@@ -284,7 +284,7 @@ const buildCloudLayout = (entries, bounds) => {
 
         // Colisão com padding de 5% para proximidade ideal
         const testRect = { left, top, width: wordWidth, height: wordHeight };
-        if (!hasCollision(testRect, placed, 5)) {
+        if (!hasCollision(testRect, placed, paddingPercent)) {
           bestX = testX;
           bestY = testY;
           placedOk = true;
@@ -357,6 +357,8 @@ export default function WordCloudCard({
   onCommentsCountRender = null,
   onWordClick = null,
   externalPanelMode = false,
+  wordGap = null,
+  packedPaddingPercent = 5,
 }) {
   const resolvedPlatform = platform === "facebook" ? "facebook" : "instagram";
   const resolvedAccountId = resolvedPlatform === "facebook"
@@ -480,11 +482,16 @@ export default function WordCloudCard({
   });
 
   const entries = useMemo(() => buildCloudEntries(data?.words || []), [data]);
-  const packedLayout = useMemo(() => buildCloudLayout(entries, cloudSize), [entries, cloudSize]);
+  const normalizedPackedPadding = Number.isFinite(packedPaddingPercent) ? packedPaddingPercent : 5;
+  const packedLayout = useMemo(
+    () => buildCloudLayout(entries, cloudSize, normalizedPackedPadding),
+    [entries, cloudSize, normalizedPackedPadding],
+  );
   const packedHasOverlap = useMemo(() => hasLayoutOverlap(packedLayout), [packedLayout]);
   const usePackedLayout = packedLayout.length > 0 && packedLayout.length === entries.length && !packedHasOverlap;
   const cloudEntries = usePackedLayout ? packedLayout : entries;
   const cloudClassName = `ig-word-cloud ig-word-cloud--large${usePackedLayout ? " ig-word-cloud--packed" : ""}`;
+  const cloudStyle = useMemo(() => (wordGap ? { gap: wordGap } : undefined), [wordGap]);
 
   useEffect(() => {
     const node = cloudRef.current;
@@ -717,7 +724,7 @@ export default function WordCloudCard({
         </div>
       ) : null}
 
-      <div className={cloudClassName} ref={cloudRef}>
+      <div className={cloudClassName} ref={cloudRef} style={cloudStyle}>
         {cloudEntries.map((item) => {
           const handleWordClick = () => {
             if (externalPanelMode && onWordClick) {
