@@ -1613,6 +1613,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
  const engagementRateMetric = metricsByKey.engagement_rate;
  const profileViewsMetric = metricsByKey.video_views || metricsByKey.profile_views;
  const interactionsMetric = metricsByKey.interactions;
+ const interactionsSeriesFromMetric = useMemo(() => seriesFromMetric(interactionsMetric), [interactionsMetric]);
 
   const reachMetricValue = useMemo(() => extractNumber(reachMetric?.value, null), [reachMetric?.value]);
   const timelineReachSeries = useMemo(() => seriesFromMetric(reachMetric), [reachMetric]);
@@ -1830,22 +1831,89 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
     return extras.length ? [...merged, ...extras] : merged;
   }, [filteredPosts, recentPosts]);
   const interactionsDailyTotals = useMemo(() => {
-    if (!interactionPostsSource.length) return [];
+    if (!contentPostsSource.length) return [];
     const totals = new Map();
-    interactionPostsSource.forEach((post) => {
+    contentPostsSource.forEach((post) => {
       const dateKey = normalizeDateKey(post.timestamp || post.timestamp_unix);
       if (!dateKey) return;
       const value = resolvePostInteractions(post);
       totals.set(dateKey, (totals.get(dateKey) || 0) + value);
     });
-    return Array.from(totals.entries()).map(([date, value]) => ({ date, value }));
-  }, [interactionPostsSource]);
+    return Array.from(totals.entries())
+      .map(([date, value]) => ({ date, value }))
+      .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+  }, [contentPostsSource]);
+  const interactionsSeriesResolved = useMemo(() => {
+    const baseSeries = interactionsSeriesFromMetric.length ? interactionsSeriesFromMetric : interactionsDailyTotals;
+    if (!baseSeries.length) return [];
+    const normalized = baseSeries
+      .map((entry) => {
+        const dateKey = normalizeDateKey(
+          entry?.date || entry?.metric_date || entry?.end_time || entry?.endTime || entry?.label,
+        );
+        if (!dateKey) return null;
+        return { date: dateKey, value: extractNumber(entry?.value, 0) };
+      })
+      .filter(Boolean)
+      .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+
+    if (!sinceDate && !untilDate) return normalized;
+    const startBoundary = sinceDate ? startOfDay(sinceDate).getTime() : null;
+    const endBoundary = untilDate ? endOfDay(untilDate).getTime() : null;
+    return normalized.filter((item) => {
+      if (!item?.date) return false;
+      const currentDate = new Date(`${item.date}T00:00:00`);
+      const current = currentDate.getTime();
+      if (Number.isNaN(current)) return false;
+      if (startBoundary != null && current < startBoundary) return false;
+      if (endBoundary != null && current > endBoundary) return false;
+      return true;
+    });
+  }, [interactionsDailyTotals, interactionsSeriesFromMetric, sinceDate, untilDate]);
+  const interactionsChartData = useMemo(() => {
+    if (!interactionsSeriesResolved.length) return [];
+    const firstDateKey = interactionsSeriesResolved[0]?.date;
+    const lastDateKey = interactionsSeriesResolved[interactionsSeriesResolved.length - 1]?.date;
+    if (!firstDateKey || !lastDateKey) return [];
+
+    const rangeStart = sinceDate ? startOfDay(sinceDate) : new Date(`${firstDateKey}T00:00:00`);
+    const rangeEnd = untilDate ? startOfDay(untilDate) : new Date(`${lastDateKey}T00:00:00`);
+
+    if (Number.isNaN(rangeStart.getTime()) || Number.isNaN(rangeEnd.getTime())) {
+      return [];
+    }
+    if (rangeStart > rangeEnd) {
+      return [];
+    }
+
+    const startKey = rangeStart.toISOString().slice(0, 10);
+    const endKey = rangeEnd.toISOString().slice(0, 10);
+    const hasDataInRange = interactionsSeriesResolved.some(
+      (entry) => entry.date >= startKey && entry.date <= endKey,
+    );
+    if (!hasDataInRange) return [];
+
+    const totalsByDate = new Map();
+    interactionsSeriesResolved.forEach((entry) => {
+      const value = extractNumber(entry.value, 0);
+      totalsByDate.set(entry.date, (totalsByDate.get(entry.date) || 0) + value);
+    });
+
+    return eachDayOfInterval({ start: rangeStart, end: rangeEnd }).map((day) => {
+      const dateKey = day.toISOString().slice(0, 10);
+      return {
+        date: dateKey,
+        value: totalsByDate.get(dateKey) || 0,
+        tooltipDate: formatTooltipDate(dateKey),
+      };
+    });
+  }, [interactionsSeriesResolved, sinceDate, untilDate]);
   const interactionsPeak = useMemo(() => {
-    if (!interactionsDailyTotals.length) return null;
-    return interactionsDailyTotals.reduce((maxValue, entry) => (
+    if (!interactionsChartData.length) return null;
+    return interactionsChartData.reduce((maxValue, entry) => (
       Math.max(maxValue, extractNumber(entry.value, 0))
     ), 0);
-  }, [interactionsDailyTotals]);
+  }, [interactionsChartData]);
   const interactionsByTypeTotals = useMemo(() => {
     const totals = { reels: 0, videos: 0, posts: 0 };
     interactionPostsSource.forEach((post) => {
@@ -4285,7 +4353,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                   </div>
                 </section>
 
-                {/* Gráfico de Interações por Tempo (Mock) */}
+                {/* Gráfico de Interações por Tempo */}
                 <section className="ig-card-white" style={{ marginBottom: '24px' }}>
                   <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827' }}>
@@ -4299,71 +4367,68 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     </div>
                   </div>
                   <div style={{ padding: '20px', height: 240 }}>
-                    <ResponsiveContainer>
-                      <LineChart
-                        data={[
-                          { date: '01/01', value: 1250 },
-                          { date: '02/01', value: 1480 },
-                          { date: '03/01', value: 1320 },
-                          { date: '04/01', value: 1890 },
-                          { date: '05/01', value: 2100 },
-                          { date: '06/01', value: 1750 },
-                          { date: '07/01', value: 2350 },
-                          { date: '08/01', value: 2180 },
-                          { date: '09/01', value: 2420 },
-                          { date: '10/01', value: 2680 },
-                          { date: '11/01', value: 2150 },
-                          { date: '12/01', value: 2890 },
-                          { date: '13/01', value: 3100 },
-                          { date: '14/01', value: 2750 },
-                        ]}
-                        margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-                      >
-                        <defs>
-                          <linearGradient id="interactionsGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2} />
-                            <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
-                        <XAxis
-                          dataKey="date"
-                          axisLine={false}
-                          tickLine={false}
-                          tick={{ fill: '#9ca3af', fontSize: 11 }}
-                        />
-                        <YAxis
-                          axisLine={false}
-                          tickLine={false}
-                          tick={{ fill: '#9ca3af', fontSize: 11 }}
-                          tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v}
-                        />
-                        <Tooltip
-                          cursor={{ stroke: 'rgba(17, 24, 39, 0.2)', strokeDasharray: '4 4' }}
-                          content={
-                            <CustomChartTooltip
-                              labelMap={{ value: "Interações" }}
-                              valueFormatter={(v) => `: ${formatNumber(v)}`}
-                            />
-                          }
-                        />
-                        <Area
-                          type="monotone"
-                          dataKey="value"
-                          stroke="#6366f1"
-                          strokeWidth={0}
-                          fill="url(#interactionsGradient)"
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="value"
-                          stroke="#6366f1"
-                          strokeWidth={2.5}
-                          dot={false}
-                          activeDot={{ r: 5, fill: '#6366f1', stroke: '#fff', strokeWidth: 2 }}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
+                    {interactionsChartData.length ? (
+                      <ResponsiveContainer>
+                        <LineChart
+                          data={interactionsChartData}
+                          margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                        >
+                          <defs>
+                            <linearGradient id="interactionsGradient" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2} />
+                              <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                          <XAxis
+                            dataKey="date"
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: '#9ca3af', fontSize: 11 }}
+                            interval="preserveStartEnd"
+                            minTickGap={40}
+                            tickFormatter={formatAxisDate}
+                          />
+                          <YAxis
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: '#9ca3af', fontSize: 11 }}
+                            tickFormatter={(value) => formatCompactNumber(value)}
+                          />
+                          <Tooltip
+                            cursor={{ stroke: 'rgba(17, 24, 39, 0.2)', strokeDasharray: '4 4' }}
+                            content={(props) => {
+                              const tooltipDate = props?.payload?.[0]?.payload?.tooltipDate || props?.label;
+                              return (
+                                <CustomChartTooltip
+                                  {...props}
+                                  labelFormatter={() => String(tooltipDate || "")}
+                                  labelMap={{ value: "Interações" }}
+                                  valueFormatter={(v) => `: ${formatTooltipNumber(v)}`}
+                                />
+                              );
+                            }}
+                          />
+                          <Area
+                            type="monotone"
+                            dataKey="value"
+                            stroke="#6366f1"
+                            strokeWidth={0}
+                            fill="url(#interactionsGradient)"
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="value"
+                            stroke="#6366f1"
+                            strokeWidth={2.5}
+                            dot={false}
+                            activeDot={{ r: 5, fill: '#6366f1', stroke: '#fff', strokeWidth: 2 }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="ig-empty-state">Sem dados disponíveis.</div>
+                    )}
                   </div>
                 </section>
 
