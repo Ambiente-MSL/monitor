@@ -1238,7 +1238,7 @@ useEffect(() => {
                               content={(
                                 <CustomChartTooltip
                                   variant="pie"
-                                  valueFormatter={formatTooltipNumber}
+                                  valueFormatter={(v) => `: ${formatTooltipNumber(v)}`}
                                 />
                               )}
                             />
@@ -1521,7 +1521,7 @@ useEffect(() => {
                               {...props}
                               labelFormatter={() => tooltipDate}
                               labelMap={{ value: "Crescimento líquido" }}
-                              valueFormatter={formatTooltipNumber}
+                              valueFormatter={(v) => `: ${formatTooltipNumber(v)}`}
                             />
                           );
                         }}
@@ -1602,7 +1602,7 @@ useEffect(() => {
                             <CustomChartTooltip
                               hideLabel
                               labelMap={{ value: "Alcance" }}
-                              valueFormatter={formatTooltipNumber}
+                              valueFormatter={(v) => `: ${formatTooltipNumber(v)}`}
                             />
                           )}
                         />
@@ -1870,7 +1870,7 @@ useEffect(() => {
                             <CustomChartTooltip
                               {...props}
                               labelFormatter={() => (age ? `${age} anos` : "")}
-                              valueFormatter={formatTooltipNumber}
+                              valueFormatter={(v) => `: ${formatTooltipNumber(v)}`}
                             />
                           );
                         }}

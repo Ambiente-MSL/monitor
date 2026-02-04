@@ -3631,7 +3631,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                           <CustomChartTooltip
                             labelFormatter={(value) => String(value || "")}
                             labelMap={{ value: "Ocorrências" }}
-                            valueFormatter={formatTooltipNumber}
+                            valueFormatter={(v) => `: ${formatTooltipNumber(v)}`}
                           />
                         )}
                       />
@@ -3769,7 +3769,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                                   {...props}
                                   labelFormatter={() => String(tooltipDate || "")}
                                   labelMap={{ value: "Seguidores ganhos" }}
-                                  valueFormatter={formatTooltipNumber}
+                                  valueFormatter={(v) => `: ${formatTooltipNumber(v)}`}
                                 />
                               );
                             }}
@@ -3874,7 +3874,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                                   labelFormatter={(value) => String(value || "")}
                                   labelMap={{ value: "Percentual" }}
                                   unit="%"
-                                  valueFormatter={formatPercent}
+                                  valueFormatter={(v) => `: ${formatPercent(v)}`}
                                   showPercent={false}
                                 />
                               )}
@@ -4000,19 +4000,19 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     <div style={{ fontSize: '28px', fontWeight: 700, color: '#6366f1' }}>
                       {formatNumber(profileViewsTotal ?? 0)}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Total no Período</div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Total no período</div>
                   </div>
                   <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
                     <div style={{ fontSize: '28px', fontWeight: 700, color: '#8b5cf6' }}>
                       {profileViewsAverage != null ? formatNumber(Math.round(profileViewsAverage)) : '--'}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Média Diária</div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Média diária</div>
                   </div>
                   <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
                     <div style={{ fontSize: '28px', fontWeight: 700, color: '#a855f7' }}>
                       {profileViewsPeak != null ? formatNumber(profileViewsPeak) : '--'}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Pico Diário</div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Pico diário</div>
                   </div>
                 </div>
 
@@ -4070,7 +4070,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                                   {...props}
                                   labelFormatter={() => String(tooltipDate || "")}
                                   labelMap={{ value: "Visualizações" }}
-                                  valueFormatter={formatTooltipNumber}
+                                  valueFormatter={(v) => `: ${formatTooltipNumber(v)}`}
                                 />
                               );
                             }}
@@ -4339,13 +4339,13 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                           tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v}
                         />
                         <Tooltip
-                          contentStyle={{
-                            background: '#fff',
-                            border: '1px solid #e5e7eb',
-                            borderRadius: '8px',
-                            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                          }}
-                          formatter={(value) => [formatNumber(value), 'Interações']}
+                          cursor={{ stroke: 'rgba(17, 24, 39, 0.2)', strokeDasharray: '4 4' }}
+                          content={
+                            <CustomChartTooltip
+                              labelMap={{ value: "Interações" }}
+                              valueFormatter={(v) => `: ${formatNumber(v)}`}
+                            />
+                          }
                         />
                         <Area
                           type="monotone"
@@ -4424,7 +4424,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                             content={(
                               <CustomChartTooltip
                                 variant="pie"
-                                valueFormatter={formatNumber}
+                                valueFormatter={(v) => `: ${formatNumber(v)}`}
                               />
                             )}
                           />
@@ -5216,12 +5216,12 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                                 <div className="ig-tooltip">
                                   <span className="ig-tooltip__title">{data.fullName}</span>
                                   <div className="ig-tooltip__row">
-                                    <span>Seguidores:</span>
-                                    <strong>{formatNumber(data.value)}</strong>
+                                    <span>Seguidores</span>
+                                    <strong>: {formatNumber(data.value)}</strong>
                                   </div>
                                   <div className="ig-tooltip__row">
-                                    <span>Percentual:</span>
-                                    <strong>{data.percentage.toFixed(2)}%</strong>
+                                    <span>Percentual</span>
+                                    <strong>: {data.percentage.toFixed(2)}%</strong>
                                   </div>
                                 </div>
                               );
@@ -5562,9 +5562,9 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                                 <div className="ig-tooltip__row">
                                   <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
                                     <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#a855f7" }} />
-                                    Seguidores ganhos:
+                                    Seguidores ganhos
                                   </span>
-                                  <strong>{formatTooltipNumber(value)}</strong>
+                                  <strong>: {formatTooltipNumber(value)}</strong>
                                 </div>
                               </div>
                             );
@@ -6085,8 +6085,8 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                     content={(
                       <CustomChartTooltip
                         labelFormatter={(value) => String(value || "")}
-                        labelMap={{ value: "Ocorrencias" }}
-                        valueFormatter={formatTooltipNumber}
+                        labelMap={{ value: "Ocorrências" }}
+                        valueFormatter={(v) => `: ${formatTooltipNumber(v)}`}
                       />
                     )}
                   />

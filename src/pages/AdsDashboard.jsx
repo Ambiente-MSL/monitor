@@ -1723,7 +1723,7 @@ export default function AdsDashboard() {
                             <CustomChartTooltip
                               variant="pie"
                               unit="%"
-                              valueFormatter={formatTooltipNumber}
+                              valueFormatter={(v) => `: ${formatTooltipNumber(v)}`}
                               showPercent={false}
                             />
                           )}
@@ -1832,7 +1832,7 @@ export default function AdsDashboard() {
                             <CustomChartTooltip
                               labelFormatter={formatTooltipDate}
                               labelMap={{ value: "Investimento" }}
-                              valueFormatter={(value) => formatCurrency(Number(value))}
+                              valueFormatter={(value) => `: ${formatCurrency(Number(value))}`}
                             />
                           )}
                         />
@@ -1955,8 +1955,8 @@ export default function AdsDashboard() {
                       content={(
                         <CustomChartTooltip
                           labelFormatter={formatTooltipDate}
-                          labelMap={{ impressions: "Impressoes", reach: "Alcance" }}
-                          valueFormatter={formatTooltipNumber}
+                          labelMap={{ impressions: "Impressões", reach: "Alcance" }}
+                          valueFormatter={(v) => `: ${formatTooltipNumber(v)}`}
                         />
                       )}
                     />
@@ -2658,7 +2658,7 @@ export default function AdsDashboard() {
                                 content={(
                                   <CustomChartTooltip
                                     labelFormatter={(value) => String(value || "")}
-                                    valueFormatter={formatTooltipNumber}
+                                    valueFormatter={(v) => `: ${formatTooltipNumber(v)}`}
                                   />
                                 )}
                               />
@@ -2745,7 +2745,7 @@ export default function AdsDashboard() {
                             <CustomChartTooltip
                               labelFormatter={(value) => String(value || "")}
                               labelMap={{ value: "Alcance" }}
-                              valueFormatter={formatTooltipNumber}
+                              valueFormatter={(v) => `: ${formatTooltipNumber(v)}`}
                             />
                           )}
                         />
@@ -2797,7 +2797,7 @@ export default function AdsDashboard() {
                             content={(
                               <CustomChartTooltip
                                 variant="pie"
-                                valueFormatter={formatTooltipNumber}
+                                valueFormatter={(v) => `: ${formatTooltipNumber(v)}`}
                               />
                             )}
                           />
