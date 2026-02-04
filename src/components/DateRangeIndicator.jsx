@@ -1,5 +1,5 @@
 import { Calendar } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, differenceInCalendarDays, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import useQueryState from '../hooks/useQueryState';
 
@@ -26,7 +26,10 @@ export default function DateRangeIndicator() {
     return format(date, "dd 'de' MMM", { locale: ptBR });
   };
 
-  const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+  const daysDiff = Math.max(
+    1,
+    differenceInCalendarDays(startOfDay(endDate), startOfDay(startDate)) + 1,
+  );
 
   return (
     <div className="date-range-indicator">

@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef } from "react";
-import { addDays, endOfDay, format, startOfDay } from "date-fns";
+import { addDays, endOfDay, format, startOfDay, differenceInCalendarDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DateRangePicker as ReactDateRangePicker } from "react-date-range";
 import "react-date-range/dist/styles.css";
@@ -176,8 +176,12 @@ export default function DateRangePicker({ onRangeChange, variant = "default" }) 
 
   const { startDate, endDate } = state[0];
 
-  const activeDays =
-    startDate && endDate ? Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1 : null;
+  const activeDays = startDate && endDate
+    ? Math.max(
+      1,
+      differenceInCalendarDays(startOfDay(endDate), startOfDay(startDate)) + 1,
+    )
+    : null;
 
   const wrapperClass = `date-range-wrapper-new${
     variant === "compact" ? " date-range-wrapper-new--compact" : ""

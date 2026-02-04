@@ -148,11 +148,11 @@ const parseQueryDate = (value) => {
   return Number.isNaN(date.getTime()) ? null : date;
 };
 
-const toUtcDateString = (date) => {
+const toLocalDateString = (date) => {
   if (!(date instanceof Date) || Number.isNaN(date.getTime())) return undefined;
-  const year = date.getUTCFullYear();
-  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(date.getUTCDate()).padStart(2, "0");
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
 
@@ -291,8 +291,8 @@ useEffect(() => {
       : startOfDay(subDays(until, DEFAULT_FACEBOOK_RANGE_DAYS - 1));
     return { since, until };
   }, [defaultEnd, sinceDate, untilDate]);
-  const sinceIso = useMemo(() => toUtcDateString(selectedRange.since), [selectedRange.since]);
-  const untilIso = useMemo(() => toUtcDateString(selectedRange.until), [selectedRange.until]);
+  const sinceIso = useMemo(() => toLocalDateString(selectedRange.since), [selectedRange.since]);
+  const untilIso = useMemo(() => toLocalDateString(selectedRange.until), [selectedRange.until]);
 
   useEffect(() => {
     if (sinceParam && untilParam) return;

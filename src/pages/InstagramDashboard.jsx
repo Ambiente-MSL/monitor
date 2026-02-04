@@ -312,11 +312,11 @@ const truncate = (text, length = 120) => {
   if (!text) return "";
   return text.length <= length ? text : `${text.slice(0, length - 3)}...`;
 };
-const toUtcDateString = (date) => {
+const toLocalDateString = (date) => {
   if (!(date instanceof Date) || Number.isNaN(date.getTime())) return undefined;
-  const year = date.getUTCFullYear();
-  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(date.getUTCDate()).padStart(2, "0");
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
 const parseQueryDate = (value) => {
@@ -767,8 +767,8 @@ export default function InstagramDashboard() {
   );
   const sinceDate = useMemo(() => parseQueryDate(sinceParam), [sinceParam]);
   const untilDate = useMemo(() => parseQueryDate(untilParam), [untilParam]);
-  const sinceIso = useMemo(() => toUtcDateString(sinceDate), [sinceDate]);
-  const untilIso = useMemo(() => toUtcDateString(untilDate), [untilDate]);
+  const sinceIso = useMemo(() => toLocalDateString(sinceDate), [sinceDate]);
+  const untilIso = useMemo(() => toLocalDateString(untilDate), [untilDate]);
   const audienceTimeframe = useMemo(() => {
     if (!sinceDate || !untilDate) return "this_week";
     const diff = differenceInCalendarDays(endOfDay(untilDate), startOfDay(sinceDate)) + 1;
