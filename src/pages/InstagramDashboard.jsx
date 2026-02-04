@@ -4230,38 +4230,140 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
 
                 {/* Breakdown de Interações */}
                 <section className="ig-card-white" style={{ marginBottom: '24px' }}>
-                  <div style={{ padding: '20px', borderBottom: '1px solid #e5e7eb' }}>
+                  <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb' }}>
                     <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827' }}>
                       Detalhamento por tipo
                     </h4>
                   </div>
-                  <div style={{ padding: '20px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
-                      <div style={{ padding: '16px', background: '#fef2f2', borderRadius: '12px', textAlign: 'center' }}>
-                        <div style={{ fontSize: '24px', fontWeight: 700, color: '#ef4444', marginBottom: '4px' }}>
-                          {formatNumber(interactionsBreakdown.likes)}
+                  <div style={{ padding: '16px 20px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                      <div style={{ padding: '12px', background: '#fef2f2', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Heart size={18} color="#ef4444" />
                         </div>
-                        <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500 }}>Curtidas</div>
+                        <div>
+                          <div style={{ fontSize: '20px', fontWeight: 700, color: '#ef4444', lineHeight: 1.2 }}>
+                            {formatNumber(interactionsBreakdown.likes)}
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>Curtidas</div>
+                        </div>
                       </div>
-                      <div style={{ padding: '16px', background: '#eff6ff', borderRadius: '12px', textAlign: 'center' }}>
-                        <div style={{ fontSize: '24px', fontWeight: 700, color: '#3b82f6', marginBottom: '4px' }}>
-                          {formatNumber(interactionsBreakdown.comments)}
+                      <div style={{ padding: '12px', background: '#eff6ff', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'rgba(59, 130, 246, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <MessageCircle size={18} color="#3b82f6" />
                         </div>
-                        <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500 }}>Comentários</div>
+                        <div>
+                          <div style={{ fontSize: '20px', fontWeight: 700, color: '#3b82f6', lineHeight: 1.2 }}>
+                            {formatNumber(interactionsBreakdown.comments)}
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>Comentários</div>
+                        </div>
                       </div>
-                      <div style={{ padding: '16px', background: '#f0fdf4', borderRadius: '12px', textAlign: 'center' }}>
-                        <div style={{ fontSize: '24px', fontWeight: 700, color: '#22c55e', marginBottom: '4px' }}>
-                          {formatNumber(interactionsBreakdown.shares)}
+                      <div style={{ padding: '12px', background: '#f0fdf4', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'rgba(34, 197, 94, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Share2 size={18} color="#22c55e" />
                         </div>
-                        <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500 }}>Compartilhamentos</div>
+                        <div>
+                          <div style={{ fontSize: '20px', fontWeight: 700, color: '#22c55e', lineHeight: 1.2 }}>
+                            {formatNumber(interactionsBreakdown.shares)}
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>Compartilhamentos</div>
+                        </div>
                       </div>
-                      <div style={{ padding: '16px', background: '#faf5ff', borderRadius: '12px', textAlign: 'center' }}>
-                        <div style={{ fontSize: '24px', fontWeight: 700, color: '#a855f7', marginBottom: '4px' }}>
-                          {formatNumber(interactionsBreakdown.saves)}
+                      <div style={{ padding: '12px', background: '#faf5ff', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'rgba(168, 85, 247, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Bookmark size={18} color="#a855f7" />
                         </div>
-                        <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500 }}>Salvos</div>
+                        <div>
+                          <div style={{ fontSize: '20px', fontWeight: 700, color: '#a855f7', lineHeight: 1.2 }}>
+                            {formatNumber(interactionsBreakdown.saves)}
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>Salvos</div>
+                        </div>
                       </div>
                     </div>
+                  </div>
+                </section>
+
+                {/* Gráfico de Interações por Tempo (Mock) */}
+                <section className="ig-card-white" style={{ marginBottom: '24px' }}>
+                  <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827' }}>
+                      Interações por tempo
+                    </h4>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#6366f1' }} />
+                        <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500 }}>Interações</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ padding: '20px', height: 240 }}>
+                    <ResponsiveContainer>
+                      <LineChart
+                        data={[
+                          { date: '01/01', value: 1250 },
+                          { date: '02/01', value: 1480 },
+                          { date: '03/01', value: 1320 },
+                          { date: '04/01', value: 1890 },
+                          { date: '05/01', value: 2100 },
+                          { date: '06/01', value: 1750 },
+                          { date: '07/01', value: 2350 },
+                          { date: '08/01', value: 2180 },
+                          { date: '09/01', value: 2420 },
+                          { date: '10/01', value: 2680 },
+                          { date: '11/01', value: 2150 },
+                          { date: '12/01', value: 2890 },
+                          { date: '13/01', value: 3100 },
+                          { date: '14/01', value: 2750 },
+                        ]}
+                        margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                      >
+                        <defs>
+                          <linearGradient id="interactionsGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2} />
+                            <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                        <XAxis
+                          dataKey="date"
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fill: '#9ca3af', fontSize: 11 }}
+                        />
+                        <YAxis
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fill: '#9ca3af', fontSize: 11 }}
+                          tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            background: '#fff',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                          }}
+                          formatter={(value) => [formatNumber(value), 'Interações']}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="value"
+                          stroke="#6366f1"
+                          strokeWidth={0}
+                          fill="url(#interactionsGradient)"
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="value"
+                          stroke="#6366f1"
+                          strokeWidth={2.5}
+                          dot={false}
+                          activeDot={{ r: 5, fill: '#6366f1', stroke: '#fff', strokeWidth: 2 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
                   </div>
                 </section>
 
