@@ -87,10 +87,10 @@ const STOP_WORDS = new Set([
 
 const IG_TOPBAR_PRESETS = [
   { id: "7d", label: "7 dias", days: 7 },
-  { id: "1m", label: "1 mês", days: 30 },
-  { id: "3m", label: "3 meses", days: 90 },
-  { id: "6m", label: "6 meses", days: 180 },
-  { id: "1y", label: "1 ano", days: 365 },
+  { id: "1m", label: "30 dias", days: 30 },
+  { id: "3m", label: "90 dias", days: 90 },
+  { id: "6m", label: "180 dias", days: 180 },
+  { id: "1y", label: "365 dias", days: 365 },
 ];
 
 const WEEKDAY_LABELS = ["D", "S", "T", "Q", "Q", "S", "S"];
