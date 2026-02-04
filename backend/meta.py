@@ -416,11 +416,12 @@ def extract_dimension_time_series(
 
 # ---- Facebook (organico) ----
 
-def fb_page_window(page_id: str, since: int, until: int):
+def fb_page_window(page_id: str, since: int, until: int, include_post_insights: Optional[bool] = None):
     page_token = get_page_access_token(page_id)
     period_seconds = max(0, int(until - since))
     period_days = period_seconds / 86400 if period_seconds else 0
-    include_post_insights = period_days <= FB_POST_INSIGHTS_MAX_DAYS
+    if include_post_insights is None:
+        include_post_insights = period_days <= FB_POST_INSIGHTS_MAX_DAYS
 
     # Métricas básicas (pode não retornar todas dependendo da revisão do app)
     basic_metrics = [

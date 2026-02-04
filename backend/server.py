@@ -837,10 +837,13 @@ def fetch_facebook_metrics(
     if since_ts is None or until_ts is None:
         raise ValueError("since_ts e until_ts são obrigatórios para facebook_metrics")
 
-    cur = fb_page_window(page_id, since_ts, until_ts)
-    prev = fb_page_window(page_id, since_ts - _duration(since_ts, until_ts), since_ts)
+    lite = bool(_extra and _extra.get("lite"))
+    cur = fb_page_window(page_id, since_ts, until_ts, include_post_insights=(False if lite else None))
+    prev = {} if lite else fb_page_window(page_id, since_ts - _duration(since_ts, until_ts), since_ts)
 
     def pct(current, previous):
+        if lite:
+            return None
         return round(((current - previous) / previous) * 100, 2) if previous and previous > 0 and current is not None else None
 
     engagement_cur = cur.get("engagement") or {}
@@ -3493,9 +3496,12 @@ def facebook_metrics():
     since, until = unix_range(request.args)
     force_refresh = request.args.get("force")
     force_refresh_flag = str(force_refresh).lower() in ("1", "true", "yes", "y")
+    lite_param = request.args.get("lite")
+    lite_flag = str(lite_param).lower() in ("1", "true", "yes", "y")
+    extra = {"lite": True} if lite_flag else None
     try:
         if force_refresh_flag:
-            payload = fetch_facebook_metrics(page_id, since, until, None)
+            payload = fetch_facebook_metrics(page_id, since, until, extra)
             meta = {
                 "source": "live",
                 "fetched_at": _utc_now_iso(),
@@ -3510,11 +3516,12 @@ def facebook_metrics():
                 page_id,
                 since,
                 until,
+                extra=extra,
                 fetcher=fetch_facebook_metrics,
                 platform="facebook",
             )
     except MetaAPIError as err:
-        mark_cache_error("facebook_metrics", page_id, since, until, None, err.args[0], platform="facebook")
+        mark_cache_error("facebook_metrics", page_id, since, until, extra, err.args[0], platform="facebook")
         payload = {
             "error": err.args[0],
             "graph": {

@@ -67,10 +67,6 @@ const WEEKDAY_LABELS = ["D", "S", "T", "Q", "Q", "S", "S"];
 const DEFAULT_WEEKLY_FOLLOWERS = [3, 4, 5, 6, 7, 5, 4];
 const DEFAULT_WEEKLY_POSTS = [2, 3, 4, 5, 6, 4, 3];
 
-const DEFAULT_GENDER_STATS = [
-  { name: "Homens", value: 40 },
-  { name: "Mulheres", value: 60 },
-];
 
 const HERO_TABS = [
   { id: "instagram", label: "Instagram", href: "/instagram", icon: InstagramIcon, iconClass: "hero-icon-instagram" },
@@ -258,6 +254,14 @@ useEffect(() => {
     }),
     [accountSnapshotKey],
   );
+  const audienceCacheKey = useMemo(
+    () => makeCacheKey({
+      page: "facebook",
+      endpoint: "audience",
+      accountId: accountSnapshotKey || "none",
+    }),
+    [accountSnapshotKey],
+  );
   const sinceDate = useMemo(() => parseQueryDate(sinceParam), [sinceParam]);
   const untilDate = useMemo(() => parseQueryDate(untilParam), [untilParam]);
   const now = useMemo(() => new Date(), []);
@@ -353,9 +357,14 @@ useEffect(() => {
   const [fbPostsLoading, setFbPostsLoading] = useState(false);
   const [fbPostsFetching, setFbPostsFetching] = useState(false);
   const [fbPostsError, setFbPostsError] = useState("");
+  const [audienceData, setAudienceData] = useState(null);
+  const [audienceLoading, setAudienceLoading] = useState(false);
+  const [audienceFetching, setAudienceFetching] = useState(false);
+  const [audienceError, setAudienceError] = useState("");
   const overviewRequestIdRef = useRef(0);
   const postsRequestIdRef = useRef(0);
   const followersRequestIdRef = useRef(0);
+  const audienceRequestIdRef = useRef(0);
   const lastCacheAccountKeyRef = useRef("");
 
   const activeSnapshot = useMemo(
@@ -421,7 +430,18 @@ useEffect(() => {
       setFbPostsError("");
       setFbPostsLoading(false);
     }
-  }, [pageCacheKey, overviewCacheKey, fbPostsCacheKey, followersCacheKey]);
+
+    const cachedAudience = getDashboardCache(audienceCacheKey);
+    if (cachedAudience) {
+      setAudienceData(cachedAudience);
+      setAudienceError("");
+      setAudienceLoading(false);
+    } else {
+      setAudienceData(null);
+      setAudienceError("");
+      setAudienceLoading(false);
+    }
+  }, [pageCacheKey, overviewCacheKey, fbPostsCacheKey, followersCacheKey, audienceCacheKey]);
 
   useEffect(() => {
     setOverviewSync(normalizeSyncInfo(null));
@@ -523,6 +543,7 @@ useEffect(() => {
         params.set("pageId", accountConfig.facebookPageId);
         params.set("since", sinceParam);
         params.set("until", untilParam);
+        params.set("lite", "1");
         const url = `${API_BASE_URL}/api/facebook/metrics?${params.toString()}`;
         const fetchMetrics = async (timeoutMs) => {
           const response = await fetchWithTimeout(url, { signal: controller.signal }, timeoutMs);
@@ -699,6 +720,78 @@ useEffect(() => {
       cancelled = true;
     };
   }, [accountConfig?.facebookPageId, apiFetch, sinceParam, untilParam, fbPostsCacheKey]);
+
+  useEffect(() => {
+    if (!accountConfig?.facebookPageId) {
+      setAudienceData(null);
+      setAudienceError("Pagina do Facebook nao configurada.");
+      setAudienceLoading(false);
+      setAudienceFetching(false);
+      return () => {};
+    }
+
+    const cached = getDashboardCache(audienceCacheKey);
+    const hasCached = Boolean(cached);
+    if (cached) {
+      setAudienceData(cached);
+      setAudienceError("");
+      setAudienceLoading(false);
+    }
+
+    const requestId = (audienceRequestIdRef.current || 0) + 1;
+    audienceRequestIdRef.current = requestId;
+    const controller = new AbortController();
+    const REQUEST_TIMEOUT_MS = 15000;
+    const hardTimeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    const shouldBlockUi = !hasCached;
+    let cancelled = false;
+
+    if (shouldBlockUi) {
+      setAudienceData(null);
+      setAudienceLoading(true);
+    } else {
+      setAudienceLoading(false);
+    }
+    setAudienceError("");
+    setAudienceFetching(true);
+
+    const params = new URLSearchParams();
+    params.set("pageId", accountConfig.facebookPageId);
+    const url = `${API_BASE_URL}/api/facebook/audience?${params.toString()}`;
+
+    (async () => {
+      try {
+        const resp = await fetch(url, { signal: controller.signal });
+        const text = await resp.text();
+        const json = safeParseJson(text) || {};
+        if (!resp.ok) {
+          throw new Error(describeApiError(json, "Nao foi possivel carregar a audiencia."));
+        }
+        if (cancelled || audienceRequestIdRef.current !== requestId) return;
+        setAudienceData(json);
+        setDashboardCache(audienceCacheKey, json);
+        setAudienceError("");
+      } catch (err) {
+        if (cancelled || audienceRequestIdRef.current !== requestId) return;
+        if (err?.name === "AbortError") {
+          setAudienceError("Tempo esgotado ao carregar audiencia.");
+        } else {
+          setAudienceError(err?.message || "Nao foi possivel carregar a audiencia.");
+        }
+      } finally {
+        if (cancelled || audienceRequestIdRef.current !== requestId) return;
+        clearTimeout(hardTimeout);
+        setAudienceLoading(false);
+        setAudienceFetching(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      clearTimeout(hardTimeout);
+      controller.abort();
+    };
+  }, [accountConfig?.facebookPageId, audienceCacheKey]);
   const avatarUrl = useMemo(
     () => pageInfo?.picture_url || accountConfig?.profilePictureUrl || accountConfig?.pagePictureUrl || "",
     [pageInfo?.picture_url, accountConfig?.pagePictureUrl, accountConfig?.profilePictureUrl],
@@ -769,8 +862,6 @@ useEffect(() => {
     }
   }, [accountConfig?.facebookPageId, apiFetch, pageCacheKey]);
 
-  // Facebook metrics no longer trigger full API calls; only reach uses the backend.
-
   const pageMetricsByKey = useMemo(() => {
     const map = {};
     pageMetrics.forEach((metric) => {
@@ -783,7 +874,7 @@ useEffect(() => {
   const totalFollowers = Number.isFinite(followersOverride) ? followersOverride : null;
   const reachValue = extractNumber(
     pageMetricsByKey.reach?.value,
-    extractNumber(overviewSource?.reach, 0),
+    extractNumber(overviewSource?.reach, null),
   );
   const newFollowers = extractNumber(
     pageMetricsByKey.followers_gained?.value,
@@ -797,7 +888,7 @@ useEffect(() => {
     pageMetricsByKey.post_engagement_total?.value,
     extractNumber(overviewSource?.engagement?.total, 0),
   );
-  const impressionsValue = extractNumber(overviewSource?.impressions, 0);
+  const impressionsValue = extractNumber(overviewSource?.impressions, null);
   const pageViewsValue = extractNumber(
     pageMetricsByKey.page_views?.value,
     extractNumber(overviewSource?.page_overview?.page_views, 0),
@@ -867,6 +958,67 @@ useEffect(() => {
       : "--"
   ), [engagementRateValue]);
 
+  const reachDisplay = useMemo(
+    () => (reachMetricValue != null ? formatNumber(reachMetricValue) : "--"),
+    [reachMetricValue],
+  );
+  const impressionsDisplay = useMemo(
+    () => (impressionsValue != null ? formatNumber(impressionsValue) : "--"),
+    [impressionsValue],
+  );
+  const frequencyValue = useMemo(() => {
+    if (!Number.isFinite(impressionsValue) || !Number.isFinite(reachMetricValue)) return null;
+    if (reachMetricValue <= 0) return null;
+    return impressionsValue / reachMetricValue;
+  }, [impressionsValue, reachMetricValue]);
+  const frequencyDisplay = useMemo(() => (
+    frequencyValue != null
+      ? frequencyValue.toLocaleString("pt-BR", { maximumFractionDigits: 2, minimumFractionDigits: 1 })
+      : "--"
+  ), [frequencyValue]);
+
+  const reachBreakdown = useMemo(() => {
+    const raw = overviewSource?.reach_breakdown || overviewSource?.breakdowns?.reach || null;
+    if (!raw || typeof raw !== "object") return null;
+    const organic = extractNumber(raw.organic ?? raw.organic_reach ?? raw.organicReach, null);
+    const paid = extractNumber(raw.paid ?? raw.paid_reach ?? raw.paidReach, null);
+    if (!Number.isFinite(organic) && !Number.isFinite(paid)) return null;
+    const safeOrganic = Number.isFinite(organic) ? organic : 0;
+    const safePaid = Number.isFinite(paid) ? paid : 0;
+    return {
+      organic: safeOrganic,
+      paid: safePaid,
+      total: safeOrganic + safePaid,
+    };
+  }, [overviewSource]);
+
+  const audienceCities = useMemo(() => (
+    Array.isArray(audienceData?.cities) ? audienceData.cities.slice(0, 5) : []
+  ), [audienceData]);
+  const maxAudienceCity = useMemo(
+    () => audienceCities.reduce((max, entry) => Math.max(max, extractNumber(entry?.value, 0)), 0),
+    [audienceCities],
+  );
+  const audienceAgeData = useMemo(() => (
+    Array.isArray(audienceData?.ages)
+      ? audienceData.ages
+        .map((entry) => ({
+          age: entry?.range || "",
+          value: extractNumber(entry?.value, null),
+        }))
+        .filter((entry) => entry.age && Number.isFinite(entry.value))
+      : []
+  ), [audienceData]);
+  const audienceGenderItems = useMemo(() => {
+    if (!Array.isArray(audienceData?.gender)) return [];
+    const items = audienceData.gender.filter((entry) => Number.isFinite(entry?.percentage));
+    const male = items.find((entry) => entry.key === "male" || /mascul/i.test(entry.label || ""));
+    const female = items.find((entry) => entry.key === "female" || /femin/i.test(entry.label || ""));
+    const ordered = [male, female].filter(Boolean);
+    if (ordered.length) return ordered;
+    return items;
+  }, [audienceData]);
+
   // Engagement breakdown
   const engagementBreakdown = useMemo(() => {
     const metric = pageMetricsByKey.post_engagement_total;
@@ -916,24 +1068,10 @@ useEffect(() => {
     [videoWatchStats],
   );
 
-  // Gender distribution (placeholder since Facebook API calls were removed)
-  const genderStatsSeries = DEFAULT_GENDER_STATS;
-
   // Reach timeline
   const reachTimelineData = useMemo(() => {
     const source = Array.isArray(reachSeries) ? reachSeries : [];
-    if (!source.length) {
-      // Default mock data
-      return [
-        { dateKey: "2025-01-29", label: "29/01", value: 12000 },
-        { dateKey: "2025-01-30", label: "30/01", value: 28000 },
-        { dateKey: "2025-01-31", label: "31/01", value: 78000 },
-        { dateKey: "2025-02-01", label: "01/02", value: 36000 },
-        { dateKey: "2025-02-02", label: "02/02", value: 42000 },
-        { dateKey: "2025-02-03", label: "03/02", value: 48000 },
-        { dateKey: "2025-02-04", label: "04/02", value: 32000 },
-      ];
-    }
+    if (!source.length) return [];
 
     return [...source]
       .map((entry) => {
@@ -1004,7 +1142,10 @@ useEffect(() => {
 
   const accountInitial = (accountConfig?.label || accountConfig?.name || "FB").charAt(0).toUpperCase();
   const overviewIsLoading = overviewLoading;
-  const isRefreshing = (overviewFetching && !overviewLoading) || (fbPostsFetching && !fbPostsLoading);
+  const isRefreshing =
+    (overviewFetching && !overviewLoading) ||
+    (fbPostsFetching && !fbPostsLoading) ||
+    (audienceFetching && !audienceLoading);
 
   return (
     <div className="facebook-dashboard facebook-dashboard--clean">
@@ -1565,56 +1706,52 @@ useEffect(() => {
                   <div className="fb-reach-kpis">
                     {/* Alcance total */}
                     <div className="fb-reach-kpi fb-reach-kpi--primary">
-                      <div className="fb-reach-kpi__value">30.824</div>
+                      <div className="fb-reach-kpi__value">{reachDisplay}</div>
                       <div className="fb-reach-kpi__label">Alcance total</div>
                     </div>
 
                     {/* Impressões */}
                     <div className="fb-reach-kpi">
-                      <div className="fb-reach-kpi__value">45.120</div>
+                      <div className="fb-reach-kpi__value">{impressionsDisplay}</div>
                       <div className="fb-reach-kpi__label">Impressões</div>
                     </div>
 
                     {/* Frequência média */}
                     <div className="fb-reach-kpi">
-                      <div className="fb-reach-kpi__value">1,4</div>
+                      <div className="fb-reach-kpi__value">{frequencyDisplay}</div>
                       <div className="fb-reach-kpi__label">Frequência média</div>
                     </div>
                   </div>
 
                   {/* Mini sparkline */}
                   <div className="fb-reach-sparkline">
-                    <ResponsiveContainer width="100%" height={60}>
-                      <LineChart
-                        data={[
-                          { value: 28500 },
-                          { value: 29200 },
-                          { value: 28900 },
-                          { value: 30100 },
-                          { value: 29800 },
-                          { value: 30500 },
-                          { value: 30824 },
-                        ]}
-                        margin={{ top: 5, right: 0, left: 0, bottom: 5 }}
-                      >
-                        <Tooltip
-                          content={(
-                            <CustomChartTooltip
-                              hideLabel
-                              labelMap={{ value: "Alcance" }}
-                              valueFormatter={(v) => `: ${formatTooltipNumber(v)}`}
-                            />
-                          )}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="value"
-                          stroke="#1877F2"
-                          strokeWidth={2}
-                          dot={false}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
+                    {reachTimelineData.length ? (
+                      <ResponsiveContainer width="100%" height={60}>
+                        <LineChart
+                          data={reachTimelineData}
+                          margin={{ top: 5, right: 0, left: 0, bottom: 5 }}
+                        >
+                          <Tooltip
+                            content={(
+                              <CustomChartTooltip
+                                hideLabel
+                                labelMap={{ value: "Alcance" }}
+                                valueFormatter={(v) => `: ${formatTooltipNumber(v)}`}
+                              />
+                            )}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="value"
+                            stroke="#1877F2"
+                            strokeWidth={2}
+                            dot={false}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="ig-empty-state">Sem dados no período</div>
+                    )}
                   </div>
                 </div>
               </section>
@@ -1629,43 +1766,66 @@ useEffect(() => {
                 </header>
 
                 <div className="fb-card-body">
-                  <div className="fb-reach-details">
-                    {/* Orgânico */}
-                    <div className="fb-reach-detail-item">
-                      <div className="fb-reach-detail-item__header">
-                        <span className="fb-reach-detail-item__label">Orgânico</span>
-                        <span className="fb-reach-detail-item__value">26.200</span>
-                      </div>
-                      <div className="fb-reach-detail-item__bar">
-                        <div
-                          className="fb-reach-detail-item__bar-fill fb-reach-detail-item__bar-fill--organic"
-                          style={{ width: '85%' }}
-                        />
-                      </div>
-                      <div className="fb-reach-detail-item__percentage">85%</div>
-                    </div>
+                  {reachBreakdown ? (
+                    <>
+                      <div className="fb-reach-details">
+                        <div className="fb-reach-detail-item">
+                          <div className="fb-reach-detail-item__header">
+                            <span className="fb-reach-detail-item__label">Orgânico</span>
+                            <span className="fb-reach-detail-item__value">{formatNumber(reachBreakdown.organic)}</span>
+                          </div>
+                          <div className="fb-reach-detail-item__bar">
+                            <div
+                              className="fb-reach-detail-item__bar-fill fb-reach-detail-item__bar-fill--organic"
+                              style={{
+                                width: reachBreakdown.total > 0
+                                  ? `${Math.round((reachBreakdown.organic / reachBreakdown.total) * 100)}%`
+                                  : "0%",
+                              }}
+                            />
+                          </div>
+                          <div className="fb-reach-detail-item__percentage">
+                            {reachBreakdown.total > 0
+                              ? `${Math.round((reachBreakdown.organic / reachBreakdown.total) * 100)}%`
+                              : "0%"}
+                          </div>
+                        </div>
 
-                    {/* Pago */}
-                    <div className="fb-reach-detail-item">
-                      <div className="fb-reach-detail-item__header">
-                        <span className="fb-reach-detail-item__label">Pago</span>
-                        <span className="fb-reach-detail-item__value">4.624</span>
+                        <div className="fb-reach-detail-item">
+                          <div className="fb-reach-detail-item__header">
+                            <span className="fb-reach-detail-item__label">Pago</span>
+                            <span className="fb-reach-detail-item__value">{formatNumber(reachBreakdown.paid)}</span>
+                          </div>
+                          <div className="fb-reach-detail-item__bar">
+                            <div
+                              className="fb-reach-detail-item__bar-fill fb-reach-detail-item__bar-fill--paid"
+                              style={{
+                                width: reachBreakdown.total > 0
+                                  ? `${Math.round((reachBreakdown.paid / reachBreakdown.total) * 100)}%`
+                                  : "0%",
+                              }}
+                            />
+                          </div>
+                          <div className="fb-reach-detail-item__percentage">
+                            {reachBreakdown.total > 0
+                              ? `${Math.round((reachBreakdown.paid / reachBreakdown.total) * 100)}%`
+                              : "0%"}
+                          </div>
+                        </div>
                       </div>
-                      <div className="fb-reach-detail-item__bar">
-                        <div
-                          className="fb-reach-detail-item__bar-fill fb-reach-detail-item__bar-fill--paid"
-                          style={{ width: '15%' }}
-                        />
-                      </div>
-                      <div className="fb-reach-detail-item__percentage">15%</div>
-                    </div>
-                  </div>
 
-                  {/* Total */}
-                  <div className="fb-reach-detail-total">
-                    <span className="fb-reach-detail-total__label">Total</span>
-                    <span className="fb-reach-detail-total__value">30.824</span>
-                  </div>
+                      <div className="fb-reach-detail-total">
+                        <span className="fb-reach-detail-total__label">Total</span>
+                        <span className="fb-reach-detail-total__value">{formatNumber(reachBreakdown.total)}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <DataState
+                      state={overviewLoading ? "loading" : "empty"}
+                      label={overviewLoading ? "Carregando dados..." : "Sem dados de alcance orgânico/pago."}
+                      size="sm"
+                    />
+                  )}
                 </div>
               </section>
             </div>
@@ -1680,76 +1840,7 @@ useEffect(() => {
               </header>
 
               <div className="fb-content-grid">
-                <div className="fb-content-type-card fb-content-type-card--video">
-                  <div className="fb-content-type-card__icon">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <polygon points="5 3 19 12 5 21 5 3" />
-                    </svg>
-                  </div>
-                  <div className="fb-content-type-card__stats">
-                    <div className="fb-content-type-card__value">12.4k</div>
-                    <div className="fb-content-type-card__label">Vídeos</div>
-                    <div className="fb-content-type-card__metric">
-                      <span className="fb-content-type-card__badge fb-content-type-card__badge--up">+18%</span>
-                      <span>vs. período anterior</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="fb-content-type-card fb-content-type-card--image">
-                  <div className="fb-content-type-card__icon">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                      <circle cx="8.5" cy="8.5" r="1.5" />
-                      <polyline points="21 15 16 10 5 21" />
-                    </svg>
-                  </div>
-                  <div className="fb-content-type-card__stats">
-                    <div className="fb-content-type-card__value">8.2k</div>
-                    <div className="fb-content-type-card__label">Imagens</div>
-                    <div className="fb-content-type-card__metric">
-                      <span className="fb-content-type-card__badge fb-content-type-card__badge--up">+12%</span>
-                      <span>vs. período anterior</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="fb-content-type-card fb-content-type-card--text">
-                  <div className="fb-content-type-card__icon">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                      <polyline points="14 2 14 8 20 8" />
-                      <line x1="16" y1="13" x2="8" y2="13" />
-                      <line x1="16" y1="17" x2="8" y2="17" />
-                      <polyline points="10 9 9 9 8 9" />
-                    </svg>
-                  </div>
-                  <div className="fb-content-type-card__stats">
-                    <div className="fb-content-type-card__value">5.6k</div>
-                    <div className="fb-content-type-card__label">Texto</div>
-                    <div className="fb-content-type-card__metric">
-                      <span className="fb-content-type-card__badge fb-content-type-card__badge--down">-5%</span>
-                      <span>vs. período anterior</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="fb-content-type-card fb-content-type-card--link">
-                  <div className="fb-content-type-card__icon">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-                    </svg>
-                  </div>
-                  <div className="fb-content-type-card__stats">
-                    <div className="fb-content-type-card__value">3.1k</div>
-                    <div className="fb-content-type-card__label">Links</div>
-                    <div className="fb-content-type-card__metric">
-                      <span className="fb-content-type-card__badge fb-content-type-card__badge--up">+8%</span>
-                      <span>vs. período anterior</span>
-                    </div>
-                  </div>
-                </div>
+                <DataState state="empty" label="Sem dados de performance de conteúdo." size="sm" />
               </div>
             </section>
 
@@ -1762,62 +1853,34 @@ useEffect(() => {
                   <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Principais localizações da audiência</p>
                 </div>
                 <div className="ig-analytics-card__body">
-                  <div className="fb-cities-list">
-                    <div className="fb-city-item fb-city-item--1">
-                      <div className="fb-city-item__rank">1</div>
-                      <div className="fb-city-item__info">
-                        <div className="fb-city-item__name">Fortaleza - CE</div>
-                        <div className="fb-city-item__bar">
-                          <div className="fb-city-item__bar-fill" style={{ width: '100%' }} />
-                        </div>
-                      </div>
-                      <div className="fb-city-item__value">12.5k</div>
+                  {audienceLoading ? (
+                    <DataState state="loading" label="Carregando cidades..." size="sm" />
+                  ) : audienceError ? (
+                    <DataState state="error" label={audienceError} size="sm" />
+                  ) : audienceCities.length ? (
+                    <div className="fb-cities-list">
+                      {audienceCities.map((city, index) => {
+                        const rank = index + 1;
+                        const value = extractNumber(city?.value, 0);
+                        const width = maxAudienceCity > 0 ? Math.round((value / maxAudienceCity) * 100) : 0;
+                        const itemClass = rank <= 3 ? `fb-city-item fb-city-item--${rank}` : "fb-city-item";
+                        return (
+                          <div className={itemClass} key={`${city?.name || "city"}-${rank}`}>
+                            <div className="fb-city-item__rank">{rank}</div>
+                            <div className="fb-city-item__info">
+                              <div className="fb-city-item__name">{city?.name || "--"}</div>
+                              <div className="fb-city-item__bar">
+                                <div className="fb-city-item__bar-fill" style={{ width: `${width}%` }} />
+                              </div>
+                            </div>
+                            <div className="fb-city-item__value">{formatNumber(value)}</div>
+                          </div>
+                        );
+                      })}
                     </div>
-
-                    <div className="fb-city-item fb-city-item--2">
-                      <div className="fb-city-item__rank">2</div>
-                      <div className="fb-city-item__info">
-                        <div className="fb-city-item__name">São Paulo - SP</div>
-                        <div className="fb-city-item__bar">
-                          <div className="fb-city-item__bar-fill" style={{ width: '85%' }} />
-                        </div>
-                      </div>
-                      <div className="fb-city-item__value">10.2k</div>
-                    </div>
-
-                    <div className="fb-city-item fb-city-item--3">
-                      <div className="fb-city-item__rank">3</div>
-                      <div className="fb-city-item__info">
-                        <div className="fb-city-item__name">Brasília - DF</div>
-                        <div className="fb-city-item__bar">
-                          <div className="fb-city-item__bar-fill" style={{ width: '70%' }} />
-                        </div>
-                      </div>
-                      <div className="fb-city-item__value">8.8k</div>
-                    </div>
-
-                    <div className="fb-city-item">
-                      <div className="fb-city-item__rank">4</div>
-                      <div className="fb-city-item__info">
-                        <div className="fb-city-item__name">Rio de Janeiro - RJ</div>
-                        <div className="fb-city-item__bar">
-                          <div className="fb-city-item__bar-fill" style={{ width: '60%' }} />
-                        </div>
-                      </div>
-                      <div className="fb-city-item__value">7.5k</div>
-                    </div>
-
-                    <div className="fb-city-item">
-                      <div className="fb-city-item__rank">5</div>
-                      <div className="fb-city-item__info">
-                        <div className="fb-city-item__name">Belo Horizonte - MG</div>
-                        <div className="fb-city-item__bar">
-                          <div className="fb-city-item__bar-fill" style={{ width: '45%' }} />
-                        </div>
-                      </div>
-                      <div className="fb-city-item__value">5.6k</div>
-                    </div>
-                  </div>
+                  ) : (
+                    <DataState state="empty" label="Sem dados de cidades." size="sm" />
+                  )}
                 </div>
               </section>
 
@@ -1827,69 +1890,80 @@ useEffect(() => {
                   <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Demografia da audiência</p>
                 </div>
                 <div className="ig-analytics-card__body">
-                  <ResponsiveContainer width="100%" height={240}>
-                    <BarChart
-                      data={[
-                        { age: "13-17", male: 150, female: 220 },
-                        { age: "18-24", male: 680, female: 820 },
-                        { age: "25-34", male: 1240, female: 1380 },
-                        { age: "35-44", male: 980, female: 850 },
-                        { age: "45-54", male: 640, female: 520 },
-                        { age: "55+", male: 420, female: 380 },
-                      ]}
-                      layout="vertical"
-                      margin={{ left: 0, right: 20, top: 10, bottom: 10 }}
-                    >
-                      <defs>
-                        <linearGradient id="fbMaleGradient" x1="0" y1="0" x2="1" y2="0">
-                          <stop offset="0%" stopColor="#1877F2" />
-                          <stop offset="100%" stopColor="#0A66C2" />
-                        </linearGradient>
-                        <linearGradient id="fbFemaleGradient" x1="0" y1="0" x2="1" y2="0">
-                          <stop offset="0%" stopColor="#42A5F5" />
-                          <stop offset="100%" stopColor="#64B5F6" />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
-                      <XAxis
-                        type="number"
-                        tick={{ fill: '#6b7280', fontSize: 11 }}
-                        tickFormatter={(value) => formatCompactNumber(value)}
-                      />
-                      <YAxis
-                        type="category"
-                        dataKey="age"
-                        tick={{ fill: '#374151', fontSize: 12, fontWeight: 600 }}
-                        width={55}
-                      />
-                      <Tooltip
-                        cursor={{ fill: 'rgba(24, 119, 242, 0.08)' }}
-                        content={(props) => {
-                          const age = props?.payload?.[0]?.payload?.age;
-                          return (
-                            <CustomChartTooltip
-                              {...props}
-                              labelFormatter={() => (age ? `${age} anos` : "")}
-                              valueFormatter={(v) => `: ${formatTooltipNumber(v)}`}
-                            />
-                          );
-                        }}
-                      />
-                      <Bar dataKey="male" fill="url(#fbMaleGradient)" radius={[0, 6, 6, 0]} name="Masculino" />
-                      <Bar dataKey="female" fill="url(#fbFemaleGradient)" radius={[0, 6, 6, 0]} name="Feminino" />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  {audienceLoading ? (
+                    <DataState state="loading" label="Carregando demografia..." size="sm" />
+                  ) : audienceError ? (
+                    <DataState state="error" label={audienceError} size="sm" />
+                  ) : audienceAgeData.length ? (
+                    <ResponsiveContainer width="100%" height={240}>
+                      <BarChart
+                        data={audienceAgeData}
+                        layout="vertical"
+                        margin={{ left: 0, right: 20, top: 10, bottom: 10 }}
+                      >
+                        <defs>
+                          <linearGradient id="fbAgeGradient" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" stopColor="#1877F2" />
+                            <stop offset="100%" stopColor="#0A66C2" />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
+                        <XAxis
+                          type="number"
+                          tick={{ fill: '#6b7280', fontSize: 11 }}
+                          tickFormatter={(value) => formatCompactNumber(value)}
+                        />
+                        <YAxis
+                          type="category"
+                          dataKey="age"
+                          tick={{ fill: '#374151', fontSize: 12, fontWeight: 600 }}
+                          width={55}
+                        />
+                        <Tooltip
+                          cursor={{ fill: 'rgba(24, 119, 242, 0.08)' }}
+                          content={(props) => {
+                            const age = props?.payload?.[0]?.payload?.age;
+                            return (
+                              <CustomChartTooltip
+                                {...props}
+                                labelFormatter={() => (age ? `${age} anos` : "")}
+                                valueFormatter={(v) => `: ${formatTooltipNumber(v)}`}
+                              />
+                            );
+                          }}
+                        />
+                        <Bar dataKey="value" fill="url(#fbAgeGradient)" radius={[0, 6, 6, 0]} name="Público" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <DataState state="empty" label="Sem dados de idade." size="sm" />
+                  )}
 
-                  <div className="fb-gender-legend">
-                    <div className="fb-gender-legend__item">
-                      <div className="fb-gender-legend__dot" style={{ background: 'linear-gradient(90deg, #1877F2, #0A66C2)' }} />
-                      <span style={{ color: '#111827', fontWeight: 600 }}>Masculino (48%)</span>
+                  {audienceGenderItems.length ? (
+                    <div className="fb-gender-legend">
+                      {audienceGenderItems.map((entry) => {
+                        const label = entry?.label || "Gênero";
+                        const pct = Number.isFinite(entry?.percentage)
+                          ? entry.percentage.toLocaleString("pt-BR", { maximumFractionDigits: 1, minimumFractionDigits: 1 })
+                          : null;
+                        const isMale = entry?.key === "male" || /mascul/i.test(label);
+                        const isFemale = entry?.key === "female" || /femin/i.test(label);
+                        const color = isMale
+                          ? "linear-gradient(90deg, #1877F2, #0A66C2)"
+                          : isFemale
+                            ? "linear-gradient(90deg, #42A5F5, #64B5F6)"
+                            : "linear-gradient(90deg, #94a3b8, #cbd5e1)";
+                        return (
+                          <div className="fb-gender-legend__item" key={entry?.key || label}>
+                            <div className="fb-gender-legend__dot" style={{ background: color }} />
+                            <span style={{ color: '#111827', fontWeight: 600 }}>
+                              {pct ? `${label} (${pct}%)` : label}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
-                    <div className="fb-gender-legend__item">
-                      <div className="fb-gender-legend__dot" style={{ background: 'linear-gradient(90deg, #42A5F5, #64B5F6)' }} />
-                      <span style={{ color: '#111827', fontWeight: 600 }}>Feminino (52%)</span>
-                    </div>
-                  </div>
+                  ) : null}
                 </div>
               </section>
             </div>
