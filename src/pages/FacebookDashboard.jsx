@@ -117,12 +117,14 @@ const formatNumber = (value) => {
 };
 
 const formatDurationSeconds = (seconds) => {
-  if (!Number.isFinite(seconds)) return "--";
-  if (seconds < 60) return `${Math.round(seconds)}s`;
-  const minutes = Math.floor(seconds / 60);
-  const remaining = Math.round(seconds - minutes * 60);
-  if (remaining <= 0) return `${minutes}m`;
-  return `${minutes}m ${remaining}s`;
+  const total = Number(seconds);
+  if (!Number.isFinite(total) || total < 0) return "00:00:00";
+  const rounded = Math.round(total);
+  const hours = Math.floor(rounded / 3600);
+  const minutes = Math.floor((rounded % 3600) / 60);
+  const secs = rounded % 60;
+  const pad = (value) => String(value).padStart(2, "0");
+  return `${pad(hours)}:${pad(minutes)}:${pad(secs)}`;
 };
 
 const buildWeeklyPattern = (values) => {
@@ -888,7 +890,6 @@ useEffect(() => {
     pageMetricsByKey.post_engagement_total?.value,
     extractNumber(overviewSource?.engagement?.total, 0),
   );
-  const impressionsValue = extractNumber(overviewSource?.impressions, null);
   const pageViewsValue = extractNumber(
     pageMetricsByKey.page_views?.value,
     extractNumber(overviewSource?.page_overview?.page_views, 0),
@@ -958,40 +959,6 @@ useEffect(() => {
       : "--"
   ), [engagementRateValue]);
 
-  const reachDisplay = useMemo(
-    () => (reachMetricValue != null ? formatNumber(reachMetricValue) : "--"),
-    [reachMetricValue],
-  );
-  const impressionsDisplay = useMemo(
-    () => (impressionsValue != null ? formatNumber(impressionsValue) : "--"),
-    [impressionsValue],
-  );
-  const frequencyValue = useMemo(() => {
-    if (!Number.isFinite(impressionsValue) || !Number.isFinite(reachMetricValue)) return null;
-    if (reachMetricValue <= 0) return null;
-    return impressionsValue / reachMetricValue;
-  }, [impressionsValue, reachMetricValue]);
-  const frequencyDisplay = useMemo(() => (
-    frequencyValue != null
-      ? frequencyValue.toLocaleString("pt-BR", { maximumFractionDigits: 2, minimumFractionDigits: 1 })
-      : "--"
-  ), [frequencyValue]);
-
-  const reachBreakdown = useMemo(() => {
-    const raw = overviewSource?.reach_breakdown || overviewSource?.breakdowns?.reach || null;
-    if (!raw || typeof raw !== "object") return null;
-    const organic = extractNumber(raw.organic ?? raw.organic_reach ?? raw.organicReach, null);
-    const paid = extractNumber(raw.paid ?? raw.paid_reach ?? raw.paidReach, null);
-    if (!Number.isFinite(organic) && !Number.isFinite(paid)) return null;
-    const safeOrganic = Number.isFinite(organic) ? organic : 0;
-    const safePaid = Number.isFinite(paid) ? paid : 0;
-    return {
-      organic: safeOrganic,
-      paid: safePaid,
-      total: safeOrganic + safePaid,
-    };
-  }, [overviewSource]);
-
   const audienceCities = useMemo(() => (
     Array.isArray(audienceData?.cities) ? audienceData.cities.slice(0, 5) : []
   ), [audienceData]);
@@ -1043,28 +1010,15 @@ useEffect(() => {
   const videoWatchStats = useMemo(() => {
     const pageVideo = overviewSource?.page_overview || {};
     const videoData = overviewSource?.video || {};
-    const views3s = extractNumber(pageVideo.video_views_3s, null);
-    const views10s = extractNumber(videoData.views_10s ?? pageVideo.video_views_10s, null);
-    const views30s = extractNumber(videoData.views_30s ?? pageVideo.video_views_30s, null);
     const avgWatchSec = extractNumber(videoData.avg_watch_time ?? pageVideo.avg_watch_time, null);
 
-    // Calcular porcentagens de retenção baseado em views3s como base (100%)
-    const retention10s = views3s > 0 && views10s !== null ? Math.round((views10s / views3s) * 100) : null;
-    const retention30s = views3s > 0 && views30s !== null ? Math.round((views30s / views3s) * 100) : null;
-
     return {
-      views3s,
-      views10s,
-      views30s,
       avgWatchSec,
-      retention10s,
-      retention30s,
     };
   }, [overviewSource]);
 
   const hasVideoWatchData = useMemo(
-    () => [videoWatchStats.views3s, videoWatchStats.views10s, videoWatchStats.views30s, videoWatchStats.avgWatchSec]
-      .some((val) => Number.isFinite(val) && val >= 0),
+    () => Number.isFinite(videoWatchStats.avgWatchSec) && videoWatchStats.avgWatchSec >= 0,
     [videoWatchStats],
   );
 
@@ -1411,73 +1365,31 @@ useEffect(() => {
               </div>
             </section>
 
-            <section className="ig-card fb-video-stats-card">
-              <header className="ig-card-header">
+            <section className="ig-card-white fb-analytics-card">
+              <div className="ig-analytics-card__header">
                 <div>
-                  <h3 className="ig-clean-title2">Desempenho de Vídeos</h3>
+                  <h3 className="ig-clean-title2">Tempo médio de visualização</h3>
                   <p className="ig-card-subtitle">Retenção de audiência no período</p>
                 </div>
-              </header>
-              {overviewIsLoading ? (
-                <DataState state="loading" label="Carregando dados..." size="sm" />
-              ) : pageError ? (
-                <DataState state="error" label={pageError} size="sm" />
-              ) : hasVideoWatchData ? (
-                <div className="fb-video-stats">
-                  {/* Tempo médio em destaque */}
-                  <div className="fb-video-stats__highlight">
-                    <div className="fb-video-stats__highlight-value">
+              </div>
+              <div className="ig-analytics-card__body">
+                {overviewIsLoading ? (
+                  <DataState state="loading" label="Carregando dados..." size="sm" />
+                ) : pageError ? (
+                  <DataState state="error" label={pageError} size="sm" />
+                ) : hasVideoWatchData ? (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
+                    <div style={{ fontSize: "32px", fontWeight: 700, color: "#111827" }}>
                       {formatDurationSeconds(videoWatchStats.avgWatchSec)}
                     </div>
-                    <div className="fb-video-stats__highlight-label">Tempo médio assistido</div>
-                  </div>
-
-                  {/* Funil de retenção */}
-                  <div className="fb-video-stats__funnel">
-                    <div className="fb-video-stats__funnel-item fb-video-stats__funnel-item--base">
-                      <div className="fb-video-stats__funnel-bar" style={{ width: '100%' }}>
-                        <span className="fb-video-stats__funnel-value">{formatNumber(videoWatchStats.views3s)}</span>
-                      </div>
-                      <div className="fb-video-stats__funnel-info">
-                        <span className="fb-video-stats__funnel-label">Views 3s</span>
-                        <span className="fb-video-stats__funnel-percent">100%</span>
-                      </div>
-                    </div>
-
-                    <div className="fb-video-stats__funnel-item">
-                      <div
-                        className="fb-video-stats__funnel-bar"
-                        style={{ width: `${videoWatchStats.retention10s || 0}%` }}
-                      >
-                        <span className="fb-video-stats__funnel-value">{formatNumber(videoWatchStats.views10s)}</span>
-                      </div>
-                      <div className="fb-video-stats__funnel-info">
-                        <span className="fb-video-stats__funnel-label">Views 10s</span>
-                        <span className="fb-video-stats__funnel-percent">
-                          {videoWatchStats.retention10s !== null ? `${videoWatchStats.retention10s}%` : '-'}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="fb-video-stats__funnel-item">
-                      <div
-                        className="fb-video-stats__funnel-bar"
-                        style={{ width: `${videoWatchStats.retention30s || 0}%` }}
-                      >
-                        <span className="fb-video-stats__funnel-value">{formatNumber(videoWatchStats.views30s)}</span>
-                      </div>
-                      <div className="fb-video-stats__funnel-info">
-                        <span className="fb-video-stats__funnel-label">Views 30s</span>
-                        <span className="fb-video-stats__funnel-percent">
-                          {videoWatchStats.retention30s !== null ? `${videoWatchStats.retention30s}%` : '-'}
-                        </span>
-                      </div>
+                    <div style={{ fontSize: "12px", color: "#6b7280", fontWeight: 600 }}>
+                      Tempo médio assistido
                     </div>
                   </div>
-                </div>
-              ) : (
-                <DataState state="empty" label="Sem dados de vídeo para o período." size="sm" />
-              )}
+                ) : (
+                  <DataState state="empty" label="Sem dados de vídeo para o período." size="sm" />
+                )}
+              </div>
             </section>
           </div>
 
@@ -1691,144 +1603,7 @@ useEffect(() => {
               </div>
             </section>
 
-            {/* NOVA SEÇÃO: Alcance (MOCK) */}
-            <div className="fb-followers-section">
-              {/* Card C: Alcance no período */}
-              <section className="ig-card">
-                <header className="ig-card-header">
-                  <div>
-                    <h3 className="ig-clean-title2">Alcance no período</h3>
-                    <p className="ig-card-subtitle">Principais métricas</p>
-                  </div>
-                </header>
-
-                <div className="fb-card-body">
-                  <div className="fb-reach-kpis">
-                    {/* Alcance total */}
-                    <div className="fb-reach-kpi fb-reach-kpi--primary">
-                      <div className="fb-reach-kpi__value">{reachDisplay}</div>
-                      <div className="fb-reach-kpi__label">Alcance total</div>
-                    </div>
-
-                    {/* Impressões */}
-                    <div className="fb-reach-kpi">
-                      <div className="fb-reach-kpi__value">{impressionsDisplay}</div>
-                      <div className="fb-reach-kpi__label">Impressões</div>
-                    </div>
-
-                    {/* Frequência média */}
-                    <div className="fb-reach-kpi">
-                      <div className="fb-reach-kpi__value">{frequencyDisplay}</div>
-                      <div className="fb-reach-kpi__label">Frequência média</div>
-                    </div>
-                  </div>
-
-                  {/* Mini sparkline */}
-                  <div className="fb-reach-sparkline">
-                    {reachTimelineData.length ? (
-                      <ResponsiveContainer width="100%" height={60}>
-                        <LineChart
-                          data={reachTimelineData}
-                          margin={{ top: 5, right: 0, left: 0, bottom: 5 }}
-                        >
-                          <Tooltip
-                            content={(
-                              <CustomChartTooltip
-                                hideLabel
-                                labelMap={{ value: "Alcance" }}
-                                valueFormatter={(v) => `: ${formatTooltipNumber(v)}`}
-                              />
-                            )}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="value"
-                            stroke="#1877F2"
-                            strokeWidth={2}
-                            dot={false}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    ) : (
-                      <div className="ig-empty-state">Sem dados no período</div>
-                    )}
-                  </div>
-                </div>
-              </section>
-
-              {/* Card D: Detalhamento do Alcance */}
-              <section className="ig-card">
-                <header className="ig-card-header">
-                  <div>
-                    <h3 className="ig-clean-title2">Detalhamento do alcance</h3>
-                    <p className="ig-card-subtitle">Origem do alcance</p>
-                  </div>
-                </header>
-
-                <div className="fb-card-body">
-                  {reachBreakdown ? (
-                    <>
-                      <div className="fb-reach-details">
-                        <div className="fb-reach-detail-item">
-                          <div className="fb-reach-detail-item__header">
-                            <span className="fb-reach-detail-item__label">Orgânico</span>
-                            <span className="fb-reach-detail-item__value">{formatNumber(reachBreakdown.organic)}</span>
-                          </div>
-                          <div className="fb-reach-detail-item__bar">
-                            <div
-                              className="fb-reach-detail-item__bar-fill fb-reach-detail-item__bar-fill--organic"
-                              style={{
-                                width: reachBreakdown.total > 0
-                                  ? `${Math.round((reachBreakdown.organic / reachBreakdown.total) * 100)}%`
-                                  : "0%",
-                              }}
-                            />
-                          </div>
-                          <div className="fb-reach-detail-item__percentage">
-                            {reachBreakdown.total > 0
-                              ? `${Math.round((reachBreakdown.organic / reachBreakdown.total) * 100)}%`
-                              : "0%"}
-                          </div>
-                        </div>
-
-                        <div className="fb-reach-detail-item">
-                          <div className="fb-reach-detail-item__header">
-                            <span className="fb-reach-detail-item__label">Pago</span>
-                            <span className="fb-reach-detail-item__value">{formatNumber(reachBreakdown.paid)}</span>
-                          </div>
-                          <div className="fb-reach-detail-item__bar">
-                            <div
-                              className="fb-reach-detail-item__bar-fill fb-reach-detail-item__bar-fill--paid"
-                              style={{
-                                width: reachBreakdown.total > 0
-                                  ? `${Math.round((reachBreakdown.paid / reachBreakdown.total) * 100)}%`
-                                  : "0%",
-                              }}
-                            />
-                          </div>
-                          <div className="fb-reach-detail-item__percentage">
-                            {reachBreakdown.total > 0
-                              ? `${Math.round((reachBreakdown.paid / reachBreakdown.total) * 100)}%`
-                              : "0%"}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="fb-reach-detail-total">
-                        <span className="fb-reach-detail-total__label">Total</span>
-                        <span className="fb-reach-detail-total__value">{formatNumber(reachBreakdown.total)}</span>
-                      </div>
-                    </>
-                  ) : (
-                    <DataState
-                      state={overviewLoading ? "loading" : "empty"}
-                      label={overviewLoading ? "Carregando dados..." : "Sem dados de alcance orgânico/pago."}
-                      size="sm"
-                    />
-                  )}
-                </div>
-              </section>
-            </div>
+            {/* Cards de alcance removidos */}
 
             {/* Card de Performance de Conteúdo - ESCONDIDO */}
             <section className="ig-growth-clean fb-content-performance" style={{ display: "none" }}>
