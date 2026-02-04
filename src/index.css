@@ -5392,8 +5392,9 @@ input:focus {
   border: none;
   border-radius: 8px;
   margin: 0;
-  margin-left: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: relative;
+  top: -2px;
 }
 
 .date-range-indicator__icon {
@@ -10603,8 +10604,8 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 
 .ig-clean-title-row {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  align-items: baseline;
+  gap: 16px;
   flex-wrap: wrap;
   margin-bottom: 20px;
 }
