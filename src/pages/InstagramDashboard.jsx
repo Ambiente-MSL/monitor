@@ -885,6 +885,7 @@ export default function InstagramDashboard() {
     setTopbarConfig,
   ]);
   const [metrics, setMetrics] = useState([]);
+  const [metricsRollups, setMetricsRollups] = useState(null);
   const [metricsError, setMetricsError] = useState("");
   const [metricsLoading, setMetricsLoading] = useState(false);
   const [metricsNotice, setMetricsNotice] = useState("");
@@ -977,6 +978,7 @@ export default function InstagramDashboard() {
     if (previousKey && previousKey !== accountSnapshotKey) {
       // Limpa estados para evitar exibir dados da conta anterior ao trocar o seletor.
       setMetrics([]);
+      setMetricsRollups(null);
       setFollowerSeries([]);
       setFollowerGainSeries([]);
       setFollowersGainedTotal(null);
@@ -1044,6 +1046,7 @@ export default function InstagramDashboard() {
 
     if (!accountConfig?.instagramUserId) {
       setMetrics([]);
+      setMetricsRollups(null);
       setFollowerSeries([]);
       setFollowerGainSeries([]);
       setFollowersGainedTotal(null);
@@ -1077,6 +1080,7 @@ export default function InstagramDashboard() {
       const shouldBypassCacheForReach = cachedReachValue != null && cachedReachValue > 0 && !hasReachTimeseries;
 
       setMetrics(Array.isArray(cachedMetrics.metrics) ? cachedMetrics.metrics : []);
+      setMetricsRollups(cachedMetrics.rollups ?? null);
       setFollowerSeries(Array.isArray(cachedMetrics.followerSeries) ? cachedMetrics.followerSeries : []);
       setFollowerGainSeries(Array.isArray(cachedMetrics.followerGainSeries) ? cachedMetrics.followerGainSeries : []);
       setFollowersGainedTotal(
@@ -1174,6 +1178,7 @@ export default function InstagramDashboard() {
 
     if (shouldBlockUi) {
       setMetrics([]);
+      setMetricsRollups(null);
       setFollowerSeries([]);
       setFollowerGainSeries([]);
       setFollowersGainedTotal(null);
@@ -1241,6 +1246,7 @@ export default function InstagramDashboard() {
         const visitorsBreakdown = payload.profile_visitors_breakdown || null;
 
         setMetrics(fetchedMetrics);
+        setMetricsRollups(payload?.rollups ?? null);
         setFollowerSeries(fetchedFollowerSeries);
         setFollowerGainSeries(fetchedFollowerGainSeries);
         setFollowersGainedTotal(fetchedFollowersGainedTotal);
@@ -1250,6 +1256,7 @@ export default function InstagramDashboard() {
         setProfileVisitorsBreakdown(visitorsBreakdown);
         setDashboardCache(metricsCacheKey, {
           metrics: fetchedMetrics,
+          rollups: payload?.rollups ?? null,
           followerSeries: fetchedFollowerSeries,
           followerGainSeries: fetchedFollowerGainSeries,
           followersGainedTotal: fetchedFollowersGainedTotal,
@@ -1273,6 +1280,7 @@ export default function InstagramDashboard() {
 
         if (shouldBlockUi) {
           setMetrics([]);
+          setMetricsRollups(null);
           setFollowerSeries([]);
           setFollowerGainSeries([]);
           setFollowersGainedTotal(null);
@@ -1613,6 +1621,26 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
  const engagementRateMetric = metricsByKey.engagement_rate;
  const profileViewsMetric = metricsByKey.video_views || metricsByKey.profile_views;
  const interactionsMetric = metricsByKey.interactions;
+ const interactionsSeriesFromRollup = useMemo(() => {
+   if (!metricsRollups || !sinceDate || !untilDate) return [];
+   const diff = differenceInCalendarDays(endOfDay(untilDate), startOfDay(sinceDate)) + 1;
+   const bucket = diff === 7 ? "7d" : diff === 30 ? "30d" : diff === 90 ? "90d" : null;
+   if (!bucket) return [];
+   const rollupEntry = metricsRollups?.[bucket]?.interactions;
+   const rawPayload = rollupEntry?.payload;
+   const payload = typeof rawPayload === "string" ? safeParseJson(rawPayload) : rawPayload;
+   const values = Array.isArray(payload?.values) ? payload.values : [];
+   return values
+     .map((entry) => {
+       const dateKey = normalizeDateKey(entry?.metric_date || entry?.date || entry?.label);
+       if (!dateKey) return null;
+       const value = extractNumber(entry?.value, null);
+       if (value == null) return null;
+       return { date: dateKey, value };
+     })
+     .filter(Boolean)
+     .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+ }, [metricsRollups, sinceDate, untilDate]);
  const interactionsSeriesFromMetric = useMemo(() => seriesFromMetric(interactionsMetric), [interactionsMetric]);
 
   const reachMetricValue = useMemo(() => extractNumber(reachMetric?.value, null), [reachMetric?.value]);
@@ -1844,7 +1872,9 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
       .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
   }, [contentPostsSource]);
   const interactionsSeriesResolved = useMemo(() => {
-    const baseSeries = interactionsSeriesFromMetric.length ? interactionsSeriesFromMetric : interactionsDailyTotals;
+    const baseSeries = interactionsSeriesFromRollup.length
+      ? interactionsSeriesFromRollup
+      : (interactionsSeriesFromMetric.length ? interactionsSeriesFromMetric : interactionsDailyTotals);
     if (!baseSeries.length) return [];
     const normalized = baseSeries
       .map((entry) => {
@@ -1869,7 +1899,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
       if (endBoundary != null && current > endBoundary) return false;
       return true;
     });
-  }, [interactionsDailyTotals, interactionsSeriesFromMetric, sinceDate, untilDate]);
+  }, [interactionsDailyTotals, interactionsSeriesFromMetric, interactionsSeriesFromRollup, sinceDate, untilDate]);
   const interactionsChartData = useMemo(() => {
     if (!interactionsSeriesResolved.length) return [];
     const firstDateKey = interactionsSeriesResolved[0]?.date;
@@ -1903,7 +1933,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
       const dateKey = day.toISOString().slice(0, 10);
       return {
         date: dateKey,
-        value: totalsByDate.get(dateKey) || 0,
+        value: totalsByDate.has(dateKey) ? totalsByDate.get(dateKey) : null,
         tooltipDate: formatTooltipDate(dateKey),
       };
     });
@@ -4398,6 +4428,8 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                           <Tooltip
                             cursor={{ stroke: 'rgba(17, 24, 39, 0.2)', strokeDasharray: '4 4' }}
                             content={(props) => {
+                              const value = props?.payload?.[0]?.value;
+                              if (value == null) return null;
                               const tooltipDate = props?.payload?.[0]?.payload?.tooltipDate || props?.label;
                               return (
                                 <CustomChartTooltip
