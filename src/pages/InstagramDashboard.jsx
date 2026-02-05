@@ -2667,9 +2667,39 @@ const profileViewsMetric = useMemo(() => {
     return "*Sem dados suficientes para estimar o melhor horÃ¡rio.";
   }, [bestTimes.source]);
 
-  const topPosts = useMemo(() => (filteredPosts.length
-    ? [...filteredPosts].sort((a, b) => sumInteractions(b) - sumInteractions(a)).slice(0, 6)
-    : []), [filteredPosts]);
+  const recentPostsById = useMemo(() => {
+    const map = new Map();
+    recentPosts.forEach((post) => {
+      if (post?.id) {
+        map.set(post.id, post);
+      }
+    });
+    return map;
+  }, [recentPosts]);
+
+  const mergePostMetrics = useCallback((basePost, insightsPost) => {
+    if (!insightsPost) return basePost;
+    return {
+      ...basePost,
+      likes: insightsPost.likes ?? basePost.likes,
+      comments: insightsPost.comments ?? basePost.comments,
+      shares: insightsPost.shares ?? basePost.shares,
+      saves: insightsPost.saves ?? basePost.saves,
+      interactions: insightsPost.interactions ?? basePost.interactions,
+      reach: insightsPost.reach ?? basePost.reach,
+      views: insightsPost.views ?? basePost.views,
+      insights: insightsPost.insights ?? basePost.insights,
+    };
+  }, []);
+
+  const filteredPostsWithInsights = useMemo(
+    () => filteredPosts.map((post) => mergePostMetrics(post, recentPostsById.get(post?.id))),
+    [filteredPosts, mergePostMetrics, recentPostsById],
+  );
+
+  const topPosts = useMemo(() => (filteredPostsWithInsights.length
+    ? [...filteredPostsWithInsights].sort((a, b) => sumInteractions(b) - sumInteractions(a)).slice(0, 6)
+    : []), [filteredPostsWithInsights]);
 
   const topPostsByViews = useMemo(() => (
     recentPosts.length
