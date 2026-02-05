@@ -337,6 +337,49 @@ const normalizeDateKey = (input) => {
   return date.toISOString().slice(0, 10);
 };
 
+const resolveViewsSeries = (videoSeries, profileSeries) => {
+  const buildMap = (series) => {
+    const map = new Map();
+    (series || []).forEach((entry) => {
+      const key = normalizeDateKey(
+        entry?.date ||
+        entry?.metric_date ||
+        entry?.end_time ||
+        entry?.endTime ||
+        entry?.start_time ||
+        entry?.label ||
+        entry?.__dateKey,
+      );
+      if (!key) return;
+      const value = extractNumber(entry?.value, null);
+      if (value == null) return;
+      map.set(key, value);
+    });
+    return map;
+  };
+
+  const videoMap = buildMap(videoSeries);
+  const profileMap = buildMap(profileSeries);
+  const keys = new Set([...videoMap.keys(), ...profileMap.keys()]);
+  return Array.from(keys)
+    .sort()
+    .map((key) => {
+      const videoValue = extractNumber(videoMap.get(key), null);
+      const profileValue = extractNumber(profileMap.get(key), null);
+      let value = null;
+      if (Number.isFinite(videoValue) && videoValue > 0) {
+        value = videoValue;
+      } else if (Number.isFinite(profileValue)) {
+        value = profileValue;
+      } else if (Number.isFinite(videoValue)) {
+        value = videoValue;
+      }
+      if (value == null) return null;
+      return { date: key, value };
+    })
+    .filter(Boolean);
+};
+
 const normalizeSeriesContainer = (raw) => {
   if (!raw) return [];
   if (Array.isArray(raw)) return raw;
@@ -1088,11 +1131,13 @@ export default function InstagramDashboard() {
       );
       setFollowerCounts(cachedMetrics.followerCounts ?? null);
       setReachCacheSeries(Array.isArray(cachedMetrics.reachSeries) ? cachedMetrics.reachSeries : []);
-      const cachedViewsSeries = Array.isArray(cachedMetrics.videoViewsSeries)
+      const cachedVideoSeries = Array.isArray(cachedMetrics.videoViewsSeries)
         ? cachedMetrics.videoViewsSeries
-        : Array.isArray(cachedMetrics.profileViewsSeries)
-          ? cachedMetrics.profileViewsSeries
-          : [];
+        : [];
+      const cachedProfileSeries = Array.isArray(cachedMetrics.profileViewsSeries)
+        ? cachedMetrics.profileViewsSeries
+        : [];
+      const cachedViewsSeries = resolveViewsSeries(cachedVideoSeries, cachedProfileSeries);
       setProfileViewsSeries(cachedViewsSeries);
       setProfileVisitorsBreakdown(cachedMetrics.profileVisitorsBreakdown ?? null);
       setMetricsError("");
@@ -1242,7 +1287,7 @@ export default function InstagramDashboard() {
         const reachSeries = parseNumericSeries(payload.reach_timeseries);
         const parsedVideoViewsSeries = parseNumericSeries(payload.video_views_timeseries);
         const parsedProfileViewsSeries = parseNumericSeries(payload.profile_views_timeseries);
-        const resolvedViewsSeries = parsedVideoViewsSeries.length ? parsedVideoViewsSeries : parsedProfileViewsSeries;
+        const resolvedViewsSeries = resolveViewsSeries(parsedVideoViewsSeries, parsedProfileViewsSeries);
         const visitorsBreakdown = payload.profile_visitors_breakdown || null;
 
         setMetrics(fetchedMetrics);
@@ -1619,7 +1664,15 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
  const followersGainedMetric = metricsByKey.followers_gained;
  const followerGrowthMetric = metricsByKey.follower_growth;
  const engagementRateMetric = metricsByKey.engagement_rate;
- const profileViewsMetric = metricsByKey.video_views || metricsByKey.profile_views;
+const videoViewsMetric = metricsByKey.video_views;
+const profileViewsMetricRaw = metricsByKey.profile_views;
+const profileViewsMetric = useMemo(() => {
+  const videoValue = extractNumber(videoViewsMetric?.value, null);
+  const profileValue = extractNumber(profileViewsMetricRaw?.value, null);
+  if (videoValue != null && videoValue > 0) return videoViewsMetric;
+  if (profileValue != null) return profileViewsMetricRaw;
+  return videoViewsMetric || profileViewsMetricRaw;
+}, [videoViewsMetric, profileViewsMetricRaw]);
  const interactionsMetric = metricsByKey.interactions;
  const interactionsSeriesFromRollup = useMemo(() => {
    if (!metricsRollups || !sinceDate || !untilDate) return [];
@@ -1647,7 +1700,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
   const timelineReachSeries = useMemo(() => seriesFromMetric(reachMetric), [reachMetric]);
   const profileViewsSeriesFromMetric = useMemo(() => seriesFromMetric(profileViewsMetric), [profileViewsMetric]);
   const resolvedProfileViewsSeries = useMemo(() => {
-    const baseSeries = profileViewsSeriesFromMetric.length ? profileViewsSeriesFromMetric : profileViewsSeries;
+    const baseSeries = profileViewsSeries.length ? profileViewsSeries : profileViewsSeriesFromMetric;
     if (!baseSeries?.length) return [];
     const normalized = baseSeries
       .map((entry) => {
@@ -1672,9 +1725,13 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
   }, [profileViewsSeriesFromMetric, profileViewsSeries, sinceDate, untilDate]);
   const profileViewsTotal = useMemo(() => {
     const metricValue = extractNumber(profileViewsMetric?.value, null);
-    if (metricValue != null) return metricValue;
-    if (!resolvedProfileViewsSeries.length) return null;
-    return resolvedProfileViewsSeries.reduce((sum, entry) => sum + extractNumber(entry.value, 0), 0);
+    if (!resolvedProfileViewsSeries.length) {
+      return metricValue != null ? metricValue : null;
+    }
+    const seriesTotal = resolvedProfileViewsSeries.reduce((sum, entry) => sum + extractNumber(entry.value, 0), 0);
+    if (metricValue == null) return seriesTotal;
+    if (metricValue === 0 && seriesTotal > 0) return seriesTotal;
+    return metricValue;
   }, [profileViewsMetric?.value, resolvedProfileViewsSeries]);
   const profileViewsPeak = useMemo(() => {
     if (!resolvedProfileViewsSeries.length) return null;
@@ -1740,16 +1797,34 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
     if (interactionsDeltaPct == null) return "#6b7280";
     return interactionsDeltaPct < 0 ? "#ef4444" : "#10b981";
   }, [interactionsDeltaPct]);
-  const profileViewsChartData = useMemo(() => resolvedProfileViewsSeries.map((entry) => {
-    const dateLabel = entry.date
-      ? new Date(`${entry.date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })
-      : "";
-    return {
-      label: dateLabel,
-      date: entry.date,
-      value: extractNumber(entry.value, 0),
-    };
-  }), [resolvedProfileViewsSeries]);
+  const profileViewsChartData = useMemo(() => {
+    const base = resolvedProfileViewsSeries
+      .map((entry) => {
+        const value = extractNumber(entry.value, null);
+        if (value == null) return null;
+        const dateLabel = entry.date
+          ? new Date(`${entry.date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })
+          : "";
+        return {
+          label: dateLabel,
+          date: entry.date,
+          value,
+        };
+      })
+      .filter(Boolean);
+
+    if (base.length < 3) return base;
+
+    return base.map((entry, index) => {
+      if (entry.value !== 0) return entry;
+      const prev = base[index - 1]?.value ?? null;
+      const next = base[index + 1]?.value ?? null;
+      if (Number.isFinite(prev) && prev > 0 && Number.isFinite(next) && next > 0) {
+        return { ...entry, value: null };
+      }
+      return entry;
+    });
+  }, [resolvedProfileViewsSeries]);
   const followerSeriesNormalized = useMemo(() => (followerSeries || [])
     .map((entry) => {
       const dateKey = normalizeDateKey(entry.date || entry.end_time || entry.endTime);
@@ -4180,6 +4255,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
                             strokeWidth={2.5}
                             fill="url(#viewsDetailPanelGradient)"
                             dot={false}
+                            connectNulls
                             activeDot={{ r: 5, fill: '#6366f1', stroke: '#fff', strokeWidth: 2 }}
                           />
                         </AreaChart>
