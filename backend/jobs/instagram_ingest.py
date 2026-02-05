@@ -204,6 +204,7 @@ def snapshot_to_rows(
     add("accounts_engaged", snapshot.get("accounts_engaged"))
     add("profile_views", snapshot.get("profile_views"))
     add("video_views", snapshot.get("video_views"))
+    add("video_watch_time_total", snapshot.get("watch_time_total"))
     add("website_clicks", snapshot.get("website_clicks"))
     add("likes", snapshot.get("likes"))
     add("comments", snapshot.get("comments"))

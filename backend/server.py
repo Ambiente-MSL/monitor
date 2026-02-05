@@ -1269,6 +1269,12 @@ def fetch_instagram_metrics(
             "timeseries": video_views_timeseries or profile_views_timeseries,
         },
         {
+            "key": "video_avg_watch_time",
+            "label": "TEMPO MEDIO ASSISTIDO (s)",
+            "value": cur.get("avg_watch_time"),
+            "deltaPct": None,
+        },
+        {
             "key": "profile_views",
             "label": "VISITAS AO PERFIL",
             "value": cur.get("profile_views"),
@@ -2824,6 +2830,7 @@ def build_instagram_metrics_from_db(
     ]
     video_views_total = _sum_metric(current_data, "video_views")
     video_views_previous = _sum_metric(previous_data, "video_views") if previous_data else None
+    video_watch_time_total = _sum_metric(current_data, "video_watch_time_total")
     video_views_timeseries = [
         {
             "date": entry["metric_date"].isoformat(),
@@ -2858,6 +2865,13 @@ def build_instagram_metrics_from_db(
         if reach_timeseries:
             resolved_video_views_timeseries = reach_timeseries
 
+    avg_watch_time_value = None
+    if video_watch_time_total and resolved_video_views_total:
+        try:
+            avg_watch_time_value = float(video_watch_time_total) / float(resolved_video_views_total)
+        except (TypeError, ValueError, ZeroDivisionError):
+            avg_watch_time_value = None
+
     metrics_payload = [
         {
             "key": "followers_total",
@@ -2889,6 +2903,12 @@ def build_instagram_metrics_from_db(
                 resolved_video_views_previous if resolved_video_views_total is not None else profile_views_previous,
             ),
             "timeseries": resolved_video_views_timeseries or profile_views_timeseries,
+        },
+        {
+            "key": "video_avg_watch_time",
+            "label": "TEMPO MEDIO ASSISTIDO (s)",
+            "value": avg_watch_time_value,
+            "deltaPct": None,
         },
         {
             "key": "profile_views",

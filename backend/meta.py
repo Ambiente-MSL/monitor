@@ -900,6 +900,10 @@ def ig_window(ig_user_id: str, since: int, until: int) -> Dict[str, Any]:
 
     sum_likes = sum_comments = sum_shares = sum_saves = 0
     sum_video_views = 0
+    sum_video_watch_time = 0.0
+    sum_video_watch_time_views = 0
+    weighted_avg_watch_time_total = 0.0
+    weighted_avg_watch_time_views = 0
     video_views_by_date: Dict[str, int] = {}
     reach_by_date: Dict[str, int] = {}
     post_details: List[Dict[str, Any]] = []
@@ -935,7 +939,7 @@ def ig_window(ig_user_id: str, since: int, until: int) -> Dict[str, Any]:
 
                 metrics_list = ["reach", "shares", "saved", "likes", "comments"]
                 if is_video_type:
-                    metrics_list.append("video_views")
+                    metrics_list.extend(["video_views", "video_view_time", "avg_watch_time"])
 
                 try:
                     media_insights = gget(
@@ -950,9 +954,12 @@ def ig_window(ig_user_id: str, since: int, until: int) -> Dict[str, Any]:
                 except MetaAPIError:
                     insights_map = {}
                     try:
+                        fallback_metrics = "reach,shares,saved,likes,comments"
+                        if is_video_type:
+                            fallback_metrics += ",video_views"
                         fallback_insights = gget(
                             f"/{media_id}/insights",
-                            {"metric": "reach,shares,saved,likes,comments"},
+                            {"metric": fallback_metrics},
                         )
                         for item in fallback_insights.get("data", []):
                             name = (item.get("name") or "").lower()
@@ -975,11 +982,29 @@ def ig_window(ig_user_id: str, since: int, until: int) -> Dict[str, Any]:
                     video_views_value = reach_value or 0
                 video_views_value = int(video_views_value or 0)
 
+                view_time_value = _coerce_number(
+                    insights_map.get("video_view_time")
+                    or insights_map.get("total_video_view_time")
+                    or insights_map.get("video_view_time_total")
+                )
+                avg_watch_time_value = _coerce_number(
+                    insights_map.get("avg_watch_time")
+                    or insights_map.get("average_watch_time")
+                    or insights_map.get("avg_time")
+                )
+
                 sum_likes += likes
                 sum_comments += comments
                 sum_shares += shares
                 sum_saves += saves
                 sum_video_views += video_views_value
+
+                if view_time_value is not None and video_views_value > 0:
+                    sum_video_watch_time += float(view_time_value)
+                    sum_video_watch_time_views += int(video_views_value)
+                elif avg_watch_time_value is not None and video_views_value > 0:
+                    weighted_avg_watch_time_total += float(avg_watch_time_value) * int(video_views_value)
+                    weighted_avg_watch_time_views += int(video_views_value)
 
                 if (video_views_value or reach_value) and timestamp_iso:
                     date_key = None
@@ -1019,6 +1044,12 @@ def ig_window(ig_user_id: str, since: int, until: int) -> Dict[str, Any]:
         logger.warning("Falha ao buscar mídias: %s", err)
 
     interactions = total_interactions or (sum_likes + sum_comments + sum_shares + sum_saves)
+
+    avg_watch_time = None
+    if sum_video_watch_time > 0 and sum_video_watch_time_views > 0:
+        avg_watch_time = sum_video_watch_time / sum_video_watch_time_views
+    elif weighted_avg_watch_time_views > 0:
+        avg_watch_time = weighted_avg_watch_time_total / weighted_avg_watch_time_views
 
     if reach == 0:
         reach = sum(p.get("reach") or 0 for p in post_details)
@@ -1184,6 +1215,8 @@ def ig_window(ig_user_id: str, since: int, until: int) -> Dict[str, Any]:
         "profile_views_timeseries": profile_views_timeseries,
         "video_views": sum_video_views,
         "video_views_timeseries": video_views_timeseries,
+        "watch_time_total": int(round(sum_video_watch_time)) if sum_video_watch_time > 0 else None,
+        "avg_watch_time": avg_watch_time,
         "website_clicks": website_clicks,
         "likes": sum_likes,
         "comments": sum_comments,
@@ -1246,6 +1279,8 @@ def _ig_window_chunked(ig_user_id: str, since: int, until: int, chunk_days: int 
         "profile_views_timeseries": [],
         "video_views": 0,
         "video_views_timeseries": [],
+        "watch_time_total": 0.0,
+        "avg_watch_time": None,
     }
 
     for chunk in results:
@@ -1261,6 +1296,7 @@ def _ig_window_chunked(ig_user_id: str, since: int, until: int, chunk_days: int 
         aggregated["follows"] += chunk.get("follows") or 0
         aggregated["unfollows"] += chunk.get("unfollows") or 0
         aggregated["video_views"] += chunk.get("video_views") or 0
+        aggregated["watch_time_total"] += chunk.get("watch_time_total") or 0
 
         if chunk.get("follower_series"):
             aggregated["follower_series"].extend(chunk["follower_series"])
@@ -1282,6 +1318,8 @@ def _ig_window_chunked(ig_user_id: str, since: int, until: int, chunk_days: int 
         aggregated["follower_count_end"] = last.get("follower_count_end")
         if aggregated["follower_count_start"] and aggregated["follower_count_end"]:
             aggregated["follower_growth"] = aggregated["follower_count_end"] - aggregated["follower_count_start"]
+        if aggregated.get("watch_time_total") and aggregated.get("video_views"):
+            aggregated["avg_watch_time"] = aggregated["watch_time_total"] / aggregated["video_views"]
 
     return aggregated
 

@@ -470,6 +470,16 @@ const formatPercent = (value) => {
   return `${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}%`;
 };
 
+const formatDuration = (seconds) => {
+  const numeric = Number(seconds);
+  if (!Number.isFinite(numeric) || numeric <= 0) return "00:00:00";
+  const total = Math.max(0, Math.round(numeric));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const secs = total % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+};
+
 const formatHour = (hour) => String((hour + 24) % 24).padStart(2, "0");
 
 const buildRecommendedWindow = (peakHour) => {
@@ -1677,6 +1687,7 @@ const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
  const followerGrowthMetric = metricsByKey.follower_growth;
  const engagementRateMetric = metricsByKey.engagement_rate;
 const videoViewsMetric = metricsByKey.video_views;
+const videoAvgWatchTimeMetric = metricsByKey.video_avg_watch_time;
 const profileViewsMetricRaw = metricsByKey.profile_views;
 const profileViewsMetric = useMemo(() => {
   const videoValue = extractNumber(videoViewsMetric?.value, null);
@@ -1842,6 +1853,14 @@ const profileViewsMetric = useMemo(() => {
     if (profileViewsDays <= 0) return null;
     return profileViewsTotal / profileViewsDays;
   }, [profileViewsTotal, profileViewsDays]);
+  const videoAvgWatchTimeSeconds = useMemo(
+    () => extractNumber(videoAvgWatchTimeMetric?.value, null),
+    [videoAvgWatchTimeMetric?.value],
+  );
+  const videoAvgWatchTimeDisplay = useMemo(
+    () => formatDuration(videoAvgWatchTimeSeconds),
+    [videoAvgWatchTimeSeconds],
+  );
   const interactionsMetricValue = useMemo(() => extractNumber(interactionsMetric?.value, null), [interactionsMetric?.value]);
   const interactionsDeltaPct = useMemo(() => {
     if (typeof interactionsMetric?.deltaPct === "number") return interactionsMetric.deltaPct;
@@ -2670,10 +2689,10 @@ const profileViewsMetric = useMemo(() => {
       raw: 0,
       fill: IG_VIEW_TYPE_COLORS[type] || "#6366f1",
     }));
-    if (!recentPosts.length) return baseSeries;
+    if (!contentPostsSource.length) return baseSeries;
 
     const totals = new Map(IG_VIEW_TYPE_ORDER.map((type) => [type, 0]));
-    recentPosts.forEach((post) => {
+    contentPostsSource.forEach((post) => {
       const views = resolvePostViews(post);
       const bucket = classifyViewContentType(post);
       totals.set(bucket, (totals.get(bucket) || 0) + views);
@@ -2693,9 +2712,8 @@ const profileViewsMetric = useMemo(() => {
           raw,
           fill: IG_VIEW_TYPE_COLORS[type] || "#6366f1",
         };
-      })
-      .filter((item) => item.raw > 0);
-  }, [recentPosts]);
+      });
+  }, [contentPostsSource]);
 
   const postCalendar = useMemo(() => {
     const [calendarYear, calendarMonthIndex] = calendarMonth.split("-").map(Number);
@@ -4289,7 +4307,7 @@ const profileViewsMetric = useMemo(() => {
                 {/* KPIs */}
                 <div style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gridTemplateColumns: 'repeat(4, 1fr)',
                   gap: '16px',
                   marginBottom: '24px'
                 }}>
@@ -4310,6 +4328,12 @@ const profileViewsMetric = useMemo(() => {
                       {profileViewsPeak != null ? formatNumber(profileViewsPeak) : '--'}
                     </div>
                     <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Pico diário</div>
+                  </div>
+                  <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '28px', fontWeight: 700, color: '#0ea5e9' }}>
+                      {videoAvgWatchTimeDisplay}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Tempo médio assistido</div>
                   </div>
                 </div>
 
@@ -4390,7 +4414,7 @@ const profileViewsMetric = useMemo(() => {
                   </div>
                 </section>
 
-                {/* Por tipo de conteúdo (mock) */}
+                {/* Por tipo de conteúdo */}
                 <section className="ig-card-white" style={{ marginBottom: '24px' }}>
                   <div style={{ padding: '20px 24px', borderBottom: '1px solid #e5e7eb' }}>
                     <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#111827' }}>
@@ -4398,59 +4422,29 @@ const profileViewsMetric = useMemo(() => {
                     </h4>
                   </div>
                   <div style={{ padding: '20px 24px' }}>
-                    {/* Tabs mock */}
-                    <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-                      {['Todos', 'Seguidores', 'Não seguidores'].map((tab, i) => (
-                        <span key={tab} style={{
-                          padding: '6px 14px',
-                          borderRadius: '999px',
-                          fontSize: '13px',
-                          fontWeight: 600,
-                          background: i === 0 ? '#111827' : 'transparent',
-                          color: i === 0 ? '#fff' : '#6b7280',
-                          border: i === 0 ? 'none' : '1px solid #e5e7eb',
-                          cursor: 'pointer'
-                        }}>
-                          {tab}
-                        </span>
-                      ))}
-                    </div>
-                    {/* Barras por tipo */}
-                    {[
-                      { type: 'Reels', pct: 51.2, colorA: '#c026d3', colorB: '#7c3aed' },
-                      { type: 'Posts', pct: 24.9, colorA: '#c026d3', colorB: '#7c3aed' },
-                      { type: 'Stories', pct: 23.9, colorA: '#c026d3', colorB: '#7c3aed' },
-                      { type: 'Vídeos', pct: 0.0, colorA: '#c026d3', colorB: '#7c3aed' },
-                    ].map((item) => (
-                      <div key={item.type} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
-                        <span style={{ width: '60px', fontSize: '14px', fontWeight: 500, color: '#d1d5db', flexShrink: 0 }}>
-                          {item.type}
-                        </span>
-                        <div style={{ flex: 1, height: '10px', borderRadius: '6px', background: '#1f2937', overflow: 'hidden', position: 'relative' }}>
-                          <div style={{
-                            width: `${item.pct}%`,
-                            height: '100%',
-                            borderRadius: '6px',
-                            background: `linear-gradient(90deg, ${item.colorA} 0%, ${item.colorB} 100%)`,
-                            transition: 'width 0.5s ease'
-                          }} />
+                    {viewsByContentType.some((item) => item.raw > 0) ? (
+                      viewsByContentType.map((item) => (
+                        <div key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+                          <span style={{ width: '70px', fontSize: '14px', fontWeight: 600, color: '#374151', flexShrink: 0 }}>
+                            {item.name}
+                          </span>
+                          <div style={{ flex: 1, height: '10px', borderRadius: '6px', background: '#e5e7eb', overflow: 'hidden', position: 'relative' }}>
+                            <div style={{
+                              width: `${item.value}%`,
+                              height: '100%',
+                              borderRadius: '6px',
+                              background: `linear-gradient(90deg, ${item.fill}99 0%, ${item.fill} 100%)`,
+                              transition: 'width 0.5s ease'
+                            }} />
+                          </div>
+                          <span style={{ width: '52px', textAlign: 'right', fontSize: '14px', fontWeight: 600, color: '#6b7280', flexShrink: 0 }}>
+                            {item.value.toFixed(1)}%
+                          </span>
                         </div>
-                        <span style={{ width: '48px', textAlign: 'right', fontSize: '14px', fontWeight: 600, color: '#d1d5db', flexShrink: 0 }}>
-                          {item.pct.toFixed(1)}%
-                        </span>
-                      </div>
-                    ))}
-                    {/* Legenda */}
-                    <div style={{ display: 'flex', gap: '16px', marginTop: '16px', justifyContent: 'center' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#c026d3' }} />
-                        <span style={{ fontSize: '12px', color: '#9ca3af' }}>Seguidores</span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#7c3aed' }} />
-                        <span style={{ fontSize: '12px', color: '#9ca3af' }}>Não seguidores</span>
-                      </div>
-                    </div>
+                      ))
+                    ) : (
+                      <div className="ig-empty-state">Sem dados disponíveis.</div>
+                    )}
                   </div>
                 </section>
 
