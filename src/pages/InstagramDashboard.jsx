@@ -708,6 +708,17 @@ const IG_VIEW_TYPE_COLORS = {
   POSTS: "#ec4899",
   STORIES: "#f59e0b",
 };
+const IG_INTERACTION_TYPE_ORDER = ["reels", "posts", "videos"];
+const IG_INTERACTION_TYPE_LABEL = {
+  reels: "Reels",
+  posts: "Posts",
+  videos: "Vídeos",
+};
+const IG_INTERACTION_TYPE_COLORS = {
+  reels: "#6366f1",
+  posts: "#ec4899",
+  videos: "#14b8a6",
+};
 const INTERACTIONS_TABS = [
   { id: "reels", label: "Reels", icon: "R" },
   { id: "posts", label: "Posts", icon: "P" },
@@ -2715,6 +2726,39 @@ const profileViewsMetric = useMemo(() => {
       });
   }, [contentPostsSource]);
 
+  const interactionsByContentType = useMemo(() => {
+    const baseSeries = IG_INTERACTION_TYPE_ORDER.map((type) => ({
+      key: type,
+      name: IG_INTERACTION_TYPE_LABEL[type] || type,
+      value: 0,
+      raw: 0,
+      fill: IG_INTERACTION_TYPE_COLORS[type] || "#6366f1",
+    }));
+    if (!interactionPostsSource.length) return baseSeries;
+
+    const totals = new Map(IG_INTERACTION_TYPE_ORDER.map((type) => [type, 0]));
+    interactionPostsSource.forEach((post) => {
+      const bucket = classifyInteractionContentType(post);
+      if (!totals.has(bucket)) return;
+      totals.set(bucket, (totals.get(bucket) || 0) + resolvePostInteractions(post));
+    });
+
+    const totalInteractions = Array.from(totals.values()).reduce((sum, value) => sum + value, 0);
+    if (!totalInteractions) return baseSeries;
+
+    return IG_INTERACTION_TYPE_ORDER.map((type) => {
+      const raw = totals.get(type) || 0;
+      const percent = (raw / totalInteractions) * 100;
+      return {
+        key: type,
+        name: IG_INTERACTION_TYPE_LABEL[type] || type,
+        value: Math.round(percent * 10) / 10,
+        raw,
+        fill: IG_INTERACTION_TYPE_COLORS[type] || "#6366f1",
+      };
+    });
+  }, [interactionPostsSource]);
+
   const postCalendar = useMemo(() => {
     const [calendarYear, calendarMonthIndex] = calendarMonth.split("-").map(Number);
     const baseDate = Number.isFinite(calendarYear) && Number.isFinite(calendarMonthIndex)
@@ -4657,7 +4701,7 @@ const profileViewsMetric = useMemo(() => {
                   <div style={{ padding: '20px', height: 240 }}>
                     {interactionsChartData.length ? (
                       <ResponsiveContainer>
-                        <LineChart
+                        <AreaChart
                           data={interactionsChartData}
                           margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
                         >
@@ -4703,18 +4747,12 @@ const profileViewsMetric = useMemo(() => {
                             type="monotone"
                             dataKey="value"
                             stroke="#6366f1"
-                            strokeWidth={0}
-                            fill="url(#interactionsGradient)"
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="value"
-                            stroke="#6366f1"
                             strokeWidth={2.5}
+                            fill="url(#interactionsGradient)"
                             dot={false}
                             activeDot={{ r: 5, fill: '#6366f1', stroke: '#fff', strokeWidth: 2 }}
                           />
-                        </LineChart>
+                        </AreaChart>
                       </ResponsiveContainer>
                     ) : (
                       <div className="ig-empty-state">Sem dados disponíveis.</div>
@@ -4722,74 +4760,110 @@ const profileViewsMetric = useMemo(() => {
                   </div>
                 </section>
 
-                {/* Gráfico de Pizza */}
-                <section className="ig-card-white" style={{ marginBottom: '24px' }}>
-                  <div style={{ padding: '20px 24px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-                    <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#111827' }}>
-                      Distribuição de interações
-                    </h4>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#ef4444' }} />
-                        <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500 }}>Curtidas</span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#3b82f6' }} />
-                        <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500 }}>Comentários</span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#22c55e' }} />
-                        <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500 }}>Compartilhamentos</span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#a855f7' }} />
-                        <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500 }}>Salvos</span>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+                  {/* Gráfico de Pizza */}
+                  <section className="ig-card-white">
+                    <div style={{ padding: '20px 24px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                      <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#111827' }}>
+                        Distribuição de interações
+                      </h4>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#ef4444' }} />
+                          <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500 }}>Curtidas</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#3b82f6' }} />
+                          <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500 }}>Comentários</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#22c55e' }} />
+                          <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500 }}>Compartilhamentos</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#a855f7' }} />
+                          <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500 }}>Salvos</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div style={{ padding: '20px', height: 280 }}>
-                    {interactionsBreakdown.total > 0 ? (
-                      <ResponsiveContainer>
-                        <PieChart>
-                          <Pie
-                            data={[
-                              { name: 'Curtidas', value: interactionsBreakdown.likes, color: '#ef4444' },
-                              { name: 'Comentários', value: interactionsBreakdown.comments, color: '#3b82f6' },
-                              { name: 'Compartilhamentos', value: interactionsBreakdown.shares, color: '#22c55e' },
-                              { name: 'Salvos', value: interactionsBreakdown.saves, color: '#a855f7' }
-                            ].filter(item => item.value > 0)}
-                            dataKey="value"
-                            nameKey="name"
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={50}
-                            outerRadius={90}
-                            paddingAngle={2}
-                          >
-                            {[
-                              { name: 'Curtidas', value: interactionsBreakdown.likes, color: '#ef4444' },
-                              { name: 'Comentários', value: interactionsBreakdown.comments, color: '#3b82f6' },
-                              { name: 'Compartilhamentos', value: interactionsBreakdown.shares, color: '#22c55e' },
-                              { name: 'Salvos', value: interactionsBreakdown.saves, color: '#a855f7' }
-                            ].filter(item => item.value > 0).map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip
-                            content={(
-                              <CustomChartTooltip
-                                variant="pie"
-                                valueFormatter={(v) => `: ${formatNumber(v)}`}
-                              />
-                            )}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    ) : (
-                      <div className="ig-empty-state">Sem dados disponíveis.</div>
-                    )}
-                  </div>
-                </section>
+                    <div style={{ padding: '20px', height: 280 }}>
+                      {interactionsBreakdown.total > 0 ? (
+                        <ResponsiveContainer>
+                          <PieChart>
+                            <Pie
+                              data={[
+                                { name: 'Curtidas', value: interactionsBreakdown.likes, color: '#ef4444' },
+                                { name: 'Comentários', value: interactionsBreakdown.comments, color: '#3b82f6' },
+                                { name: 'Compartilhamentos', value: interactionsBreakdown.shares, color: '#22c55e' },
+                                { name: 'Salvos', value: interactionsBreakdown.saves, color: '#a855f7' }
+                              ].filter(item => item.value > 0)}
+                              dataKey="value"
+                              nameKey="name"
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={50}
+                              outerRadius={90}
+                              paddingAngle={2}
+                            >
+                              {[
+                                { name: 'Curtidas', value: interactionsBreakdown.likes, color: '#ef4444' },
+                                { name: 'Comentários', value: interactionsBreakdown.comments, color: '#3b82f6' },
+                                { name: 'Compartilhamentos', value: interactionsBreakdown.shares, color: '#22c55e' },
+                                { name: 'Salvos', value: interactionsBreakdown.saves, color: '#a855f7' }
+                              ].filter(item => item.value > 0).map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip
+                              content={(
+                                <CustomChartTooltip
+                                  variant="pie"
+                                  valueFormatter={(v) => `: ${formatNumber(v)}`}
+                                />
+                              )}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="ig-empty-state">Sem dados disponíveis.</div>
+                      )}
+                    </div>
+                  </section>
+
+                  {/* Por tipo de conteúdo (Interações) */}
+                  <section className="ig-card-white">
+                    <div style={{ padding: '20px 24px', borderBottom: '1px solid #e5e7eb' }}>
+                      <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#111827' }}>
+                        Por tipo de conteúdo
+                      </h4>
+                    </div>
+                    <div style={{ padding: '20px 24px' }}>
+                      {interactionsByContentType.some((item) => item.raw > 0) ? (
+                        interactionsByContentType.map((item) => (
+                          <div key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+                            <span style={{ width: '70px', fontSize: '14px', fontWeight: 600, color: '#374151', flexShrink: 0 }}>
+                              {item.name}
+                            </span>
+                            <div style={{ flex: 1, height: '10px', borderRadius: '6px', background: '#e5e7eb', overflow: 'hidden', position: 'relative' }}>
+                              <div style={{
+                                width: `${item.value}%`,
+                                height: '100%',
+                                borderRadius: '6px',
+                                background: `linear-gradient(90deg, ${item.fill}99 0%, ${item.fill} 100%)`,
+                                transition: 'width 0.5s ease'
+                              }} />
+                            </div>
+                            <span style={{ width: '52px', textAlign: 'right', fontSize: '14px', fontWeight: 600, color: '#6b7280', flexShrink: 0 }}>
+                              {item.value.toFixed(1)}%
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="ig-empty-state">Sem dados disponíveis.</div>
+                      )}
+                    </div>
+                  </section>
+                </div>
 
                 {/* Top Posts por Engajamento */}
                 <section className="ig-card-white">
