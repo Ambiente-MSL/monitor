@@ -9,7 +9,8 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from cache import PLATFORM_TABLES, get_cached_payload, get_table_name, list_due_entries, mark_cache_error
 from db import execute
 from jobs.instagram_ingest import ingest_account_range, resolve_ingest_accounts
-from meta import MetaAPIError, gget
+from meta import MetaAPIError, gget, ig_audience
+from ig_audience_snapshots import persist_audience_snapshot
 from postgres_client import get_postgres_client
 
 logger = logging.getLogger(__name__)
@@ -27,6 +28,7 @@ DEFAULT_WARM_MAX_ACCOUNTS = int(os.getenv("CACHE_WARM_MAX_ACCOUNTS", "50") or "5
 DEFAULT_WARM_IG_POSTS_LIMIT = int(os.getenv("INSTAGRAM_POSTS_LIMIT", "20") or "20")
 DEFAULT_WARM_FB_POSTS_LIMIT = int(os.getenv("FACEBOOK_POSTS_LIMIT", "8") or "8")
 DEFAULT_CACHE_RETENTION_DAYS = int(os.getenv("CACHE_RETENTION_DAYS", "365") or "365")
+DEFAULT_AUDIENCE_SNAPSHOT_ENABLED = os.getenv("INSTAGRAM_AUDIENCE_SNAPSHOT_ENABLED", "1") != "0"
 
 
 def cleanup_old_cache_job() -> None:
@@ -72,6 +74,7 @@ class MetaSyncScheduler:
         self._warm_lookback = max(1, DEFAULT_WARM_LOOKBACK_DAYS)
         self._warm_max_accounts = max(1, DEFAULT_WARM_MAX_ACCOUNTS)
         self._cache_retention_days = DEFAULT_CACHE_RETENTION_DAYS
+        self._audience_snapshot_enabled = DEFAULT_AUDIENCE_SNAPSHOT_ENABLED
 
     def start(self) -> None:
         if self._started:
@@ -350,6 +353,17 @@ class MetaSyncScheduler:
             until_ts,
         )
 
+    def _snapshot_instagram_audience(self, ig_id: str) -> None:
+        if not self._audience_snapshot_enabled:
+            return
+        try:
+            payload = ig_audience(ig_id, timeframe="this_month")
+            if isinstance(payload, dict):
+                persist_audience_snapshot(ig_id, "this_month", payload)
+                logger.info("[audience-snapshot] Snapshot salvo para %s.", ig_id)
+        except Exception as err:  # noqa: BLE001
+            logger.warning("[audience-snapshot] Falha ao salvar snapshot de %s: %s", ig_id, err)
+
     def _run_ingest_cycle(self) -> None:
         account_ids = self._resolve_ingest_accounts()
         if not account_ids:
@@ -380,6 +394,7 @@ class MetaSyncScheduler:
                     refresh_rollup=True,
                     warm_posts=self._ingest_warm_posts,
                 )
+                self._snapshot_instagram_audience(ig_id)
                 logger.info("Ingestão concluída para %s.", ig_id)
                 successes.append(ig_id)
             except Exception as err:  # noqa: BLE001

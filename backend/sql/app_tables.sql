@@ -133,6 +133,20 @@ CREATE TABLE IF NOT EXISTS ig_metrics_coverage (
     PRIMARY KEY (account_id, date_from, date_to)
 );
 
+-- Snapshots diários da audiência do Instagram (Top cidades, idade, gênero, etc.)
+CREATE TABLE IF NOT EXISTS ig_audience_snapshots (
+    account_id TEXT NOT NULL,
+    snapshot_date DATE NOT NULL,
+    timeframe TEXT NOT NULL,
+    payload JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (account_id, snapshot_date, timeframe)
+);
+
+CREATE INDEX IF NOT EXISTS ig_audience_snapshots_account_date_idx
+    ON ig_audience_snapshots (account_id, snapshot_date);
+
 
 -- Índices de performance para métricas/Instagram
 CREATE INDEX IF NOT EXISTS metrics_daily_account_platform_date_idx

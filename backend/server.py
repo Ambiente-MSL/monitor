@@ -43,6 +43,7 @@ from meta import (
     normalize_ig_audience_timeframe,
     gget,
 )
+from ig_audience_snapshots import load_latest_snapshot, persist_audience_snapshot, resolve_snapshot_date
 from jobs.instagram_ingest import ingest_account_range, daterange
 from jobs.instagram_comments_ingest import ingest_account_comments
 from scheduler import MetaSyncScheduler
@@ -1424,7 +1425,29 @@ def fetch_instagram_audience(
     extra: Optional[Dict[str, Any]],
 ) -> Dict[str, Any]:
     timeframe = normalize_ig_audience_timeframe(extra.get("timeframe") if extra else None)
-    return ig_audience(ig_id, timeframe=timeframe)
+    since_ts = _since_ts
+    until_ts = _until_ts
+
+    use_snapshot = False
+    if since_ts is not None and until_ts is not None:
+        diff_days = int((until_ts - since_ts) / 86_400) + 1
+        if diff_days > 7:
+            use_snapshot = True
+
+    if use_snapshot:
+        target_date = resolve_snapshot_date(until_ts) if until_ts is not None else None
+        snapshot = load_latest_snapshot(ig_id, "this_month", target_date=target_date)
+        if snapshot:
+            payload, snapshot_date = snapshot
+            payload = dict(payload)
+            payload.setdefault("snapshot_date", snapshot_date.isoformat())
+            payload.setdefault("snapshot_timeframe", "this_month")
+            return payload
+
+    payload = ig_audience(ig_id, timeframe=timeframe)
+    if isinstance(payload, dict):
+        persist_audience_snapshot(ig_id, timeframe, payload)
+    return payload
 
 
 def fetch_instagram_posts(
@@ -4121,14 +4144,22 @@ def instagram_audience():
     if not ig:
         return jsonify({"error": "META_IG_USER_ID is not configured"}), 500
     timeframe = normalize_ig_audience_timeframe(request.args.get("timeframe"))
+    since_ts = _safe_int(request.args.get("since"))
+    until_ts = _safe_int(request.args.get("until"))
+    force_refresh = False
+    if since_ts is not None and until_ts is not None:
+        diff_days = int((until_ts - since_ts) / 86_400) + 1
+        if diff_days > 7:
+            force_refresh = True
     try:
         payload, meta = get_cached_payload(
             "instagram_audience",
             ig,
-            None,
-            None,
+            since_ts,
+            until_ts,
             extra={"timeframe": timeframe},
             fetcher=fetch_instagram_audience,
+            force=force_refresh,
             platform=DEFAULT_CACHE_PLATFORM,
         )
     except MetaAPIError as err:

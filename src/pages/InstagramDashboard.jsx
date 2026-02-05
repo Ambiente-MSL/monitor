@@ -1627,6 +1627,12 @@ export default function InstagramDashboard() {
       igUserId: accountConfig.instagramUserId,
       timeframe: audienceTimeframe,
     });
+    if (sinceParam) {
+      audienceParams.set("since", sinceParam);
+    }
+    if (untilParam) {
+      audienceParams.set("until", untilParam);
+    }
     const url = `${API_BASE_URL}/api/instagram/audience?${audienceParams.toString()}`;
 
     (async () => {
