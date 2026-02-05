@@ -1010,6 +1010,7 @@ export default function InstagramDashboard() {
   const [overviewSnapshot, setOverviewSnapshot] = useState(null);
   const [reachCacheSeries, setReachCacheSeries] = useState([]);
   const [profileViewsSeries, setProfileViewsSeries] = useState([]);
+  const [videoViewsSeries, setVideoViewsSeries] = useState([]);
   const [profileVisitorsBreakdown, setProfileVisitorsBreakdown] = useState(null);
   const [activeFollowerGrowthBar, setActiveFollowerGrowthBar] = useState(-1);
   const [activeEngagementIndex, setActiveEngagementIndex] = useState(-1);
@@ -1028,6 +1029,7 @@ export default function InstagramDashboard() {
       setFollowerCounts(null);
       setReachCacheSeries([]);
       setProfileViewsSeries([]);
+      setVideoViewsSeries([]);
       setProfileVisitorsBreakdown(null);
       setMetricsError("");
       setMetricsNotice("");
@@ -1096,6 +1098,7 @@ export default function InstagramDashboard() {
       setFollowerCounts(null);
       setReachCacheSeries([]);
       setProfileViewsSeries([]);
+      setVideoViewsSeries([]);
       setProfileVisitorsBreakdown(null);
       setOverviewSnapshot(null);
       setMetricsLoading(false);
@@ -1139,6 +1142,7 @@ export default function InstagramDashboard() {
         : [];
       const cachedViewsSeries = resolveViewsSeries(cachedVideoSeries, cachedProfileSeries);
       setProfileViewsSeries(cachedViewsSeries);
+      setVideoViewsSeries(cachedVideoSeries);
       setProfileVisitorsBreakdown(cachedMetrics.profileVisitorsBreakdown ?? null);
       setMetricsError("");
       setMetricsNotice("");
@@ -1298,6 +1302,7 @@ export default function InstagramDashboard() {
         setFollowerCounts(fetchedFollowerCounts);
         setReachCacheSeries(reachSeries);
         setProfileViewsSeries(resolvedViewsSeries);
+        setVideoViewsSeries(parsedVideoViewsSeries);
         setProfileVisitorsBreakdown(visitorsBreakdown);
         setDashboardCache(metricsCacheKey, {
           metrics: fetchedMetrics,
@@ -1332,6 +1337,7 @@ export default function InstagramDashboard() {
           setFollowerCounts(null);
           setReachCacheSeries([]);
           setProfileViewsSeries([]);
+          setVideoViewsSeries([]);
           setProfileVisitorsBreakdown(null);
         }
       } finally {
@@ -1698,6 +1704,31 @@ const profileViewsMetric = useMemo(() => {
 
   const reachMetricValue = useMemo(() => extractNumber(reachMetric?.value, null), [reachMetric?.value]);
   const timelineReachSeries = useMemo(() => seriesFromMetric(reachMetric), [reachMetric]);
+  const videoViewsSeriesFromMetric = useMemo(() => seriesFromMetric(videoViewsMetric), [videoViewsMetric]);
+  const resolvedVideoViewsSeries = useMemo(() => {
+    const baseSeries = videoViewsSeries.length ? videoViewsSeries : videoViewsSeriesFromMetric;
+    if (!baseSeries?.length) return [];
+    const normalized = baseSeries
+      .map((entry) => {
+        const dateKey = normalizeDateKey(entry.date || entry.end_time || entry.endTime);
+        if (!dateKey) return null;
+        return { date: dateKey, value: extractNumber(entry.value, null) };
+      })
+      .filter(Boolean)
+      .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+    if (!sinceDate && !untilDate) return normalized;
+    const startBoundary = sinceDate ? startOfDay(sinceDate).getTime() : null;
+    const endBoundary = untilDate ? endOfDay(untilDate).getTime() : null;
+    return normalized.filter((item) => {
+      if (!item?.date) return false;
+      const currentDate = new Date(`${item.date}T00:00:00`);
+      const current = currentDate.getTime();
+      if (Number.isNaN(current)) return false;
+      if (startBoundary != null && current < startBoundary) return false;
+      if (endBoundary != null && current > endBoundary) return false;
+      return true;
+    });
+  }, [videoViewsSeriesFromMetric, videoViewsSeries, sinceDate, untilDate]);
   const profileViewsSeriesFromMetric = useMemo(() => seriesFromMetric(profileViewsMetric), [profileViewsMetric]);
   const resolvedProfileViewsSeries = useMemo(() => {
     const baseSeries = profileViewsSeries.length ? profileViewsSeries : profileViewsSeriesFromMetric;
@@ -1723,6 +1754,63 @@ const profileViewsMetric = useMemo(() => {
       return true;
     });
   }, [profileViewsSeriesFromMetric, profileViewsSeries, sinceDate, untilDate]);
+  const videoViewsTotal = useMemo(() => {
+    const metricValue = extractNumber(videoViewsMetric?.value, null);
+    if (!resolvedVideoViewsSeries.length) {
+      return metricValue != null ? metricValue : null;
+    }
+    const seriesTotal = resolvedVideoViewsSeries.reduce((sum, entry) => sum + extractNumber(entry.value, 0), 0);
+    if (metricValue == null) return seriesTotal;
+    if (metricValue === 0 && seriesTotal > 0) return seriesTotal;
+    return metricValue;
+  }, [videoViewsMetric?.value, resolvedVideoViewsSeries]);
+  const videoViewsPeak = useMemo(() => {
+    if (!resolvedVideoViewsSeries.length) return null;
+    return resolvedVideoViewsSeries.reduce((max, entry) => Math.max(max, extractNumber(entry.value, 0)), 0);
+  }, [resolvedVideoViewsSeries]);
+  const videoViewsDays = useMemo(() => {
+    if (sinceDate && untilDate) {
+      return differenceInCalendarDays(endOfDay(untilDate), startOfDay(sinceDate)) + 1;
+    }
+    return resolvedVideoViewsSeries.length || null;
+  }, [sinceDate, untilDate, resolvedVideoViewsSeries.length]);
+  const videoViewsAverage = useMemo(() => {
+    if (videoViewsTotal == null || !videoViewsDays) return null;
+    if (videoViewsDays <= 0) return null;
+    return videoViewsTotal / videoViewsDays;
+  }, [videoViewsTotal, videoViewsDays]);
+  const videoViewsChartData = useMemo(() => {
+    const base = resolvedVideoViewsSeries
+      .map((entry) => {
+        const value = extractNumber(entry.value, null);
+        if (value == null) return null;
+        const dateLabel = entry.date
+          ? new Date(`${entry.date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })
+          : "";
+        const tooltipDate = entry.date
+          ? new Date(`${entry.date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })
+          : "";
+        return {
+          label: dateLabel,
+          date: entry.date,
+          value,
+          tooltipDate,
+        };
+      })
+      .filter(Boolean);
+
+    if (base.length < 3) return base;
+
+    return base.map((entry, index) => {
+      if (entry.value !== 0) return entry;
+      const prev = base[index - 1]?.value ?? null;
+      const next = base[index + 1]?.value ?? null;
+      if (Number.isFinite(prev) && prev > 0 && Number.isFinite(next) && next > 0) {
+        return { ...entry, value: null };
+      }
+      return entry;
+    });
+  }, [resolvedVideoViewsSeries]);
   const profileViewsTotal = useMemo(() => {
     const metricValue = extractNumber(profileViewsMetric?.value, null);
     if (!resolvedProfileViewsSeries.length) {
@@ -5812,6 +5900,130 @@ const profileViewsMetric = useMemo(() => {
                   <div className="ig-empty-state">Sem dados disponiveis.</div>
                 )}
               </div>
+        </section>
+
+        {/* Card de Visualizações de Vídeo */}
+        <section className="ig-card-white ig-analytics-card" style={{ marginTop: '24px', position: 'relative', overflow: 'hidden' }}>
+          <div className="ig-analytics-card__header" style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+            flexWrap: 'wrap'
+          }}>
+            <div>
+              <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#111827' }}>
+                Visualizações de vídeo
+                <InfoTooltip text="Total de visualizações de vídeos e Reels no período selecionado." />
+              </h4>
+              <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '2px', marginBottom: 0 }}>
+                Métricas agregadas do período
+              </p>
+            </div>
+          </div>
+          <div className="ig-analytics-card__body">
+            <div style={{ display: 'flex', alignItems: 'stretch', gap: '18px', flexWrap: 'wrap' }}>
+              <div style={{ minWidth: '180px', flexShrink: 0 }}>
+                <div style={{ fontSize: '34px', fontWeight: 700, color: '#0f172a', lineHeight: 1 }}>
+                  {formatNumber(videoViewsTotal ?? 0)}
+                </div>
+                <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px', fontWeight: 500 }}>
+                  visualizações
+                </div>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                  gap: '8px',
+                  marginTop: '16px'
+                }}>
+                  <div style={{
+                    padding: '10px 8px',
+                    borderRadius: '8px',
+                    background: 'rgba(37, 99, 235, 0.08)',
+                    textAlign: 'center'
+                  }}>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#2563eb', marginBottom: '2px' }}>
+                      {videoViewsAverage != null ? formatNumber(Math.round(videoViewsAverage)) : '--'}
+                    </div>
+                    <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>Média diária</div>
+                  </div>
+                  <div style={{
+                    padding: '10px 8px',
+                    borderRadius: '8px',
+                    background: 'rgba(14, 165, 233, 0.08)',
+                    textAlign: 'center'
+                  }}>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#0ea5e9', marginBottom: '2px' }}>
+                      {videoViewsPeak != null ? formatNumber(videoViewsPeak) : '--'}
+                    </div>
+                    <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>Pico diário</div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ flex: 1, minWidth: '260px', height: '200px' }}>
+                {metricsLoading ? (
+                  <div className="ig-chart-skeleton ig-chart-skeleton--compact" aria-hidden="true" />
+                ) : videoViewsChartData.length ? (
+                  <ResponsiveContainer>
+                    <AreaChart
+                      data={videoViewsChartData}
+                      margin={{ top: 12, right: 16, bottom: 8, left: 0 }}
+                    >
+                      <defs>
+                        <linearGradient id="igVideoViewsGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#38bdf8" stopOpacity={0.35} />
+                          <stop offset="100%" stopColor="#38bdf8" stopOpacity={0.05} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                      <XAxis
+                        dataKey="label"
+                        tick={{ fontSize: 11, fill: '#6b7280' }}
+                        axisLine={{ stroke: '#e5e7eb' }}
+                        tickLine={false}
+                        interval="preserveStartEnd"
+                        minTickGap={48}
+                        tickFormatter={formatAxisDate}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 11, fill: '#6b7280' }}
+                        axisLine={{ stroke: '#e5e7eb' }}
+                        tickLine={false}
+                        tickFormatter={(value) => formatCompactNumber(value)}
+                      />
+                      <Tooltip
+                        cursor={{ stroke: '#38bdf8', strokeWidth: 1, strokeDasharray: '4 4' }}
+                        content={(props) => {
+                          const tooltipDate = props?.payload?.[0]?.payload?.tooltipDate || props?.label;
+                          return (
+                            <CustomChartTooltip
+                              {...props}
+                              labelFormatter={() => String(tooltipDate || "")}
+                              labelMap={{ value: "Visualizações" }}
+                              valueFormatter={(v) => `: ${formatTooltipNumber(v)}`}
+                            />
+                          );
+                        }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="value"
+                        stroke="#38bdf8"
+                        strokeWidth={2.5}
+                        fill="url(#igVideoViewsGradient)"
+                        dot={false}
+                        connectNulls
+                        activeDot={{ r: 5, fill: '#38bdf8', stroke: '#fff', strokeWidth: 2 }}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="ig-empty-state">Sem dados disponíveis.</div>
+                )}
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* Novos Cards: Visualizações e Seguidores */}
