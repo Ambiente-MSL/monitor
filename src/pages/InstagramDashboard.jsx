@@ -4390,6 +4390,70 @@ const profileViewsMetric = useMemo(() => {
                   </div>
                 </section>
 
+                {/* Por tipo de conteúdo (mock) */}
+                <section className="ig-card-white" style={{ marginBottom: '24px' }}>
+                  <div style={{ padding: '20px 24px', borderBottom: '1px solid #e5e7eb' }}>
+                    <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#111827' }}>
+                      Por tipo de conteúdo
+                    </h4>
+                  </div>
+                  <div style={{ padding: '20px 24px' }}>
+                    {/* Tabs mock */}
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+                      {['Todos', 'Seguidores', 'Não seguidores'].map((tab, i) => (
+                        <span key={tab} style={{
+                          padding: '6px 14px',
+                          borderRadius: '999px',
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          background: i === 0 ? '#111827' : 'transparent',
+                          color: i === 0 ? '#fff' : '#6b7280',
+                          border: i === 0 ? 'none' : '1px solid #e5e7eb',
+                          cursor: 'pointer'
+                        }}>
+                          {tab}
+                        </span>
+                      ))}
+                    </div>
+                    {/* Barras por tipo */}
+                    {[
+                      { type: 'Reels', pct: 51.2, colorA: '#c026d3', colorB: '#7c3aed' },
+                      { type: 'Posts', pct: 24.9, colorA: '#c026d3', colorB: '#7c3aed' },
+                      { type: 'Stories', pct: 23.9, colorA: '#c026d3', colorB: '#7c3aed' },
+                      { type: 'Vídeos', pct: 0.0, colorA: '#c026d3', colorB: '#7c3aed' },
+                    ].map((item) => (
+                      <div key={item.type} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+                        <span style={{ width: '60px', fontSize: '14px', fontWeight: 500, color: '#d1d5db', flexShrink: 0 }}>
+                          {item.type}
+                        </span>
+                        <div style={{ flex: 1, height: '10px', borderRadius: '6px', background: '#1f2937', overflow: 'hidden', position: 'relative' }}>
+                          <div style={{
+                            width: `${item.pct}%`,
+                            height: '100%',
+                            borderRadius: '6px',
+                            background: `linear-gradient(90deg, ${item.colorA} 0%, ${item.colorB} 100%)`,
+                            transition: 'width 0.5s ease'
+                          }} />
+                        </div>
+                        <span style={{ width: '48px', textAlign: 'right', fontSize: '14px', fontWeight: 600, color: '#d1d5db', flexShrink: 0 }}>
+                          {item.pct.toFixed(1)}%
+                        </span>
+                      </div>
+                    ))}
+                    {/* Legenda */}
+                    <div style={{ display: 'flex', gap: '16px', marginTop: '16px', justifyContent: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#c026d3' }} />
+                        <span style={{ fontSize: '12px', color: '#9ca3af' }}>Seguidores</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#7c3aed' }} />
+                        <span style={{ fontSize: '12px', color: '#9ca3af' }}>Não seguidores</span>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
                 {/* Top Posts por Visualizações */}
                 <section className="ig-card-white">
                   <div style={{ padding: '20px', borderBottom: '1px solid #e5e7eb' }}>
@@ -5908,130 +5972,6 @@ const profileViewsMetric = useMemo(() => {
               </div>
         </section>
 
-        {/* Card de Visualizações de Vídeo */}
-        <section className="ig-card-white ig-analytics-card" style={{ marginTop: '24px', position: 'relative', overflow: 'hidden' }}>
-          <div className="ig-analytics-card__header" style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '12px',
-            flexWrap: 'wrap'
-          }}>
-            <div>
-              <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#111827' }}>
-                Visualizações de vídeo
-                <InfoTooltip text="Total de visualizações de vídeos e Reels no período selecionado." />
-              </h4>
-              <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '2px', marginBottom: 0 }}>
-                Métricas agregadas do período
-              </p>
-            </div>
-          </div>
-          <div className="ig-analytics-card__body">
-            <div style={{ display: 'flex', alignItems: 'stretch', gap: '18px', flexWrap: 'wrap' }}>
-              <div style={{ minWidth: '180px', flexShrink: 0 }}>
-                <div style={{ fontSize: '34px', fontWeight: 700, color: '#0f172a', lineHeight: 1 }}>
-                  {formatNumber(videoViewsTotal ?? 0)}
-                </div>
-                <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px', fontWeight: 500 }}>
-                  visualizações
-                </div>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                  gap: '8px',
-                  marginTop: '16px'
-                }}>
-                  <div style={{
-                    padding: '10px 8px',
-                    borderRadius: '8px',
-                    background: 'rgba(37, 99, 235, 0.08)',
-                    textAlign: 'center'
-                  }}>
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#2563eb', marginBottom: '2px' }}>
-                      {videoViewsAverage != null ? formatNumber(Math.round(videoViewsAverage)) : '--'}
-                    </div>
-                    <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>Média diária</div>
-                  </div>
-                  <div style={{
-                    padding: '10px 8px',
-                    borderRadius: '8px',
-                    background: 'rgba(14, 165, 233, 0.08)',
-                    textAlign: 'center'
-                  }}>
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#0ea5e9', marginBottom: '2px' }}>
-                      {videoViewsPeak != null ? formatNumber(videoViewsPeak) : '--'}
-                    </div>
-                    <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>Pico diário</div>
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ flex: 1, minWidth: '260px', height: '200px' }}>
-                {metricsLoading ? (
-                  <div className="ig-chart-skeleton ig-chart-skeleton--compact" aria-hidden="true" />
-                ) : videoViewsChartData.length ? (
-                  <ResponsiveContainer>
-                    <AreaChart
-                      data={videoViewsChartData}
-                      margin={{ top: 12, right: 16, bottom: 8, left: 0 }}
-                    >
-                      <defs>
-                        <linearGradient id="igVideoViewsGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#38bdf8" stopOpacity={0.35} />
-                          <stop offset="100%" stopColor="#38bdf8" stopOpacity={0.05} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                      <XAxis
-                        dataKey="label"
-                        tick={{ fontSize: 11, fill: '#6b7280' }}
-                        axisLine={{ stroke: '#e5e7eb' }}
-                        tickLine={false}
-                        interval="preserveStartEnd"
-                        minTickGap={48}
-                        tickFormatter={formatAxisDate}
-                      />
-                      <YAxis
-                        tick={{ fontSize: 11, fill: '#6b7280' }}
-                        axisLine={{ stroke: '#e5e7eb' }}
-                        tickLine={false}
-                        tickFormatter={(value) => formatCompactNumber(value)}
-                      />
-                      <Tooltip
-                        cursor={{ stroke: '#38bdf8', strokeWidth: 1, strokeDasharray: '4 4' }}
-                        content={(props) => {
-                          const tooltipDate = props?.payload?.[0]?.payload?.tooltipDate || props?.label;
-                          return (
-                            <CustomChartTooltip
-                              {...props}
-                              labelFormatter={() => String(tooltipDate || "")}
-                              labelMap={{ value: "Visualizações" }}
-                              valueFormatter={(v) => `: ${formatTooltipNumber(v)}`}
-                            />
-                          );
-                        }}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="value"
-                        stroke="#38bdf8"
-                        strokeWidth={2.5}
-                        fill="url(#igVideoViewsGradient)"
-                        dot={false}
-                        connectNulls
-                        activeDot={{ r: 5, fill: '#38bdf8', stroke: '#fff', strokeWidth: 2 }}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="ig-empty-state">Sem dados disponíveis.</div>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* Novos Cards: Visualizações e Seguidores */}
         <div className="ig-analytics-grid ig-analytics-grid--pair" style={{ marginTop: '24px' }}>
           {/* Card de Visualizações - Estilo Aprimorado */}
@@ -6194,11 +6134,18 @@ const profileViewsMetric = useMemo(() => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '24px',
-                padding: '12px 16px 16px'
+                padding: '44px 16px 24px'
               }}>
                 {/* Valor principal à esquerda */}
                 <div style={{ textAlign: 'center', flexShrink: 0 }}>
-                  <div style={{ fontSize: '38px', fontWeight: 700, color: '#ec4899', lineHeight: 1 }}>
+                  <div style={{
+                    fontSize: '38px',
+                    fontWeight: 800,
+                    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    lineHeight: 1
+                  }}>
                     {formatNumber(interactionsBreakdown.total)}
                   </div>
                   <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px', fontWeight: 500 }}>
@@ -6210,49 +6157,53 @@ const profileViewsMetric = useMemo(() => {
                 <div style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(2, 1fr)',
-                  gap: '8px',
+                  gap: '10px',
                   flex: 1
                 }}>
                   <div style={{
-                    padding: '10px 8px',
-                    background: '#fef2f2',
+                    padding: '12px 8px',
                     borderRadius: '8px',
+                    background: 'rgba(139, 92, 246, 0.05)',
+                    border: '1px solid rgba(139, 92, 246, 0.1)',
                     textAlign: 'center'
                   }}>
-                    <div style={{ fontSize: '16px', fontWeight: 700, color: '#ef4444', marginBottom: '2px' }}>
+                    <div style={{ fontSize: '16px', fontWeight: 700, color: '#8b5cf6', marginBottom: '2px' }}>
                       {formatNumber(interactionsBreakdown.likes)}
                     </div>
                     <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>Curtidas</div>
                   </div>
                   <div style={{
-                    padding: '10px 8px',
-                    background: '#eff6ff',
+                    padding: '12px 8px',
                     borderRadius: '8px',
+                    background: 'rgba(168, 85, 247, 0.05)',
+                    border: '1px solid rgba(168, 85, 247, 0.1)',
                     textAlign: 'center'
                   }}>
-                    <div style={{ fontSize: '16px', fontWeight: 700, color: '#3b82f6', marginBottom: '2px' }}>
+                    <div style={{ fontSize: '16px', fontWeight: 700, color: '#a855f7', marginBottom: '2px' }}>
                       {formatNumber(interactionsBreakdown.comments)}
                     </div>
                     <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>Comentários</div>
                   </div>
                   <div style={{
-                    padding: '10px 8px',
-                    background: '#fefce8',
+                    padding: '12px 8px',
                     borderRadius: '8px',
+                    background: 'rgba(139, 92, 246, 0.05)',
+                    border: '1px solid rgba(139, 92, 246, 0.1)',
                     textAlign: 'center'
                   }}>
-                    <div style={{ fontSize: '16px', fontWeight: 700, color: '#eab308', marginBottom: '2px' }}>
+                    <div style={{ fontSize: '16px', fontWeight: 700, color: '#8b5cf6', marginBottom: '2px' }}>
                       {formatNumber(interactionsBreakdown.saves)}
                     </div>
                     <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>Salvamentos</div>
                   </div>
                   <div style={{
-                    padding: '10px 8px',
-                    background: '#f0fdf4',
+                    padding: '12px 8px',
                     borderRadius: '8px',
+                    background: 'rgba(168, 85, 247, 0.05)',
+                    border: '1px solid rgba(168, 85, 247, 0.1)',
                     textAlign: 'center'
                   }}>
-                    <div style={{ fontSize: '16px', fontWeight: 700, color: '#22c55e', marginBottom: '2px' }}>
+                    <div style={{ fontSize: '16px', fontWeight: 700, color: '#a855f7', marginBottom: '2px' }}>
                       {formatNumber(interactionsBreakdown.shares)}
                     </div>
                     <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>Compartilhamentos</div>
@@ -6372,8 +6323,7 @@ const profileViewsMetric = useMemo(() => {
                 {/* Lista de Cidades */}
                 <div className="ig-top-cities__table">
                   {audienceTopCityRows.map((city, index) => {
-                    const colors = ["#3b82f6", "#f87171", "#fb923c", "#a78bfa", "#34d399"];
-                    const color = colors[index % colors.length];
+                    const color = index === 0 ? '#22c55e' : '#6366f1';
                     const cityPercentage = audienceCitiesTotal > 0 ? ((city.value / audienceCitiesTotal) * 100) : 0;
                     const maxPercentage = audienceCitiesTotal > 0 ? ((audienceTopCityRows[0]?.value / audienceCitiesTotal) * 100) : 1;
                     const barWidth = maxPercentage > 0 ? Math.round((cityPercentage / maxPercentage) * 100) : 0;
