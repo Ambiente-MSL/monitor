@@ -524,9 +524,10 @@ def fb_page_window(page_id: str, since: int, until: int, include_post_insights: 
         "page_actions_post_reactions_total",
         "page_consumptions",
         "page_cta_clicks_logged_in_total",
+        "page_fans",
         "page_fan_adds",
         "page_fan_removes",
-    ], capture_series=["page_fan_adds", "page_fan_removes"])
+    ], capture_series=["page_fans", "page_fan_adds", "page_fan_removes"])
 
     page_views = optional_metrics.get("page_views_total", 0)
     video_views = optional_metrics.get("page_video_views", 0)
@@ -556,21 +557,44 @@ def fb_page_window(page_id: str, since: int, until: int, include_post_insights: 
 
     fan_adds_map = _series_to_map("page_fan_adds")
     fan_removes_map = _series_to_map("page_fan_removes")
+    page_fans_map = _series_to_map("page_fans")
     all_series_dates = sorted(set(list(fan_adds_map.keys()) + list(fan_removes_map.keys())))
     net_followers_series: List[Dict[str, Any]] = []
     cumulative_net = 0
-    for date in all_series_dates:
-        adds_value = fan_adds_map.get(date, 0)
-        removes_value = fan_removes_map.get(date, 0)
-        net_value = adds_value - removes_value
-        cumulative_net += net_value
-        net_followers_series.append({
-            "date": date,
-            "adds": adds_value,
-            "removes": removes_value,
-            "net": net_value,
-            "cumulative": cumulative_net,
-        })
+    if all_series_dates:
+        for date in all_series_dates:
+            adds_value = fan_adds_map.get(date, 0)
+            removes_value = fan_removes_map.get(date, 0)
+            net_value = adds_value - removes_value
+            cumulative_net += net_value
+            net_followers_series.append({
+                "date": date,
+                "adds": adds_value,
+                "removes": removes_value,
+                "net": net_value,
+                "cumulative": cumulative_net,
+            })
+    elif page_fans_map:
+        sorted_dates = sorted(page_fans_map.keys())
+        prev_total: Optional[int] = None
+        for date in sorted_dates:
+            current_total = int(page_fans_map.get(date, 0) or 0)
+            if prev_total is None:
+                net_value = 0
+            else:
+                net_value = current_total - prev_total
+            prev_total = current_total
+            adds_value = net_value if net_value > 0 else 0
+            removes_value = -net_value if net_value < 0 else 0
+            cumulative_net += net_value
+            net_followers_series.append({
+                "date": date,
+                "adds": adds_value,
+                "removes": removes_value,
+                "net": net_value,
+                "cumulative": cumulative_net,
+                "total": current_total,
+            })
 
     # Calcular tempo médio de visualização se houver visualizações
     avg_watch_time = 0
@@ -1552,12 +1576,15 @@ def fb_audience(page_id: str) -> Dict[str, Any]:
             return 0.0
         return round((value / total) * 100.0, 2)
 
+    page_token = get_page_access_token(page_id)
+
     # ==== CIDADES ====
     city_data = {}
     try:
         city_response = gget(
             f"/{page_id}/insights",
-            {"metric": "page_fans_city", "period": "lifetime"}
+            {"metric": "page_fans_city", "period": "lifetime"},
+            token=page_token,
         )
         if city_response and "data" in city_response:
             for item in city_response["data"]:
@@ -1583,7 +1610,8 @@ def fb_audience(page_id: str) -> Dict[str, Any]:
     try:
         country_response = gget(
             f"/{page_id}/insights",
-            {"metric": "page_fans_country", "period": "lifetime"}
+            {"metric": "page_fans_country", "period": "lifetime"},
+            token=page_token,
         )
         if country_response and "data" in country_response:
             for item in country_response["data"]:
@@ -1609,7 +1637,8 @@ def fb_audience(page_id: str) -> Dict[str, Any]:
     try:
         age_gender_response = gget(
             f"/{page_id}/insights",
-            {"metric": "page_fans_gender_age", "period": "lifetime"}
+            {"metric": "page_fans_gender_age", "period": "lifetime"},
+            token=page_token,
         )
         if age_gender_response and "data" in age_gender_response:
             for item in age_gender_response["data"]:
