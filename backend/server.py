@@ -964,6 +964,7 @@ def fetch_facebook_metrics(
 
     page_overview = page_overview_cur
     net_followers_series = cur.get("net_followers_series") or []
+    engagement_timeseries = cur.get("engagement_timeseries") or []
 
     return {
         "since": since_ts,
@@ -972,6 +973,7 @@ def fetch_facebook_metrics(
         "breakdowns": breakdowns,
         "page_overview": page_overview,
         "net_followers_series": net_followers_series,
+        "engagement_timeseries": engagement_timeseries,
     }
 
 
@@ -3596,6 +3598,10 @@ def facebook_metrics():
         page_overview = payload_obj.get("page_overview") or {}
         if isinstance(page_overview, dict) and isinstance(page_overview.get("reach_timeseries"), list):
             payload_obj["reach_timeseries"] = page_overview.get("reach_timeseries")
+    if not payload_obj.get("engagement_timeseries"):
+        page_overview = payload_obj.get("page_overview") or {}
+        if isinstance(page_overview, dict) and isinstance(page_overview.get("engagement_timeseries"), list):
+            payload_obj["engagement_timeseries"] = page_overview.get("engagement_timeseries")
     response = dict(payload_obj)
     response["cache"] = meta
     response["meta"] = {

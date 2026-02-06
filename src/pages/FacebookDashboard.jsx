@@ -350,6 +350,7 @@ useEffect(() => {
   const [pageError, setPageError] = useState("");
   const [netFollowersSeries, setNetFollowersSeries] = useState([]);
   const [reachSeries, setReachSeries] = useState([]);
+  const [contentGrowthSeries, setContentGrowthSeries] = useState([]);
 
   const [overviewSnapshot, setOverviewSnapshot] = useState(null);
   const [overviewLoading, setOverviewLoading] = useState(false);
@@ -408,6 +409,9 @@ useEffect(() => {
       setPageMetrics(Array.isArray(cachedOverview.pageMetrics) ? cachedOverview.pageMetrics : []);
       setNetFollowersSeries(Array.isArray(cachedOverview.netFollowersSeries) ? cachedOverview.netFollowersSeries : []);
       setReachSeries(Array.isArray(cachedOverview.reachSeries) ? cachedOverview.reachSeries : []);
+      setContentGrowthSeries(
+        Array.isArray(cachedOverview.contentGrowthSeries) ? cachedOverview.contentGrowthSeries : [],
+      );
       setOverviewSnapshot(null);
       setOverviewSource(cachedOverview.overviewSource || null);
       setOverviewLoading(false);
@@ -416,6 +420,7 @@ useEffect(() => {
       setPageMetrics([]);
       setNetFollowersSeries([]);
       setReachSeries([]);
+      setContentGrowthSeries([]);
       setOverviewSnapshot(null);
       setOverviewSource(null);
       setOverviewLoading(false);
@@ -451,6 +456,7 @@ useEffect(() => {
       setPageMetrics([]);
       setNetFollowersSeries([]);
       setReachSeries([]);
+      setContentGrowthSeries([]);
       setOverviewSource(null);
       setOverviewLoading(false);
       setOverviewFetching(false);
@@ -524,6 +530,9 @@ useEffect(() => {
       setPageMetrics(Array.isArray(cachedOverview.pageMetrics) ? cachedOverview.pageMetrics : []);
       setNetFollowersSeries(Array.isArray(cachedOverview.netFollowersSeries) ? cachedOverview.netFollowersSeries : []);
       setReachSeries(Array.isArray(cachedOverview.reachSeries) ? cachedOverview.reachSeries : []);
+      setContentGrowthSeries(
+        Array.isArray(cachedOverview.contentGrowthSeries) ? cachedOverview.contentGrowthSeries : [],
+      );
       setOverviewSource(cachedOverview.overviewSource || null);
       setOverviewLoading(false);
       setPageError("");
@@ -576,14 +585,21 @@ useEffect(() => {
           : Array.isArray(json.page_overview?.reach_timeseries)
             ? json.page_overview.reach_timeseries
             : [];
+        const contentGrowthSeriesPayload = Array.isArray(json.engagement_timeseries)
+          ? json.engagement_timeseries
+          : Array.isArray(json.page_overview?.engagement_timeseries)
+            ? json.page_overview.engagement_timeseries
+            : [];
         setPageMetrics(fetchedMetrics);
         setNetFollowersSeries(fetchedFollowersSeries);
         setReachSeries(reachSeriesPayload);
+        setContentGrowthSeries(contentGrowthSeriesPayload);
         setOverviewSource(json);
         mergeDashboardCache(overviewCacheKey, {
           pageMetrics: fetchedMetrics,
           netFollowersSeries: fetchedFollowersSeries,
           reachSeries: reachSeriesPayload,
+          contentGrowthSeries: contentGrowthSeriesPayload,
           overviewSource: json,
           followersOverride,
           sync: syncInfo,
@@ -595,6 +611,7 @@ useEffect(() => {
           setPageMetrics([]);
           setNetFollowersSeries([]);
           setReachSeries([]);
+          setContentGrowthSeries([]);
           setOverviewSource(null);
           setPageError(
             isTimeoutError(err)
@@ -1041,6 +1058,24 @@ useEffect(() => {
       .sort((a, b) => (a.dateKey > b.dateKey ? 1 : -1));
   }, [reachSeries]);
 
+  const contentGrowthTimelineData = useMemo(() => {
+    const source = Array.isArray(contentGrowthSeries) ? contentGrowthSeries : [];
+    if (!source.length) return [];
+
+    return [...source]
+      .map((entry) => {
+        const dateStr = entry.date || entry.dateKey || "";
+        const parsedDate = dateStr ? new Date(`${dateStr}T00:00:00`) : new Date();
+        return {
+          dateKey: dateStr,
+          label: SHORT_DATE_FORMATTER.format(parsedDate),
+          value: extractNumber(entry.value ?? entry.engagement ?? entry.total, 0),
+        };
+      })
+      .filter((item) => Number.isFinite(item.value))
+      .sort((a, b) => (a.dateKey > b.dateKey ? 1 : -1));
+  }, [contentGrowthSeries]);
+
   const followerGrowthSeries = useMemo(() => {
     const source = Array.isArray(netFollowersSeries) ? netFollowersSeries : [];
     if (source.length) {
@@ -1093,6 +1128,14 @@ useEffect(() => {
       reachTimelineData[0],
     );
   }, [reachTimelineData]);
+
+  const peakContentGrowthPoint = useMemo(() => {
+    if (!contentGrowthTimelineData.length) return null;
+    return contentGrowthTimelineData.reduce(
+      (currentMax, entry) => (entry.value > currentMax.value ? entry : currentMax),
+      contentGrowthTimelineData[0],
+    );
+  }, [contentGrowthTimelineData]);
 
   const accountInitial = (accountConfig?.label || accountConfig?.name || "FB").charAt(0).toUpperCase();
   const overviewIsLoading = overviewLoading;
@@ -1521,6 +1564,136 @@ useEffect(() => {
                   </ResponsiveContainer>
                 ) : (
                   <div className="ig-empty-state">Sem dados disponíveis</div>
+                )}
+              </div>
+            </section>
+
+            {/* Card de Crescimento do Conteudo */}
+            <section className="ig-growth-clean">
+              <header className="ig-card-header">
+                <div>
+                  <h2 className="ig-clean-title2">Crescimento do conteudo</h2>
+                  <h3>Engajamento</h3>
+                </div>
+              </header>
+
+              <div className="ig-chart-area">
+                {contentGrowthTimelineData.length ? (
+                  <ResponsiveContainer width="100%" height={240}>
+                    <ComposedChart
+                      data={contentGrowthTimelineData}
+                      margin={{ top: 16, right: 28, left: 12, bottom: 8 }}
+                    >
+                      <defs>
+                        <linearGradient id="fbContentGradient" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" stopColor="#22c55e" />
+                          <stop offset="100%" stopColor="#16a34a" />
+                        </linearGradient>
+                        <linearGradient id="fbContentGlow" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="rgba(34, 197, 94, 0.32)" />
+                          <stop offset="100%" stopColor="rgba(22, 163, 74, 0)" />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid vertical={false} strokeDasharray="4 8" stroke="#f3f4f6" />
+                      <XAxis
+                        dataKey="label"
+                        tick={{ fill: "#111827" }}
+                        fontSize={12}
+                        tickLine={false}
+                        axisLine={{ stroke: "#e5e7eb" }}
+                        interval="preserveStartEnd"
+                        minTickGap={50}
+                        tickFormatter={formatAxisDate}
+                      />
+                      <YAxis
+                        tick={{ fill: "#111827" }}
+                        fontSize={12}
+                        tickLine={false}
+                        axisLine={{ stroke: "#e5e7eb" }}
+                        tickFormatter={(value) => formatCompactNumber(value)}
+                        domain={["dataMin", (dataMax) => (Number.isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : dataMax)]}
+                      />
+                      <Tooltip
+                        cursor={{ stroke: "rgba(17, 24, 39, 0.2)", strokeDasharray: "4 4" }}
+                        content={(props) => {
+                          if (!props?.active || !props?.payload?.length) return null;
+                          const item = props.payload[0]?.payload;
+                          const numericValue = Number(props.payload[0]?.value ?? item?.value ?? 0);
+                          const labelValue = item?.label || props.label || "Periodo";
+                          const isPeak =
+                            !!peakContentGrowthPoint &&
+                            item?.dateKey === peakContentGrowthPoint.dateKey &&
+                            numericValue === peakContentGrowthPoint.value;
+                          const footer = isPeak ? (
+                            <div style={{ marginTop: 6, fontSize: 12, color: "#6b7280" }}>
+                              Pico do periodo
+                            </div>
+                          ) : null;
+                          return (
+                            <CustomChartTooltip
+                              {...props}
+                              payload={props.payload.slice(0, 1)}
+                              labelFormatter={() => labelValue}
+                              labelMap={{ value: "Engajamento" }}
+                              valueFormatter={(value) => `: ${formatTooltipNumber(value)}`}
+                              footer={footer}
+                            />
+                          );
+                        }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="value"
+                        fill="url(#fbContentGlow)"
+                        stroke="none"
+                        isAnimationActive={false}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="value"
+                        stroke="url(#fbContentGradient)"
+                        strokeWidth={7}
+                        strokeOpacity={0.2}
+                        dot={false}
+                        isAnimationActive={false}
+                        activeDot={false}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="value"
+                        stroke="url(#fbContentGradient)"
+                        strokeWidth={3}
+                        dot={false}
+                        activeDot={{ r: 6, fill: "#ffffff", stroke: "#22c55e", strokeWidth: 2 }}
+                      />
+                      {peakContentGrowthPoint ? (
+                        <>
+                          <ReferenceLine
+                            x={peakContentGrowthPoint.label}
+                            stroke="#111827"
+                            strokeDasharray="4 4"
+                            strokeOpacity={0.45}
+                          />
+                          <ReferenceLine
+                            y={peakContentGrowthPoint.value}
+                            stroke="#111827"
+                            strokeDasharray="4 4"
+                            strokeOpacity={0.45}
+                          />
+                          <ReferenceDot
+                            x={peakContentGrowthPoint.label}
+                            y={peakContentGrowthPoint.value}
+                            r={6}
+                            fill="#111827"
+                            stroke="#ffffff"
+                            strokeWidth={2}
+                          />
+                        </>
+                      ) : null}
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="ig-empty-state">Sem dados disponiveis</div>
                 )}
               </div>
             </section>

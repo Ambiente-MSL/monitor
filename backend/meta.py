@@ -480,6 +480,17 @@ def fb_page_window(page_id: str, since: int, until: int, include_post_insights: 
             continue
         reach_timeseries.append({"date": date_key, "value": int(round(value))})
 
+    engagement_series_raw = extract_insight_series(ins, "page_post_engagements") or []
+    engagement_timeseries: List[Dict[str, Any]] = []
+    for entry in engagement_series_raw:
+        if not isinstance(entry, dict):
+            continue
+        value = _coerce_number(entry.get("value"))
+        date_key = entry.get("date")
+        if value is None or not date_key:
+            continue
+        engagement_timeseries.append({"date": date_key, "value": int(round(value))})
+
     # Função auxiliar para buscar métricas opcionais com fallback
     def fetch_optional_metrics(metric_list, capture_series: Optional[List[str]] = None):
         results = {}
@@ -741,9 +752,11 @@ def fb_page_window(page_id: str, since: int, until: int, include_post_insights: 
             "net_followers": net_followers,
             "followers_total": followers_total,
             "reach_timeseries": reach_timeseries,
+            "engagement_timeseries": engagement_timeseries,
         },
         "net_followers_series": net_followers_series,
         "reach_timeseries": reach_timeseries,
+        "engagement_timeseries": engagement_timeseries,
         "post_metrics": post_metrics,
     }
 
