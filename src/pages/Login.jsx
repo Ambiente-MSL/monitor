@@ -26,7 +26,7 @@ const translateError = (rawMessage) => {
 
 const facebookAppId = process.env.REACT_APP_FACEBOOK_APP_ID;
 const facebookConfigId = process.env.REACT_APP_FACEBOOK_CONFIG_ID;
-const metaScopes = 'pages_read_engagement,pages_show_list,instagram_basic,ads_read,read_insights,email,public_profile';
+const metaScopes = 'pages_read_engagement,pages_show_list,instagram_basic,email,public_profile';
 const apiBaseUrl = (process.env.REACT_APP_API_URL || '').replace(/\/$/, '');
 const buildApiUrl = (path = '') => {
   if (!path) return apiBaseUrl || '';

@@ -112,7 +112,6 @@ export function AccountsProvider({ children }) {
     const discoverAccounts = async () => {
       setLoading(true);
       setError("");
-      let savedAccounts = [];
       // 1) Contas persistidas (manuais)
       if (token) {
         try {
@@ -123,8 +122,18 @@ export function AccountsProvider({ children }) {
             const account = normalizeAccount({ ...item, source: item.source || "manual" }, normalizedSaved);
             if (account) normalizedSaved.push(account);
           }
-          if (!cancelled) {
-            savedAccounts = normalizedSaved;
+          if (!cancelled && normalizedSaved.length) {
+            setAccounts((prev) => {
+              const merged = [...prev];
+              const ids = new Set(merged.map((acc) => acc.id));
+              normalizedSaved.forEach((acc) => {
+                if (!ids.has(acc.id)) {
+                  merged.push(acc);
+                  ids.add(acc.id);
+                }
+              });
+              return merged;
+            });
           }
         } catch (err) {
           if (!cancelled) {
@@ -135,21 +144,20 @@ export function AccountsProvider({ children }) {
 
       // 2) Descobrir contas do token
       try {
-        let body;
-        if (token) {
-          body = await apiFetch(DISCOVER_ACCOUNTS_ENDPOINT, {
-            signal: controller.signal,
-          });
-        } else {
-          const response = await fetchWithTimeout(DISCOVER_ACCOUNTS_ENDPOINT, {
-            signal: controller.signal,
-          });
-          if (!response.ok) {
-            throw new Error(`Request failed with status ${response.status}`);
-          }
-          body = await response.json();
+        const response = await fetchWithTimeout(DISCOVER_ACCOUNTS_ENDPOINT, {
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          throw new Error(`Request failed with status ${response.status}`);
         }
+        const body = await response.json();
         const rawList = Array.isArray(body?.accounts) ? body.accounts : [];
+        if (!rawList.length || cancelled) {
+          if (!cancelled) {
+            setLoading(false);
+          }
+          return;
+        }
 
         const discovered = [];
         for (const item of rawList) {
@@ -158,85 +166,77 @@ export function AccountsProvider({ children }) {
             discovered.push(account);
           }
         }
-
         const persisted = Array.isArray(body?.persistedAccounts) ? body.persistedAccounts : [];
-        const manualFromDiscover = [];
         for (const item of persisted) {
-          const account = normalizeAccount({ ...item, source: item.source || "manual" }, manualFromDiscover);
+          const account = normalizeAccount({ ...item, source: item.source || "manual" }, discovered);
           if (account) {
-            manualFromDiscover.push(account);
+            discovered.push(account);
           }
         }
 
-        const manualAccounts = savedAccounts.length ? savedAccounts : manualFromDiscover;
-        const shouldLimitToManual = manualAccounts.length > 0;
-
-        if ((!discovered.length && !manualAccounts.length) || cancelled) {
+        if (!discovered.length || cancelled) {
           if (!cancelled) {
             setLoading(false);
           }
           return;
         }
 
-        const next = [...manualAccounts];
-        const indexByPageId = new Map();
-        next.forEach((account, index) => {
-          if (account?.facebookPageId) {
-            indexByPageId.set(account.facebookPageId, index);
-          }
+        setAccounts((prev) => {
+          const next = [...prev];
+          const indexByPageId = new Map();
+          next.forEach((account, index) => {
+            if (account?.facebookPageId) {
+              indexByPageId.set(account.facebookPageId, index);
+            }
+          });
+
+          discovered.forEach((metaAccount) => {
+            const pageId = metaAccount.facebookPageId;
+            if (!pageId) return;
+
+            const existingIndex = indexByPageId.get(pageId);
+            if (existingIndex != null) {
+              const current = next[existingIndex];
+              const merged = {
+                ...current,
+                label: metaAccount.label || current.label,
+                facebookPageId: metaAccount.facebookPageId || current.facebookPageId,
+                instagramUserId: metaAccount.instagramUserId || current.instagramUserId,
+                adAccountId: metaAccount.adAccountId || current.adAccountId,
+                id: current.id || metaAccount.id || generateAccountId(metaAccount.label, next),
+              };
+              if (metaAccount.instagramUsername) {
+                merged.instagramUsername = metaAccount.instagramUsername;
+              }
+              if (metaAccount.adAccounts) {
+                merged.adAccounts = metaAccount.adAccounts;
+              }
+              if (metaAccount.profilePictureUrl) {
+                merged.profilePictureUrl = metaAccount.profilePictureUrl;
+              }
+              if (metaAccount.pagePictureUrl) {
+                merged.pagePictureUrl = metaAccount.pagePictureUrl;
+              }
+              merged.source = current.source || metaAccount.source;
+
+              const previousSnapshot = JSON.stringify(current);
+              const nextSnapshot = JSON.stringify(merged);
+              if (previousSnapshot !== nextSnapshot) {
+                next[existingIndex] = merged;
+              }
+            } else {
+              const candidateId = metaAccount.id || generateAccountId(metaAccount.label, next);
+              const newAccount = {
+                ...metaAccount,
+                id: candidateId,
+              };
+              next.push(newAccount);
+              indexByPageId.set(pageId, next.length - 1);
+            }
+          });
+
+          return next.length ? next : prev;
         });
-
-        discovered.forEach((metaAccount) => {
-          const pageId = metaAccount.facebookPageId;
-          if (!pageId) return;
-
-          const existingIndex = indexByPageId.get(pageId);
-          if (existingIndex != null) {
-            const current = next[existingIndex];
-            const merged = {
-              ...current,
-              label: metaAccount.label || current.label,
-              facebookPageId: metaAccount.facebookPageId || current.facebookPageId,
-              instagramUserId: metaAccount.instagramUserId || current.instagramUserId,
-              adAccountId: metaAccount.adAccountId || current.adAccountId,
-              id: current.id || metaAccount.id || generateAccountId(metaAccount.label, next),
-            };
-            if (metaAccount.instagramUsername) {
-              merged.instagramUsername = metaAccount.instagramUsername;
-            }
-            if (metaAccount.adAccounts) {
-              merged.adAccounts = metaAccount.adAccounts;
-            }
-            if (metaAccount.profilePictureUrl) {
-              merged.profilePictureUrl = metaAccount.profilePictureUrl;
-            }
-            if (metaAccount.pagePictureUrl) {
-              merged.pagePictureUrl = metaAccount.pagePictureUrl;
-            }
-            merged.source = current.source || metaAccount.source;
-
-            const previousSnapshot = JSON.stringify(current);
-            const nextSnapshot = JSON.stringify(merged);
-            if (previousSnapshot !== nextSnapshot) {
-              next[existingIndex] = merged;
-            }
-            return;
-          }
-
-          if (shouldLimitToManual) {
-            return;
-          }
-
-          const candidateId = metaAccount.id || generateAccountId(metaAccount.label, next);
-          const newAccount = {
-            ...metaAccount,
-            id: candidateId,
-          };
-          next.push(newAccount);
-          indexByPageId.set(pageId, next.length - 1);
-        });
-
-        setAccounts(next.length ? next : createDefaultAccounts());
         setLoading(false);
       } catch (error) {
         if (cancelled || error.name === "AbortError") {

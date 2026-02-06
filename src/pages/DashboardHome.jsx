@@ -12,7 +12,6 @@ import DataState from '../components/DataState';
 import useQueryState from '../hooks/useQueryState';
 
 import { useAccounts } from '../context/AccountsContext';
-import { useAuth } from '../context/AuthContext';
 
 import { DEFAULT_ACCOUNTS } from '../data/accounts';
 import { getApiErrorMessage, unwrapApiData } from '../lib/apiEnvelope';
@@ -115,7 +114,6 @@ const { setTopbarConfig, resetTopbarConfig } = outletContext;
   const { search } = useLocation();
   const buildLink = (pathname) => (search ? { pathname, search } : pathname);
 
-  const { token } = useAuth();
   const { accounts, loading: accountsLoading } = useAccounts();
 
   const availableAccounts = accounts.length ? accounts : DEFAULT_ACCOUNTS;
@@ -172,14 +170,10 @@ const { setTopbarConfig, resetTopbarConfig } = outletContext;
   const since = get('since');
 
   const until = get('until');
-  const authHeaders = useMemo(
-    () => (token ? { Authorization: `Bearer ${token}` } : {}),
-    [token],
-  );
   const fetchJson = useCallback(async (url) => {
     let response;
     try {
-      response = await fetchWithTimeout(url, { headers: authHeaders });
+      response = await fetchWithTimeout(url);
     } catch (err) {
       if (isTimeoutError(err)) {
         throw new Error("Tempo esgotado ao carregar dados.");
@@ -199,7 +193,7 @@ const { setTopbarConfig, resetTopbarConfig } = outletContext;
       throw new Error(getApiErrorMessage(json, `HTTP ${response.status}`));
     }
     return unwrapApiData(json, {});
-  }, [authHeaders]);
+  }, []);
 
   const [instagramReach30d, setInstagramReach30d] = useState({ value: null, cacheAt: null });
 

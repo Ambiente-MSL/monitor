@@ -280,7 +280,7 @@ export default function AdsDashboard() {
   const outletContext = useOutletContext() || {};
   const { setTopbarConfig, resetTopbarConfig } = outletContext;
   const { accounts, loading: accountsLoading } = useAccounts();
-  const { apiFetch, token } = useAuth();
+  const { apiFetch } = useAuth();
   const availableAccounts = useMemo(
     () => (accounts.length ? accounts : DEFAULT_ACCOUNTS),
     [accounts],
@@ -312,10 +312,6 @@ export default function AdsDashboard() {
   const actParam = adAccountId
     ? (adAccountId.startsWith("act_") ? adAccountId : `act_${adAccountId}`)
     : "";
-  const authHeaders = useMemo(
-    () => (token ? { Authorization: `Bearer ${token}` } : {}),
-    [token],
-  );
 
   useEffect(() => {
     if (!availableAccounts.length) return;
@@ -474,7 +470,7 @@ export default function AdsDashboard() {
       try {
         const params = new URLSearchParams({ igUserId: selectedAccount.instagramUserId, limit: "1" });
         const url = `${API_BASE_URL}/api/instagram/posts?${params.toString()}`;
-        const resp = await fetchWithTimeout(url, { headers: authHeaders });
+        const resp = await fetchWithTimeout(url);
         const json = unwrapApiData(await resp.json(), {});
 
         if (json.account) {
@@ -489,7 +485,7 @@ export default function AdsDashboard() {
     };
 
     fetchInstagramProfile();
-  }, [selectedAccount?.instagramUserId, authHeaders]);
+  }, [selectedAccount?.instagramUserId]);
 
   const formatNumber = (num) => {
     if (typeof num !== "number") return num;

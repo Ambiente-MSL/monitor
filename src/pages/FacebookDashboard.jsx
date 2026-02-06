@@ -177,7 +177,7 @@ export default function FacebookDashboard() {
   const outlet = useOutletContext() || {};
   const { setTopbarConfig, resetTopbarConfig } = outlet;
   const location = useLocation();
-  const { apiFetch, token } = useAuth();
+  const { apiFetch } = useAuth();
   const { accounts, loading: accountsLoading } = useAccounts();
   const availableAccounts = accounts.length ? accounts : DEFAULT_ACCOUNTS;
   const [getQuery, setQuery] = useQueryState({ account: FALLBACK_ACCOUNT_ID });
@@ -207,10 +207,6 @@ useEffect(() => {
   const accountSnapshotKey = useMemo(
     () => accountConfig?.facebookPageId || accountConfig?.id || "",
     [accountConfig?.id, accountConfig?.facebookPageId],
-  );
-  const authHeaders = useMemo(
-    () => (token ? { Authorization: `Bearer ${token}` } : {}),
-    [token],
   );
 
   const [coverImage, setCoverImage] = useState(null);
@@ -552,11 +548,7 @@ useEffect(() => {
         params.set("lite", "1");
         const url = `${API_BASE_URL}/api/facebook/metrics?${params.toString()}`;
         const fetchMetrics = async (timeoutMs) => {
-          const response = await fetchWithTimeout(
-            url,
-            { signal: controller.signal, headers: authHeaders },
-            timeoutMs,
-          );
+          const response = await fetchWithTimeout(url, { signal: controller.signal }, timeoutMs);
           const raw = await response.text();
           const json = safeParseJson(raw) || {};
           if (!response.ok) {
@@ -624,7 +616,7 @@ useEffect(() => {
       cancelled = true;
       controller.abort();
     };
-  }, [accountConfig?.facebookPageId, sinceParam, untilParam, apiFetch, pageCacheKey, overviewCacheKey, authHeaders]);
+  }, [accountConfig?.facebookPageId, sinceParam, untilParam, apiFetch, pageCacheKey, overviewCacheKey]);
 
   useEffect(() => {
     if (!accountConfig?.facebookPageId) {
@@ -771,7 +763,7 @@ useEffect(() => {
 
     (async () => {
       try {
-        const resp = await fetch(url, { signal: controller.signal, headers: authHeaders });
+        const resp = await fetch(url, { signal: controller.signal });
         const text = await resp.text();
         const json = safeParseJson(text) || {};
         if (!resp.ok) {
@@ -801,7 +793,7 @@ useEffect(() => {
       clearTimeout(hardTimeout);
       controller.abort();
     };
-  }, [accountConfig?.facebookPageId, audienceCacheKey, authHeaders]);
+  }, [accountConfig?.facebookPageId, audienceCacheKey]);
   const avatarUrl = useMemo(
     () => pageInfo?.picture_url || accountConfig?.profilePictureUrl || accountConfig?.pagePictureUrl || "",
     [pageInfo?.picture_url, accountConfig?.pagePictureUrl, accountConfig?.profilePictureUrl],

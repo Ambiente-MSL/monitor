@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState, useRef } from "react";
 import { ChevronDown, Plus, X } from "lucide-react";
 import useQueryState from "../hooks/useQueryState";
 import { useAccounts } from "../context/AccountsContext";
-import { useAuth } from "../context/AuthContext";
 import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import { unwrapApiData } from "../lib/apiEnvelope";
 import { fetchWithTimeout } from "../lib/fetchWithTimeout";
@@ -18,7 +17,6 @@ const EMPTY_ACCOUNT_FORM = {
 
 export default function AccountSelect() {
   const { accounts, loading, addAccount } = useAccounts();
-  const { token } = useAuth();
   const availableAccounts = accounts.length ? accounts : DEFAULT_ACCOUNTS;
   const [get, set] = useQueryState({ account: FALLBACK_ACCOUNT_ID });
   const queryAccount = get("account");
@@ -70,7 +68,7 @@ export default function AccountSelect() {
       try {
         const params = new URLSearchParams({ igUserId: account.instagramUserId, limit: "1" });
         const url = `${API_BASE_URL}/api/instagram/posts?${params.toString()}`;
-        const resp = await fetchWithTimeout(url, { headers: authHeaders });
+        const resp = await fetchWithTimeout(url);
         const json = unwrapApiData(await resp.json(), {});
 
         if (json.account) {
@@ -92,7 +90,7 @@ export default function AccountSelect() {
         fetchAccountData(account);
       }
     });
-  }, [availableAccounts, accountsData, authHeaders]);
+  }, [availableAccounts, accountsData]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
