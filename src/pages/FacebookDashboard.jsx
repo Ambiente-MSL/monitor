@@ -28,6 +28,7 @@ import {
   Heart,
   MessageCircle,
   Share2,
+  X,
   Settings,
   Shield,
 } from "lucide-react";
@@ -326,6 +327,7 @@ useEffect(() => {
 
   const [overviewSync, setOverviewSync] = useState(() => normalizeSyncInfo(null));
   const [activeEngagementIndex, setActiveEngagementIndex] = useState(-1);
+  const [showContentDetails, setShowContentDetails] = useState(false);
 
   useEffect(() => {
     if (!setTopbarConfig) return undefined;
@@ -345,6 +347,22 @@ useEffect(() => {
     resetTopbarConfig,
     setTopbarConfig,
   ]);
+
+  useEffect(() => {
+    if (!showContentDetails || typeof document === "undefined") return undefined;
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setShowContentDetails(false);
+      }
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showContentDetails]);
 
   const [pageMetrics, setPageMetrics] = useState([]);
   const [pageError, setPageError] = useState("");
@@ -976,8 +994,29 @@ useEffect(() => {
       : "--"
   ), [engagementRateValue]);
 
+  const engagedUsersValue = extractNumber(
+    pageMetricsByKey.engaged_users?.value ?? pageMetricsByKey.post_engaged_users?.value,
+    extractNumber(overviewSource?.post_engaged, null),
+  );
+  const reactionsTotalValue = extractNumber(
+    pageMetricsByKey.post_engagement_total?.breakdown?.reactions
+      ?? overviewSource?.breakdowns?.engagement?.reactions,
+    null,
+  );
+  const contentClicksValue = extractNumber(
+    pageMetricsByKey.content_activity?.value,
+    extractNumber(overviewSource?.page_overview?.content_activity, null),
+  );
+  const totalFansValue = extractNumber(
+    pageMetricsByKey.followers_total?.value,
+    extractNumber(overviewSource?.page_overview?.followers_total, followersOverride),
+  );
+
   const audienceCities = useMemo(() => (
     Array.isArray(audienceData?.cities) ? audienceData.cities.slice(0, 5) : []
+  ), [audienceData]);
+  const audienceCountries = useMemo(() => (
+    Array.isArray(audienceData?.countries) ? audienceData.countries.slice(0, 5) : []
   ), [audienceData]);
   const maxAudienceCity = useMemo(
     () => audienceCities.reduce((max, entry) => Math.max(max, extractNumber(entry?.value, 0)), 0),
@@ -1121,6 +1160,25 @@ useEffect(() => {
     return [];
   }, [netFollowersSeries, pageMetricsByKey.followers_gained?.value, overviewSource?.page_overview?.followers_gained, sinceDate, untilDate]);
 
+  const followersDailyRows = useMemo(() => {
+    const source = Array.isArray(netFollowersSeries) ? netFollowersSeries : [];
+    if (!source.length) return [];
+    return [...source]
+      .map((entry) => {
+        const dateStr = entry.date || entry.dateKey || "";
+        const parsedDate = dateStr ? new Date(`${dateStr}T00:00:00`) : null;
+        return {
+          dateKey: dateStr,
+          label: parsedDate ? SHORT_DATE_FORMATTER.format(parsedDate) : dateStr,
+          adds: extractNumber(entry.adds, 0),
+          removes: extractNumber(entry.removes, 0),
+          net: extractNumber(entry.net, 0),
+        };
+      })
+      .filter((item) => item.dateKey)
+      .slice(-7);
+  }, [netFollowersSeries]);
+
   const peakReachPoint = useMemo(() => {
     if (!reachTimelineData.length) return null;
     return reachTimelineData.reduce(
@@ -1136,6 +1194,20 @@ useEffect(() => {
       contentGrowthTimelineData[0],
     );
   }, [contentGrowthTimelineData]);
+
+  const postsForDetails = useMemo(() => {
+    if (!Array.isArray(fbPosts) || !fbPosts.length) return [];
+    return [...fbPosts]
+      .sort((a, b) => extractNumber(b?.engagementTotal, 0) - extractNumber(a?.engagementTotal, 0))
+      .slice(0, 8);
+  }, [fbPosts]);
+
+  const formatPostDate = (timestamp) => {
+    if (!timestamp) return "";
+    const parsed = new Date(timestamp);
+    if (Number.isNaN(parsed.getTime())) return "";
+    return parsed.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+  };
 
   const accountInitial = (accountConfig?.label || accountConfig?.name || "FB").charAt(0).toUpperCase();
   const overviewIsLoading = overviewLoading;
@@ -1575,6 +1647,13 @@ useEffect(() => {
                   <h2 className="ig-clean-title2">Crescimento do conteudo</h2>
                   <h3>Engajamento</h3>
                 </div>
+                <button
+                  type="button"
+                  className="fb-card-action"
+                  onClick={() => setShowContentDetails(true)}
+                >
+                  Ver mais
+                </button>
               </header>
 
               <div className="ig-chart-area">
@@ -1938,6 +2017,161 @@ useEffect(() => {
           </section>
         </div>
       </div>
+
+      {showContentDetails && (
+        <>
+          <div
+            className="fb-detail-overlay"
+            onClick={() => setShowContentDetails(false)}
+            role="presentation"
+          />
+          <aside className="fb-detail-panel" role="dialog" aria-modal="true">
+            <div className="fb-detail-panel__header">
+              <div>
+                <h3>Detalhes do conteudo</h3>
+                <p>Engajamento, audiencia e posts no periodo</p>
+              </div>
+              <button
+                type="button"
+                className="fb-detail-panel__close"
+                onClick={() => setShowContentDetails(false)}
+                aria-label="Fechar detalhes"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="fb-detail-panel__body">
+              <section className="fb-detail-panel__section">
+                <h4>Resumo do conteudo</h4>
+                <div className="fb-detail-metric-grid">
+                  <div className="fb-detail-metric">
+                    <span className="fb-detail-metric__label">Usuarios engajados</span>
+                    <span className="fb-detail-metric__value">{formatNumber(engagedUsersValue)}</span>
+                  </div>
+                  <div className="fb-detail-metric">
+                    <span className="fb-detail-metric__label">Reacoes totais</span>
+                    <span className="fb-detail-metric__value">{formatNumber(reactionsTotalValue)}</span>
+                  </div>
+                  <div className="fb-detail-metric">
+                    <span className="fb-detail-metric__label">Cliques em conteudos</span>
+                    <span className="fb-detail-metric__value">{formatNumber(contentClicksValue)}</span>
+                  </div>
+                  <div className="fb-detail-metric">
+                    <span className="fb-detail-metric__label">Fas totais</span>
+                    <span className="fb-detail-metric__value">{formatNumber(totalFansValue)}</span>
+                  </div>
+                </div>
+              </section>
+
+              <section className="fb-detail-panel__section">
+                <h4>Novos fas e remocoes por dia</h4>
+                {followersDailyRows.length ? (
+                  <div className="fb-detail-followers-list">
+                    {followersDailyRows.map((row) => (
+                      <div className="fb-detail-followers-row" key={row.dateKey}>
+                        <span className="fb-detail-followers-row__date">{row.label || row.dateKey}</span>
+                        <span className="fb-detail-followers-row__adds">+{formatNumber(row.adds)}</span>
+                        <span className="fb-detail-followers-row__removes">-{formatNumber(row.removes)}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <DataState state="empty" label="Sem dados de seguidores." size="sm" />
+                )}
+              </section>
+
+              <section className="fb-detail-panel__section">
+                <h4>Origem dos fas</h4>
+                {audienceLoading ? (
+                  <DataState state="loading" label="Carregando audiencia..." size="sm" />
+                ) : audienceError ? (
+                  <DataState state="error" label={audienceError} size="sm" />
+                ) : (
+                  <div className="fb-detail-origin-grid">
+                    <div className="fb-detail-origin">
+                      <h5>Cidades</h5>
+                      {audienceCities.length ? (
+                        <ul>
+                          {audienceCities.map((city) => (
+                            <li key={city?.name || "city"}>
+                              <span>{city?.name || "--"}</span>
+                              <strong>{formatNumber(city?.value)}</strong>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <span className="fb-detail-origin__empty">Sem cidades</span>
+                      )}
+                    </div>
+                    <div className="fb-detail-origin">
+                      <h5>Paises</h5>
+                      {audienceCountries.length ? (
+                        <ul>
+                          {audienceCountries.map((country) => (
+                            <li key={country?.name || "country"}>
+                              <span>{country?.name || "--"}</span>
+                              <strong>{formatNumber(country?.value)}</strong>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <span className="fb-detail-origin__empty">Sem paises</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </section>
+
+              <section className="fb-detail-panel__section">
+                <h4>Posts e engajamento</h4>
+                {fbPostsLoading ? (
+                  <DataState state="loading" label="Carregando posts..." size="sm" />
+                ) : fbPostsError ? (
+                  <DataState state="error" label={fbPostsError} size="sm" />
+                ) : postsForDetails.length ? (
+                  <div className="fb-detail-posts">
+                    {postsForDetails.map((post) => {
+                      const title = post?.message || "Post sem texto";
+                      return (
+                        <a
+                          key={post?.id || title}
+                          className="fb-detail-post"
+                          href={post?.permalink || "#"}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <div className="fb-detail-post__thumb">
+                            {post?.previewUrl ? (
+                              <img src={post.previewUrl} alt="" loading="lazy" />
+                            ) : (
+                              <div className="fb-detail-post__thumb--empty">Sem imagem</div>
+                            )}
+                          </div>
+                          <div className="fb-detail-post__content">
+                            <div className="fb-detail-post__title truncate">{title}</div>
+                            <div className="fb-detail-post__date">{formatPostDate(post?.timestamp)}</div>
+                            <div className="fb-detail-post__metrics">
+                              <span><Heart size={14} /> {formatNumber(post?.reactions)}</span>
+                              <span><MessageCircle size={14} /> {formatNumber(post?.comments)}</span>
+                              <span><Share2 size={14} /> {formatNumber(post?.shares)}</span>
+                            </div>
+                          </div>
+                          <div className="fb-detail-post__engagement">
+                            {formatNumber(post?.engagementTotal)}
+                          </div>
+                        </a>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <DataState state="empty" label="Sem posts no periodo." size="sm" />
+                )}
+              </section>
+            </div>
+          </aside>
+        </>
+      )}
     </div>
   );
 }

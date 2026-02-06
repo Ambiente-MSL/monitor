@@ -877,6 +877,12 @@ def fetch_facebook_metrics(
             },
         },
         {
+            "key": "engaged_users",
+            "label": "Usuarios engajados",
+            "value": cur.get("post_engaged"),
+            "deltaPct": pct(cur.get("post_engaged"), prev.get("post_engaged")),
+        },
+        {
             "key": "page_views",
             "label": "Visualizacoes da pagina",
             "value": page_overview_cur.get("page_views"),
@@ -974,6 +980,7 @@ def fetch_facebook_metrics(
         "page_overview": page_overview,
         "net_followers_series": net_followers_series,
         "engagement_timeseries": engagement_timeseries,
+        "post_engaged": cur.get("post_engaged"),
     }
 
 
@@ -1018,6 +1025,7 @@ def _enrich_facebook_metrics_payload(payload: Dict[str, Any]) -> None:
             metrics_by_key[key] = entry
 
     ensure_metric("video_views_total", "Video views", page_overview.get("video_views"))
+    ensure_metric("engaged_users", "Usuarios engajados", payload.get("post_engaged"))
     ensure_metric(
         "video_engagement_total",
         "Videos (reacoes, comentarios, compartilhamentos)",
