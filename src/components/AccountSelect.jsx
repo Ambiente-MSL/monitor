@@ -29,10 +29,6 @@ export default function AccountSelect() {
   const dropdownRef = useRef(null);
   const addFirstInputRef = useRef(null);
   const pendingAccountRef = useRef(null);
-  const authHeaders = useMemo(
-    () => (token ? { Authorization: `Bearer ${token}` } : {}),
-    [token],
-  );
 
   const currentValue = useMemo(() => {
     if (!availableAccounts.length) return "";
@@ -129,6 +125,11 @@ export default function AccountSelect() {
     });
     return Array.from(map.values());
   }, [availableAccounts]);
+
+  const authHeaders = useMemo(
+    () => (token ? { Authorization: `Bearer ${token}` } : {}),
+    [token],
+  );
 
   useEffect(() => {
     if (!isAddFormVisible) return undefined;
