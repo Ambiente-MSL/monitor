@@ -3544,6 +3544,21 @@ def facebook_metrics():
     lite_param = request.args.get("lite")
     lite_flag = str(lite_param).lower() in ("1", "true", "yes", "y")
     extra = {"lite": True} if lite_flag else None
+
+    def _extract_engagement_total(payload_obj):
+        for metric in payload_obj.get("metrics") or []:
+            if isinstance(metric, dict) and metric.get("key") == "post_engagement_total":
+                try:
+                    return float(metric.get("value") or 0)
+                except (TypeError, ValueError):
+                    return 0.0
+        engagement = payload_obj.get("engagement") or {}
+        if isinstance(engagement, dict):
+            try:
+                return float(engagement.get("total") or 0)
+            except (TypeError, ValueError):
+                return 0.0
+        return 0.0
     try:
         if force_refresh_flag:
             payload = fetch_facebook_metrics(page_id, since, until, extra)
@@ -3602,6 +3617,39 @@ def facebook_metrics():
         page_overview = payload_obj.get("page_overview") or {}
         if isinstance(page_overview, dict) and isinstance(page_overview.get("engagement_timeseries"), list):
             payload_obj["engagement_timeseries"] = page_overview.get("engagement_timeseries")
+
+    # Alguns caches antigos podem ter engajamento total mas sem série diária.
+    # Para garantir o gráfico "Crescimento do conteúdo", força refresh quando necessário.
+    if (
+        not force_refresh_flag
+        and not payload_obj.get("engagement_timeseries")
+        and _extract_engagement_total(payload_obj) > 0
+    ):
+        try:
+            refreshed_payload, refreshed_meta = get_cached_payload(
+                "facebook_metrics",
+                page_id,
+                since,
+                until,
+                extra=extra,
+                fetcher=fetch_facebook_metrics,
+                platform="facebook",
+                force=True,
+                refresh_reason="missing_engagement_timeseries",
+            )
+            payload_obj = dict(refreshed_payload or {})
+            _enrich_facebook_metrics_payload(payload_obj)
+            if not payload_obj.get("reach_timeseries"):
+                page_overview = payload_obj.get("page_overview") or {}
+                if isinstance(page_overview, dict) and isinstance(page_overview.get("reach_timeseries"), list):
+                    payload_obj["reach_timeseries"] = page_overview.get("reach_timeseries")
+            if not payload_obj.get("engagement_timeseries"):
+                page_overview = payload_obj.get("page_overview") or {}
+                if isinstance(page_overview, dict) and isinstance(page_overview.get("engagement_timeseries"), list):
+                    payload_obj["engagement_timeseries"] = page_overview.get("engagement_timeseries")
+            meta = refreshed_meta
+        except Exception as refresh_err:  # noqa: BLE001
+            logger.warning("Falha ao forçar refresh para completar engagement_timeseries: %s", refresh_err)
     response = dict(payload_obj)
     response["cache"] = meta
     response["meta"] = {
