@@ -1,4 +1,0 @@
-.env
-*.env
-backend/.env
-deploy/*.env

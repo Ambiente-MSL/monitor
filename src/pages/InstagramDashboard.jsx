@@ -6106,13 +6106,12 @@ const profileViewsMetric = useMemo(() => {
               </button>
             </div>
 
-            <div className="ig-analytics-card__body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
+            <div className="ig-analytics-card__body">
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '20px',
-                padding: '16px 16px 16px',
-                marginTop: '10%'
+                padding: '16px 16px 16px'
               }}>
                 {/* Valor principal à esquerda */}
                 <div style={{ textAlign: 'center', flexShrink: 0 }}>

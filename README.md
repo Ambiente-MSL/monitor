@@ -43,13 +43,11 @@ Crie `backend/.env` com pelo menos:
 META_GRAPH_VERSION=v23.0
 META_SYSTEM_USER_TOKEN=SEU_TOKEN
 META_APP_SECRET=SEU_SECRET
-FACEBOOK_APP_ID=SEU_APP_ID
-FACEBOOK_APP_SECRET=SEU_APP_SECRET
-AUTH_SECRET_KEY=SEGREDO_FORTE
 META_PAGE_ID=123
 META_IG_USER_ID=123
 META_AD_ACCOUNT_ID=act_123
 FRONTEND_ORIGINS=http://localhost:3010
+AUTH_SECRET_KEY=troque-isto
 DATABASE_URL=postgresql://usuario:senha@localhost:5432/monitor_db
 ```
 
@@ -102,8 +100,7 @@ python scripts/update_user_password.py admin@empresa.com "SenhaSecreta!" --nome 
 ```
 
 ## Docker (produção ou staging)
-1) Configure `deploy/backend.env` (não versionado) com suas variáveis.
-   Use `deploy/backend.env.example` como base.
+1) Configure `deploy/backend.env` com suas variáveis.
 2) Suba a stack:
 ```
 docker compose up -d --build --remove-orphans

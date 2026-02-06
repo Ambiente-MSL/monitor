@@ -189,10 +189,11 @@ LEGAL_DOCS_DIR = os.path.join(app.root_path, "static", "legal")
 AUTH_SECRET_KEY = (
     os.getenv("AUTH_SECRET_KEY")
     or os.getenv("APP_SECRET_KEY")
+    or os.getenv("META_APP_SECRET")
 )
 if not AUTH_SECRET_KEY:
-    logger.error("AUTH_SECRET_KEY is required for auth token signing.")
-    raise RuntimeError("AUTH_SECRET_KEY is required for auth token signing.")
+    AUTH_SECRET_KEY = "change-me"
+    logger.warning("AUTH_SECRET_KEY not set; using insecure fallback token secret.")
 
 AUTH_SERIALIZER = URLSafeTimedSerializer(AUTH_SECRET_KEY, salt="dashboardsocial-auth")
 AUTH_TOKEN_TTL_SECONDS = int(os.getenv("AUTH_TOKEN_TTL_SECONDS", "86400"))
