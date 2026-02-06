@@ -31,6 +31,13 @@ jobs:
 
           cd /root/monitor || exit 1
 
+          ENV_FILE="${BACKEND_ENV_FILE:-./deploy/backend.env}"
+          if [ ! -f "$ENV_FILE" ]; then
+            echo "Missing backend env file: $ENV_FILE"
+            exit 1
+          fi
+          export BACKEND_ENV_FILE="$ENV_FILE"
+
           echo "⬇️  Fazendo sync com origin/main..."
           git fetch origin main
           git reset --hard origin/main

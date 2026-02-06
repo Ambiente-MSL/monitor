@@ -6,13 +6,7 @@ services:
     image: dashboardsocial-backend:latest
     container_name: monitor_backend
     env_file:
-    - ./deploy/backend.env
-    environment:
-      DATABASE_HOST: 172.17.0.1
-      DATABASE_PORT: '5432'
-      FRONTEND_ORIGIN: https://monitor.mslestrategia.com.br
-      FACEBOOK_APP_ID: '2063845937779150'
-      FACEBOOK_APP_SECRET: 817f6bda801530f8f4a50249330618f5
+    - ${BACKEND_ENV_FILE:-./deploy/backend.env}
     restart: unless-stopped
     ports:
     - 2025:3001
@@ -37,16 +31,13 @@ services:
     image: dashboardsocial-backend:latest
     container_name: monitor_worker
     env_file:
-    - ./deploy/backend.env
+    - ${BACKEND_ENV_FILE:-./deploy/backend.env}
     command: python scheduler_runner.py
     restart: unless-stopped
     depends_on:
     - backend
     networks:
     - internal
-    environment:
-      FACEBOOK_APP_ID: '2063845937779150'
-      FACEBOOK_APP_SECRET: 817f6bda801530f8f4a50249330618f5
   frontend:
     build:
       context: .
