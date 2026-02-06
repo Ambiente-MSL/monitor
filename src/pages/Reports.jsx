@@ -26,7 +26,8 @@ export default function Reports() {
     return () => resetTopbarConfig?.();
   }, [setTopbarConfig, resetTopbarConfig]);
 
-  const { apiFetch } = useAuth();
+  const { apiFetch, token } = useAuth();
+  const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
   const account = get("account");
   const since = get("since");
   const until = get("until");
@@ -80,7 +81,7 @@ export default function Reports() {
     });
     let r;
     try {
-      r = await fetchWithTimeout(url.toString());
+      r = await fetchWithTimeout(url.toString(), { headers: authHeaders });
     } catch (err) {
       if (isTimeoutError(err)) {
         throw new Error("Tempo esgotado ao carregar dados.");

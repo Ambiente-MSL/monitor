@@ -9,12 +9,13 @@ import unicodedata
 import uuid
 import json
 import threading
+from contextlib import contextmanager
 from collections import Counter, defaultdict
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 from typing import Any, Dict, List, Optional, Sequence, Union
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, g
 from flask_cors import CORS
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from psycopg2.extras import Json
@@ -42,6 +43,8 @@ from meta import (
     ig_window,
     normalize_ig_audience_timeframe,
     gget,
+    set_request_token,
+    reset_request_token,
 )
 from ig_audience_snapshots import load_latest_snapshot, persist_audience_snapshot, resolve_snapshot_date
 from jobs.instagram_ingest import ingest_account_range, daterange
@@ -66,7 +69,10 @@ CONNECTED_ACCOUNTS_TABLE = os.getenv("CONNECTED_ACCOUNTS_TABLE", "connected_acco
 META_TOKENS_TABLE = os.getenv("META_TOKENS_TABLE", "meta_user_tokens")
 META_LOGIN_SCOPES = [
     scope.strip()
-    for scope in (os.getenv("META_LOGIN_SCOPES") or "pages_read_engagement,pages_show_list,instagram_basic,email,public_profile").split(",")
+    for scope in (
+        os.getenv("META_LOGIN_SCOPES")
+        or "pages_read_engagement,pages_show_list,instagram_basic,ads_read,read_insights,email,public_profile"
+    ).split(",")
     if scope.strip()
 ]
 META_LOGIN_SCOPES_SET = {scope.lower() for scope in META_LOGIN_SCOPES}
@@ -106,6 +112,7 @@ def _ensure_connected_accounts_table() -> None:
             f"""
             CREATE TABLE IF NOT EXISTS {CONNECTED_ACCOUNTS_TABLE} (
                 id TEXT PRIMARY KEY,
+                user_id UUID,
                 label TEXT NOT NULL,
                 facebook_page_id TEXT NOT NULL,
                 instagram_user_id TEXT NOT NULL,
@@ -119,7 +126,13 @@ def _ensure_connected_accounts_table() -> None:
             """,
         )
         execute(
+            f"ALTER TABLE {CONNECTED_ACCOUNTS_TABLE} ADD COLUMN IF NOT EXISTS user_id UUID;"
+        )
+        execute(
             f"CREATE INDEX IF NOT EXISTS {CONNECTED_ACCOUNTS_TABLE}_page_idx ON {CONNECTED_ACCOUNTS_TABLE} (facebook_page_id);"
+        )
+        execute(
+            f"CREATE INDEX IF NOT EXISTS {CONNECTED_ACCOUNTS_TABLE}_user_idx ON {CONNECTED_ACCOUNTS_TABLE} (user_id);"
         )
     except Exception as err:  # noqa: BLE001
         logger.error("Falha ao garantir tabela de contas conectadas: %s", err)
@@ -157,12 +170,23 @@ def _ensure_meta_tokens_table() -> None:
         logger.error("Falha ao garantir tabela de tokens Meta: %s", err)
 
 
-def _load_connected_accounts() -> List[Dict[str, Any]]:
+def _load_connected_accounts(user_id: Optional[str] = None) -> List[Dict[str, Any]]:
     try:
-        rows = fetch_all(f"SELECT * FROM {CONNECTED_ACCOUNTS_TABLE} ORDER BY label ASC")
+        if user_id:
+            rows = fetch_all(
+                f"""
+                SELECT * FROM {CONNECTED_ACCOUNTS_TABLE}
+                WHERE user_id = %(user_id)s OR user_id IS NULL
+                ORDER BY label ASC
+                """,
+                {"user_id": user_id},
+            )
+        else:
+            rows = fetch_all(f"SELECT * FROM {CONNECTED_ACCOUNTS_TABLE} ORDER BY label ASC")
         return [
             {
                 "id": row.get("id"),
+                "user_id": row.get("user_id"),
                 "label": row.get("label"),
                 "facebookPageId": row.get("facebook_page_id"),
                 "instagramUserId": row.get("instagram_user_id"),
@@ -185,6 +209,45 @@ CORS(
     supports_credentials=True,
 )
 LEGAL_DOCS_DIR = os.path.join(app.root_path, "static", "legal")
+
+
+@app.before_request
+def _attach_meta_request_token():
+    path = request.path or ""
+    if not path.startswith("/api/"):
+        return None
+    if path.startswith("/api/auth"):
+        return None
+    if not (
+        path.startswith("/api/facebook")
+        or path.startswith("/api/instagram")
+        or path.startswith("/api/ads")
+        or path.startswith("/api/accounts/discover")
+    ):
+        return None
+
+    user, error = _try_authenticate_request(request)
+    if error:
+        return error
+    if not user:
+        return None
+
+    token_value = None
+    if path.startswith("/api/instagram"):
+        ig_user_id = request.args.get("igUserId")
+        token_value = _resolve_page_access_token_for_ig(user.get("id"), ig_user_id)
+    if not token_value:
+        token_value = _resolve_user_access_token(user.get("id"))
+    if token_value:
+        g._meta_token_state = set_request_token(token_value)
+    return None
+
+
+@app.teardown_request
+def _clear_meta_request_token(_exc=None):
+    token_state = getattr(g, "_meta_token_state", None)
+    if token_state is not None:
+        reset_request_token(token_state)
 
 AUTH_SECRET_KEY = (
     os.getenv("AUTH_SECRET_KEY")
@@ -1968,6 +2031,97 @@ def _authenticate_request(req):
     return user_row, None
 
 
+def _try_authenticate_request(req):
+    token = _extract_bearer_token(req)
+    if not token:
+        return None, None
+    user_id = _decode_auth_token(token)
+    if not user_id:
+        return None, (jsonify({"error": "invalid or expired token"}), 401)
+    user_row = _fetch_user_by_id(user_id)
+    if not user_row:
+        return None, (jsonify({"error": "user not found"}), 404)
+    return user_row, None
+
+
+def _fetch_meta_token_row(user_id: str) -> Optional[Dict[str, Any]]:
+    if not user_id:
+        return None
+    return fetch_one(
+        f"""
+        SELECT user_access_token, user_access_expires_at
+        FROM {META_TOKENS_TABLE}
+        WHERE user_id = %(user_id)s
+        ORDER BY updated_at DESC
+        LIMIT 1
+        """,
+        {"user_id": user_id},
+    )
+
+
+def _resolve_user_access_token(user_id: str) -> Optional[str]:
+    row = _fetch_meta_token_row(user_id)
+    if not row:
+        return None
+    token_value = row.get("user_access_token")
+    if not token_value:
+        return None
+    expires_at = row.get("user_access_expires_at")
+    if isinstance(expires_at, str):
+        try:
+            expires_at = datetime.fromisoformat(expires_at)
+        except Exception:
+            expires_at = None
+    if isinstance(expires_at, datetime):
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        if expires_at <= datetime.now(timezone.utc):
+            return None
+    return str(token_value)
+
+
+def _resolve_page_access_token_for_ig(user_id: str, ig_user_id: Optional[str]) -> Optional[str]:
+    if not user_id or not ig_user_id:
+        return None
+    row = fetch_one(
+        f"""
+        SELECT page_access_token
+        FROM {META_TOKENS_TABLE}
+        WHERE user_id = %(user_id)s AND instagram_user_id = %(ig_user_id)s
+        ORDER BY updated_at DESC
+        LIMIT 1
+        """,
+        {"user_id": user_id, "ig_user_id": ig_user_id},
+    )
+    token_value = row.get("page_access_token") if row else None
+    return str(token_value) if token_value else None
+
+
+@contextmanager
+def _meta_token_context(req, *, ig_user_id: Optional[str] = None, require_auth: bool = False):
+    if require_auth:
+        user, error = _authenticate_request(req)
+    else:
+        user, error = _try_authenticate_request(req)
+    if error:
+        yield None, error
+        return
+    token_state = None
+    if user:
+        token_value = None
+        if ig_user_id:
+            token_value = _resolve_page_access_token_for_ig(user.get("id"), ig_user_id)
+        if not token_value:
+            token_value = _resolve_user_access_token(user.get("id"))
+        if token_value:
+            token_state = set_request_token(token_value)
+    try:
+        yield user, None
+    finally:
+        if token_state is not None:
+            reset_request_token(token_state)
+
+
 def _create_app_user(email: str, password: str, nome: str, role: Optional[str] = None) -> str:
     user_id = str(uuid.uuid4())
     hashed = _hash_password(password)
@@ -3189,19 +3343,30 @@ def auth_meta_token() -> Any:
     if not selected_page or not selected_page.get("access_token"):
         return jsonify({"error": "nenhuma pagina com access_token retornada para este token"}), 400
 
-    try:
-        saved = _persist_meta_user_token(
-            user["id"],
-            profile.get("facebook_id") or profile.get("id") or "",
-            scopes,
-            effective_user_token,
-            user_expires_at,
-            selected_page.get("access_token"),
-            selected_page.get("id") or "",
-            selected_page.get("instagram_user_id") or "",
-        )
-    except Exception as err:  # noqa: BLE001
-        logger.exception("Falha ao persistir token Meta do usuario %s", user.get("id"))
+    saved = None
+    for page in pages:
+        if not isinstance(page, dict):
+            continue
+        if not page.get("access_token"):
+            continue
+        try:
+            current = _persist_meta_user_token(
+                user["id"],
+                profile.get("facebook_id") or profile.get("id") or "",
+                scopes,
+                effective_user_token,
+                user_expires_at,
+                page.get("access_token"),
+                page.get("id") or "",
+                page.get("instagram_user_id") or "",
+            )
+            if selected_page and str(page.get("id")) == str(selected_page.get("id")):
+                saved = current
+        except Exception as err:  # noqa: BLE001
+            logger.exception("Falha ao persistir token Meta do usuario %s", user.get("id"))
+            continue
+
+    if not saved:
         return jsonify({"error": "could not persist meta token"}), 500
 
     response = {
@@ -5141,7 +5306,8 @@ def ads_high():
 @app.get("/api/accounts/discover")
 def discover_accounts():
     """
-    Descobre automaticamente todas as contas conectadas ao token do System User.
+    Descobre automaticamente todas as contas conectadas ao token disponivel.
+    Se houver token do usuario Meta autenticado, usa-o; caso contrario, usa o System User.
     Retorna paginas do Facebook, perfis do Instagram e contas de anuncios, alem
     de uma lista normalizada pronta para preencher o seletor no frontend.
     """
@@ -5153,134 +5319,143 @@ def discover_accounts():
             return ""
         return raw_str if raw_str.startswith("act_") else f"act_{raw_str}"
 
-    try:
-        # 1. Buscar todas as páginas que o usuário administra
-        pages_response = gget("/me/accounts", params={
-            "fields": (
-                "id,name,access_token,category,tasks,"
-                "instagram_business_account{id,username,name,profile_picture_url,followers_count},"
-                "ads_accounts{id,account_id,name,account_status,currency,timezone_name}"
-            )
-        })
+    with _meta_token_context(request) as (user, error):
+        if error:
+            return error
+        try:
+            # 1. Buscar todas as paginas que o usuario administra
+            pages_response = gget("/me/accounts", params={
+                "fields": (
+                    "id,name,access_token,category,tasks,"
+                    "instagram_business_account{id,username,name,profile_picture_url,followers_count},"
+                    "ads_accounts{id,account_id,name,account_status,currency,timezone_name}"
+                )
+            })
 
-        pages = []
-        instagram_accounts = []
-        normalized_accounts = []
+            pages = []
+            instagram_accounts = []
+            normalized_accounts = []
 
-        if pages_response and "data" in pages_response:
-            for page in pages_response["data"]:
-                if not isinstance(page, dict):
-                    continue
+            if pages_response and "data" in pages_response:
+                for page in pages_response["data"]:
+                    if not isinstance(page, dict):
+                        continue
 
-                page_id = page.get("id")
-                page_name = page.get("name")
-                if not page_id:
-                    continue
+                    page_id = page.get("id")
+                    page_name = page.get("name")
+                    if not page_id:
+                        continue
 
-                page_data = {
-                    "id": page_id,
-                    "name": page_name,
-                    "category": page.get("category"),
-                    "tasks": page.get("tasks", []),
-                }
-                pages.append(page_data)
+                    page_data = {
+                        "id": page_id,
+                        "name": page_name,
+                        "category": page.get("category"),
+                        "tasks": page.get("tasks", []),
+                    }
+                    pages.append(page_data)
 
-                ig_account = page.get("instagram_business_account")
-                ig_id = ""
-                ig_username = ""
-                if isinstance(ig_account, dict):
-                    ig_id = ig_account.get("id") or ""
-                    ig_username = ig_account.get("username") or ""
-                    instagram_accounts.append({
-                        "id": ig_account.get("id"),
-                        "username": ig_account.get("username"),
-                        "name": ig_account.get("name"),
-                        "profilePictureUrl": ig_account.get("profile_picture_url"),
-                        "followersCount": ig_account.get("followers_count"),
-                        "linkedPageId": page_id,
-                        "linkedPageName": page_name,
-                    })
-
-                ads_accounts_payload = page.get("ads_accounts")
-                ads_accounts_data = []
-                if isinstance(ads_accounts_payload, dict):
-                    for ad in ads_accounts_payload.get("data", []):
-                        if not isinstance(ad, dict):
-                            continue
-                        ad_id_norm = _normalize_ad_id(ad.get("id") or ad.get("account_id"))
-                        if not ad_id_norm:
-                            continue
-                        ads_accounts_data.append({
-                            "id": ad_id_norm,
-                            "name": ad.get("name"),
-                            "accountId": ad.get("account_id"),
-                            "accountStatus": ad.get("account_status"),
-                            "currency": ad.get("currency"),
-                            "timezoneName": ad.get("timezone_name"),
+                    ig_account = page.get("instagram_business_account")
+                    ig_id = ""
+                    ig_username = ""
+                    if isinstance(ig_account, dict):
+                        ig_id = ig_account.get("id") or ""
+                        ig_username = ig_account.get("username") or ""
+                        instagram_accounts.append({
+                            "id": ig_account.get("id"),
+                            "username": ig_account.get("username"),
+                            "name": ig_account.get("name"),
+                            "profilePictureUrl": ig_account.get("profile_picture_url"),
+                            "followersCount": ig_account.get("followers_count"),
+                            "linkedPageId": page_id,
+                            "linkedPageName": page_name,
                         })
 
-                normalized_accounts.append({
-                    "id": f"page-{page_id}",
-                    "label": page_name or page_id,
-                    "facebookPageId": page_id,
-                    "instagramUserId": ig_id,
-                    "instagramUsername": ig_username,
-                    "adAccountId": ads_accounts_data[0]["id"] if ads_accounts_data else "",
-                    "adAccounts": ads_accounts_data,
-                })
+                    ads_accounts_payload = page.get("ads_accounts")
+                    ads_accounts_data = []
+                    if isinstance(ads_accounts_payload, dict):
+                        for ad in ads_accounts_payload.get("data", []):
+                            if not isinstance(ad, dict):
+                                continue
+                            ad_id_norm = _normalize_ad_id(ad.get("id") or ad.get("account_id"))
+                            if not ad_id_norm:
+                                continue
+                            ads_accounts_data.append({
+                                "id": ad_id_norm,
+                                "name": ad.get("name"),
+                                "accountId": ad.get("account_id"),
+                                "accountStatus": ad.get("account_status"),
+                                "currency": ad.get("currency"),
+                                "timezoneName": ad.get("timezone_name"),
+                            })
 
-        # 2. Buscar todas as contas de anúncios
-        adaccounts_response = gget("/me/adaccounts", params={
-            "fields": "id,name,account_status,currency,timezone_name,business"
-        })
+                    normalized_accounts.append({
+                        "id": f"page-{page_id}",
+                        "label": page_name or page_id,
+                        "facebookPageId": page_id,
+                        "instagramUserId": ig_id,
+                        "instagramUsername": ig_username,
+                        "adAccountId": ads_accounts_data[0]["id"] if ads_accounts_data else "",
+                        "adAccounts": ads_accounts_data,
+                    })
 
-        ad_accounts = []
-        if adaccounts_response and "data" in adaccounts_response:
-            for adaccount in adaccounts_response["data"]:
-                if not isinstance(adaccount, dict):
-                    continue
-                ad_id_norm = _normalize_ad_id(adaccount.get("id") or adaccount.get("account_id"))
-                if not ad_id_norm:
-                    continue
-                ad_accounts.append({
-                    "id": ad_id_norm,
-                    "name": adaccount.get("name"),
-                    "accountStatus": adaccount.get("account_status"),
-                    "currency": adaccount.get("currency"),
-                    "timezoneName": adaccount.get("timezone_name"),
-                })
+            # 2. Buscar todas as contas de anuncios
+            adaccounts_response = gget("/me/adaccounts", params={
+                "fields": "id,name,account_status,currency,timezone_name,business"
+            })
 
-        return jsonify({
-            "pages": pages,
-            "instagramAccounts": instagram_accounts,
-            "adAccounts": ad_accounts,
-            "accounts": normalized_accounts,
-            "persistedAccounts": _load_connected_accounts(),
-            "totalPages": len(pages),
-            "totalInstagram": len(instagram_accounts),
-            "totalAdAccounts": len(ad_accounts),
-        })
+            ad_accounts = []
+            if adaccounts_response and "data" in adaccounts_response:
+                for adaccount in adaccounts_response["data"]:
+                    if not isinstance(adaccount, dict):
+                        continue
+                    ad_id_norm = _normalize_ad_id(adaccount.get("id") or adaccount.get("account_id"))
+                    if not ad_id_norm:
+                        continue
+                    ad_accounts.append({
+                        "id": ad_id_norm,
+                        "name": adaccount.get("name"),
+                        "accountStatus": adaccount.get("account_status"),
+                        "currency": adaccount.get("currency"),
+                        "timezoneName": adaccount.get("timezone_name"),
+                    })
 
-    except MetaAPIError as err:
-        logger.error(f"Meta API error in discover_accounts: {err}")
-        return jsonify({
-            "error": err.args[0],
-            "graph": {
-                "status": err.status,
-                "code": err.code,
-                "type": err.error_type,
-            },
-        }), 502
-    except Exception as err:
-        logger.exception("Unexpected error in discover_accounts")
-        return jsonify({"error": str(err)}), 500
+            return jsonify({
+                "pages": pages,
+                "instagramAccounts": instagram_accounts,
+                "adAccounts": ad_accounts,
+                "accounts": normalized_accounts,
+                "persistedAccounts": _load_connected_accounts(user_id=user.get("id") if user else None),
+                "totalPages": len(pages),
+                "totalInstagram": len(instagram_accounts),
+                "totalAdAccounts": len(ad_accounts),
+            })
+
+        except MetaAPIError as err:
+            logger.error(f"Meta API error in discover_accounts: {err}")
+            return jsonify({
+                "error": err.args[0],
+                "graph": {
+                    "status": err.status,
+                    "code": err.code,
+                    "type": err.error_type,
+                },
+            }), 502
+        except Exception as err:
+            logger.exception("Unexpected error in discover_accounts")
+            return jsonify({"error": str(err)}), 500
 
 
-def _persist_connected_account(payload: Dict[str, Any], *, account_id: Optional[str] = None) -> Dict[str, Any]:
+def _persist_connected_account(
+    payload: Dict[str, Any],
+    *,
+    account_id: Optional[str] = None,
+    user_id: Optional[str] = None,
+) -> Dict[str, Any]:
     _ensure_connected_accounts_table()
     account_id = account_id or str(uuid4())
     params = {
         "id": account_id,
+        "user_id": user_id,
         "label": payload.get("label"),
         "facebook_page_id": payload.get("facebookPageId") or payload.get("facebook_page_id"),
         "instagram_user_id": payload.get("instagramUserId") or payload.get("instagram_user_id"),
@@ -5291,10 +5466,10 @@ def _persist_connected_account(payload: Dict[str, Any], *, account_id: Optional[
     execute(
         f"""
         INSERT INTO {CONNECTED_ACCOUNTS_TABLE} (
-            id, label, facebook_page_id, instagram_user_id, ad_account_id,
+            id, user_id, label, facebook_page_id, instagram_user_id, ad_account_id,
             profile_picture_url, page_picture_url, source, created_at, updated_at
         ) VALUES (
-            %(id)s, %(label)s, %(facebook_page_id)s, %(instagram_user_id)s, %(ad_account_id)s,
+            %(id)s, %(user_id)s, %(label)s, %(facebook_page_id)s, %(instagram_user_id)s, %(ad_account_id)s,
             %(profile_picture_url)s, %(page_picture_url)s, 'manual', NOW(), NOW()
         )
         ON CONFLICT (id) DO UPDATE SET
@@ -5310,6 +5485,7 @@ def _persist_connected_account(payload: Dict[str, Any], *, account_id: Optional[
     )
     return {
         "id": account_id,
+        "user_id": user_id,
         "label": params["label"],
         "facebookPageId": params["facebook_page_id"],
         "instagramUserId": params["instagram_user_id"],
@@ -5326,22 +5502,10 @@ def list_connected_accounts():
     if error:
         return error
     try:
-        rows = fetch_all(f"SELECT * FROM {CONNECTED_ACCOUNTS_TABLE} ORDER BY label ASC")
+        payload = _load_connected_accounts(user_id=user.get("id"))
     except Exception as err:  # noqa: BLE001
         logger.error("Failed to list connected accounts: %s", err)
         return jsonify({"error": "could not list accounts"}), 500
-    payload = []
-    for row in rows:
-        payload.append({
-            "id": row.get("id"),
-            "label": row.get("label"),
-            "facebookPageId": row.get("facebook_page_id"),
-            "instagramUserId": row.get("instagram_user_id"),
-            "adAccountId": row.get("ad_account_id"),
-            "profilePictureUrl": row.get("profile_picture_url"),
-            "pagePictureUrl": row.get("page_picture_url"),
-            "source": row.get("source") or "manual",
-        })
     return jsonify({"accounts": payload})
 
 
@@ -5356,7 +5520,7 @@ def create_connected_account():
         if not body.get(field):
             return jsonify({"error": f"{field} is required"}), 400
     try:
-        account = _persist_connected_account(body)
+        account = _persist_connected_account(body, user_id=user.get("id"))
         return jsonify({"account": account}), 201
     except Exception as err:  # noqa: BLE001
         logger.error("Failed to create connected account: %s", err)
@@ -5371,8 +5535,17 @@ def update_connected_account(account_id: str):
     body = request.get_json(silent=True) or {}
     if not body.get("label"):
         return jsonify({"error": "label is required"}), 400
+    owner_row = fetch_one(
+        f"SELECT user_id FROM {CONNECTED_ACCOUNTS_TABLE} WHERE id = %(id)s",
+        {"id": account_id},
+    )
+    if not owner_row:
+        return jsonify({"error": "account not found"}), 404
+    owner_id = owner_row.get("user_id")
+    if owner_id and str(owner_id) != str(user.get("id")):
+        return jsonify({"error": "forbidden"}), 403
     try:
-        account = _persist_connected_account(body, account_id=account_id)
+        account = _persist_connected_account(body, account_id=account_id, user_id=owner_id)
         return jsonify({"account": account})
     except Exception as err:  # noqa: BLE001
         logger.error("Failed to update connected account %s: %s", account_id, err)
@@ -5384,6 +5557,15 @@ def delete_connected_account(account_id: str):
     user, error = _authenticate_request(request)
     if error:
         return error
+    owner_row = fetch_one(
+        f"SELECT user_id FROM {CONNECTED_ACCOUNTS_TABLE} WHERE id = %(id)s",
+        {"id": account_id},
+    )
+    if not owner_row:
+        return jsonify({"error": "account not found"}), 404
+    owner_id = owner_row.get("user_id")
+    if owner_id and str(owner_id) != str(user.get("id")):
+        return jsonify({"error": "forbidden"}), 403
     try:
         execute(f"DELETE FROM {CONNECTED_ACCOUNTS_TABLE} WHERE id = %(id)s", {"id": account_id})
     except Exception as err:  # noqa: BLE001

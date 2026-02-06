@@ -763,7 +763,7 @@ export default function InstagramDashboard() {
   const outlet = useOutletContext() || {};
   const { setTopbarConfig, resetTopbarConfig } = outlet;
   const location = useLocation();
-  const { apiFetch } = useAuth();
+  const { apiFetch, token } = useAuth();
   const { accounts, loading: accountsLoading } = useAccounts();
   const availableAccounts = accounts.length ? accounts : DEFAULT_ACCOUNTS;
   const [getQuery, setQuery] = useQueryState({ account: FALLBACK_ACCOUNT_ID });
@@ -793,6 +793,10 @@ export default function InstagramDashboard() {
   const accountSnapshotKey = useMemo(
     () => accountConfig?.instagramUserId || accountConfig?.id || "",
     [accountConfig?.id, accountConfig?.instagramUserId],
+  );
+  const authHeaders = useMemo(
+    () => (token ? { Authorization: `Bearer ${token}` } : {}),
+    [token],
   );
 
   const sinceParam = getQuery("since");
@@ -1221,7 +1225,7 @@ export default function InstagramDashboard() {
       }, REQUEST_TIMEOUT_MS));
 
       try {
-        const resp = await fetch(url, { signal: controller.signal });
+        const resp = await fetch(url, { signal: controller.signal, headers: authHeaders });
          const text = await resp.text();
          const json = safeParseJson(text) || {};
          if (!resp.ok) {
@@ -1374,7 +1378,7 @@ export default function InstagramDashboard() {
       clearAllTimeouts();
       controllers.forEach((c) => c.abort());
     };
-  }, [accountConfig?.instagramUserId, accountSnapshotKey, sinceDate, untilDate, defaultEnd, sinceParam, untilParam, metricsCacheKey]);
+  }, [accountConfig?.instagramUserId, accountSnapshotKey, sinceDate, untilDate, defaultEnd, sinceParam, untilParam, metricsCacheKey, authHeaders]);
 
   useEffect(() => {
     const currentAccountKey = accountSnapshotKey;
@@ -1445,7 +1449,7 @@ export default function InstagramDashboard() {
       }, REQUEST_TIMEOUT_MS));
 
       try {
-        const resp = await fetch(url, { signal: controller.signal });
+        const resp = await fetch(url, { signal: controller.signal, headers: authHeaders });
          const text = await resp.text();
          const json = safeParseJson(text) || {};
          if (!resp.ok) {
@@ -1530,7 +1534,7 @@ export default function InstagramDashboard() {
       clearAllTimeouts();
       controllers.forEach((c) => c.abort());
     };
-  }, [accountConfig?.instagramUserId, accountSnapshotKey, sinceParam, untilParam, postsCacheKey]);
+  }, [accountConfig?.instagramUserId, accountSnapshotKey, sinceParam, untilParam, postsCacheKey, authHeaders]);
 
   useEffect(() => {
     if (!accountConfig?.instagramUserId) {
@@ -1576,7 +1580,7 @@ export default function InstagramDashboard() {
 
     (async () => {
       try {
-         const resp = await fetch(url, { signal: controller.signal });
+         const resp = await fetch(url, { signal: controller.signal, headers: authHeaders });
          const text = await resp.text();
          const json = safeParseJson(text) || {};
          if (!resp.ok) {
@@ -1608,7 +1612,7 @@ export default function InstagramDashboard() {
       clearTimeout(hardTimeout);
       controller.abort();
     };
-  }, [accountConfig?.instagramUserId, accountSnapshotKey, sinceParam, untilParam, postsInsightsCacheKey]);
+  }, [accountConfig?.instagramUserId, accountSnapshotKey, sinceParam, untilParam, postsInsightsCacheKey, authHeaders]);
 
   useEffect(() => {
     if (!accountConfig?.instagramUserId) {
@@ -1658,7 +1662,7 @@ export default function InstagramDashboard() {
 
     (async () => {
       try {
-        const resp = await fetch(url, { signal: controller.signal });
+        const resp = await fetch(url, { signal: controller.signal, headers: authHeaders });
         const text = await resp.text();
         const json = safeParseJson(text) || {};
         if (!resp.ok) {
@@ -1689,7 +1693,7 @@ export default function InstagramDashboard() {
       clearTimeout(hardTimeout);
       controller.abort();
     };
-  }, [accountConfig?.instagramUserId, audienceCacheKey, audienceTimeframe]);
+  }, [accountConfig?.instagramUserId, audienceCacheKey, audienceTimeframe, authHeaders]);
 
 const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
  const reachMetric = metricsByKey.reach;
@@ -3254,13 +3258,13 @@ const profileViewsMetric = useMemo(() => {
   const fetchWordCloudDetails = useCallback(async (word, offset = 0) => {
     const url = buildWordCloudDetailsUrl(word, offset);
     if (!url) return null;
-    const response = await fetch(url);
+    const response = await fetch(url, { headers: authHeaders });
     if (!response.ok) {
       const message = await response.text();
       throw new Error(message || "Falha ao carregar comentários.");
     }
     return response.json();
-  }, [buildWordCloudDetailsUrl]);
+  }, [buildWordCloudDetailsUrl, authHeaders]);
 
   const handleWordCloudWordClick = useCallback((word, count) => {
     // Close other panels

@@ -8,6 +8,7 @@ import copy
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 import requests
+from contextvars import ContextVar
 from typing import Optional, List, Dict, Any, Sequence
 from urllib.parse import urlencode
 
@@ -26,6 +27,7 @@ VERSION = os.getenv("META_GRAPH_VERSION", "v23.0")
 TOKEN = os.getenv("META_SYSTEM_USER_TOKEN")
 SECRET = os.getenv("META_APP_SECRET")
 BASE = f"https://graph.facebook.com/{VERSION}"
+REQUEST_TOKEN: ContextVar[Optional[str]] = ContextVar("META_REQUEST_TOKEN", default=None)
 
 # Configurações
 REQUEST_TIMEOUT = 30  # segundos
@@ -70,6 +72,20 @@ def appsecret_proof(token: Optional[str]) -> Optional[str]:
         return None
     return hmac.new(SECRET.encode(), token.encode(), hashlib.sha256).hexdigest()
 
+def set_request_token(token: Optional[str]):
+    if not token:
+        return None
+    return REQUEST_TOKEN.set(token)
+
+
+def reset_request_token(token_state):
+    if token_state is not None:
+        REQUEST_TOKEN.reset(token_state)
+
+
+def get_request_token() -> Optional[str]:
+    return REQUEST_TOKEN.get()
+
 
 def gget(path: str, params: Optional[dict] = None, token: Optional[str] = None):
     """
@@ -86,7 +102,7 @@ def gget(path: str, params: Optional[dict] = None, token: Optional[str] = None):
     Raises:
         MetaAPIError: Se a requisição falhar após todos os retries
     """
-    request_token = token or TOKEN
+    request_token = token or get_request_token() or TOKEN
     if not request_token:
         raise RuntimeError("META_SYSTEM_USER_TOKEN is not configured")
 
@@ -181,22 +197,26 @@ def get_page_access_token(page_id: str) -> str:
     Returns:
         str: Page access token
     """
-    # Verificar cache primeiro
-    if page_id in PAGE_TOKEN_CACHE:
+    request_token = get_request_token()
+    use_cache = not request_token or request_token == TOKEN
+
+    # Verificar cache primeiro (apenas para token do system user)
+    if use_cache and page_id in PAGE_TOKEN_CACHE:
         logger.debug(f"Using cached page token for {page_id}")
         return PAGE_TOKEN_CACHE[page_id]
 
     # Buscar token da API
     logger.info(f"Fetching page access token for {page_id}")
-    data = gget(f"/{page_id}", {"fields": "access_token"})
+    data = gget(f"/{page_id}", {"fields": "access_token"}, token=request_token)
     token_value = data.get("access_token") if isinstance(data, dict) else None
 
     if not token_value:
         raise RuntimeError(f"Could not fetch page access token for {page_id}")
 
-    # Armazenar em cache
-    PAGE_TOKEN_CACHE[page_id] = token_value
-    logger.info(f"Page token cached for {page_id}")
+    # Armazenar em cache apenas quando usar o token do system user
+    if use_cache:
+        PAGE_TOKEN_CACHE[page_id] = token_value
+        logger.info(f"Page token cached for {page_id}")
 
     return token_value
 
