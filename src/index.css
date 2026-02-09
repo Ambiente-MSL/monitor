@@ -12158,7 +12158,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   }
 
 .ig-word-cloud__word {
-    font-family: Impact, 'Arial Black', 'Helvetica Neue', sans-serif;
+    font-family: Impact, 'Arial Black', Arial, sans-serif;
     font-weight: 700;
     letter-spacing: -0.01em;
     line-height: 1;

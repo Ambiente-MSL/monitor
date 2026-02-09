@@ -20,11 +20,13 @@ const WORD_COLORS = [
   "#374151", // cinza
 ];
 // Fonte clássica de wordcloud (próxima ao exemplo)
-const CLOUD_FONT_FAMILY = "Impact, 'Arial Black', 'Helvetica Neue', sans-serif";
+const CLOUD_FONT_FAMILY = "Impact, 'Arial Black', Arial, sans-serif";
 const DEFAULT_MIN_FONT = 14;
 const DEFAULT_MAX_FONT = 120;
-const DEFAULT_CLOUD_PADDING = 1;
+const DEFAULT_CLOUD_PADDING = 0;
 const RESIZE_DEBOUNCE_MS = 150;
+const MAX_RETRY_PASSES = 2;
+const FONT_BOOST_FACTOR = 1.10;
 const DETAILS_PAGE_SIZE = 50;
 const COMMENTS_PER_PAGE = 10;
 
@@ -276,6 +278,12 @@ export default function WordCloudCard({
   );
   const cloudClassName = "ig-word-cloud ig-word-cloud--large";
 
+  // Build a deterministic seed from account + date range
+  const layoutSeed = useMemo(() => {
+    const seedStr = `${resolvedAccountId || ""}_${since || ""}_${until || ""}`;
+    return hashString(seedStr);
+  }, [resolvedAccountId, since, until]);
+
   useEffect(() => {
     if (!entries.length || !cloudSize.width || !cloudSize.height) {
       setLayoutWords([]);
@@ -285,7 +293,6 @@ export default function WordCloudCard({
 
     let cancelled = false;
     setIsLayouting(true);
-    setLayoutWords([]);
 
     if (layoutTimerRef.current) {
       clearTimeout(layoutTimerRef.current);
@@ -294,33 +301,80 @@ export default function WordCloudCard({
     layoutTimerRef.current = setTimeout(() => {
       if (cancelled) return;
 
-      // Use a larger internal canvas for denser packing, then fit-to-box
-      const internalW = cloudSize.width * 1.5;
-      const internalH = cloudSize.height * 1.5;
-      const seededRng = createSeededRandom(42);
+      const w = cloudSize.width;
+      const h = cloudSize.height;
 
-      const layout = cloud()
-        .size([internalW, internalH])
-        .words(entries.map((entry) => ({ ...entry })))
-        .padding(Math.max(0, Number(cloudPadding) || 0))
-        .spiral("rectangular")
-        .random(seededRng)
-        .rotate(() => {
-          if (!allowRotate) return seededRng() < 0.1 ? 90 : 0;
-          return seededRng() < 0.15 ? 90 : 0;
-        })
-        .font(CLOUD_FONT_FAMILY)
-        .fontWeight(700)
-        .fontSize((d) => d.size)
-        .timeInterval(3000)
-        .on("end", (computed) => {
-          if (cancelled) return;
-          setLayoutWords(computed);
-          setIsLayouting(false);
-        });
+      // Compute bounding-box fill ratio to decide if a retry is needed
+      const computeFillRatio = (words) => {
+        if (!words.length) return 0;
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (const wd of words) {
+          const halfW = (wd.size * (wd.text?.length || 1) * 0.6) / 2;
+          const halfH = wd.size / 2;
+          const rotated = wd.rotate === 90 || wd.rotate === -90;
+          const hw = rotated ? halfH : halfW;
+          const hh = rotated ? halfW : halfH;
+          if (wd.x - hw < minX) minX = wd.x - hw;
+          if (wd.y - hh < minY) minY = wd.y - hh;
+          if (wd.x + hw > maxX) maxX = wd.x + hw;
+          if (wd.y + hh > maxY) maxY = wd.y + hh;
+        }
+        const bboxW = maxX - minX || 1;
+        const bboxH = maxY - minY || 1;
+        // After fit-to-box the cloud will fill the container,
+        // but we want to know how "full" the internal canvas is
+        return (bboxW * bboxH) / (w * h);
+      };
 
-      layoutRef.current = layout;
-      layout.start();
+      let passCount = 0;
+      let fontBoost = 1;
+
+      const runPass = () => {
+        if (cancelled) return;
+        passCount++;
+        const seededRng = createSeededRandom(layoutSeed + passCount);
+
+        // Larger internal canvas so d3-cloud can place more words
+        const internalW = w * 1.6;
+        const internalH = h * 1.6;
+
+        const wordsForLayout = entries.map((entry) => ({
+          ...entry,
+          size: Math.round(entry.size * fontBoost),
+        }));
+
+        const layout = cloud()
+          .size([internalW, internalH])
+          .words(wordsForLayout)
+          .padding(Math.max(0, Number(cloudPadding) || 0))
+          .spiral("rectangular")
+          .random(seededRng)
+          .rotate(() => (seededRng() < 0.05 ? 90 : 0))
+          .font(CLOUD_FONT_FAMILY)
+          .fontWeight(700)
+          .fontSize((d) => d.size)
+          .timeInterval(4000)
+          .on("end", (computed) => {
+            if (cancelled) return;
+
+            const fillRatio = computeFillRatio(computed);
+
+            // If fill is low and we haven't retried too much, boost fonts and retry
+            if (fillRatio < 0.75 && passCount < MAX_RETRY_PASSES) {
+              fontBoost *= FONT_BOOST_FACTOR;
+              runPass();
+              return;
+            }
+
+            setLayoutWords(computed);
+            setIsLayouting(false);
+          });
+
+        layoutRef.current = layout;
+        layout.start();
+      };
+
+      runPass();
     }, RESIZE_DEBOUNCE_MS);
 
     return () => {
@@ -332,7 +386,7 @@ export default function WordCloudCard({
         layoutRef.current.stop();
       }
     };
-  }, [entries, cloudSize.width, cloudSize.height, cloudPadding, allowRotate]);
+  }, [entries, cloudSize.width, cloudSize.height, cloudPadding, allowRotate, layoutSeed]);
 
   useEffect(() => {
     const node = cloudRef.current;
@@ -428,9 +482,9 @@ export default function WordCloudCard({
     const bboxCX = (minX + maxX) / 2;
     const bboxCY = (minY + maxY) / 2;
 
-    const scaleX = (svgWidth * 0.95) / bboxW;
-    const scaleY = (svgHeight * 0.92) / bboxH;
-    const s = Math.min(scaleX, scaleY, 1.8); // cap scale to avoid over-zoom on few words
+    const scaleX = (svgWidth * 0.98) / bboxW;
+    const scaleY = (svgHeight * 0.94) / bboxH;
+    const s = Math.min(scaleX, scaleY, 2.0); // cap scale to avoid over-zoom on few words
 
     const tx = svgWidth / 2 - bboxCX * s;
     const ty = svgHeight / 2 - bboxCY * s;
