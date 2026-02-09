@@ -97,8 +97,9 @@ const buildCloudEntries = (words) => {
     const color = WORD_COLORS[Math.floor(rng() * WORD_COLORS.length)];
     // Sem variação de opacidade - todas sólidas como na referência
     const opacity = 1;
-    // Sem rotação por enquanto para evitar sobreposição
-    const rotate = 0;
+    // Algumas palavras rotacionadas (vertical) para reproduzir a nuvem da referência
+    const shouldRotate = index > 3 && fontSize <= Math.round(maxFont * 0.9) && rng() < 0.22;
+    const rotate = shouldRotate ? (rng() < 0.5 ? 90 : -90) : 0;
     // Fonte forte como na referência
     const fontWeight = 700;
     return {
@@ -112,6 +113,7 @@ const buildCloudEntries = (words) => {
         opacity,
         fontWeight,
         fontFamily: CLOUD_FONT_FAMILY,
+        "--wc-rotate": `${rotate}deg`,
       },
     };
   });
@@ -127,8 +129,8 @@ const measureWord = (ctx, word, fontSize, fontWeight) => {
 };
 
 // Verifica colisão entre retângulos usando coordenadas do canto superior esquerdo
-// Padding proporcional (2% da menor dimensão entre as duas palavras)
-const hasCollision = (newRect, placed, paddingPercent = 2) => {
+// Padding proporcional (0-1% da menor dimensão entre as duas palavras)
+const hasCollision = (newRect, placed, paddingPercent = 0.8) => {
   for (const item of placed) {
     // Converter centro para canto superior esquerdo para comparação
     const itemLeft = item.x - item.width / 2;
@@ -141,9 +143,9 @@ const hasCollision = (newRect, placed, paddingPercent = 2) => {
     const newRight = newLeft + newRect.width;
     const newBottom = newTop + newRect.height;
 
-    // Padding proporcional: 2% da menor altura entre as duas palavras
+    // Padding proporcional: 0-1% da menor altura entre as duas palavras
     const minHeight = Math.min(item.height, newRect.height);
-    const p = Math.max(1, Math.round(minHeight * (paddingPercent / 100)));
+    const p = Math.max(0, Math.round(minHeight * (paddingPercent / 100)));
 
     if (newLeft < itemRight + p &&
         newRight > itemLeft - p &&
@@ -155,7 +157,7 @@ const hasCollision = (newRect, placed, paddingPercent = 2) => {
   return false;
 };
 
-const spreadLayoutToFill = (layout, bounds, margin = 10) => {
+const spreadLayoutToFill = (layout, bounds, margin = 8) => {
   if (!Array.isArray(layout) || !layout.length) return layout;
   if (!bounds?.width || !bounds?.height) return layout;
 
@@ -179,7 +181,7 @@ const spreadLayoutToFill = (layout, bounds, margin = 10) => {
   const boxHeight = Math.max(1, maxY - minY);
   const targetWidth = Math.max(1, bounds.width - margin * 2);
   const targetHeight = Math.max(1, bounds.height - margin * 2);
-  const scale = Math.min(targetWidth / boxWidth, targetHeight / boxHeight, 1.18);
+  const scale = Math.min(targetWidth / boxWidth, targetHeight / boxHeight, 1.22);
 
   if (scale <= 1.01) return layout;
 
@@ -192,7 +194,7 @@ const spreadLayoutToFill = (layout, bounds, margin = 10) => {
   }));
 };
 
-const buildCloudLayout = (entries, bounds, paddingPercent = 2) => {
+const buildCloudLayout = (entries, bounds, paddingPercent = 0.8) => {
   if (!entries.length) return [];
   if (!bounds?.width || bounds.width < 200 || !bounds?.height || bounds.height < 150) return [];
   if (typeof document === "undefined") return [];
@@ -205,7 +207,7 @@ const buildCloudLayout = (entries, bounds, paddingPercent = 2) => {
   const height = bounds.height;
   const centerX = width / 2;
   const centerY = height / 2;
-  const margin = 3;
+  const margin = 2;
 
   const placed = [];
 
@@ -282,7 +284,7 @@ const buildCloudLayout = (entries, bounds, paddingPercent = 2) => {
           continue;
         }
 
-        // Colisão com padding de 2% para proximidade ideal
+        // Colisão com padding quase zero para proximidade ideal
         const testRect = { left, top, width: wordWidth, height: wordHeight };
         if (!hasCollision(testRect, placed, paddingPercent)) {
           bestX = testX;
@@ -358,7 +360,7 @@ export default function WordCloudCard({
   onWordClick = null,
   externalPanelMode = false,
   wordGap = null,
-  packedPaddingPercent = 2,
+  packedPaddingPercent = 0.8,
 }) {
   const resolvedPlatform = platform === "facebook" ? "facebook" : "instagram";
   const resolvedAccountId = resolvedPlatform === "facebook"

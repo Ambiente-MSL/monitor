@@ -12161,10 +12161,12 @@ body:has(.facebook-dashboard--clean) .app-main__content {
     font-weight: 700;
     letter-spacing: -0.01em;
     line-height: 0.9;
-  transition: transform 0.15s ease, opacity 0.15s ease;
-  cursor: pointer;
-  background: transparent;
-  border: none;
+    transform: rotate(var(--wc-rotate, 0deg)) scale(var(--wc-scale, 1));
+    transform-origin: center;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+    cursor: pointer;
+    background: transparent;
+    border: none;
   padding: 0;
   white-space: nowrap;
   text-transform: lowercase !important;
@@ -12175,9 +12177,9 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 }
 
 .ig-word-cloud:not(.ig-word-cloud--packed) .ig-word-cloud__word:hover {
-  transform: scale(1.05);
-  opacity: 0.8;
-}
+    --wc-scale: 1.05;
+    opacity: 0.8;
+  }
 
 .ig-word-cloud__word:focus-visible {
   outline: 2px solid var(--color-primary);
@@ -12225,7 +12227,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 
 .ig-word-cloud--packed .ig-word-cloud__word {
     position: absolute;
-    transform: translate(-50%, -50%) scale(var(--wc-scale, 1));
+    transform: translate(-50%, -50%) rotate(var(--wc-rotate, 0deg)) scale(var(--wc-scale, 1));
     transform-origin: center;
     line-height: 0.88;
     will-change: transform;

@@ -6502,7 +6502,7 @@ const profileViewsMetric = useMemo(() => {
                 externalPanelMode={true}
                 onWordClick={handleWordCloudWordClick}
                 wordGap="0.1cm"
-                packedPaddingPercent={1}
+                  packedPaddingPercent={0.6}
               />
             </div>
           </section>
