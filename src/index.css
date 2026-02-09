@@ -12157,9 +12157,10 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 }
 
 .ig-word-cloud__word {
-  font-family: Impact, 'Arial Black', 'Helvetica Neue', sans-serif;
-  font-weight: 400;
-  line-height: 0.95;
+    font-family: 'Poppins', 'Lato', 'Helvetica Neue', Arial, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 0.9;
   transition: transform 0.15s ease, opacity 0.15s ease;
   cursor: pointer;
   background: transparent;
@@ -12223,12 +12224,12 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 }
 
 .ig-word-cloud--packed .ig-word-cloud__word {
-  position: absolute;
-  transform: translate(-50%, -50%) scale(var(--wc-scale, 1));
-  transform-origin: center;
-  line-height: 0.85;
-  will-change: transform;
-}
+    position: absolute;
+    transform: translate(-50%, -50%) scale(var(--wc-scale, 1));
+    transform-origin: center;
+    line-height: 0.88;
+    will-change: transform;
+  }
 
 .ig-word-cloud--packed .ig-word-cloud__word:hover {
   --wc-scale: 1.03;

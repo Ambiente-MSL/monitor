@@ -17,8 +17,8 @@ const WORD_COLORS = [
   "#1f2937", // preto/cinza escuro
   "#374151", // cinza
 ];
-// Fonte similar à da referência - Impact ou similar
-const CLOUD_FONT_FAMILY = "Impact, 'Arial Black', 'Helvetica Neue', sans-serif";
+// Fonte semelhante à referência (arredondada e forte)
+const CLOUD_FONT_FAMILY = "'Poppins', 'Lato', 'Helvetica Neue', Arial, sans-serif";
 const DETAILS_PAGE_SIZE = 50;
 const COMMENTS_PER_PAGE = 10;
 
@@ -77,9 +77,9 @@ const buildCloudEntries = (words) => {
   const counts = limited.map((item) => item.count || 0);
   const maxCount = Math.max(...counts);
   const minCount = Math.min(...counts);
-  // Escala maior para ocupar melhor o card
-  const minFont = 16;
-  const maxFont = 68;
+  // Escala ajustada para caber com densidade maior
+  const minFont = 14;
+  const maxFont = 62;
 
   return limited.map((item, index) => {
     const seed = hashString(item.word || `${index}`);
@@ -88,9 +88,9 @@ const buildCloudEntries = (words) => {
     // Top 1 = muito grande, top 2 = grande, resto proporcional
     let fontSize;
     if (index === 0) {
-      fontSize = 96; // Palavra principal maior
+      fontSize = Math.round(maxFont * 1.35); // Palavra principal maior
     } else if (index === 1) {
-      fontSize = 78; // Segunda palavra grande
+      fontSize = Math.round(maxFont * 1.1); // Segunda palavra grande
     } else {
       fontSize = baseFont;
     }
@@ -99,8 +99,8 @@ const buildCloudEntries = (words) => {
     const opacity = 1;
     // Sem rotação por enquanto para evitar sobreposição
     const rotate = 0;
-    // Fonte normal (Impact já é bold)
-    const fontWeight = 300;
+    // Fonte forte como na referência
+    const fontWeight = 700;
     return {
       key: `${item.word}-${index}`,
       word: item.word.toLowerCase(), // Palavras em minúsculo
@@ -122,13 +122,13 @@ const measureWord = (ctx, word, fontSize, fontWeight) => {
   const metrics = ctx.measureText(word);
   return {
     width: Math.ceil(metrics.width),
-    height: Math.ceil(fontSize * 1.05),
+    height: Math.ceil(fontSize * 0.92),
   };
 };
 
 // Verifica colisão entre retângulos usando coordenadas do canto superior esquerdo
-// Padding proporcional (5% da menor dimensão entre as duas palavras)
-const hasCollision = (newRect, placed, paddingPercent = 5) => {
+// Padding proporcional (2% da menor dimensão entre as duas palavras)
+const hasCollision = (newRect, placed, paddingPercent = 2) => {
   for (const item of placed) {
     // Converter centro para canto superior esquerdo para comparação
     const itemLeft = item.x - item.width / 2;
@@ -141,7 +141,7 @@ const hasCollision = (newRect, placed, paddingPercent = 5) => {
     const newRight = newLeft + newRect.width;
     const newBottom = newTop + newRect.height;
 
-    // Padding proporcional: 5% da menor altura entre as duas palavras
+    // Padding proporcional: 2% da menor altura entre as duas palavras
     const minHeight = Math.min(item.height, newRect.height);
     const p = Math.max(1, Math.round(minHeight * (paddingPercent / 100)));
 
@@ -192,7 +192,7 @@ const spreadLayoutToFill = (layout, bounds, margin = 10) => {
   }));
 };
 
-const buildCloudLayout = (entries, bounds, paddingPercent = 5) => {
+const buildCloudLayout = (entries, bounds, paddingPercent = 2) => {
   if (!entries.length) return [];
   if (!bounds?.width || bounds.width < 200 || !bounds?.height || bounds.height < 150) return [];
   if (typeof document === "undefined") return [];
@@ -205,7 +205,7 @@ const buildCloudLayout = (entries, bounds, paddingPercent = 5) => {
   const height = bounds.height;
   const centerX = width / 2;
   const centerY = height / 2;
-  const margin = 5;
+  const margin = 3;
 
   const placed = [];
 
@@ -263,14 +263,14 @@ const buildCloudLayout = (entries, bounds, paddingPercent = 5) => {
 
     // Demais palavras: espiral muito compacta preenchendo os espaços
     if (!placedOk) {
-      // Espiral com passos pequenos para encaixe preciso e formato oval
-      for (let step = 0; step < 12000 && !placedOk; step += 1) {
-        const angle = step * 0.18;
-        const baseRadius = step * 0.45;
+      // Espiral compacta para encaixe preciso e formato mais denso
+      for (let step = 0; step < 16000 && !placedOk; step += 1) {
+        const angle = step * 0.16;
+        const baseRadius = step * 0.34;
 
-        // Elipse horizontal (oval) - mais larga que alta
-        const testX = centerX + baseRadius * 2.0 * Math.cos(angle);
-        const testY = centerY + baseRadius * 0.85 * Math.sin(angle);
+        // Elipse suave, menos espalhada horizontalmente
+        const testX = centerX + baseRadius * 1.5 * Math.cos(angle);
+        const testY = centerY + baseRadius * 0.9 * Math.sin(angle);
 
         const left = testX - wordWidth / 2;
         const top = testY - wordHeight / 2;
@@ -282,7 +282,7 @@ const buildCloudLayout = (entries, bounds, paddingPercent = 5) => {
           continue;
         }
 
-        // Colisão com padding de 5% para proximidade ideal
+        // Colisão com padding de 2% para proximidade ideal
         const testRect = { left, top, width: wordWidth, height: wordHeight };
         if (!hasCollision(testRect, placed, paddingPercent)) {
           bestX = testX;
@@ -358,7 +358,7 @@ export default function WordCloudCard({
   onWordClick = null,
   externalPanelMode = false,
   wordGap = null,
-  packedPaddingPercent = 5,
+  packedPaddingPercent = 2,
 }) {
   const resolvedPlatform = platform === "facebook" ? "facebook" : "instagram";
   const resolvedAccountId = resolvedPlatform === "facebook"
