@@ -50,8 +50,6 @@ import {
   Share2,
   Settings,
   Shield,
-  TrendingUp,
-  TrendingDown,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -2057,6 +2055,28 @@ const profileViewsMetric = useMemo(() => {
     const merged = Array.from(byId.values());
     return extras.length ? [...merged, ...extras] : merged;
   }, [filteredPosts, recentPosts]);
+  const totalInteractionsLikesComments = useMemo(() => {
+    if (metricsLoading) return null;
+
+    if (contentPostsSource.length) {
+      let total = 0;
+      let hasMetric = false;
+
+      contentPostsSource.forEach((post) => {
+        const likes = resolvePostMetric(post, "likes", null);
+        const comments = resolvePostMetric(post, "comments", null);
+        if (likes != null || comments != null) hasMetric = true;
+        total += (likes || 0) + (comments || 0);
+      });
+
+      if (hasMetric) return Math.max(0, total);
+    }
+
+    const likesFromBreakdown = extractNumber(interactionsBreakdown.likes, null);
+    const commentsFromBreakdown = extractNumber(interactionsBreakdown.comments, null);
+    if (likesFromBreakdown == null && commentsFromBreakdown == null) return null;
+    return Math.max(0, (likesFromBreakdown || 0) + (commentsFromBreakdown || 0));
+  }, [contentPostsSource, interactionsBreakdown.comments, interactionsBreakdown.likes, metricsLoading]);
   const interactionsDailyTotals = useMemo(() => {
     if (!contentPostsSource.length) return [];
     const totals = new Map();
@@ -2580,7 +2600,8 @@ const profileViewsMetric = useMemo(() => {
     const hasValue = Number.isFinite(totalFollowers)
       || Number.isFinite(reachValue)
       || Number.isFinite(avgFollowersPerDay)
-      || Number.isFinite(postsCount);
+      || Number.isFinite(postsCount)
+      || Number.isFinite(totalInteractionsLikesComments);
     if (!hasValue) return;
     setOverviewSnapshot({
       accountId: accountSnapshotKey,
@@ -2588,6 +2609,7 @@ const profileViewsMetric = useMemo(() => {
       reach: Number.isFinite(reachValue) ? reachValue : null,
       followersDaily: Number.isFinite(avgFollowersPerDay) ? avgFollowersPerDay : null,
       posts: Number.isFinite(postsCount) ? postsCount : null,
+      interactionsTotal: Number.isFinite(totalInteractionsLikesComments) ? totalInteractionsLikesComments : null,
     });
   }, [
     accountSnapshotKey,
@@ -2595,6 +2617,7 @@ const profileViewsMetric = useMemo(() => {
     metricsLoading,
     postsCount,
     reachValue,
+    totalInteractionsLikesComments,
     totalFollowers,
   ]);
 
@@ -2608,6 +2631,7 @@ const profileViewsMetric = useMemo(() => {
         followersDaily: null,
         followersDelta: null,
         posts: null,
+        interactionsTotal: null,
       };
     }
 
@@ -2618,6 +2642,8 @@ const profileViewsMetric = useMemo(() => {
         ?? (Number.isFinite(avgFollowersPerDay) ? avgFollowersPerDay : null),
       followersDelta,
       posts: activeSnapshot?.posts ?? postsCount ?? null,
+      interactionsTotal: activeSnapshot?.interactionsTotal
+        ?? (Number.isFinite(totalInteractionsLikesComments) ? totalInteractionsLikesComments : null),
     };
   }, [
     activeSnapshot,
@@ -2626,15 +2652,10 @@ const profileViewsMetric = useMemo(() => {
     metricsLoading,
     postsCount,
     reachDisplayValue,
+    totalInteractionsLikesComments,
     totalFollowers,
   ]);
 
-  const followerDeltaValue = useMemo(() => {
-    if (metricsLoading) return null;
-    if (overviewMetrics.followersDelta == null) return null;
-    const numeric = Number(overviewMetrics.followersDelta);
-    return Number.isFinite(numeric) ? numeric : null;
-  }, [metricsLoading, overviewMetrics.followersDelta]);
   const followersGainedValue = useMemo(() => {
     const numeric = extractNumber(followersDelta, null);
     if (numeric == null) return null;
@@ -2658,15 +2679,6 @@ const profileViewsMetric = useMemo(() => {
     followerSeriesNormalized,
     metricsLoading,
   ]);
-
-  const FollowerDeltaIcon = followerDeltaValue != null && followerDeltaValue < 0 ? TrendingDown : TrendingUp;
-  const followerDeltaColor = followerDeltaValue == null
-    ? "#9ca3af"
-    : followerDeltaValue < 0
-      ? "#ef4444"
-      : followerDeltaValue > 0
-        ? "#10b981"
-        : "#9ca3af";
 
   const engagementRateDisplay = useMemo(() => (
     engagementRateValue != null
@@ -3735,19 +3747,14 @@ const profileViewsMetric = useMemo(() => {
                     <div className="ig-overview-stat__label">Posts criados</div>
                   </div>
                   <div className="ig-overview-stat" style={{ paddingTop: '8px' }}>
-                    <div className="ig-overview-stat__value" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    <div className="ig-overview-stat__value">
                       {metricsLoading ? (
                         <span className="ig-skeleton ig-skeleton--stat" aria-hidden="true" />
                       ) : (
-                        <>
-                          {formatNumber(followerDeltaValue ?? null)}
-                          {followerDeltaValue != null ? (
-                            <FollowerDeltaIcon size={20} style={{ color: followerDeltaColor }} />
-                          ) : null}
-                        </>
+                        formatNumber(overviewMetrics.interactionsTotal ?? null)
                       )}
                     </div>
-                    <div className="ig-overview-stat__label">Seguidores ganhos</div>
+                    <div className="ig-overview-stat__label">Interações totais</div>
                   </div>
                 </div>
 
