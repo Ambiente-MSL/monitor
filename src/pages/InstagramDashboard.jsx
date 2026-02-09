@@ -2058,6 +2058,7 @@ const profileViewsMetric = useMemo(() => {
   const totalInteractionsLikesComments = useMemo(() => {
     if (metricsLoading) return null;
 
+    // Inclui curtidas, comentários, compartilhamentos e salvamentos
     if (contentPostsSource.length) {
       let total = 0;
       let hasMetric = false;
@@ -2065,8 +2066,10 @@ const profileViewsMetric = useMemo(() => {
       contentPostsSource.forEach((post) => {
         const likes = resolvePostMetric(post, "likes", null);
         const comments = resolvePostMetric(post, "comments", null);
-        if (likes != null || comments != null) hasMetric = true;
-        total += (likes || 0) + (comments || 0);
+        const shares = resolvePostMetric(post, "shares", null);
+        const saves = resolvePostMetric(post, "saves", null);
+        if (likes != null || comments != null || shares != null || saves != null) hasMetric = true;
+        total += (likes || 0) + (comments || 0) + (shares || 0) + (saves || 0);
       });
 
       if (hasMetric) return Math.max(0, total);
@@ -2074,9 +2077,11 @@ const profileViewsMetric = useMemo(() => {
 
     const likesFromBreakdown = extractNumber(interactionsBreakdown.likes, null);
     const commentsFromBreakdown = extractNumber(interactionsBreakdown.comments, null);
-    if (likesFromBreakdown == null && commentsFromBreakdown == null) return null;
-    return Math.max(0, (likesFromBreakdown || 0) + (commentsFromBreakdown || 0));
-  }, [contentPostsSource, interactionsBreakdown.comments, interactionsBreakdown.likes, metricsLoading]);
+    const sharesFromBreakdown = extractNumber(interactionsBreakdown.shares, null);
+    const savesFromBreakdown = extractNumber(interactionsBreakdown.saves, null);
+    if (likesFromBreakdown == null && commentsFromBreakdown == null && sharesFromBreakdown == null && savesFromBreakdown == null) return null;
+    return Math.max(0, (likesFromBreakdown || 0) + (commentsFromBreakdown || 0) + (sharesFromBreakdown || 0) + (savesFromBreakdown || 0));
+  }, [contentPostsSource, interactionsBreakdown.comments, interactionsBreakdown.likes, interactionsBreakdown.shares, interactionsBreakdown.saves, metricsLoading]);
   const interactionsDailyTotals = useMemo(() => {
     if (!contentPostsSource.length) return [];
     const totals = new Map();
@@ -4021,7 +4026,8 @@ const profileViewsMetric = useMemo(() => {
           </div>
 
           <div className="ig-clean-grid__right">
-            {showFollowersDetail ? (
+            {/* DESATIVADO TEMPORARIAMENTE — Crescimento de Seguidores detail */}
+            {false && showFollowersDetail ? (
               /* Conteúdo detalhado de Crescimento de Seguidores */
               <div className="ig-followers-detail-panel">
                 {/* Header com botão voltar */}
@@ -5925,20 +5931,26 @@ const profileViewsMetric = useMemo(() => {
               </div>
             </section>
 
-            {/* Card de Crescimento de Seguidores */}
+            {/* DESATIVADO TEMPORARIAMENTE — Card de Crescimento de Seguidores
+            <section className="ig-growth-clean ig-growth-followers ig-follower-growth-card">
+              ... conteúdo original preservado no código para reativação futura ...
+            </section>
+            */}
+
+            {/* Card de Interações por dia */}
             <section className="ig-growth-clean ig-growth-followers ig-follower-growth-card">
               <header className="ig-card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
                   <h3>
-                    Crescimento de seguidores
-                    <InfoTooltip text="Quantidade de novos seguidores conquistados por dia no período." />
+                    Interações por dia
+                    <InfoTooltip text="Total de curtidas, comentários, compartilhamentos e salvamentos por dia no período." />
                   </h3>
-                  <p className="ig-card-subtitle">Ganho diário</p>
+                  <p className="ig-card-subtitle">Curtidas, comentários, compartilhamentos e salvamentos</p>
                 </div>
                 <button
                   onClick={() => {
                     closeWordCloudDetail();
-                    setShowFollowersDetail(true);
+                    setShowInteractionsDetail(true);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   style={{
@@ -5970,21 +5982,21 @@ const profileViewsMetric = useMemo(() => {
               <div className="ig-chart-area">
                 {metricsLoading ? (
                   <div className="ig-chart-skeleton ig-chart-skeleton--compact" aria-hidden="true" />
-                ) : followerGrowthChartData.length ? (
+                ) : interactionsChartData.length ? (
                   <ResponsiveContainer width="100%" height={220}>
                     <AreaChart
-                      data={followerGrowthChartData}
+                      data={interactionsChartData}
                       margin={{ top: 14, right: 16, bottom: 8, left: 0 }}
                     >
                         <defs>
-                          <linearGradient id="igFollowerGrowthLine" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#c084fc" stopOpacity={0.4} />
-                            <stop offset="100%" stopColor="#c084fc" stopOpacity={0.05} />
+                          <linearGradient id="igInteractionsDailyLine" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#6366f1" stopOpacity={0.35} />
+                            <stop offset="100%" stopColor="#6366f1" stopOpacity={0.05} />
                           </linearGradient>
                         </defs>
                         <CartesianGrid stroke="#e5e7eb" strokeDasharray="4 8" vertical={false} />
                         <XAxis
-                          dataKey="label"
+                          dataKey="date"
                           tick={{ fill: "#9ca3af", fontSize: 12 }}
                           axisLine={false}
                           tickLine={false}
@@ -5998,11 +6010,9 @@ const profileViewsMetric = useMemo(() => {
                           axisLine={false}
                           tickLine={false}
                           tickFormatter={(value) => formatCompactNumber(value)}
-                          ticks={followerGrowthTicks}
-                          domain={followerGrowthDomain}
                         />
                         <Tooltip
-                          cursor={{ stroke: "#c084fc", strokeWidth: 1, strokeDasharray: "4 4" }}
+                          cursor={{ stroke: "#6366f1", strokeWidth: 1, strokeDasharray: "4 4" }}
                           content={(props) => {
                             if (!props?.active || !props?.payload?.length) return null;
                             const tooltipDate = props?.payload?.[0]?.payload?.tooltipDate || props?.label;
@@ -6012,8 +6022,8 @@ const profileViewsMetric = useMemo(() => {
                                 <span className="ig-tooltip__title">{tooltipDate}</span>
                                 <div className="ig-tooltip__row">
                                   <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
-                                    <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#a855f7" }} />
-                                    Seguidores ganhos
+                                    <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#6366f1" }} />
+                                    Interações
                                   </span>
                                   <strong>: {formatTooltipNumber(value)}</strong>
                                 </div>
@@ -6021,38 +6031,15 @@ const profileViewsMetric = useMemo(() => {
                             );
                           }}
                         />
-                        {highlightedFollowerGrowthPoint ? (
-                          <>
-                            <ReferenceLine
-                              x={highlightedFollowerGrowthPoint.label}
-                              stroke="#111827"
-                              strokeDasharray="4 4"
-                              strokeOpacity={0.3}
-                            />
-                            <ReferenceLine
-                              y={extractNumber(highlightedFollowerGrowthPoint.value, 0)}
-                              stroke="#111827"
-                              strokeDasharray="4 4"
-                              strokeOpacity={0.35}
-                            />
-                            <ReferenceDot
-                              x={highlightedFollowerGrowthPoint.label}
-                              y={extractNumber(highlightedFollowerGrowthPoint.value, 0)}
-                              r={6}
-                              fill="#a855f7"
-                              stroke="#ffffff"
-                              strokeWidth={2}
-                            />
-                          </>
-                        ) : null}
                         <Area
                           type="monotone"
                           dataKey="value"
-                          stroke="#a855f7"
+                          stroke="#6366f1"
                           strokeWidth={2.5}
-                          fill="url(#igFollowerGrowthLine)"
+                          fill="url(#igInteractionsDailyLine)"
                           dot={false}
-                          activeDot={{ r: 5, fill: "#a855f7", stroke: "#fff", strokeWidth: 2 }}
+                          activeDot={{ r: 5, fill: "#6366f1", stroke: "#fff", strokeWidth: 2 }}
+                          connectNulls
                         />
                       </AreaChart>
                     </ResponsiveContainer>
