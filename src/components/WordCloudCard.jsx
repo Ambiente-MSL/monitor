@@ -21,12 +21,14 @@ const WORD_COLORS = [
 ];
 // Fonte clássica de wordcloud (próxima ao exemplo)
 const CLOUD_FONT_FAMILY = "Impact, 'Arial Black', Arial, sans-serif";
-const DEFAULT_MIN_FONT = 14;
+const DEFAULT_MIN_FONT = 12;
 const DEFAULT_MAX_FONT = 120;
 const DEFAULT_CLOUD_PADDING = 0;
 const RESIZE_DEBOUNCE_MS = 150;
-const MAX_RETRY_PASSES = 2;
-const FONT_BOOST_FACTOR = 1.10;
+const CIRCLE_MAX_PASSES = 3;
+const CIRCLE_SHRINK = 0.95;
+const CIRCLE_BOOST = 1.08;
+const CIRCLE_MIN_INSIDE = 0.95; // 95% of words must be inside circle
 const DETAILS_PAGE_SIZE = 50;
 const COMMENTS_PER_PAGE = 10;
 
@@ -303,53 +305,30 @@ export default function WordCloudCard({
 
       const w = cloudSize.width;
       const h = cloudSize.height;
-
-      // Compute bounding-box fill ratio to decide if a retry is needed
-      const computeFillRatio = (words) => {
-        if (!words.length) return 0;
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-        for (const wd of words) {
-          const halfW = (wd.size * (wd.text?.length || 1) * 0.6) / 2;
-          const halfH = wd.size / 2;
-          const rotated = wd.rotate === 90 || wd.rotate === -90;
-          const hw = rotated ? halfH : halfW;
-          const hh = rotated ? halfW : halfH;
-          if (wd.x - hw < minX) minX = wd.x - hw;
-          if (wd.y - hh < minY) minY = wd.y - hh;
-          if (wd.x + hw > maxX) maxX = wd.x + hw;
-          if (wd.y + hh > maxY) maxY = wd.y + hh;
-        }
-        const bboxW = maxX - minX || 1;
-        const bboxH = maxY - minY || 1;
-        // After fit-to-box the cloud will fill the container,
-        // but we want to know how "full" the internal canvas is
-        return (bboxW * bboxH) / (w * h);
-      };
+      // Circle radius for masking — 48% of the smaller dimension
+      const R = Math.min(w, h) * 0.48;
+      const R2 = R * R;
 
       let passCount = 0;
-      let fontBoost = 1;
+      let fontScale = 1;
 
       const runPass = () => {
         if (cancelled) return;
         passCount++;
         const seededRng = createSeededRandom(layoutSeed + passCount);
 
-        // Larger internal canvas so d3-cloud can place more words
-        const internalW = w * 1.6;
-        const internalH = h * 1.6;
-
         const wordsForLayout = entries.map((entry) => ({
           ...entry,
-          size: Math.round(entry.size * fontBoost),
+          size: Math.max(8, Math.round(entry.size * fontScale)),
         }));
 
         const layout = cloud()
-          .size([internalW, internalH])
+          .size([w, h])
           .words(wordsForLayout)
           .padding(Math.max(0, Number(cloudPadding) || 0))
-          .spiral("rectangular")
+          .spiral("archimedean")
           .random(seededRng)
-          .rotate(() => (seededRng() < 0.05 ? 90 : 0))
+          .rotate(() => 0)
           .font(CLOUD_FONT_FAMILY)
           .fontWeight(700)
           .fontSize((d) => d.size)
@@ -357,16 +336,33 @@ export default function WordCloudCard({
           .on("end", (computed) => {
             if (cancelled) return;
 
-            const fillRatio = computeFillRatio(computed);
+            // Circle mask: keep only words whose center is inside the circle
+            const inside = computed.filter((wd) => (wd.x * wd.x + wd.y * wd.y) <= R2);
+            const insideRatio = computed.length > 0 ? inside.length / computed.length : 1;
 
-            // If fill is low and we haven't retried too much, boost fonts and retry
-            if (fillRatio < 0.75 && passCount < MAX_RETRY_PASSES) {
-              fontBoost *= FONT_BOOST_FACTOR;
+            // If too many words fell outside, shrink fonts and retry
+            if (insideRatio < CIRCLE_MIN_INSIDE && passCount < CIRCLE_MAX_PASSES) {
+              fontScale *= CIRCLE_SHRINK;
               runPass();
               return;
             }
 
-            setLayoutWords(computed);
+            // Check if fill is too sparse — boost and retry once more
+            if (inside.length > 0 && passCount < CIRCLE_MAX_PASSES) {
+              let maxDist = 0;
+              for (const wd of inside) {
+                const dist = Math.sqrt(wd.x * wd.x + wd.y * wd.y);
+                if (dist > maxDist) maxDist = dist;
+              }
+              // If the outermost word is only using < 60% of the radius, cloud is too small
+              if (maxDist < R * 0.6 && fontScale <= 1.0) {
+                fontScale *= CIRCLE_BOOST;
+                runPass();
+                return;
+              }
+            }
+
+            setLayoutWords(inside);
             setIsLayouting(false);
           });
 
@@ -386,7 +382,7 @@ export default function WordCloudCard({
         layoutRef.current.stop();
       }
     };
-  }, [entries, cloudSize.width, cloudSize.height, cloudPadding, allowRotate, layoutSeed]);
+  }, [entries, cloudSize.width, cloudSize.height, cloudPadding, layoutSeed]);
 
   useEffect(() => {
     const node = cloudRef.current;
@@ -455,22 +451,19 @@ export default function WordCloudCard({
   const svgHeight = Math.max(1, cloudSize.height || 1);
   const hasLayout = layoutWords.length > 0;
 
-  // Compute bounding box and fit-to-box transform
+  // Compute bounding box of placed words and fit-to-box transform
   const cloudTransform = useMemo(() => {
     if (!hasLayout || !layoutWords.length) {
       return `translate(${svgWidth / 2}, ${svgHeight / 2})`;
     }
 
+    // d3-cloud places words relative to center (0,0)
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    for (const w of layoutWords) {
-      // Approximate bounding box per word
-      const halfW = (w.size * (w.text?.length || 1) * 0.6) / 2;
-      const halfH = w.size / 2;
-      const rotated = w.rotate === 90 || w.rotate === -90;
-      const hw = rotated ? halfH : halfW;
-      const hh = rotated ? halfW : halfH;
-      const x1 = w.x - hw, x2 = w.x + hw;
-      const y1 = w.y - hh, y2 = w.y + hh;
+    for (const wd of layoutWords) {
+      const halfW = (wd.size * (wd.text?.length || 1) * 0.6) / 2;
+      const halfH = wd.size / 2;
+      const x1 = wd.x - halfW, x2 = wd.x + halfW;
+      const y1 = wd.y - halfH, y2 = wd.y + halfH;
       if (x1 < minX) minX = x1;
       if (y1 < minY) minY = y1;
       if (x2 > maxX) maxX = x2;
@@ -482,9 +475,10 @@ export default function WordCloudCard({
     const bboxCX = (minX + maxX) / 2;
     const bboxCY = (minY + maxY) / 2;
 
-    const scaleX = (svgWidth * 0.98) / bboxW;
-    const scaleY = (svgHeight * 0.94) / bboxH;
-    const s = Math.min(scaleX, scaleY, 2.0); // cap scale to avoid over-zoom on few words
+    // Scale to fill ~95% of card
+    const scaleX = (svgWidth * 0.95) / bboxW;
+    const scaleY = (svgHeight * 0.95) / bboxH;
+    const s = Math.min(scaleX, scaleY, 2.5);
 
     const tx = svgWidth / 2 - bboxCX * s;
     const ty = svgHeight / 2 - bboxCY * s;
