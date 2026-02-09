@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import cloud from "d3-cloud";
+import { scaleSqrt } from "d3";
 import useSWR from "swr";
 import { fetchWithTimeout, isTimeoutError } from "../lib/fetchWithTimeout";
 import DataState from "./DataState";
@@ -17,8 +19,12 @@ const WORD_COLORS = [
   "#1f2937", // preto/cinza escuro
   "#374151", // cinza
 ];
-// Fonte semelhante à referência (arredondada e forte)
-const CLOUD_FONT_FAMILY = "'Poppins', 'Lato', 'Helvetica Neue', Arial, sans-serif";
+// Fonte clássica de wordcloud (próxima ao exemplo)
+const CLOUD_FONT_FAMILY = "Impact, 'Arial Black', 'Helvetica Neue', sans-serif";
+const DEFAULT_MIN_FONT = 14;
+const DEFAULT_MAX_FONT = 64;
+const DEFAULT_CLOUD_PADDING = 4;
+const RESIZE_DEBOUNCE_MS = 150;
 const DETAILS_PAGE_SIZE = 50;
 const COMMENTS_PER_PAGE = 10;
 
@@ -37,14 +43,6 @@ const fetcher = async (url) => {
     throw new Error(message || "Falha ao carregar nuvem de palavras.");
   }
   return response.json();
-};
-
-const scaleFont = (count, min, max, minSize, maxSize) => {
-  if (!Number.isFinite(count)) return minSize;
-  if (max <= min) return Math.round((minSize + maxSize) / 2);
-  const normalized = (count - min) / (max - min);
-  const weighted = Math.pow(normalized, 0.75);
-  return Math.round(minSize + weighted * (maxSize - minSize));
 };
 
 const hashString = (value) => {
@@ -67,273 +65,56 @@ const createSeededRandom = (seed) => {
   };
 };
 
-const buildCloudEntries = (words) => {
+const buildCloudEntries = (words, { minFont, maxFont, maxWords = 80 }) => {
   if (!Array.isArray(words) || words.length === 0) return [];
+
   const limited = words
-    .filter((item) => item && item.word)
-    .sort((a, b) => (b.count || 0) - (a.count || 0))
-    .slice(0, 80); // Mais palavras como na referência
+    .map((item, index) => {
+      if (!item) return null;
+      const text = item.word ?? item.text;
+      if (!text) return null;
+      const rawValue = item.count ?? item.value ?? 0;
+      const value = Number.isFinite(rawValue) ? Number(rawValue) : Number(rawValue) || 0;
+      return { text: String(text), value, originalIndex: index };
+    })
+    .filter(Boolean)
+    .sort((a, b) => (b.value || 0) - (a.value || 0))
+    .slice(0, maxWords); // Mais palavras como na referência
 
-  const counts = limited.map((item) => item.count || 0);
-  const maxCount = Math.max(...counts);
-  const minCount = Math.min(...counts);
-  // Escala ajustada para caber com densidade maior
-  const minFont = 14;
-  const maxFont = 62;
+  if (!limited.length) return [];
 
-  return limited.map((item, index) => {
-    const seed = hashString(item.word || `${index}`);
+  const values = limited.map((item) => item.value || 0);
+  const maxValue = Math.max(...values);
+  const minValue = Math.min(...values);
+  const fallbackSize = Math.round((minFont + maxFont) / 2);
+  const scale = scaleSqrt().domain([minValue, maxValue]).range([minFont, maxFont]);
+
+  return limited.map((item) => {
+    const seed = hashString(item.text || `${item.originalIndex}`);
     const rng = createSeededRandom(seed);
-    const baseFont = scaleFont(item.count || 0, minCount, maxCount, minFont, maxFont);
-    // Top 1 = muito grande, top 2 = grande, resto proporcional
-    let fontSize;
-    if (index === 0) {
-      fontSize = Math.round(maxFont * 1.35); // Palavra principal maior
-    } else if (index === 1) {
-      fontSize = Math.round(maxFont * 1.1); // Segunda palavra grande
-    } else {
-      fontSize = baseFont;
-    }
+    const fontSize = minValue === maxValue
+      ? fallbackSize
+      : Math.round(scale(item.value));
     const color = WORD_COLORS[Math.floor(rng() * WORD_COLORS.length)];
     // Sem variação de opacidade - todas sólidas como na referência
     const opacity = 1;
-    // Algumas palavras rotacionadas (vertical) para reproduzir a nuvem da referência
-    const shouldRotate = index > 3 && fontSize <= Math.round(maxFont * 0.9) && rng() < 0.22;
-    const rotate = shouldRotate ? (rng() < 0.5 ? 90 : -90) : 0;
     // Fonte forte como na referência
     const fontWeight = 700;
     return {
-      key: `${item.word}-${index}`,
-      word: item.word.toLowerCase(), // Palavras em minúsculo
-      count: item.count,
-      rotate,
+      key: `${item.text}-${item.originalIndex}`,
+      text: item.text.toLowerCase(), // Palavras em minúsculo
+      value: item.value,
       style: {
         fontSize,
         color,
         opacity,
         fontWeight,
         fontFamily: CLOUD_FONT_FAMILY,
-        "--wc-rotate": `${rotate}deg`,
       },
+      size: fontSize,
+      color,
     };
   });
-};
-
-const measureWord = (ctx, word, fontSize, fontWeight) => {
-  ctx.font = `${fontWeight || 600} ${fontSize}px ${CLOUD_FONT_FAMILY}`;
-  const metrics = ctx.measureText(word);
-  return {
-    width: Math.ceil(metrics.width),
-    height: Math.ceil(fontSize * 0.92),
-  };
-};
-
-// Verifica colisão entre retângulos usando coordenadas do canto superior esquerdo
-// Padding proporcional (0-1% da menor dimensão entre as duas palavras)
-const hasCollision = (newRect, placed, paddingPercent = 0.8) => {
-  for (const item of placed) {
-    // Converter centro para canto superior esquerdo para comparação
-    const itemLeft = item.x - item.width / 2;
-    const itemTop = item.y - item.height / 2;
-    const itemRight = itemLeft + item.width;
-    const itemBottom = itemTop + item.height;
-
-    const newLeft = newRect.left;
-    const newTop = newRect.top;
-    const newRight = newLeft + newRect.width;
-    const newBottom = newTop + newRect.height;
-
-    // Padding proporcional: 0-1% da menor altura entre as duas palavras
-    const minHeight = Math.min(item.height, newRect.height);
-    const p = Math.max(0, Math.round(minHeight * (paddingPercent / 100)));
-
-    if (newLeft < itemRight + p &&
-        newRight > itemLeft - p &&
-        newTop < itemBottom + p &&
-        newBottom > itemTop - p) {
-      return true;
-    }
-  }
-  return false;
-};
-
-const spreadLayoutToFill = (layout, bounds, margin = 8) => {
-  if (!Array.isArray(layout) || !layout.length) return layout;
-  if (!bounds?.width || !bounds?.height) return layout;
-
-  let minX = Infinity;
-  let maxX = -Infinity;
-  let minY = Infinity;
-  let maxY = -Infinity;
-
-  layout.forEach((item) => {
-    const left = item.x - item.width / 2;
-    const right = item.x + item.width / 2;
-    const top = item.y - item.height / 2;
-    const bottom = item.y + item.height / 2;
-    minX = Math.min(minX, left);
-    maxX = Math.max(maxX, right);
-    minY = Math.min(minY, top);
-    maxY = Math.max(maxY, bottom);
-  });
-
-  const boxWidth = Math.max(1, maxX - minX);
-  const boxHeight = Math.max(1, maxY - minY);
-  const targetWidth = Math.max(1, bounds.width - margin * 2);
-  const targetHeight = Math.max(1, bounds.height - margin * 2);
-  const scale = Math.min(targetWidth / boxWidth, targetHeight / boxHeight, 1.22);
-
-  if (scale <= 1.01) return layout;
-
-  const centerX = bounds.width / 2;
-  const centerY = bounds.height / 2;
-  return layout.map((item) => ({
-    ...item,
-    x: centerX + (item.x - centerX) * scale,
-    y: centerY + (item.y - centerY) * scale,
-  }));
-};
-
-const buildCloudLayout = (entries, bounds, paddingPercent = 0.8) => {
-  if (!entries.length) return [];
-  if (!bounds?.width || bounds.width < 200 || !bounds?.height || bounds.height < 150) return [];
-  if (typeof document === "undefined") return [];
-
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return [];
-
-  const width = bounds.width;
-  const height = bounds.height;
-  const centerX = width / 2;
-  const centerY = height / 2;
-  const margin = 2;
-
-  const placed = [];
-
-  // Medir todas as palavras primeiro
-  const measured = entries.map((entry) => {
-    const { width: textWidth, height: textHeight } = measureWord(
-      ctx,
-      entry.word,
-      entry.style.fontSize,
-      entry.style.fontWeight,
-    );
-    return {
-      ...entry,
-      textWidth,
-      textHeight,
-    };
-  });
-
-  measured.forEach((entry, index) => {
-    const rotated = Math.abs(entry.rotate || 0) === 90;
-    const wordWidth = rotated ? entry.textHeight : entry.textWidth;
-    const wordHeight = rotated ? entry.textWidth : entry.textHeight;
-
-    let bestX = centerX;
-    let bestY = centerY;
-    let placedOk = false;
-
-    // Primeira palavra: centralizada horizontalmente, um pouco acima do centro
-    if (index === 0) {
-      bestY = centerY - wordHeight * 0.3;
-      const left = centerX - wordWidth / 2;
-      const top = bestY - wordHeight / 2;
-      if (left >= margin && top >= margin &&
-          left + wordWidth <= width - margin &&
-          top + wordHeight <= height - margin) {
-        placedOk = true;
-      }
-    }
-
-    // Segunda palavra: abaixo e levemente à esquerda da primeira (como "greve" na referência)
-    if (index === 1 && !placedOk && placed.length > 0) {
-      const first = placed[0];
-      bestX = first.x - wordWidth * 0.1;
-      bestY = first.y + first.height * 0.45 + wordHeight * 0.25;
-      const left = bestX - wordWidth / 2;
-      const top = bestY - wordHeight / 2;
-      const testRect = { left, top, width: wordWidth, height: wordHeight };
-      if (left >= margin && top >= margin &&
-          left + wordWidth <= width - margin &&
-          top + wordHeight <= height - margin &&
-          !hasCollision(testRect, placed, paddingPercent)) {
-        placedOk = true;
-      }
-    }
-
-    // Demais palavras: espiral muito compacta preenchendo os espaços
-    if (!placedOk) {
-      // Espiral compacta para encaixe preciso e formato mais denso
-      for (let step = 0; step < 16000 && !placedOk; step += 1) {
-        const angle = step * 0.16;
-        const baseRadius = step * 0.34;
-
-        // Elipse suave, menos espalhada horizontalmente
-        const testX = centerX + baseRadius * 1.5 * Math.cos(angle);
-        const testY = centerY + baseRadius * 0.9 * Math.sin(angle);
-
-        const left = testX - wordWidth / 2;
-        const top = testY - wordHeight / 2;
-
-        // Verificar limites
-        if (left < margin || top < margin ||
-            left + wordWidth > width - margin ||
-            top + wordHeight > height - margin) {
-          continue;
-        }
-
-        // Colisão com padding quase zero para proximidade ideal
-        const testRect = { left, top, width: wordWidth, height: wordHeight };
-        if (!hasCollision(testRect, placed, paddingPercent)) {
-          bestX = testX;
-          bestY = testY;
-          placedOk = true;
-        }
-      }
-    }
-
-    if (placedOk) {
-      placed.push({
-        ...entry,
-        x: bestX,
-        y: bestY,
-        width: wordWidth,
-        height: wordHeight,
-        zIndex: entries.length - index,
-      });
-    }
-  });
-
-  return spreadLayoutToFill(placed, bounds, margin);
-};
-
-const hasLayoutOverlap = (layout) => {
-  if (!Array.isArray(layout) || layout.length < 2) return false;
-  for (let i = 0; i < layout.length; i += 1) {
-    const a = layout[i];
-    const aLeft = a.x - a.width / 2;
-    const aTop = a.y - a.height / 2;
-    const aRight = aLeft + a.width;
-    const aBottom = aTop + a.height;
-    for (let j = i + 1; j < layout.length; j += 1) {
-      const b = layout[j];
-      const bLeft = b.x - b.width / 2;
-      const bTop = b.y - b.height / 2;
-      const bRight = bLeft + b.width;
-      const bBottom = bTop + b.height;
-      // Verifica sobreposição real (sem padding - palavras podem estar coladas)
-      const overlaps = (
-        aLeft < bRight &&
-        aRight > bLeft &&
-        aTop < bBottom &&
-        aBottom > bTop
-      );
-      if (overlaps) return true;
-    }
-  }
-  return false;
 };
 
 const formatDetailDate = (value) => {
@@ -355,12 +136,14 @@ export default function WordCloudCard({
   since,
   until,
   top = 30,
+  minFont = DEFAULT_MIN_FONT,
+  maxFont = DEFAULT_MAX_FONT,
+  cloudPadding = DEFAULT_CLOUD_PADDING,
+  allowRotate = false,
   showCommentsCount = true,
   onCommentsCountRender = null,
   onWordClick = null,
   externalPanelMode = false,
-  wordGap = null,
-  packedPaddingPercent = 0.8,
 }) {
   const resolvedPlatform = platform === "facebook" ? "facebook" : "instagram";
   const resolvedAccountId = resolvedPlatform === "facebook"
@@ -376,6 +159,10 @@ export default function WordCloudCard({
   const [currentPage, setCurrentPage] = useState(1);
   const cloudRef = useRef(null);
   const [cloudSize, setCloudSize] = useState({ width: 0, height: 0 });
+  const [layoutWords, setLayoutWords] = useState([]);
+  const [isLayouting, setIsLayouting] = useState(false);
+  const layoutRef = useRef(null);
+  const layoutTimerRef = useRef(null);
 
   const requestKey = useMemo(() => {
     if (!resolvedAccountId) return null;
@@ -483,17 +270,58 @@ export default function WordCloudCard({
     onLoadingSlow: () => setLoadingSlow(true),
   });
 
-  const entries = useMemo(() => buildCloudEntries(data?.words || []), [data]);
-  const normalizedPackedPadding = Number.isFinite(packedPaddingPercent) ? packedPaddingPercent : 5;
-  const packedLayout = useMemo(
-    () => buildCloudLayout(entries, cloudSize, normalizedPackedPadding),
-    [entries, cloudSize, normalizedPackedPadding],
+  const entries = useMemo(
+    () => buildCloudEntries(data?.words || [], { minFont, maxFont }),
+    [data, minFont, maxFont],
   );
-  const packedHasOverlap = useMemo(() => hasLayoutOverlap(packedLayout), [packedLayout]);
-  const usePackedLayout = packedLayout.length > 0 && packedLayout.length === entries.length && !packedHasOverlap;
-  const cloudEntries = usePackedLayout ? packedLayout : entries;
-  const cloudClassName = `ig-word-cloud ig-word-cloud--large${usePackedLayout ? " ig-word-cloud--packed" : ""}`;
-  const cloudStyle = useMemo(() => (wordGap ? { gap: wordGap } : undefined), [wordGap]);
+  const cloudClassName = "ig-word-cloud ig-word-cloud--large";
+
+  useEffect(() => {
+    if (!entries.length || !cloudSize.width || !cloudSize.height) {
+      setLayoutWords([]);
+      setIsLayouting(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+    setIsLayouting(true);
+    setLayoutWords([]);
+
+    if (layoutTimerRef.current) {
+      clearTimeout(layoutTimerRef.current);
+    }
+
+    layoutTimerRef.current = setTimeout(() => {
+      if (cancelled) return;
+
+      const layout = cloud()
+        .size([cloudSize.width, cloudSize.height])
+        .words(entries.map((entry) => ({ ...entry })))
+        .padding(Math.max(0, Number(cloudPadding) || 0))
+        .rotate(() => (allowRotate ? (Math.random() < 0.5 ? 90 : 0) : 0))
+        .font(CLOUD_FONT_FAMILY)
+        .fontWeight(700)
+        .fontSize((d) => d.size)
+        .on("end", (computed) => {
+          if (cancelled) return;
+          setLayoutWords(computed);
+          setIsLayouting(false);
+        });
+
+      layoutRef.current = layout;
+      layout.start();
+    }, RESIZE_DEBOUNCE_MS);
+
+    return () => {
+      cancelled = true;
+      if (layoutTimerRef.current) {
+        clearTimeout(layoutTimerRef.current);
+      }
+      if (layoutRef.current) {
+        layoutRef.current.stop();
+      }
+    };
+  }, [entries, cloudSize.width, cloudSize.height, cloudPadding, allowRotate]);
 
   useEffect(() => {
     const node = cloudRef.current;
@@ -558,6 +386,9 @@ export default function WordCloudCard({
 
   const canGoNext = currentPage < totalLoadedPages || hasMoreDetails;
   const canGoPrev = currentPage > 1;
+  const svgWidth = Math.max(1, cloudSize.width || 1);
+  const svgHeight = Math.max(1, cloudSize.height || 1);
+  const hasLayout = layoutWords.length > 0;
 
   const handleLoadMore = async () => {
     if (!selectedWord || !details || detailsLoadingMore) return;
@@ -726,35 +557,64 @@ export default function WordCloudCard({
         </div>
       ) : null}
 
-      <div className={cloudClassName} ref={cloudRef} style={cloudStyle}>
-        {cloudEntries.map((item) => {
-          const handleWordClick = () => {
-            if (externalPanelMode && onWordClick) {
-              onWordClick(item.word, item.count);
-            } else {
-              setSelectedWord(item.word);
-            }
-          };
-          const wordStyle = usePackedLayout ? {
-            ...item.style,
-            left: item.x,
-            top: item.y,
-            zIndex: item.zIndex,
-          } : item.style;
-          return (
-            <button
-              key={item.key}
-              className="ig-word-cloud__word"
-              style={wordStyle}
-              title={`${item.word} (${item.count})`}
-              type="button"
-              onClick={handleWordClick}
-              aria-label={`Ver comentarios com ${item.word}`}
-            >
-              {item.word}
-            </button>
-          );
-        })}
+      <div className={cloudClassName} ref={cloudRef}>
+        {isLayouting || !hasLayout ? (
+          <DataState
+            state="loading"
+            label="Gerando nuvem de palavras..."
+            size="lg"
+          />
+        ) : (
+          <svg
+            className="ig-word-cloud__svg"
+            width={svgWidth}
+            height={svgHeight}
+            viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+            role="img"
+            aria-label="Nuvem de palavras"
+          >
+            <g transform={`translate(${svgWidth / 2}, ${svgHeight / 2})`}>
+              {layoutWords.map((item) => {
+                const handleWordClick = () => {
+                  if (externalPanelMode && onWordClick) {
+                    onWordClick(item.text, item.value);
+                  } else {
+                    setSelectedWord(item.text);
+                  }
+                };
+                const handleWordKeyDown = (event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    handleWordClick();
+                  }
+                };
+                return (
+                  <text
+                    key={item.key || item.text}
+                    className="ig-word-cloud__word"
+                    textAnchor="middle"
+                    transform={`translate(${item.x}, ${item.y}) rotate(${item.rotate || 0})`}
+                    style={{
+                      fontSize: item.size,
+                      fontFamily: CLOUD_FONT_FAMILY,
+                      fontWeight: 700,
+                      fill: item.color,
+                      opacity: 1,
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    onClick={handleWordClick}
+                    onKeyDown={handleWordKeyDown}
+                    aria-label={`Ver comentarios com ${item.text}`}
+                  >
+                    <title>{`${item.text} (${item.value ?? 0})`}</title>
+                    {item.text}
+                  </text>
+                );
+              })}
+            </g>
+          </svg>
+        )}
       </div>
 
       {selectedWord && !externalPanelMode && (

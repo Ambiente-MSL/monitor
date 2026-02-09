@@ -6496,14 +6496,12 @@ const profileViewsMetric = useMemo(() => {
                 igUserId={accountConfig?.instagramUserId}
                 since={sinceIso}
                 until={untilIso}
-                top={120}
-                showCommentsCount={false}
-                onCommentsCountRender={setCommentsCount}
-                externalPanelMode={true}
-                onWordClick={handleWordCloudWordClick}
-                wordGap="0.1cm"
-                  packedPaddingPercent={0.6}
-              />
+                  top={120}
+                  showCommentsCount={false}
+                  onCommentsCountRender={setCommentsCount}
+                  externalPanelMode={true}
+                  onWordClick={handleWordCloudWordClick}
+                />
             </div>
           </section>
         </div>
