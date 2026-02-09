@@ -19,10 +19,11 @@ const WORD_COLORS = [
   "#1f2937", // preto/cinza escuro
   "#374151", // cinza
 ];
-// Fonte clássica de wordcloud (próxima ao exemplo)
-const CLOUD_FONT_FAMILY = "Impact, 'Arial Black', Arial, sans-serif";
+// Fonte light/clean de wordcloud (referência: traço fino, sem serifa)
+const CLOUD_FONT_FAMILY = "Helvetica Neue, Helvetica, Arial, sans-serif";
+const CLOUD_FONT_WEIGHT = 300;
 const DEFAULT_MIN_FONT = 12;
-const DEFAULT_MAX_FONT = 120;
+const DEFAULT_MAX_FONT = 90;
 const DEFAULT_CLOUD_PADDING = 0;
 const RESIZE_DEBOUNCE_MS = 150;
 const CIRCLE_MAX_PASSES = 3;
@@ -100,19 +101,16 @@ const buildCloudEntries = (words, { minFont, maxFont, maxWords = 100 }) => {
       ? fallbackSize
       : Math.round(scale(item.value));
     const color = WORD_COLORS[Math.floor(rng() * WORD_COLORS.length)];
-    // Sem variação de opacidade - todas sólidas como na referência
     const opacity = 1;
-    // Fonte forte como na referência
-    const fontWeight = 700;
     return {
       key: `${item.text}-${item.originalIndex}`,
-      text: item.text.toLowerCase(), // Palavras em minúsculo
+      text: item.text.toLowerCase(),
       value: item.value,
       style: {
         fontSize,
         color,
         opacity,
-        fontWeight,
+        fontWeight: CLOUD_FONT_WEIGHT,
         fontFamily: CLOUD_FONT_FAMILY,
       },
       size: fontSize,
@@ -330,7 +328,7 @@ export default function WordCloudCard({
           .random(seededRng)
           .rotate(() => 0)
           .font(CLOUD_FONT_FAMILY)
-          .fontWeight(700)
+          .fontWeight(CLOUD_FONT_WEIGHT)
           .fontSize((d) => d.size)
           .timeInterval(4000)
           .on("end", (computed) => {
@@ -693,7 +691,7 @@ export default function WordCloudCard({
                     style={{
                       fontSize: item.size,
                       fontFamily: CLOUD_FONT_FAMILY,
-                      fontWeight: 700,
+                      fontWeight: CLOUD_FONT_WEIGHT,
                       fill: item.color,
                       opacity: 1,
                     }}
