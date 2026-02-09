@@ -12154,7 +12154,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
     height: 420px;
     width: 100%;
     padding: 0;
-    overflow: visible;
+    overflow: hidden;
   }
 
 .ig-word-cloud__word {

@@ -24,13 +24,8 @@ const CLOUD_FONT_FAMILY = "Helvetica Neue, Helvetica, Arial, sans-serif";
 const CLOUD_FONT_WEIGHT = 300;
 const DEFAULT_MIN_FONT = 12;
 const DEFAULT_MAX_FONT = 90;
-const DEFAULT_CLOUD_PADDING = 1;
+const DEFAULT_CLOUD_PADDING = 2;
 const RESIZE_DEBOUNCE_MS = 150;
-const CIRCLE_MAX_PASSES = 5;
-const CIRCLE_SHRINK = 0.92;
-const CIRCLE_BOOST = 1.06;
-const CIRCLE_MIN_INSIDE = 0.92; // 92% of words must be inside ellipse
-const ELLIPSE_RATIO = 1.35; // horizontal stretch — allows cloud to extend wider
 const DETAILS_PAGE_SIZE = 50;
 const COMMENTS_PER_PAGE = 10;
 
@@ -304,102 +299,31 @@ export default function WordCloudCard({
 
       const w = cloudSize.width;
       const h = cloudSize.height;
-      // Elliptical mask — wider than tall for a natural circular shape
-      // that extends horizontally when needed
-      const baseR = Math.min(w, h) * 0.48;
-      const RX = baseR * ELLIPSE_RATIO; // horizontal radius (wider)
-      const RY = baseR;                 // vertical radius
 
-      // Helper: check if a word's full bounding box fits inside the ellipse
-      const wordInsideEllipse = (wd) => {
-        const halfW = (wd.size * (wd.text?.length || 1) * 0.32);
-        const halfH = wd.size * 0.55;
-        // Check all 4 corners of the word bounding box
-        const corners = [
-          [wd.x - halfW, wd.y - halfH],
-          [wd.x + halfW, wd.y - halfH],
-          [wd.x - halfW, wd.y + halfH],
-          [wd.x + halfW, wd.y + halfH],
-        ];
-        for (const [cx, cy] of corners) {
-          if ((cx * cx) / (RX * RX) + (cy * cy) / (RY * RY) > 1) return false;
-        }
-        return true;
-      };
+      // d3-cloud's archimedean spiral naturally places the largest word
+      // at the center and packs smaller words tightly around it — exactly
+      // like the classic wordcloud look. No masking needed.
+      const seededRng = createSeededRandom(layoutSeed);
 
-      // Relaxed check — only center must be inside (used for counting ratio)
-      const wordCenterInsideEllipse = (wd) =>
-        (wd.x * wd.x) / (RX * RX) + (wd.y * wd.y) / (RY * RY) <= 1;
+      const layout = cloud()
+        .size([w, h])
+        .words(entries.map((entry) => ({ ...entry })))
+        .padding(Math.max(0, Number(cloudPadding) || 0))
+        .spiral("archimedean")
+        .random(seededRng)
+        .rotate(() => 0)
+        .font(CLOUD_FONT_FAMILY)
+        .fontWeight(CLOUD_FONT_WEIGHT)
+        .fontSize((d) => d.size)
+        .timeInterval(4000)
+        .on("end", (computed) => {
+          if (cancelled) return;
+          setLayoutWords(computed);
+          setIsLayouting(false);
+        });
 
-      let passCount = 0;
-      let fontScale = 1;
-
-      const runPass = () => {
-        if (cancelled) return;
-        passCount++;
-        const seededRng = createSeededRandom(layoutSeed + passCount);
-
-        const wordsForLayout = entries.map((entry) => ({
-          ...entry,
-          size: Math.max(8, Math.round(entry.size * fontScale)),
-        }));
-
-        const layout = cloud()
-          .size([w, h])
-          .words(wordsForLayout)
-          .padding(Math.max(0, Number(cloudPadding) || 0))
-          .spiral("archimedean")
-          .random(seededRng)
-          .rotate(() => 0)
-          .font(CLOUD_FONT_FAMILY)
-          .fontWeight(CLOUD_FONT_WEIGHT)
-          .fontSize((d) => d.size)
-          .timeInterval(4000)
-          .on("end", (computed) => {
-            if (cancelled) return;
-
-            // Keep words whose center is inside the ellipse
-            const inside = computed.filter(wordCenterInsideEllipse);
-            const insideRatio = computed.length > 0 ? inside.length / computed.length : 1;
-
-            // If too many words fell outside, shrink fonts and retry
-            if (insideRatio < CIRCLE_MIN_INSIDE && passCount < CIRCLE_MAX_PASSES) {
-              fontScale *= CIRCLE_SHRINK;
-              runPass();
-              return;
-            }
-
-            // Trim words that overflow the ellipse boundary (full bbox check)
-            const clipped = inside.filter(wordInsideEllipse);
-            // If clipping removed too many, keep the center-only set
-            const result = clipped.length >= inside.length * 0.8 ? clipped : inside;
-
-            // Check if fill is too sparse — boost and retry
-            if (result.length > 0 && passCount < CIRCLE_MAX_PASSES) {
-              let maxNormDist = 0;
-              for (const wd of result) {
-                const normDist = Math.sqrt(
-                  (wd.x * wd.x) / (RX * RX) + (wd.y * wd.y) / (RY * RY)
-                );
-                if (normDist > maxNormDist) maxNormDist = normDist;
-              }
-              // If the outermost word is only using < 55% of the ellipse, cloud is too small
-              if (maxNormDist < 0.55 && fontScale <= 1.0) {
-                fontScale *= CIRCLE_BOOST;
-                runPass();
-                return;
-              }
-            }
-
-            setLayoutWords(result);
-            setIsLayouting(false);
-          });
-
-        layoutRef.current = layout;
-        layout.start();
-      };
-
-      runPass();
+      layoutRef.current = layout;
+      layout.start();
     }, RESIZE_DEBOUNCE_MS);
 
     return () => {
@@ -480,24 +404,23 @@ export default function WordCloudCard({
   const svgHeight = Math.max(1, cloudSize.height || 1);
   const hasLayout = layoutWords.length > 0;
 
-  // Compute bounding box of placed words and fit-to-box transform
-  // Uses uniform scaling to preserve the circular/elliptical shape
+  // Scale the cloud to fill the card. d3-cloud places words relative
+  // to (0,0) so we compute the bounding box and fit it into the SVG.
   const cloudTransform = useMemo(() => {
     if (!hasLayout || !layoutWords.length) {
       return `translate(${svgWidth / 2}, ${svgHeight / 2})`;
     }
 
-    // d3-cloud places words relative to center (0,0)
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (const wd of layoutWords) {
-      const halfW = (wd.size * (wd.text?.length || 1) * 0.32);
-      const halfH = wd.size * 0.55;
-      const x1 = wd.x - halfW, x2 = wd.x + halfW;
-      const y1 = wd.y - halfH, y2 = wd.y + halfH;
-      if (x1 < minX) minX = x1;
-      if (y1 < minY) minY = y1;
-      if (x2 > maxX) maxX = x2;
-      if (y2 > maxY) maxY = y2;
+      // d3-cloud provides x, y (center) and the actual rendered width/height
+      // via wd.width and wd.height when available; fall back to estimates.
+      const wdW = (wd.width || wd.size * (wd.text?.length || 1) * 0.6) / 2;
+      const wdH = (wd.height || wd.size) / 2;
+      if (wd.x - wdW < minX) minX = wd.x - wdW;
+      if (wd.y - wdH < minY) minY = wd.y - wdH;
+      if (wd.x + wdW > maxX) maxX = wd.x + wdW;
+      if (wd.y + wdH > maxY) maxY = wd.y + wdH;
     }
 
     const bboxW = maxX - minX || 1;
@@ -505,10 +428,10 @@ export default function WordCloudCard({
     const bboxCX = (minX + maxX) / 2;
     const bboxCY = (minY + maxY) / 2;
 
-    // Uniform scale to fit while preserving the circular shape
+    // Fill the container — stretch to use full width and height
     const scaleX = (svgWidth * 0.96) / bboxW;
-    const scaleY = (svgHeight * 0.94) / bboxH;
-    const s = Math.min(scaleX, scaleY, 2.5);
+    const scaleY = (svgHeight * 0.96) / bboxH;
+    const s = Math.min(scaleX, scaleY, 3);
 
     const tx = svgWidth / 2 - bboxCX * s;
     const ty = svgHeight / 2 - bboxCY * s;
