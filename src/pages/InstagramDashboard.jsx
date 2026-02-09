@@ -6134,6 +6134,7 @@ const profileViewsMetric = useMemo(() => {
                 <div style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(2, 1fr)',
+                  gridTemplateRows: 'repeat(2, 1fr)',
                   gap: '8px',
                   flex: 1
                 }}>
@@ -6142,7 +6143,11 @@ const profileViewsMetric = useMemo(() => {
                     borderRadius: '8px',
                     background: 'rgba(139, 92, 246, 0.05)',
                     border: '1px solid rgba(139, 92, 246, 0.1)',
-                    textAlign: 'center'
+                    textAlign: 'center',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    gridRow: 'span 2'
                   }}>
                     <div style={{ fontSize: '14px', fontWeight: 700, color: '#8b5cf6', marginBottom: '2px' }}>
                       {profileViewsAverage != null ? formatNumber(Math.round(profileViewsAverage)) : '--'}
@@ -6154,7 +6159,11 @@ const profileViewsMetric = useMemo(() => {
                     borderRadius: '8px',
                     background: 'rgba(168, 85, 247, 0.05)',
                     border: '1px solid rgba(168, 85, 247, 0.1)',
-                    textAlign: 'center'
+                    textAlign: 'center',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    gridRow: 'span 2'
                   }}>
                     <div style={{ fontSize: '14px', fontWeight: 700, color: '#a855f7', marginBottom: '2px' }}>
                       {profileViewsPeak != null ? formatNumber(profileViewsPeak) : '--'}
@@ -6359,19 +6368,6 @@ const profileViewsMetric = useMemo(() => {
                 Top cidades
                 <InfoTooltip text="Cidades com maior número de seguidores ou público alcançado." />
               </h4>
-              <span
-                style={{
-                  padding: '4px 10px',
-                  borderRadius: '999px',
-                  background: 'rgba(99, 102, 241, 0.12)',
-                  color: '#4f46e5',
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  letterSpacing: '0.2px'
-                }}
-              >
-                {audienceTimeframeLabel}
-              </span>
             </div>
             {audienceCities.length ? (
               <div className="ig-top-cities-content">
