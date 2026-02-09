@@ -22,8 +22,8 @@ const WORD_COLORS = [
 // Fonte clássica de wordcloud (próxima ao exemplo)
 const CLOUD_FONT_FAMILY = "Impact, 'Arial Black', 'Helvetica Neue', sans-serif";
 const DEFAULT_MIN_FONT = 14;
-const DEFAULT_MAX_FONT = 64;
-const DEFAULT_CLOUD_PADDING = 4;
+const DEFAULT_MAX_FONT = 120;
+const DEFAULT_CLOUD_PADDING = 1;
 const RESIZE_DEBOUNCE_MS = 150;
 const DETAILS_PAGE_SIZE = 50;
 const COMMENTS_PER_PAGE = 10;
@@ -65,7 +65,7 @@ const createSeededRandom = (seed) => {
   };
 };
 
-const buildCloudEntries = (words, { minFont, maxFont, maxWords = 80 }) => {
+const buildCloudEntries = (words, { minFont, maxFont, maxWords = 100 }) => {
   if (!Array.isArray(words) || words.length === 0) return [];
 
   const limited = words
@@ -294,14 +294,25 @@ export default function WordCloudCard({
     layoutTimerRef.current = setTimeout(() => {
       if (cancelled) return;
 
+      // Use a larger internal canvas for denser packing, then fit-to-box
+      const internalW = cloudSize.width * 1.5;
+      const internalH = cloudSize.height * 1.5;
+      const seededRng = createSeededRandom(42);
+
       const layout = cloud()
-        .size([cloudSize.width, cloudSize.height])
+        .size([internalW, internalH])
         .words(entries.map((entry) => ({ ...entry })))
         .padding(Math.max(0, Number(cloudPadding) || 0))
-        .rotate(() => (allowRotate ? (Math.random() < 0.5 ? 90 : 0) : 0))
+        .spiral("rectangular")
+        .random(seededRng)
+        .rotate(() => {
+          if (!allowRotate) return seededRng() < 0.1 ? 90 : 0;
+          return seededRng() < 0.15 ? 90 : 0;
+        })
         .font(CLOUD_FONT_FAMILY)
         .fontWeight(700)
         .fontSize((d) => d.size)
+        .timeInterval(3000)
         .on("end", (computed) => {
           if (cancelled) return;
           setLayoutWords(computed);
@@ -389,6 +400,43 @@ export default function WordCloudCard({
   const svgWidth = Math.max(1, cloudSize.width || 1);
   const svgHeight = Math.max(1, cloudSize.height || 1);
   const hasLayout = layoutWords.length > 0;
+
+  // Compute bounding box and fit-to-box transform
+  const cloudTransform = useMemo(() => {
+    if (!hasLayout || !layoutWords.length) {
+      return `translate(${svgWidth / 2}, ${svgHeight / 2})`;
+    }
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const w of layoutWords) {
+      // Approximate bounding box per word
+      const halfW = (w.size * (w.text?.length || 1) * 0.6) / 2;
+      const halfH = w.size / 2;
+      const rotated = w.rotate === 90 || w.rotate === -90;
+      const hw = rotated ? halfH : halfW;
+      const hh = rotated ? halfW : halfH;
+      const x1 = w.x - hw, x2 = w.x + hw;
+      const y1 = w.y - hh, y2 = w.y + hh;
+      if (x1 < minX) minX = x1;
+      if (y1 < minY) minY = y1;
+      if (x2 > maxX) maxX = x2;
+      if (y2 > maxY) maxY = y2;
+    }
+
+    const bboxW = maxX - minX || 1;
+    const bboxH = maxY - minY || 1;
+    const bboxCX = (minX + maxX) / 2;
+    const bboxCY = (minY + maxY) / 2;
+
+    const scaleX = (svgWidth * 0.95) / bboxW;
+    const scaleY = (svgHeight * 0.92) / bboxH;
+    const s = Math.min(scaleX, scaleY, 1.8); // cap scale to avoid over-zoom on few words
+
+    const tx = svgWidth / 2 - bboxCX * s;
+    const ty = svgHeight / 2 - bboxCY * s;
+
+    return `translate(${tx}, ${ty}) scale(${s})`;
+  }, [layoutWords, hasLayout, svgWidth, svgHeight]);
 
   const handleLoadMore = async () => {
     if (!selectedWord || !details || detailsLoadingMore) return;
@@ -573,7 +621,7 @@ export default function WordCloudCard({
             role="img"
             aria-label="Nuvem de palavras"
           >
-            <g transform={`translate(${svgWidth / 2}, ${svgHeight / 2})`}>
+            <g transform={cloudTransform}>
               {layoutWords.map((item) => {
                 const handleWordClick = () => {
                   if (externalPanelMode && onWordClick) {
