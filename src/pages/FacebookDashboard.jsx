@@ -47,6 +47,7 @@ import DataState from "../components/DataState";
 import CustomChartTooltip from "../components/CustomChartTooltip";
 import WordCloudCard from "../components/WordCloudCard";
 import DateRangeIndicator from "../components/DateRangeIndicator";
+import InfoTooltip from "../components/InfoTooltip";
 import { fetchWithTimeout, isTimeoutError } from "../lib/fetchWithTimeout";
 import { formatChartDate, formatCompactNumber, formatTooltipNumber } from "../lib/chartFormatters";
 import { normalizeSyncInfo } from "../lib/syncInfo";
@@ -973,16 +974,7 @@ useEffect(() => {
     [pageInfo?.picture_url, accountConfig?.pagePictureUrl, accountConfig?.profilePictureUrl],
   );
 
-  const heroCoverStyle = useMemo(() => ({
-    position: "relative",
-    backgroundImage: coverImage
-      ? `linear-gradient(180deg, rgba(15,23,42,0.35) 0%, rgba(15,23,42,0.65) 100%), url(${coverImage})`
-      : "linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%)",
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-    minHeight: "120px",
-    borderRadius: "16px",
-  }), [coverImage]);
+  // Cover style is now inline in the JSX (same pattern as Instagram)
 
   const handleCoverUpload = useCallback(async (event) => {
     const file = event.target.files?.[0];
@@ -1504,12 +1496,28 @@ useEffect(() => {
           <DateRangeIndicator />
         </div>
 
-        {/* Grid Principal - Layout 2 Colunas */}
-        <div className="fb-main-grid">
-          {/* Coluna Esquerda - Fixa ~320px */}
-          <div className="fb-left-column">
+        {/* Grid Principal - Layout 2 Colunas (mesmo padrão do Instagram) */}
+        <div className="ig-clean-grid" style={(showWordCloudDetail || showContentDetails) ? { display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' } : {}}>
+          {/* Coluna Esquerda */}
+          <div className="ig-clean-grid__left">
             <section className="ig-profile-vertical">
-              <div className="ig-profile-vertical__cover" style={heroCoverStyle}>
+              <div
+                className="ig-profile-vertical__cover"
+                style={{
+                  position: "relative",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.5rem",
+                  minHeight: "120px",
+                  backgroundColor: "#f5f5f5",
+                  backgroundImage: coverImage ? `url(${coverImage})` : "linear-gradient(135deg, #dbeafe 0%, #93c5fd 100%)",
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  borderRadius: "16px",
+                  overflow: "hidden",
+                }}
+              >
                 {coverLoading && (
                   <div
                     style={{
@@ -1527,6 +1535,22 @@ useEffect(() => {
                   >
                     <DataState state="loading" label="Carregando capa..." size="sm" className="data-state--overlay" />
                   </div>
+                )}
+                {!coverImage && (
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#6b7280" }}>
+                    <Facebook size={32} />
+                    <span style={{ fontWeight: 600 }}>Capa não configurada</span>
+                  </div>
+                )}
+                {coverImage && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      background: "linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.35) 100%)",
+                    }}
+                    aria-hidden="true"
+                  />
                 )}
                 {coverError && (
                   <div
@@ -1602,8 +1626,11 @@ useEffect(() => {
                   {accountConfig?.label || accountConfig?.name || "Página Facebook"}
                 </h3>
 
-                <div className="ig-profile-vertical__stats-grid">
-                  <div className="ig-overview-stat">
+                <div className="ig-profile-vertical__stats-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0', marginTop: '20px' }}>
+                  <div className="ig-overview-stat" style={{ paddingBottom: '16px', borderBottom: '1px solid #e5e7eb' }}>
+                    <div className="ig-overview-stat__trend" style={{ visibility: 'hidden' }}>
+                      <span>&nbsp;</span>
+                    </div>
                     <div className="ig-overview-stat__value">
                       {overviewIsLoading ? (
                         <span className="ig-skeleton ig-skeleton--stat" aria-hidden="true" />
@@ -1613,7 +1640,10 @@ useEffect(() => {
                     </div>
                     <div className="ig-overview-stat__label">Total de seguidores</div>
                   </div>
-                  <div className="ig-overview-stat">
+                  <div className="ig-overview-stat" style={{ paddingBottom: '16px', borderBottom: '1px solid #e5e7eb' }}>
+                    <div className="ig-overview-stat__trend" style={{ visibility: 'hidden' }}>
+                      <span>&nbsp;</span>
+                    </div>
                     <div className="ig-overview-stat__value">
                       {overviewIsLoading ? (
                         <span className="ig-skeleton ig-skeleton--stat" aria-hidden="true" />
@@ -1623,10 +1653,10 @@ useEffect(() => {
                     </div>
                     <div className="ig-overview-stat__label">{reachPeriodLabel}</div>
                   </div>
-                </div>
-
-                <div className="fb-stats-grid fb-stats-grid--two-cols">
-                  <div className="ig-overview-stat">
+                  <div className="ig-overview-stat" style={{ paddingTop: '16px' }}>
+                    <div className="ig-overview-stat__trend" style={{ visibility: 'hidden' }}>
+                      <span>&nbsp;</span>
+                    </div>
                     <div className="ig-overview-stat__value">
                       {overviewIsLoading ? (
                         <span className="ig-skeleton ig-skeleton--stat" aria-hidden="true" />
@@ -1636,8 +1666,10 @@ useEffect(() => {
                     </div>
                     <div className="ig-overview-stat__label">Engajamento total</div>
                   </div>
-
-                  <div className="ig-overview-stat">
+                  <div className="ig-overview-stat" style={{ paddingTop: '16px' }}>
+                    <div className="ig-overview-stat__trend" style={{ visibility: 'hidden' }}>
+                      <span>&nbsp;</span>
+                    </div>
                     <div className="ig-overview-stat__value">
                       {overviewIsLoading ? (
                         <span className="ig-skeleton ig-skeleton--stat" aria-hidden="true" />
@@ -1647,7 +1679,6 @@ useEffect(() => {
                     </div>
                     <div className="ig-overview-stat__label">Visualizações de página</div>
                   </div>
-
                 </div>
 
                 <div className="ig-profile-vertical__divider" />
@@ -1661,14 +1692,14 @@ useEffect(() => {
                   ) : engagementBreakdown.length ? (
                     <>
                       <div className="ig-profile-vertical__engagement-chart">
-                        <ResponsiveContainer width="100%" height={240}>
+                        <ResponsiveContainer width="100%" height={260}>
                           <PieChart>
                             <Pie
                               data={engagementBreakdown}
                               dataKey="value"
                               nameKey="name"
-                              innerRadius={60}
-                              outerRadius={90}
+                              innerRadius={65}
+                              outerRadius={100}
                               paddingAngle={3}
                               stroke="none"
                               activeIndex={activeEngagementIndex}
@@ -1684,7 +1715,8 @@ useEffect(() => {
                               content={(
                                 <CustomChartTooltip
                                   variant="pie"
-                                  valueFormatter={(v) => `: ${formatTooltipNumber(v)}`}
+                                  valueFormatter={formatTooltipNumber}
+                                  showPercent={false}
                                 />
                               )}
                             />
@@ -1692,132 +1724,130 @@ useEffect(() => {
                         </ResponsiveContainer>
                       </div>
 
-                      <div className="ig-engagement-legend">
-                        {engagementBreakdown.map((slice, index) => (
-                          <div key={slice.key || slice.name || index} className="ig-engagement-legend__item">
-                            <span
-                              className="ig-engagement-legend__swatch"
-                              style={{ backgroundColor: slice.color || "#3b82f6" }}
-                            />
-                            <span className="ig-engagement-legend__label" style={{ color: '#111827', fontWeight: 600 }}>{slice.name}</span>
-                          </div>
-                        ))}
+                      <div className="ig-engagement-legend" style={{ marginTop: '12px', gap: '14px' }}>
+                        {engagementBreakdown.map((slice, index) => {
+                          const total = engagementBreakdown.reduce((sum, item) => sum + item.value, 0);
+                          const pct = total > 0 ? ((slice.value / total) * 100).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : "0,0";
+                          return (
+                            <div key={slice.key || slice.name || index} className="ig-engagement-legend__item" style={{ fontSize: '15px' }}>
+                              <span
+                                className="ig-engagement-legend__swatch"
+                                style={{ backgroundColor: slice.color || "#3b82f6", width: '14px', height: '14px' }}
+                              />
+                              <span className="ig-engagement-legend__label">
+                                {`${slice.name}: ${pct}%`}
+                              </span>
+                            </div>
+                          );
+                        })}
                       </div>
 
                       <div className="ig-engagement-summary">
                         <div className="ig-engagement-summary__value">{engagementRateDisplay}</div>
-                        <div className="ig-engagement-summary__label">Total de engajamento do período</div>
+                        <div className="ig-engagement-summary__label">Taxa de engajamento</div>
                       </div>
                     </>
                   ) : (
                     <DataState state="empty" label="Sem dados de engajamento." size="sm" />
                   )}
                 </div>
-              </div>
-            </section>
 
-            <section className="ig-card-white fb-analytics-card">
-              <div className="ig-analytics-card__header">
-                <div>
-                  <h3 className="ig-clean-title2">Tempo médio de visualização</h3>
-                  <p className="ig-card-subtitle">Retenção de audiência no período</p>
+                {/* Tempo médio de visualização */}
+                <div className="ig-profile-vertical__divider" />
+                <div className="ig-profile-vertical__engagement">
+                  <h4>Tempo médio de visualização</h4>
+                  {overviewIsLoading ? (
+                    <DataState state="loading" label="Carregando dados..." size="sm" />
+                  ) : pageError ? (
+                    <DataState state="error" label={pageError} size="sm" />
+                  ) : hasVideoWatchData ? (
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", padding: "16px 0" }}>
+                      <div style={{ fontSize: "32px", fontWeight: 700, color: "#111827" }}>
+                        {formatDurationSeconds(videoWatchStats.avgWatchSec)}
+                      </div>
+                      <div style={{ fontSize: "12px", color: "#6b7280", fontWeight: 600 }}>
+                        Retenção de audiência no período
+                      </div>
+                    </div>
+                  ) : (
+                    <DataState state="empty" label="Sem dados de vídeo para o período." size="sm" />
+                  )}
                 </div>
-              </div>
-              <div className="ig-analytics-card__body">
-                {overviewIsLoading ? (
-                  <DataState state="loading" label="Carregando dados..." size="sm" />
-                ) : pageError ? (
-                  <DataState state="error" label={pageError} size="sm" />
-                ) : hasVideoWatchData ? (
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
-                    <div style={{ fontSize: "32px", fontWeight: 700, color: "#111827" }}>
-                      {formatDurationSeconds(videoWatchStats.avgWatchSec)}
-                    </div>
-                    <div style={{ fontSize: "12px", color: "#6b7280", fontWeight: 600 }}>
-                      Tempo médio assistido
-                    </div>
-                  </div>
-                ) : (
-                  <DataState state="empty" label="Sem dados de vídeo para o período." size="sm" />
-                )}
-              </div>
-            </section>
 
-            <section className="ig-card-white fb-analytics-card">
-              <div className="ig-analytics-card__header">
-                <div>
-                  <h3 className="ig-clean-title2">Interacoes com a Pagina</h3>
-                  <p className="ig-card-subtitle">Seguidores x nao seguidores</p>
+                {/* Interações com a Página */}
+                <div className="ig-profile-vertical__divider" />
+                <div className="ig-profile-vertical__engagement">
+                  <h4>Interações com a Página</h4>
+                  {overviewIsLoading ? (
+                    <DataState state="loading" label="Carregando interações..." size="sm" />
+                  ) : pageError ? (
+                    <DataState state="error" label="Falha ao carregar interações." size="sm" />
+                  ) : pageInteractionsByFollowType.length ? (
+                    <>
+                      <div style={{ width: "100%", height: 220 }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={pageInteractionsByFollowType}
+                              dataKey="value"
+                              nameKey="name"
+                              innerRadius={54}
+                              outerRadius={82}
+                              paddingAngle={3}
+                              stroke="none"
+                              activeIndex={activePageInteractionsIndex}
+                              activeShape={renderActiveEngagementShape}
+                              onMouseEnter={(_, index) => setActivePageInteractionsIndex(index)}
+                              onMouseLeave={() => setActivePageInteractionsIndex(-1)}
+                            >
+                              {pageInteractionsByFollowType.map((entry) => (
+                                <Cell key={entry.key || entry.name} fill={entry.color || "#1877F2"} />
+                              ))}
+                            </Pie>
+                            <Tooltip
+                              content={(
+                                <CustomChartTooltip
+                                  variant="pie"
+                                  valueFormatter={formatTooltipNumber}
+                                  showPercent={false}
+                                />
+                              )}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div className="ig-engagement-legend" style={{ marginTop: '12px', gap: '14px' }}>
+                        {pageInteractionsByFollowType.map((slice, index) => (
+                          <div key={slice.key || slice.name || index} className="ig-engagement-legend__item" style={{ fontSize: '15px' }}>
+                            <span
+                              className="ig-engagement-legend__swatch"
+                              style={{ backgroundColor: slice.color || "#1877F2", width: '14px', height: '14px' }}
+                            />
+                            <span className="ig-engagement-legend__label">
+                              {slice.name}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="ig-engagement-summary">
+                        <div className="ig-engagement-summary__value">{formatNumber(pageInteractionsByFollowTypeTotal)}</div>
+                        <div className="ig-engagement-summary__label">Total de interações</div>
+                      </div>
+                    </>
+                  ) : (
+                    <DataState
+                      state="empty"
+                      label="Sem dados de seguidores e não seguidores no período."
+                      size="sm"
+                    />
+                  )}
                 </div>
-              </div>
-              <div className="ig-analytics-card__body">
-                {overviewIsLoading ? (
-                  <DataState state="loading" label="Carregando interacoes..." size="sm" />
-                ) : pageError ? (
-                  <DataState state="error" label="Falha ao carregar interacoes." size="sm" />
-                ) : pageInteractionsByFollowType.length ? (
-                  <>
-                    <div style={{ width: "100%", height: 220 }}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={pageInteractionsByFollowType}
-                            dataKey="value"
-                            nameKey="name"
-                            innerRadius={54}
-                            outerRadius={82}
-                            paddingAngle={3}
-                            stroke="none"
-                            activeIndex={activePageInteractionsIndex}
-                            activeShape={renderActiveEngagementShape}
-                            onMouseEnter={(_, index) => setActivePageInteractionsIndex(index)}
-                            onMouseLeave={() => setActivePageInteractionsIndex(-1)}
-                          >
-                            {pageInteractionsByFollowType.map((entry) => (
-                              <Cell key={entry.key || entry.name} fill={entry.color || "#1877F2"} />
-                            ))}
-                          </Pie>
-                          <Tooltip
-                            content={(
-                              <CustomChartTooltip
-                                variant="pie"
-                                valueFormatter={(v) => `: ${formatTooltipNumber(v)}`}
-                              />
-                            )}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className="ig-engagement-legend" style={{ marginTop: 8 }}>
-                      {pageInteractionsByFollowType.map((slice, index) => (
-                        <div key={slice.key || slice.name || index} className="ig-engagement-legend__item">
-                          <span
-                            className="ig-engagement-legend__swatch"
-                            style={{ backgroundColor: slice.color || "#1877F2" }}
-                          />
-                          <span className="ig-engagement-legend__label" style={{ color: "#111827", fontWeight: 600 }}>
-                            {slice.name}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{ marginTop: 10, textAlign: "center", fontSize: "12px", color: "#6b7280", fontWeight: 600 }}>
-                      Total de interacoes: {formatNumber(pageInteractionsByFollowTypeTotal)}
-                    </div>
-                  </>
-                ) : (
-                  <DataState
-                    state="empty"
-                    label="Sem dados de seguidores e nao seguidores no periodo."
-                    size="sm"
-                  />
-                )}
               </div>
             </section>
           </div>
 
-          {/* Coluna Direita - Flex */}
-          <div className="fb-right-column">
+          {/* Coluna Direita */}
+          <div className="ig-clean-grid__right">
             {showWordCloudDetail ? (
               /* Painel detalhado de Palavras-chave (mesmo layout do Instagram) */
               <div className="ig-wordcloud-detail-panel">
@@ -2195,8 +2225,11 @@ useEffect(() => {
             <section className="ig-growth-clean">
               <header className="ig-card-header">
                 <div>
-                  <h2 className="ig-clean-title2">Crescimento do perfil</h2>
-                  <h3>Alcance</h3>
+                  <h3>
+                    Crescimento do perfil
+                    <InfoTooltip text="Número de contas únicas alcançadas no período selecionado." />
+                  </h3>
+                  <p className="ig-card-subtitle">Alcance</p>
                 </div>
               </header>
 
@@ -2325,13 +2358,35 @@ useEffect(() => {
             <section className="ig-growth-clean">
               <header className="ig-card-header">
                 <div>
-                  <h2 className="ig-clean-title2">Crescimento do conteúdo</h2>
-                  <h3>Engajamento</h3>
+                  <h3>
+                    Crescimento do conteúdo
+                    <InfoTooltip text="Engajamento total acumulado no período selecionado." />
+                  </h3>
+                  <p className="ig-card-subtitle">Engajamento</p>
                 </div>
                 <button
-                  type="button"
-                  className="fb-card-action"
                   onClick={handleOpenContentDetails}
+                  style={{
+                    padding: '8px 20px',
+                    background: 'linear-gradient(135deg, #1877F2 0%, #0A66C2 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    boxShadow: '0 2px 8px rgba(24, 119, 242, 0.25)',
+                    whiteSpace: 'nowrap'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(24, 119, 242, 0.35)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(24, 119, 242, 0.25)';
+                  }}
                 >
                   Ver mais
                 </button>
@@ -2478,7 +2533,7 @@ useEffect(() => {
 
 
             {/* Cards de Demografia */}
-            <div className="ig-analytics-grid fb-analytics-grid--pair">
+            <div className="ig-analytics-grid ig-analytics-grid--pair">
               <section className="ig-card-white fb-analytics-card fb-demographics-card">
                 <div className="ig-analytics-card__header">
                   <h4>Top 5 Cidades</h4>
@@ -2605,8 +2660,8 @@ useEffect(() => {
         </div>
 
         {/* Palavras-chave - Largura Total */}
-        <div className="ig-analytics-grid">
-          <section className="ig-card-white fb-analytics-card" style={{ gridColumn: '1 / -1' }}>
+        <div className="ig-analytics-grid ig-analytics-grid--stack">
+          <section className="ig-card-white ig-analytics-card ig-analytics-card--large">
             <div className="ig-analytics-card__header">
               <h4>Palavras chaves mais comentadas</h4>
             </div>
