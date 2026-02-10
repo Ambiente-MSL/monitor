@@ -63,6 +63,7 @@ const FB_TOPBAR_PRESETS = [
 const DEFAULT_FACEBOOK_RANGE_DAYS = 7;
 const FB_METRICS_TIMEOUT_MS = 60000;
 const FB_METRICS_RETRY_TIMEOUT_MS = 90000;
+const WORDCLOUD_DETAILS_PAGE_SIZE = 10;
 
 const WEEKDAY_LABELS = ["D", "S", "T", "Q", "Q", "S", "S"];
 const DEFAULT_WEEKLY_FOLLOWERS = [3, 4, 5, 6, 7, 5, 4];
@@ -328,6 +329,13 @@ useEffect(() => {
   const [overviewSync, setOverviewSync] = useState(() => normalizeSyncInfo(null));
   const [activeEngagementIndex, setActiveEngagementIndex] = useState(-1);
   const [showContentDetails, setShowContentDetails] = useState(false);
+  const [showWordCloudDetail, setShowWordCloudDetail] = useState(false);
+  const [selectedWordCloud, setSelectedWordCloud] = useState(null);
+  const [wordCloudDetails, setWordCloudDetails] = useState(null);
+  const [wordCloudDetailsLoading, setWordCloudDetailsLoading] = useState(false);
+  const [wordCloudDetailsError, setWordCloudDetailsError] = useState("");
+  const [wordCloudDetailsLoadingMore, setWordCloudDetailsLoadingMore] = useState(false);
+  const [wordCloudDetailsPage, setWordCloudDetailsPage] = useState(1);
 
   useEffect(() => {
     if (!setTopbarConfig) return undefined;
@@ -348,21 +356,151 @@ useEffect(() => {
     setTopbarConfig,
   ]);
 
-  useEffect(() => {
-    if (!showContentDetails || typeof document === "undefined") return undefined;
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") {
-        setShowContentDetails(false);
+  // Painel de detalhes agora é inline (não overlay), não precisa bloquear scroll
+
+  // --- WordCloud detail panel logic (same pattern as Instagram) ---
+  const buildFbWordCloudDetailsUrl = useCallback((word, offset = 0) => {
+    if (!accountConfig?.facebookPageId || !word) return null;
+    const params = new URLSearchParams({
+      pageId: accountConfig.facebookPageId,
+      word,
+      limit: String(WORDCLOUD_DETAILS_PAGE_SIZE),
+      offset: String(offset),
+    });
+    if (sinceIso) params.set("since", sinceIso);
+    if (untilIso) params.set("until", untilIso);
+    return `${API_BASE_URL}/api/facebook/comments/search?${params.toString()}`;
+  }, [accountConfig?.facebookPageId, sinceIso, untilIso]);
+
+  const fetchWordCloudDetails = useCallback(async (word, offset = 0) => {
+    const url = buildFbWordCloudDetailsUrl(word, offset);
+    if (!url) return null;
+    const response = await fetch(url);
+    if (!response.ok) {
+      const message = await response.text();
+      throw new Error(message || "Falha ao carregar comentários.");
+    }
+    return response.json();
+  }, [buildFbWordCloudDetailsUrl]);
+
+  const handleWordCloudWordClick = useCallback((word, count) => {
+    setShowContentDetails(false);
+    setSelectedWordCloud({ word, count });
+    setShowWordCloudDetail(true);
+    setWordCloudDetails(null);
+    setWordCloudDetailsError("");
+    setWordCloudDetailsLoading(true);
+    setWordCloudDetailsLoadingMore(false);
+    setWordCloudDetailsPage(1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    fetchWordCloudDetails(word, 0)
+      .then((payload) => {
+        setWordCloudDetails(payload);
+        setWordCloudDetailsPage(1);
+      })
+      .catch((err) => {
+        setWordCloudDetailsError(err?.message || "Falha ao carregar comentários.");
+      })
+      .finally(() => {
+        setWordCloudDetailsLoading(false);
+      });
+  }, [fetchWordCloudDetails]);
+
+  const wordCloudDetailsTotalPages = useMemo(() => {
+    if (!wordCloudDetails) return 0;
+    const total = Number(wordCloudDetails.total_comments || 0);
+    return Math.ceil(total / WORDCLOUD_DETAILS_PAGE_SIZE);
+  }, [wordCloudDetails]);
+
+  const closeWordCloudDetail = useCallback(() => {
+    setShowWordCloudDetail(false);
+    setSelectedWordCloud(null);
+    setWordCloudDetails(null);
+    setWordCloudDetailsError("");
+    setWordCloudDetailsLoading(false);
+    setWordCloudDetailsLoadingMore(false);
+    setWordCloudDetailsPage(1);
+  }, []);
+
+  const wordCloudCanGoPrev = wordCloudDetailsPage > 1;
+  const wordCloudCanGoNext = wordCloudDetailsPage < wordCloudDetailsTotalPages;
+
+  const wordCloudPageNumbers = useMemo(() => {
+    const pages = [];
+    const maxVisible = 5;
+    const total = wordCloudDetailsTotalPages;
+    const current = wordCloudDetailsPage;
+    if (total <= maxVisible) {
+      for (let i = 1; i <= total; i++) pages.push(i);
+      return pages;
+    }
+    if (current <= 3) {
+      for (let i = 1; i <= Math.min(maxVisible, total); i++) pages.push(i);
+      pages.push("...");
+      pages.push(total);
+      return pages;
+    }
+    if (current >= total - 2) {
+      pages.push(1);
+      pages.push("...");
+      for (let i = total - maxVisible + 1; i <= total; i++) {
+        if (i > 1) pages.push(i);
       }
-    };
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [showContentDetails]);
+      return pages;
+    }
+    pages.push(1);
+    pages.push("...");
+    for (let i = current - 1; i <= current + 1; i++) pages.push(i);
+    pages.push("...");
+    pages.push(total);
+    return pages;
+  }, [wordCloudDetailsPage, wordCloudDetailsTotalPages]);
+
+  const handleWordCloudGoToPage = useCallback(async (page) => {
+    if (!selectedWordCloud?.word || wordCloudDetailsLoadingMore) return;
+    if (!wordCloudDetailsTotalPages) return;
+    const target = Math.min(Math.max(1, page), wordCloudDetailsTotalPages);
+    if (target === wordCloudDetailsPage) return;
+    setWordCloudDetailsLoadingMore(true);
+    try {
+      const offset = (target - 1) * WORDCLOUD_DETAILS_PAGE_SIZE;
+      const payload = await fetchWordCloudDetails(selectedWordCloud.word, offset);
+      setWordCloudDetails(payload);
+      setWordCloudDetailsPage(target);
+      setWordCloudDetailsError("");
+    } catch (err) {
+      setWordCloudDetailsError(err?.message || "Falha ao carregar comentários.");
+    } finally {
+      setWordCloudDetailsLoadingMore(false);
+    }
+  }, [selectedWordCloud?.word, wordCloudDetailsLoadingMore, wordCloudDetailsTotalPages, wordCloudDetailsPage, fetchWordCloudDetails]);
+
+  const handleWordCloudNextPage = useCallback(() => {
+    if (!wordCloudCanGoNext || wordCloudDetailsLoadingMore) return;
+    handleWordCloudGoToPage(wordCloudDetailsPage + 1);
+  }, [wordCloudCanGoNext, wordCloudDetailsLoadingMore, handleWordCloudGoToPage, wordCloudDetailsPage]);
+
+  const handleWordCloudPrevPage = useCallback(() => {
+    if (!wordCloudCanGoPrev || wordCloudDetailsLoadingMore) return;
+    handleWordCloudGoToPage(wordCloudDetailsPage - 1);
+  }, [wordCloudCanGoPrev, wordCloudDetailsLoadingMore, handleWordCloudGoToPage, wordCloudDetailsPage]);
+
+  const formatWordCloudDetailDate = (value) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return new Intl.DateTimeFormat("pt-BR", {
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(date);
+  };
+
+  const handleOpenContentDetails = useCallback(() => {
+    closeWordCloudDetail();
+    setShowContentDetails(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [closeWordCloudDetail]);
 
   const [pageMetrics, setPageMetrics] = useState([]);
   const [pageError, setPageError] = useState("");
@@ -1510,6 +1648,379 @@ useEffect(() => {
 
           {/* Coluna Direita - Flex */}
           <div className="fb-right-column">
+            {showWordCloudDetail ? (
+              /* Painel detalhado de Palavras-chave (mesmo layout do Instagram) */
+              <div className="ig-wordcloud-detail-panel">
+                {/* Header com botão voltar */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '24px',
+                  padding: '16px 20px',
+                  background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                  borderRadius: '16px',
+                  color: 'white'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <button
+                      onClick={closeWordCloudDetail}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '10px',
+                        background: 'rgba(255, 255, 255, 0.2)',
+                        border: 'none',
+                        color: 'white',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="15 18 9 12 15 6" />
+                      </svg>
+                    </button>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Comentários com "{selectedWordCloud?.word}"</h3>
+                      <p style={{ margin: 0, fontSize: '13px', opacity: 0.9 }}>
+                        {wordCloudDetails && !wordCloudDetailsLoading && !wordCloudDetailsError
+                          ? `${wordCloudDetails.total_occurrences} ocorrência${wordCloudDetails.total_occurrences === 1 ? '' : 's'} em ${wordCloudDetails.total_comments} comentário${wordCloudDetails.total_comments === 1 ? '' : 's'}`
+                          : 'Buscando ocorrências...'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* KPIs */}
+                {wordCloudDetails && !wordCloudDetailsLoading && !wordCloudDetailsError && (
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(2, 1fr)',
+                    gap: '16px',
+                    marginBottom: '24px'
+                  }}>
+                    <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                      <div style={{ fontSize: '28px', fontWeight: 700, color: '#dc2626' }}>
+                        {wordCloudDetails.total_occurrences?.toLocaleString('pt-BR') || 0}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Ocorrências</div>
+                    </div>
+                    <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                      <div style={{ fontSize: '28px', fontWeight: 700, color: '#f87171' }}>
+                        {wordCloudDetails.total_comments?.toLocaleString('pt-BR') || 0}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Comentários</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Lista de comentários */}
+                <section className="ig-card-white" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb' }}>
+                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                      </svg>
+                      Comentários encontrados
+                    </h4>
+                  </div>
+                  <div style={{ padding: '16px 20px', flex: 1 }}>
+                    {wordCloudDetailsLoading ? (
+                      <DataState state="loading" label="Carregando comentários..." size="sm" />
+                    ) : wordCloudDetailsError ? (
+                      <DataState state="error" label="Falha ao carregar comentários." hint={wordCloudDetailsError} size="sm" />
+                    ) : wordCloudDetails && Array.isArray(wordCloudDetails.comments) && wordCloudDetails.comments.length ? (
+                      <>
+                        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          {wordCloudDetails.comments.map((comment) => (
+                            <li key={comment.id || `${comment.text}-${comment.timestamp}`} style={{
+                              padding: '12px 16px',
+                              background: '#f9fafb',
+                              borderRadius: '10px',
+                              border: '1px solid #e5e7eb'
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                                <span style={{ fontWeight: 600, fontSize: '13px', color: '#111827' }}>
+                                  {comment.username ? `@${comment.username}` : 'Comentário'}
+                                </span>
+                                {comment.timestamp && (
+                                  <span style={{ fontSize: '12px', color: '#9ca3af' }}>
+                                    {formatWordCloudDetailDate(comment.timestamp)}
+                                  </span>
+                                )}
+                                {comment.occurrences > 1 && (
+                                  <span style={{
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    color: '#ef4444',
+                                    background: '#fef2f2',
+                                    padding: '2px 8px',
+                                    borderRadius: '10px'
+                                  }}>
+                                    {comment.occurrences}x
+                                  </span>
+                                )}
+                              </div>
+                              <p style={{ margin: 0, fontSize: '14px', color: '#374151', lineHeight: 1.5 }}>
+                                {comment.text}
+                              </p>
+                            </li>
+                          ))}
+                        </ul>
+                        {wordCloudDetailsTotalPages > 1 && (
+                          <div className="ig-word-detail-pagination">
+                            <button
+                              type="button"
+                              className="ig-word-detail-pagination__btn ig-word-detail-pagination__arrow"
+                              onClick={handleWordCloudPrevPage}
+                              disabled={!wordCloudCanGoPrev || wordCloudDetailsLoadingMore}
+                              aria-label="Página anterior"
+                            >
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <polyline points="15 18 9 12 15 6" />
+                              </svg>
+                            </button>
+                            <div className="ig-word-detail-pagination__pages">
+                              {wordCloudDetailsLoadingMore ? (
+                                <span className="ig-word-detail-pagination__loading">Carregando...</span>
+                              ) : (
+                                wordCloudPageNumbers.map((page, index) => (
+                                  page === "..." ? (
+                                    <span key={`ellipsis-${index}`} className="ig-word-detail-pagination__ellipsis">...</span>
+                                  ) : (
+                                    <button
+                                      key={page}
+                                      type="button"
+                                      className={`ig-word-detail-pagination__page ${wordCloudDetailsPage === page ? 'ig-word-detail-pagination__page--active' : ''}`}
+                                      onClick={() => handleWordCloudGoToPage(page)}
+                                      disabled={wordCloudDetailsLoadingMore}
+                                    >
+                                      {page}
+                                    </button>
+                                  )
+                                ))
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              className="ig-word-detail-pagination__btn ig-word-detail-pagination__arrow"
+                              onClick={handleWordCloudNextPage}
+                              disabled={!wordCloudCanGoNext || wordCloudDetailsLoadingMore}
+                              aria-label="Próxima página"
+                            >
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <polyline points="9 18 15 12 9 6" />
+                              </svg>
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <DataState state="empty" label="Nenhum comentário encontrado com essa palavra." size="sm" />
+                    )}
+                  </div>
+                </section>
+              </div>
+            ) : showContentDetails ? (
+              /* Painel detalhado de Crescimento do conteúdo (inline, mesmo padrão do Instagram) */
+              <div className="ig-wordcloud-detail-panel">
+                {/* Header com botão voltar */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '24px',
+                  padding: '16px 20px',
+                  background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+                  borderRadius: '16px',
+                  color: 'white'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <button
+                      onClick={() => setShowContentDetails(false)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '10px',
+                        background: 'rgba(255, 255, 255, 0.2)',
+                        border: 'none',
+                        color: 'white',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="15 18 9 12 15 6" />
+                      </svg>
+                    </button>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Detalhes do conteudo</h3>
+                      <p style={{ margin: 0, fontSize: '13px', opacity: 0.9 }}>Engajamento, audiencia e posts no periodo</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* KPIs */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, 1fr)',
+                  gap: '16px',
+                  marginBottom: '24px'
+                }}>
+                  <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '28px', fontWeight: 700, color: '#22c55e' }}>
+                      {formatNumber(engagedUsersValue)}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Usuarios engajados</div>
+                  </div>
+                  <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '28px', fontWeight: 700, color: '#16a34a' }}>
+                      {formatNumber(reactionsTotalValue)}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Reacoes totais</div>
+                  </div>
+                  <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '28px', fontWeight: 700, color: '#22c55e' }}>
+                      {formatNumber(contentClicksValue)}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Cliques em conteudos</div>
+                  </div>
+                  <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '28px', fontWeight: 700, color: '#16a34a' }}>
+                      {formatNumber(totalFansValue)}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Fas totais</div>
+                  </div>
+                </div>
+
+                {/* Novos fãs e remoções por dia */}
+                <section className="ig-card-white" style={{ marginBottom: '16px' }}>
+                  <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb' }}>
+                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827' }}>Novos fas e remocoes por dia</h4>
+                  </div>
+                  <div style={{ padding: '16px 20px' }}>
+                    {followersDailyRows.length ? (
+                      <div className="fb-detail-followers-list">
+                        {followersDailyRows.map((row) => (
+                          <div className="fb-detail-followers-row" key={row.dateKey}>
+                            <span className="fb-detail-followers-row__date">{row.label || row.dateKey}</span>
+                            <span className="fb-detail-followers-row__adds">+{formatNumber(row.adds)}</span>
+                            <span className="fb-detail-followers-row__removes">-{formatNumber(row.removes)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <DataState state="empty" label="Sem dados de seguidores." size="sm" />
+                    )}
+                  </div>
+                </section>
+
+                {/* Origem dos fãs */}
+                <section className="ig-card-white" style={{ marginBottom: '16px' }}>
+                  <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb' }}>
+                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827' }}>Origem dos fas</h4>
+                  </div>
+                  <div style={{ padding: '16px 20px' }}>
+                    {audienceLoading ? (
+                      <DataState state="loading" label="Carregando audiencia..." size="sm" />
+                    ) : audienceError ? (
+                      <DataState state="error" label={audienceError} size="sm" />
+                    ) : (
+                      <div className="fb-detail-origin-grid">
+                        <div className="fb-detail-origin">
+                          <h5>Cidades</h5>
+                          {audienceCities.length ? (
+                            <ul>
+                              {audienceCities.map((city) => (
+                                <li key={city?.name || "city"}>
+                                  <span>{city?.name || "--"}</span>
+                                  <strong>{formatNumber(city?.value)}</strong>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <span className="fb-detail-origin__empty">Sem cidades</span>
+                          )}
+                        </div>
+                        <div className="fb-detail-origin">
+                          <h5>Paises</h5>
+                          {audienceCountries.length ? (
+                            <ul>
+                              {audienceCountries.map((country) => (
+                                <li key={country?.name || "country"}>
+                                  <span>{country?.name || "--"}</span>
+                                  <strong>{formatNumber(country?.value)}</strong>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <span className="fb-detail-origin__empty">Sem paises</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                {/* Posts e engajamento */}
+                <section className="ig-card-white" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb' }}>
+                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827' }}>Posts e engajamento</h4>
+                  </div>
+                  <div style={{ padding: '16px 20px', flex: 1 }}>
+                    {fbPostsLoading ? (
+                      <DataState state="loading" label="Carregando posts..." size="sm" />
+                    ) : fbPostsError ? (
+                      <DataState state="error" label={fbPostsError} size="sm" />
+                    ) : postsForDetails.length ? (
+                      <div className="fb-detail-posts">
+                        {postsForDetails.map((post) => {
+                          const title = post?.message || "Post sem texto";
+                          return (
+                            <a
+                              key={post?.id || title}
+                              className="fb-detail-post"
+                              href={post?.permalink || "#"}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              <div className="fb-detail-post__thumb">
+                                {post?.previewUrl ? (
+                                  <img src={post.previewUrl} alt="" loading="lazy" />
+                                ) : (
+                                  <div className="fb-detail-post__thumb--empty">Sem imagem</div>
+                                )}
+                              </div>
+                              <div className="fb-detail-post__content">
+                                <div className="fb-detail-post__title truncate">{title}</div>
+                                <div className="fb-detail-post__date">{formatPostDate(post?.timestamp)}</div>
+                                <div className="fb-detail-post__metrics">
+                                  <span><Heart size={14} /> {formatNumber(post?.reactions)}</span>
+                                  <span><MessageCircle size={14} /> {formatNumber(post?.comments)}</span>
+                                  <span><Share2 size={14} /> {formatNumber(post?.shares)}</span>
+                                </div>
+                              </div>
+                              <div className="fb-detail-post__engagement">
+                                {formatNumber(post?.engagementTotal)}
+                              </div>
+                            </a>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <DataState state="empty" label="Sem posts no periodo." size="sm" />
+                    )}
+                  </div>
+                </section>
+              </div>
+            ) : (
+            <>
             {/* Card de Crescimento do Perfil */}
             <section className="ig-growth-clean">
               <header className="ig-card-header">
@@ -1650,7 +2161,7 @@ useEffect(() => {
                 <button
                   type="button"
                   className="fb-card-action"
-                  onClick={() => setShowContentDetails(true)}
+                  onClick={handleOpenContentDetails}
                 >
                   Ver mais
                 </button>
@@ -1777,83 +2288,7 @@ useEffect(() => {
               </div>
             </section>
 
-            {/* Card de Crescimento de Seguidores - logo abaixo de Crescimento do perfil */}
-            <section className="ig-growth-clean">
-              <header className="ig-card-header">
-                <div>
-                  <h3 className="ig-clean-title2">Crescimento de seguidores</h3>
-                  <p className="ig-card-subtitle">Evolução diária</p>
-                </div>
-              </header>
-
-              <div className="ig-chart-area">
-                {followerGrowthSeries.length ? (
-                  <ResponsiveContainer width="100%" height={240}>
-                    <ComposedChart
-                      data={followerGrowthSeries}
-                      margin={{ top: 16, right: 28, left: 12, bottom: 8 }}
-                    >
-                      <defs>
-                        <linearGradient id="fbFollowersAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#1877F2" stopOpacity={0.3} />
-                          <stop offset="100%" stopColor="#1877F2" stopOpacity={0.05} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#f3f4f6" />
-                      <XAxis
-                        dataKey="label"
-                        tick={{ fill: '#6b7280', fontSize: 11 }}
-                        tickLine={false}
-                        axisLine={{ stroke: '#e5e7eb' }}
-                        minTickGap={30}
-                        interval="preserveStartEnd"
-                        tickFormatter={formatAxisDate}
-                      />
-                      <YAxis
-                        tick={{ fill: '#6b7280', fontSize: 11 }}
-                        tickLine={false}
-                        axisLine={{ stroke: '#e5e7eb' }}
-                        tickFormatter={(val) => formatCompactNumber(val)}
-                        domain={['dataMin - 50', 'dataMax + 50']}
-                      />
-                      <Tooltip
-                        cursor={{ stroke: '#1877F2', strokeWidth: 1, strokeDasharray: '4 4' }}
-                        content={(props) => {
-                          if (!props?.active || !props?.payload?.length) return null;
-                          const tooltipDate = props?.payload?.[0]?.payload?.tooltipDate || props?.label || "";
-                          return (
-                            <CustomChartTooltip
-                              {...props}
-                              labelFormatter={() => tooltipDate}
-                              labelMap={{ value: "Crescimento líquido" }}
-                              valueFormatter={(v) => `: ${formatTooltipNumber(v)}`}
-                            />
-                          );
-                        }}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="value"
-                        fill="url(#fbFollowersAreaGradient)"
-                        stroke="none"
-                        isAnimationActive={false}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="value"
-                        stroke="#1877F2"
-                        strokeWidth={3}
-                        dot={{ fill: '#ffffff', stroke: '#1877F2', strokeWidth: 2, r: 4 }}
-                        activeDot={{ r: 6, fill: '#ffffff', stroke: '#1877F2', strokeWidth: 3 }}
-                        isAnimationActive={false}
-                      />
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="ig-empty-state">Sem dados disponíveis</div>
-                )}
-              </div>
-            </section>
+            {/* DESATIVADO TEMPORARIAMENTE -- Card de Crescimento de Seguidores */}
 
             {/* Cards de alcance removidos */}
 
@@ -1994,6 +2429,8 @@ useEffect(() => {
                 </div>
               </section>
             </div>
+            </>
+            )}
           </div>
         </div>
 
@@ -2012,166 +2449,15 @@ useEffect(() => {
                 until={untilIso}
                 top={120}
                 showCommentsCount={false}
+                externalPanelMode={true}
+                onWordClick={handleWordCloudWordClick}
               />
             </div>
           </section>
         </div>
       </div>
 
-      {showContentDetails && (
-        <>
-          <div
-            className="fb-detail-overlay"
-            onClick={() => setShowContentDetails(false)}
-            role="presentation"
-          />
-          <aside className="fb-detail-panel" role="dialog" aria-modal="true">
-            <div className="fb-detail-panel__header">
-              <div>
-                <h3>Detalhes do conteudo</h3>
-                <p>Engajamento, audiencia e posts no periodo</p>
-              </div>
-              <button
-                type="button"
-                className="fb-detail-panel__close"
-                onClick={() => setShowContentDetails(false)}
-                aria-label="Fechar detalhes"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="fb-detail-panel__body">
-              <section className="fb-detail-panel__section">
-                <h4>Resumo do conteudo</h4>
-                <div className="fb-detail-metric-grid">
-                  <div className="fb-detail-metric">
-                    <span className="fb-detail-metric__label">Usuarios engajados</span>
-                    <span className="fb-detail-metric__value">{formatNumber(engagedUsersValue)}</span>
-                  </div>
-                  <div className="fb-detail-metric">
-                    <span className="fb-detail-metric__label">Reacoes totais</span>
-                    <span className="fb-detail-metric__value">{formatNumber(reactionsTotalValue)}</span>
-                  </div>
-                  <div className="fb-detail-metric">
-                    <span className="fb-detail-metric__label">Cliques em conteudos</span>
-                    <span className="fb-detail-metric__value">{formatNumber(contentClicksValue)}</span>
-                  </div>
-                  <div className="fb-detail-metric">
-                    <span className="fb-detail-metric__label">Fas totais</span>
-                    <span className="fb-detail-metric__value">{formatNumber(totalFansValue)}</span>
-                  </div>
-                </div>
-              </section>
-
-              <section className="fb-detail-panel__section">
-                <h4>Novos fas e remocoes por dia</h4>
-                {followersDailyRows.length ? (
-                  <div className="fb-detail-followers-list">
-                    {followersDailyRows.map((row) => (
-                      <div className="fb-detail-followers-row" key={row.dateKey}>
-                        <span className="fb-detail-followers-row__date">{row.label || row.dateKey}</span>
-                        <span className="fb-detail-followers-row__adds">+{formatNumber(row.adds)}</span>
-                        <span className="fb-detail-followers-row__removes">-{formatNumber(row.removes)}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <DataState state="empty" label="Sem dados de seguidores." size="sm" />
-                )}
-              </section>
-
-              <section className="fb-detail-panel__section">
-                <h4>Origem dos fas</h4>
-                {audienceLoading ? (
-                  <DataState state="loading" label="Carregando audiencia..." size="sm" />
-                ) : audienceError ? (
-                  <DataState state="error" label={audienceError} size="sm" />
-                ) : (
-                  <div className="fb-detail-origin-grid">
-                    <div className="fb-detail-origin">
-                      <h5>Cidades</h5>
-                      {audienceCities.length ? (
-                        <ul>
-                          {audienceCities.map((city) => (
-                            <li key={city?.name || "city"}>
-                              <span>{city?.name || "--"}</span>
-                              <strong>{formatNumber(city?.value)}</strong>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <span className="fb-detail-origin__empty">Sem cidades</span>
-                      )}
-                    </div>
-                    <div className="fb-detail-origin">
-                      <h5>Paises</h5>
-                      {audienceCountries.length ? (
-                        <ul>
-                          {audienceCountries.map((country) => (
-                            <li key={country?.name || "country"}>
-                              <span>{country?.name || "--"}</span>
-                              <strong>{formatNumber(country?.value)}</strong>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <span className="fb-detail-origin__empty">Sem paises</span>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </section>
-
-              <section className="fb-detail-panel__section">
-                <h4>Posts e engajamento</h4>
-                {fbPostsLoading ? (
-                  <DataState state="loading" label="Carregando posts..." size="sm" />
-                ) : fbPostsError ? (
-                  <DataState state="error" label={fbPostsError} size="sm" />
-                ) : postsForDetails.length ? (
-                  <div className="fb-detail-posts">
-                    {postsForDetails.map((post) => {
-                      const title = post?.message || "Post sem texto";
-                      return (
-                        <a
-                          key={post?.id || title}
-                          className="fb-detail-post"
-                          href={post?.permalink || "#"}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          <div className="fb-detail-post__thumb">
-                            {post?.previewUrl ? (
-                              <img src={post.previewUrl} alt="" loading="lazy" />
-                            ) : (
-                              <div className="fb-detail-post__thumb--empty">Sem imagem</div>
-                            )}
-                          </div>
-                          <div className="fb-detail-post__content">
-                            <div className="fb-detail-post__title truncate">{title}</div>
-                            <div className="fb-detail-post__date">{formatPostDate(post?.timestamp)}</div>
-                            <div className="fb-detail-post__metrics">
-                              <span><Heart size={14} /> {formatNumber(post?.reactions)}</span>
-                              <span><MessageCircle size={14} /> {formatNumber(post?.comments)}</span>
-                              <span><Share2 size={14} /> {formatNumber(post?.shares)}</span>
-                            </div>
-                          </div>
-                          <div className="fb-detail-post__engagement">
-                            {formatNumber(post?.engagementTotal)}
-                          </div>
-                        </a>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <DataState state="empty" label="Sem posts no periodo." size="sm" />
-                )}
-              </section>
-            </div>
-          </aside>
-        </>
-      )}
+      {/* Painel de detalhes de conteúdo agora é inline na coluna direita */}
     </div>
   );
 }
