@@ -905,6 +905,27 @@ export default function InstagramDashboard() {
   const defaultEnd = useMemo(() => endOfDay(subDays(startOfDay(now), 1)), [now]);
 
   useEffect(() => {
+    if (!sinceDate || !untilDate) return;
+    const maxUntil = endOfDay(defaultEnd);
+    const currentUntil = endOfDay(untilDate);
+    if (currentUntil <= maxUntil) return;
+
+    const requestedStart = startOfDay(sinceDate);
+    const requestedUntil = startOfDay(untilDate);
+    const rangeDays = Math.max(
+      1,
+      differenceInCalendarDays(requestedUntil, requestedStart) + 1,
+    );
+    const adjustedUntil = maxUntil;
+    const adjustedStart = startOfDay(subDays(adjustedUntil, rangeDays - 1));
+
+    setQuery({
+      since: toUnixSeconds(adjustedStart),
+      until: toUnixSeconds(adjustedUntil),
+    });
+  }, [defaultEnd, setQuery, sinceDate, untilDate]);
+
+  useEffect(() => {
     if (sinceDate && untilDate) return;
     const defaultPreset = IG_TOPBAR_PRESETS.find((item) => item.id === "7d") || IG_TOPBAR_PRESETS[0];
     if (!defaultPreset?.days || defaultPreset.days <= 0) return;
@@ -2149,8 +2170,17 @@ const profileViewsMetric = useMemo(() => {
     const lastDateKey = interactionsSeriesResolved[interactionsSeriesResolved.length - 1]?.date;
     if (!firstDateKey || !lastDateKey) return [];
 
-    const rangeStart = sinceDate ? startOfDay(sinceDate) : new Date(`${firstDateKey}T00:00:00`);
-    const rangeEnd = untilDate ? startOfDay(untilDate) : new Date(`${lastDateKey}T00:00:00`);
+    const maxRangeEnd = startOfDay(defaultEnd);
+    const requestedStart = sinceDate ? startOfDay(sinceDate) : null;
+    const requestedEnd = untilDate ? startOfDay(untilDate) : null;
+    const rangeEndCandidate = requestedEnd || new Date(`${lastDateKey}T00:00:00`);
+    const rangeEnd = rangeEndCandidate > maxRangeEnd ? maxRangeEnd : rangeEndCandidate;
+
+    let rangeStart = requestedStart || new Date(`${firstDateKey}T00:00:00`);
+    if (requestedStart && requestedEnd && requestedEnd > maxRangeEnd) {
+      const span = Math.max(1, differenceInCalendarDays(requestedEnd, requestedStart) + 1);
+      rangeStart = startOfDay(subDays(rangeEnd, span - 1));
+    }
 
     if (Number.isNaN(rangeStart.getTime()) || Number.isNaN(rangeEnd.getTime())) {
       return [];
@@ -2176,11 +2206,11 @@ const profileViewsMetric = useMemo(() => {
       const dateKey = day.toISOString().slice(0, 10);
       return {
         date: dateKey,
-        value: totalsByDate.has(dateKey) ? totalsByDate.get(dateKey) : null,
+        value: totalsByDate.has(dateKey) ? totalsByDate.get(dateKey) : 0,
         tooltipDate: formatTooltipDate(dateKey),
       };
     });
-  }, [interactionsSeriesResolved, sinceDate, untilDate]);
+  }, [defaultEnd, interactionsSeriesResolved, sinceDate, untilDate]);
   const interactionsPeak = useMemo(() => {
     if (!interactionsChartData.length) return null;
     return interactionsChartData.reduce((maxValue, entry) => (
