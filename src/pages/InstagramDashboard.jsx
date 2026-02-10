@@ -52,6 +52,8 @@ import {
   Shield,
   ChevronLeft,
   ChevronRight,
+  TrendingDown,
+  TrendingUp,
 } from "lucide-react";
 import useQueryState from "../hooks/useQueryState";
 import { useAccounts } from "../context/AccountsContext";
@@ -466,6 +468,28 @@ const formatPercent = (value) => {
   if (!Number.isFinite(numeric)) return "0%";
   const rounded = Math.round(numeric * 10) / 10;
   return `${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}%`;
+};
+
+const formatDeltaPercent = (value) => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return null;
+  const roundedAbsolute = Math.abs(Math.round(numeric * 10) / 10);
+  const hasFraction = roundedAbsolute % 1 !== 0;
+  const formatted = roundedAbsolute.toLocaleString("pt-BR", {
+    minimumFractionDigits: hasFraction ? 1 : 0,
+    maximumFractionDigits: 1,
+  });
+  if (numeric > 0) return `+${formatted}%`;
+  if (numeric < 0) return `-${formatted}%`;
+  return "0%";
+};
+
+const getTrendDirection = (value) => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return null;
+  if (numeric > 0) return "up";
+  if (numeric < 0) return "down";
+  return "flat";
 };
 
 const formatDuration = (seconds) => {
@@ -1870,11 +1894,12 @@ const profileViewsMetric = useMemo(() => {
     () => formatDuration(videoAvgWatchTimeSeconds),
     [videoAvgWatchTimeSeconds],
   );
+  const reachDeltaPct = useMemo(() => extractNumber(reachMetric?.deltaPct, null), [reachMetric?.deltaPct]);
+  const reachDeltaDirection = useMemo(() => getTrendDirection(reachDeltaPct), [reachDeltaPct]);
+  const reachDeltaDisplay = useMemo(() => formatDeltaPercent(reachDeltaPct), [reachDeltaPct]);
   const interactionsMetricValue = useMemo(() => extractNumber(interactionsMetric?.value, null), [interactionsMetric?.value]);
-  const interactionsDeltaPct = useMemo(() => {
-    if (typeof interactionsMetric?.deltaPct === "number") return interactionsMetric.deltaPct;
-    return null;
-  }, [interactionsMetric?.deltaPct]);
+  const interactionsDeltaPct = useMemo(() => extractNumber(interactionsMetric?.deltaPct, null), [interactionsMetric?.deltaPct]);
+  const interactionsDeltaDirection = useMemo(() => getTrendDirection(interactionsDeltaPct), [interactionsDeltaPct]);
   const profileVisitorsTotals = useMemo(() => {
     if (!profileVisitorsBreakdown) return null;
     const followers = extractNumber(profileVisitorsBreakdown.followers ?? profileVisitorsBreakdown.followers, null);
@@ -1911,13 +1936,7 @@ const profileViewsMetric = useMemo(() => {
     };
   }, [engagementRateMetric?.breakdown, interactionsMetricValue, metricsByKey]);
   const interactionsDeltaDisplay = useMemo(() => {
-    if (interactionsDeltaPct == null) return null;
-    const sign = interactionsDeltaPct > 0 ? "+" : "";
-    return `${sign}${interactionsDeltaPct}%`;
-  }, [interactionsDeltaPct]);
-  const interactionsDeltaTone = useMemo(() => {
-    if (interactionsDeltaPct == null) return "#6b7280";
-    return interactionsDeltaPct < 0 ? "#ef4444" : "#10b981";
+    return formatDeltaPercent(interactionsDeltaPct);
   }, [interactionsDeltaPct]);
   const profileViewsChartData = useMemo(() => {
     const base = resolvedProfileViewsSeries
@@ -3739,6 +3758,18 @@ const profileViewsMetric = useMemo(() => {
                         formatNumber(overviewMetrics.reach ?? null)
                       )}
                     </div>
+                    {!metricsLoading && reachDeltaDisplay && reachDeltaDirection && (
+                      <div className={`ig-overview-stat__trend ig-overview-stat__trend--${reachDeltaDirection}`}>
+                        {reachDeltaDirection === "down" ? (
+                          <TrendingDown size={12} aria-hidden="true" />
+                        ) : reachDeltaDirection === "up" ? (
+                          <TrendingUp size={12} aria-hidden="true" />
+                        ) : (
+                          <span className="ig-overview-stat__trend-flat" aria-hidden="true">-</span>
+                        )}
+                        <span>{reachDeltaDisplay}</span>
+                      </div>
+                    )}
                     <div className="ig-overview-stat__label">Alcance</div>
                   </div>
                   <div className="ig-overview-stat" style={{ paddingTop: '8px' }}>
@@ -3759,6 +3790,18 @@ const profileViewsMetric = useMemo(() => {
                         formatNumber(overviewMetrics.interactionsTotal ?? null)
                       )}
                     </div>
+                    {!metricsLoading && interactionsDeltaDisplay && interactionsDeltaDirection && (
+                      <div className={`ig-overview-stat__trend ig-overview-stat__trend--${interactionsDeltaDirection}`}>
+                        {interactionsDeltaDirection === "down" ? (
+                          <TrendingDown size={12} aria-hidden="true" />
+                        ) : interactionsDeltaDirection === "up" ? (
+                          <TrendingUp size={12} aria-hidden="true" />
+                        ) : (
+                          <span className="ig-overview-stat__trend-flat" aria-hidden="true">-</span>
+                        )}
+                        <span>{interactionsDeltaDisplay}</span>
+                      </div>
+                    )}
                     <div className="ig-overview-stat__label">Interações totais</div>
                   </div>
                 </div>
