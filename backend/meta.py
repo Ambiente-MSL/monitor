@@ -1775,7 +1775,8 @@ def fb_audience(page_id: str) -> Dict[str, Any]:
         "25-34": 0.0,
         "35-44": 0.0,
         "45-54": 0.0,
-        "55+": 0.0,
+        "55-64": 0.0,
+        "65+": 0.0,
     }
     gender_totals = {"female": 0.0, "male": 0.0, "unknown": 0.0}
 
@@ -1799,8 +1800,12 @@ def fb_audience(page_id: str) -> Dict[str, Any]:
 
         if age_range in ("18-24", "25-34", "35-44", "45-54"):
             age_buckets[age_range] += float(numeric_value)
-        elif age_range in ("55-64", "65+"):
-            age_buckets["55+"] += float(numeric_value)
+        elif age_range in ("55-64", "55_64"):
+            age_buckets["55-64"] += float(numeric_value)
+        elif age_range in ("65+", "65_plus", "65-plus"):
+            age_buckets["65+"] += float(numeric_value)
+        elif age_range in ("55+", "55_plus", "55-plus"):
+            age_buckets["55-64"] += float(numeric_value)
 
     age_total = sum(age_buckets.values()) or 0.0
     ages = [

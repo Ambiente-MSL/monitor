@@ -8,8 +8,6 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  BarChart,
-  Bar,
   PieChart,
   Pie,
   Cell,
@@ -117,6 +115,30 @@ const formatNumber = (value) => {
     return numeric.toLocaleString("pt-BR");
   }
   return numeric.toString();
+};
+
+const formatPercentValue = (value) => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return "--";
+  return `${numeric.toLocaleString("pt-BR", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  })}%`;
+};
+
+const formatAgeRangeLabel = (value) => {
+  const normalized = String(value || "").trim();
+  if (!normalized) return "";
+  const map = {
+    "18-24": "Entre 18 e 24 anos",
+    "25-34": "Entre 25 e 34 anos",
+    "35-44": "Entre 35 e 44 anos",
+    "45-54": "Entre 45 e 54 anos",
+    "55-64": "Entre 55 e 64 anos",
+    "65+": "Mais de 65 anos",
+    "55+": "55 anos ou mais",
+  };
+  return map[normalized] || normalized;
 };
 
 const formatDurationSeconds = (seconds) => {
@@ -329,7 +351,6 @@ useEffect(() => {
 
   const [overviewSync, setOverviewSync] = useState(() => normalizeSyncInfo(null));
   const [activeEngagementIndex, setActiveEngagementIndex] = useState(-1);
-  const [activePageInteractionsIndex, setActivePageInteractionsIndex] = useState(-1);
   const [showContentDetails, setShowContentDetails] = useState(false);
   const [showWordCloudDetail, setShowWordCloudDetail] = useState(false);
   const [selectedWordCloud, setSelectedWordCloud] = useState(null);
@@ -1144,31 +1165,68 @@ useEffect(() => {
   );
 
   const audienceCities = useMemo(() => (
-    Array.isArray(audienceData?.cities) ? audienceData.cities.slice(0, 5) : []
+    Array.isArray(audienceData?.cities) ? audienceData.cities.slice(0, 6) : []
   ), [audienceData]);
   const audienceCountries = useMemo(() => (
-    Array.isArray(audienceData?.countries) ? audienceData.countries.slice(0, 5) : []
+    Array.isArray(audienceData?.countries) ? audienceData.countries.slice(0, 6) : []
   ), [audienceData]);
-  const maxAudienceCity = useMemo(
-    () => audienceCities.reduce((max, entry) => Math.max(max, extractNumber(entry?.value, 0)), 0),
-    [audienceCities],
-  );
-  const audienceAgeData = useMemo(() => (
+  const audienceAgeRows = useMemo(() => (
     Array.isArray(audienceData?.ages)
       ? audienceData.ages
         .map((entry) => ({
           age: entry?.range || "",
           value: extractNumber(entry?.value, null),
+          percentage: extractNumber(entry?.percentage, null),
         }))
-        .filter((entry) => entry.age && Number.isFinite(entry.value))
+        .filter((entry) => entry.age && Number.isFinite(entry.value) && entry.value > 0)
+        .sort((a, b) => {
+          const pctA = Number.isFinite(a.percentage) ? a.percentage : 0;
+          const pctB = Number.isFinite(b.percentage) ? b.percentage : 0;
+          return pctB - pctA;
+        })
       : []
   ), [audienceData]);
+  const audienceCityRows = useMemo(() => {
+    const total = audienceCities.reduce((sum, entry) => sum + extractNumber(entry?.value, 0), 0);
+    return audienceCities
+      .map((entry) => {
+        const value = extractNumber(entry?.value, 0);
+        const rawPct = extractNumber(entry?.percentage, null);
+        const percentage = Number.isFinite(rawPct)
+          ? rawPct
+          : (total > 0 ? (value / total) * 100 : 0);
+        return {
+          name: entry?.name || "",
+          value,
+          percentage,
+        };
+      })
+      .filter((entry) => entry.name && entry.value > 0);
+  }, [audienceCities]);
+  const audienceCountryRows = useMemo(() => {
+    const total = audienceCountries.reduce((sum, entry) => sum + extractNumber(entry?.value, 0), 0);
+    return audienceCountries
+      .map((entry) => {
+        const value = extractNumber(entry?.value, 0);
+        const rawPct = extractNumber(entry?.percentage, null);
+        const percentage = Number.isFinite(rawPct)
+          ? rawPct
+          : (total > 0 ? (value / total) * 100 : 0);
+        return {
+          name: entry?.name || "",
+          value,
+          percentage,
+        };
+      })
+      .filter((entry) => entry.name && entry.value > 0);
+  }, [audienceCountries]);
   const audienceGenderItems = useMemo(() => {
     if (!Array.isArray(audienceData?.gender)) return [];
     const items = audienceData.gender.filter((entry) => Number.isFinite(entry?.percentage));
     const male = items.find((entry) => entry.key === "male" || /mascul/i.test(entry.label || ""));
     const female = items.find((entry) => entry.key === "female" || /femin/i.test(entry.label || ""));
-    const ordered = [male, female].filter(Boolean);
+    const unknown = items.find((entry) => entry.key === "unknown" || /nao informado|desconhecido/i.test(entry.label || ""));
+    const ordered = [female, male, unknown].filter(Boolean);
     if (ordered.length) return ordered;
     return items;
   }, [audienceData]);
@@ -1244,52 +1302,6 @@ useEffect(() => {
     const total = rows.reduce((sum, item) => sum + item.value, 0);
     return total > 0 ? rows : [];
   }, [fbPosts, overviewSource, pageMetricsByKey]);
-
-  const pageInteractionsByFollowType = useMemo(() => {
-    const source =
-      overviewSource?.page_interactions_by_follow_type
-      || overviewSource?.breakdowns?.page_interactions_follow_type
-      || overviewSource?.page_overview?.page_interactions_by_follow_type
-      || {};
-
-    const followers = extractNumber(source?.followers, null);
-    const nonFollowers = extractNumber(source?.non_followers ?? source?.nonFollowers, null);
-    const other = extractNumber(source?.other, 0);
-
-    if (!Number.isFinite(followers) && !Number.isFinite(nonFollowers)) return [];
-
-    const rows = [
-      {
-        key: "followers",
-        name: "Seguidores",
-        color: "#1877F2",
-        value: Math.max(0, Math.round(extractNumber(followers, 0))),
-      },
-      {
-        key: "non_followers",
-        name: "Nao seguidores",
-        color: "#93c5fd",
-        value: Math.max(0, Math.round(extractNumber(nonFollowers, 0))),
-      },
-    ];
-
-    if (Number.isFinite(other) && other > 0) {
-      rows.push({
-        key: "other",
-        name: "Outros",
-        color: "#9ca3af",
-        value: Math.max(0, Math.round(other)),
-      });
-    }
-
-    const total = rows.reduce((sum, item) => sum + item.value, 0);
-    return total > 0 ? rows : [];
-  }, [overviewSource]);
-
-  const pageInteractionsByFollowTypeTotal = useMemo(
-    () => pageInteractionsByFollowType.reduce((sum, entry) => sum + extractNumber(entry?.value, 0), 0),
-    [pageInteractionsByFollowType],
-  );
 
   const videoWatchStats = useMemo(() => {
     const pageVideo = overviewSource?.page_overview || {};
@@ -1774,74 +1786,6 @@ useEffect(() => {
                   )}
                 </div>
 
-                {/* Interações com a Página */}
-                <div className="ig-profile-vertical__divider" />
-                <div className="ig-profile-vertical__engagement">
-                  <h4>Interações com a Página</h4>
-                  {overviewIsLoading ? (
-                    <DataState state="loading" label="Carregando interações..." size="sm" />
-                  ) : pageError ? (
-                    <DataState state="error" label="Falha ao carregar interações." size="sm" />
-                  ) : pageInteractionsByFollowType.length ? (
-                    <>
-                      <div style={{ width: "100%", height: 220 }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie
-                              data={pageInteractionsByFollowType}
-                              dataKey="value"
-                              nameKey="name"
-                              innerRadius={54}
-                              outerRadius={82}
-                              paddingAngle={3}
-                              stroke="none"
-                              activeIndex={activePageInteractionsIndex}
-                              activeShape={renderActiveEngagementShape}
-                              onMouseEnter={(_, index) => setActivePageInteractionsIndex(index)}
-                              onMouseLeave={() => setActivePageInteractionsIndex(-1)}
-                            >
-                              {pageInteractionsByFollowType.map((entry) => (
-                                <Cell key={entry.key || entry.name} fill={entry.color || "#1877F2"} />
-                              ))}
-                            </Pie>
-                            <Tooltip
-                              content={(
-                                <CustomChartTooltip
-                                  variant="pie"
-                                  valueFormatter={formatTooltipNumber}
-                                  showPercent={false}
-                                />
-                              )}
-                            />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </div>
-                      <div className="ig-engagement-legend" style={{ marginTop: '12px', gap: '14px' }}>
-                        {pageInteractionsByFollowType.map((slice, index) => (
-                          <div key={slice.key || slice.name || index} className="ig-engagement-legend__item" style={{ fontSize: '15px' }}>
-                            <span
-                              className="ig-engagement-legend__swatch"
-                              style={{ backgroundColor: slice.color || "#1877F2", width: '14px', height: '14px' }}
-                            />
-                            <span className="ig-engagement-legend__label">
-                              {slice.name}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="ig-engagement-summary">
-                        <div className="ig-engagement-summary__value">{formatNumber(pageInteractionsByFollowTypeTotal)}</div>
-                        <div className="ig-engagement-summary__label">Total de interações</div>
-                      </div>
-                    </>
-                  ) : (
-                    <DataState
-                      state="empty"
-                      label="Sem dados de seguidores e não seguidores no período."
-                      size="sm"
-                    />
-                  )}
-                </div>
               </div>
             </section>
           </div>
@@ -2517,6 +2461,122 @@ useEffect(() => {
 
             {/* Cards de alcance removidos */}
 
+            <section className="ig-card-white fb-analytics-card">
+              <div className="ig-analytics-card__header">
+                <div>
+                  <h4>Demografia da audiencia</h4>
+                  <p style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
+                    Idade e genero, cidades e paises
+                  </p>
+                </div>
+              </div>
+              <div className="ig-analytics-card__body">
+                {audienceLoading ? (
+                  <DataState state="loading" label="Carregando demografia..." size="sm" />
+                ) : audienceError ? (
+                  <DataState state="error" label={audienceError} size="sm" />
+                ) : (audienceAgeRows.length || audienceCityRows.length || audienceCountryRows.length) ? (
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+                    gap: "16px",
+                  }}
+                  >
+                    <div style={{ border: "1px solid #e5e7eb", borderRadius: "12px", padding: "14px" }}>
+                      <h5 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "#111827" }}>Idade e genero</h5>
+                      <div style={{ marginTop: "4px", color: "#6b7280", fontSize: "12px", fontWeight: 600 }}>Total</div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "10px" }}>
+                        {audienceGenderItems.length ? audienceGenderItems.map((entry) => {
+                          const key = String(entry?.key || "").toLowerCase();
+                          const color = key === "female"
+                            ? "#2f80ed"
+                            : key === "male"
+                              ? "#0b3d91"
+                              : "#cbd5e1";
+                          return (
+                            <div key={entry?.key || entry?.label} style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#374151" }}>
+                              <span style={{ width: "10px", height: "10px", borderRadius: "999px", backgroundColor: color }} />
+                              <span>{entry?.label || "Genero"}</span>
+                            </div>
+                          );
+                        }) : (
+                          <span style={{ color: "#9ca3af", fontSize: "12px" }}>Sem recorte de genero.</span>
+                        )}
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "14px" }}>
+                        {audienceAgeRows.length ? audienceAgeRows.map((entry) => {
+                          const pct = Number.isFinite(entry?.percentage) ? entry.percentage : 0;
+                          return (
+                            <div key={entry?.age}>
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", marginBottom: "4px" }}>
+                                <span style={{ fontSize: "14px", color: "#111827", fontWeight: 500 }}>
+                                  {formatAgeRangeLabel(entry?.age)}
+                                </span>
+                                <strong style={{ fontSize: "14px", color: "#111827" }}>{formatPercentValue(pct)}</strong>
+                              </div>
+                              <div style={{ width: "100%", height: "8px", borderRadius: "999px", backgroundColor: "#e5e7eb", overflow: "hidden" }}>
+                                <div style={{ width: `${Math.max(0, Math.min(100, pct))}%`, height: "100%", backgroundColor: "#0b3d91" }} />
+                              </div>
+                            </div>
+                          );
+                        }) : (
+                          <DataState state="empty" label="Sem dados de idade." size="sm" />
+                        )}
+                      </div>
+                    </div>
+
+                    <div style={{ border: "1px solid #e5e7eb", borderRadius: "12px", padding: "14px" }}>
+                      <h5 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "#111827" }}>Cidades</h5>
+                      <div style={{ marginTop: "4px", color: "#6b7280", fontSize: "12px", fontWeight: 600 }}>Total</div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "14px" }}>
+                        {audienceCityRows.length ? audienceCityRows.map((entry) => {
+                          const pct = Number.isFinite(entry?.percentage) ? entry.percentage : 0;
+                          return (
+                            <div key={`city-${entry?.name}`}>
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", marginBottom: "4px" }}>
+                                <span style={{ fontSize: "14px", color: "#111827", fontWeight: 500 }}>{entry?.name}</span>
+                                <strong style={{ fontSize: "14px", color: "#111827" }}>{formatPercentValue(pct)}</strong>
+                              </div>
+                              <div style={{ width: "100%", height: "8px", borderRadius: "999px", backgroundColor: "#e5e7eb", overflow: "hidden" }}>
+                                <div style={{ width: `${Math.max(0, Math.min(100, pct))}%`, height: "100%", backgroundColor: "#1e88e5" }} />
+                              </div>
+                            </div>
+                          );
+                        }) : (
+                          <DataState state="empty" label="Sem dados de cidades." size="sm" />
+                        )}
+                      </div>
+                    </div>
+
+                    <div style={{ border: "1px solid #e5e7eb", borderRadius: "12px", padding: "14px" }}>
+                      <h5 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "#111827" }}>Paises</h5>
+                      <div style={{ marginTop: "4px", color: "#6b7280", fontSize: "12px", fontWeight: 600 }}>Total</div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "14px" }}>
+                        {audienceCountryRows.length ? audienceCountryRows.map((entry) => {
+                          const pct = Number.isFinite(entry?.percentage) ? entry.percentage : 0;
+                          return (
+                            <div key={`country-${entry?.name}`}>
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", marginBottom: "4px" }}>
+                                <span style={{ fontSize: "14px", color: "#111827", fontWeight: 500 }}>{entry?.name}</span>
+                                <strong style={{ fontSize: "14px", color: "#111827" }}>{formatPercentValue(pct)}</strong>
+                              </div>
+                              <div style={{ width: "100%", height: "8px", borderRadius: "999px", backgroundColor: "#e5e7eb", overflow: "hidden" }}>
+                                <div style={{ width: `${Math.max(0, Math.min(100, pct))}%`, height: "100%", backgroundColor: "#1e88e5" }} />
+                              </div>
+                            </div>
+                          );
+                        }) : (
+                          <DataState state="empty" label="Sem dados de paises." size="sm" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <DataState state="empty" label="Sem dados de demografia para o periodo." size="sm" />
+                )}
+              </div>
+            </section>
+
             {/* Card de Performance de Conteúdo - ESCONDIDO */}
             <section className="ig-growth-clean fb-content-performance" style={{ display: "none" }}>
               <header className="ig-card-header">
@@ -2532,128 +2592,6 @@ useEffect(() => {
             </section>
 
 
-            {/* Cards de Demografia */}
-            <div className="ig-analytics-grid ig-analytics-grid--pair">
-              <section className="ig-card-white fb-analytics-card fb-demographics-card">
-                <div className="ig-analytics-card__header">
-                  <h4>Top 5 Cidades</h4>
-                  <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Principais localizações da audiência</p>
-                </div>
-                <div className="ig-analytics-card__body">
-                  {audienceLoading ? (
-                    <DataState state="loading" label="Carregando cidades..." size="sm" />
-                  ) : audienceError ? (
-                    <DataState state="error" label={audienceError} size="sm" />
-                  ) : audienceCities.length ? (
-                    <div className="fb-cities-list">
-                      {audienceCities.map((city, index) => {
-                        const rank = index + 1;
-                        const value = extractNumber(city?.value, 0);
-                        const width = maxAudienceCity > 0 ? Math.round((value / maxAudienceCity) * 100) : 0;
-                        const itemClass = rank <= 3 ? `fb-city-item fb-city-item--${rank}` : "fb-city-item";
-                        return (
-                          <div className={itemClass} key={`${city?.name || "city"}-${rank}`}>
-                            <div className="fb-city-item__rank">{rank}</div>
-                            <div className="fb-city-item__info">
-                              <div className="fb-city-item__name">{city?.name || "--"}</div>
-                              <div className="fb-city-item__bar">
-                                <div className="fb-city-item__bar-fill" style={{ width: `${width}%` }} />
-                              </div>
-                            </div>
-                            <div className="fb-city-item__value">{formatNumber(value)}</div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <DataState state="empty" label="Sem dados de cidades." size="sm" />
-                  )}
-                </div>
-              </section>
-
-              <section className="ig-card-white fb-analytics-card fb-age-gender-card">
-                <div className="ig-analytics-card__header">
-                  <h4>Distribuição por Idade e Gênero</h4>
-                  <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Demografia da audiência</p>
-                </div>
-                <div className="ig-analytics-card__body">
-                  {audienceLoading ? (
-                    <DataState state="loading" label="Carregando demografia..." size="sm" />
-                  ) : audienceError ? (
-                    <DataState state="error" label={audienceError} size="sm" />
-                  ) : audienceAgeData.length ? (
-                    <ResponsiveContainer width="100%" height={240}>
-                      <BarChart
-                        data={audienceAgeData}
-                        layout="vertical"
-                        margin={{ left: 0, right: 20, top: 10, bottom: 10 }}
-                      >
-                        <defs>
-                          <linearGradient id="fbAgeGradient" x1="0" y1="0" x2="1" y2="0">
-                            <stop offset="0%" stopColor="#1877F2" />
-                            <stop offset="100%" stopColor="#0A66C2" />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
-                        <XAxis
-                          type="number"
-                          tick={{ fill: '#6b7280', fontSize: 11 }}
-                          tickFormatter={(value) => formatCompactNumber(value)}
-                        />
-                        <YAxis
-                          type="category"
-                          dataKey="age"
-                          tick={{ fill: '#374151', fontSize: 12, fontWeight: 600 }}
-                          width={55}
-                        />
-                        <Tooltip
-                          cursor={{ fill: 'rgba(24, 119, 242, 0.08)' }}
-                          content={(props) => {
-                            const age = props?.payload?.[0]?.payload?.age;
-                            return (
-                              <CustomChartTooltip
-                                {...props}
-                                labelFormatter={() => (age ? `${age} anos` : "")}
-                                valueFormatter={(v) => `: ${formatTooltipNumber(v)}`}
-                              />
-                            );
-                          }}
-                        />
-                        <Bar dataKey="value" fill="url(#fbAgeGradient)" radius={[0, 6, 6, 0]} name="Público" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <DataState state="empty" label="Sem dados de idade." size="sm" />
-                  )}
-
-                  {audienceGenderItems.length ? (
-                    <div className="fb-gender-legend">
-                      {audienceGenderItems.map((entry) => {
-                        const label = entry?.label || "Gênero";
-                        const pct = Number.isFinite(entry?.percentage)
-                          ? entry.percentage.toLocaleString("pt-BR", { maximumFractionDigits: 1, minimumFractionDigits: 1 })
-                          : null;
-                        const isMale = entry?.key === "male" || /mascul/i.test(label);
-                        const isFemale = entry?.key === "female" || /femin/i.test(label);
-                        const color = isMale
-                          ? "linear-gradient(90deg, #1877F2, #0A66C2)"
-                          : isFemale
-                            ? "linear-gradient(90deg, #42A5F5, #64B5F6)"
-                            : "linear-gradient(90deg, #94a3b8, #cbd5e1)";
-                        return (
-                          <div className="fb-gender-legend__item" key={entry?.key || label}>
-                            <div className="fb-gender-legend__dot" style={{ background: color }} />
-                            <span style={{ color: '#111827', fontWeight: 600 }}>
-                              {pct ? `${label} (${pct}%)` : label}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : null}
-                </div>
-              </section>
-            </div>
             </>
             )}
           </div>
@@ -2686,3 +2624,4 @@ useEffect(() => {
     </div>
   );
 }
+
