@@ -328,6 +328,7 @@ useEffect(() => {
 
   const [overviewSync, setOverviewSync] = useState(() => normalizeSyncInfo(null));
   const [activeEngagementIndex, setActiveEngagementIndex] = useState(-1);
+  const [activePageInteractionsIndex, setActivePageInteractionsIndex] = useState(-1);
   const [showContentDetails, setShowContentDetails] = useState(false);
   const [showWordCloudDetail, setShowWordCloudDetail] = useState(false);
   const [selectedWordCloud, setSelectedWordCloud] = useState(null);
@@ -1252,6 +1253,52 @@ useEffect(() => {
     return total > 0 ? rows : [];
   }, [fbPosts, overviewSource, pageMetricsByKey]);
 
+  const pageInteractionsByFollowType = useMemo(() => {
+    const source =
+      overviewSource?.page_interactions_by_follow_type
+      || overviewSource?.breakdowns?.page_interactions_follow_type
+      || overviewSource?.page_overview?.page_interactions_by_follow_type
+      || {};
+
+    const followers = extractNumber(source?.followers, null);
+    const nonFollowers = extractNumber(source?.non_followers ?? source?.nonFollowers, null);
+    const other = extractNumber(source?.other, 0);
+
+    if (!Number.isFinite(followers) && !Number.isFinite(nonFollowers)) return [];
+
+    const rows = [
+      {
+        key: "followers",
+        name: "Seguidores",
+        color: "#1877F2",
+        value: Math.max(0, Math.round(extractNumber(followers, 0))),
+      },
+      {
+        key: "non_followers",
+        name: "Nao seguidores",
+        color: "#93c5fd",
+        value: Math.max(0, Math.round(extractNumber(nonFollowers, 0))),
+      },
+    ];
+
+    if (Number.isFinite(other) && other > 0) {
+      rows.push({
+        key: "other",
+        name: "Outros",
+        color: "#9ca3af",
+        value: Math.max(0, Math.round(other)),
+      });
+    }
+
+    const total = rows.reduce((sum, item) => sum + item.value, 0);
+    return total > 0 ? rows : [];
+  }, [overviewSource]);
+
+  const pageInteractionsByFollowTypeTotal = useMemo(
+    () => pageInteractionsByFollowType.reduce((sum, entry) => sum + extractNumber(entry?.value, 0), 0),
+    [pageInteractionsByFollowType],
+  );
+
   const videoWatchStats = useMemo(() => {
     const pageVideo = overviewSource?.page_overview || {};
     const videoData = overviewSource?.video || {};
@@ -1692,6 +1739,78 @@ useEffect(() => {
                   </div>
                 ) : (
                   <DataState state="empty" label="Sem dados de vídeo para o período." size="sm" />
+                )}
+              </div>
+            </section>
+
+            <section className="ig-card-white fb-analytics-card">
+              <div className="ig-analytics-card__header">
+                <div>
+                  <h3 className="ig-clean-title2">Interacoes com a Pagina</h3>
+                  <p className="ig-card-subtitle">Seguidores x nao seguidores</p>
+                </div>
+              </div>
+              <div className="ig-analytics-card__body">
+                {overviewIsLoading ? (
+                  <DataState state="loading" label="Carregando interacoes..." size="sm" />
+                ) : pageError ? (
+                  <DataState state="error" label="Falha ao carregar interacoes." size="sm" />
+                ) : pageInteractionsByFollowType.length ? (
+                  <>
+                    <div style={{ width: "100%", height: 220 }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={pageInteractionsByFollowType}
+                            dataKey="value"
+                            nameKey="name"
+                            innerRadius={54}
+                            outerRadius={82}
+                            paddingAngle={3}
+                            stroke="none"
+                            activeIndex={activePageInteractionsIndex}
+                            activeShape={renderActiveEngagementShape}
+                            onMouseEnter={(_, index) => setActivePageInteractionsIndex(index)}
+                            onMouseLeave={() => setActivePageInteractionsIndex(-1)}
+                          >
+                            {pageInteractionsByFollowType.map((entry) => (
+                              <Cell key={entry.key || entry.name} fill={entry.color || "#1877F2"} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            content={(
+                              <CustomChartTooltip
+                                variant="pie"
+                                valueFormatter={(v) => `: ${formatTooltipNumber(v)}`}
+                              />
+                            )}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="ig-engagement-legend" style={{ marginTop: 8 }}>
+                      {pageInteractionsByFollowType.map((slice, index) => (
+                        <div key={slice.key || slice.name || index} className="ig-engagement-legend__item">
+                          <span
+                            className="ig-engagement-legend__swatch"
+                            style={{ backgroundColor: slice.color || "#1877F2" }}
+                          />
+                          <span className="ig-engagement-legend__label" style={{ color: "#111827", fontWeight: 600 }}>
+                            {slice.name}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ marginTop: 10, textAlign: "center", fontSize: "12px", color: "#6b7280", fontWeight: 600 }}>
+                      Total de interacoes: {formatNumber(pageInteractionsByFollowTypeTotal)}
+                    </div>
+                  </>
+                ) : (
+                  <DataState
+                    state="empty"
+                    label="Sem dados de seguidores e nao seguidores no periodo."
+                    size="sm"
+                  />
                 )}
               </div>
             </section>

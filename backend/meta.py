@@ -540,6 +540,82 @@ def fb_page_window(page_id: str, since: int, until: int, include_post_insights: 
     followers_lost = optional_metrics.get("page_fan_removes", 0)
     net_followers = followers_gained - followers_lost
 
+    def normalize_follow_type_breakdown(raw_breakdown: Dict[str, Any]) -> Optional[Dict[str, int]]:
+        if not isinstance(raw_breakdown, dict) or not raw_breakdown:
+            return None
+
+        totals = {"followers": 0.0, "non_followers": 0.0, "other": 0.0}
+        for raw_key, raw_value in raw_breakdown.items():
+            if raw_key in ("total", "value"):
+                continue
+            value = _coerce_number(raw_value)
+            if value is None:
+                continue
+            normalized_key = str(raw_key).strip().lower().replace("-", "_").replace(" ", "_")
+            if "unfollow" in normalized_key:
+                totals["other"] += value
+            elif "non" in normalized_key and "follow" in normalized_key:
+                totals["non_followers"] += value
+            elif "follow" in normalized_key:
+                totals["followers"] += value
+            else:
+                totals["other"] += value
+
+        if totals["followers"] <= 0 and totals["non_followers"] <= 0:
+            return None
+
+        total = totals["followers"] + totals["non_followers"] + totals["other"]
+        return {
+            "followers": int(round(totals["followers"])),
+            "non_followers": int(round(totals["non_followers"])),
+            "other": int(round(totals["other"])),
+            "total": int(round(total)),
+        }
+
+    page_interactions_by_follow_type = None
+    follow_type_metric_candidates = (
+        "page_content_activity",
+        "page_post_engagements",
+        "page_content_activity_by_action_type_unique",
+    )
+    for metric_name in follow_type_metric_candidates:
+        request_attempts = [
+            {
+                "metric": metric_name,
+                "period": "day",
+                "since": since,
+                "until": until,
+                "metric_type": "total_value",
+                "breakdown": "follow_type",
+            },
+            {
+                "metric": metric_name,
+                "period": "day",
+                "since": since,
+                "until": until,
+                "metric_type": "total_value",
+                "breakdowns": "follow_type",
+            },
+        ]
+        for params in request_attempts:
+            try:
+                breakdown_payload = gget(
+                    f"/{page_id}/insights",
+                    params,
+                    token=page_token,
+                )
+            except MetaAPIError:
+                continue
+            normalized = normalize_follow_type_breakdown(
+                aggregate_dimension_values(breakdown_payload, metric_name),
+            )
+            if normalized:
+                normalized["source_metric"] = metric_name
+                page_interactions_by_follow_type = normalized
+                break
+        if page_interactions_by_follow_type:
+            break
+
     def _series_to_map(metric_name: str) -> Dict[str, int]:
         mapping: Dict[str, int] = {}
         for entry in optional_series.get(metric_name, []):
@@ -777,10 +853,12 @@ def fb_page_window(page_id: str, since: int, until: int, include_post_insights: 
             "followers_total": followers_total,
             "reach_timeseries": reach_timeseries,
             "engagement_timeseries": engagement_timeseries,
+            "page_interactions_by_follow_type": page_interactions_by_follow_type,
         },
         "net_followers_series": net_followers_series,
         "reach_timeseries": reach_timeseries,
         "engagement_timeseries": engagement_timeseries,
+        "page_interactions_by_follow_type": page_interactions_by_follow_type,
         "post_metrics": post_metrics,
     }
 

@@ -857,6 +857,7 @@ def fetch_facebook_metrics(
     video_engagement_prev_total = video_engagement_prev.get("total")
     page_overview_cur = cur.get("page_overview") or {}
     page_overview_prev = prev.get("page_overview") or {}
+    page_interactions_follow_type_cur = cur.get("page_interactions_by_follow_type") or {}
 
     metrics = [
         {
@@ -961,6 +962,7 @@ def fetch_facebook_metrics(
             "comments": engagement_cur.get("comments"),
             "shares": engagement_cur.get("shares"),
         },
+        "page_interactions_follow_type": page_interactions_follow_type_cur,
         "video": {
             "watch_time_total": video_cur.get("watch_time_total"),
             "engagement": video_engagement_cur,
@@ -980,6 +982,7 @@ def fetch_facebook_metrics(
         "page_overview": page_overview,
         "net_followers_series": net_followers_series,
         "engagement_timeseries": engagement_timeseries,
+        "page_interactions_by_follow_type": page_interactions_follow_type_cur,
         "post_engaged": cur.get("post_engaged"),
     }
 
@@ -997,11 +1000,18 @@ def _enrich_facebook_metrics_payload(payload: Dict[str, Any]) -> None:
     page_overview = payload.get("page_overview") or {}
     video_data = payload.get("video") or {}
     breakdowns = payload.get("breakdowns") or {}
+    interactions_follow_type = payload.get("page_interactions_by_follow_type")
+    if not interactions_follow_type and isinstance(page_overview, dict):
+        interactions_follow_type = page_overview.get("page_interactions_by_follow_type")
     video_breakdown = {}
     if isinstance(video_data, dict):
         video_breakdown = video_data.get("engagement") or {}
     if not video_breakdown and isinstance(breakdowns, dict):
         video_breakdown = (breakdowns.get("video") or {}).get("engagement") or {}
+
+    if interactions_follow_type and isinstance(breakdowns, dict):
+        breakdowns["page_interactions_follow_type"] = interactions_follow_type
+        payload["breakdowns"] = breakdowns
 
     def ensure_metric(key: str, label: str, value: Optional[Any], breakdown: Optional[Dict[str, Any]] = None) -> None:
         if value in (None, "", []):
