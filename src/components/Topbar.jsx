@@ -18,29 +18,19 @@ const DEFAULT_PRESETS = [
   { id: "1y", label: "365 dias", days: 365 },
 ];
 
-// Configurar timezone para Fortaleza, Brasil (UTC-3)
+// Query params de data em Unix timestamp (segundos)
 const parseDateParam = (value) => {
   if (!value) return null;
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return null;
   const ms = numeric > 1_000_000_000_000 ? numeric : numeric * 1000;
-
-  // Criar data no timezone de Fortaleza (UTC-3)
-  const d = new Date(ms);
-
-  // Ajustar para timezone de Fortaleza se necessário
-  const tzOffset = d.getTimezoneOffset() * 60000; // offset em ms
-  const localTime = new Date(d.getTime() - tzOffset);
-
-  return Number.isNaN(localTime.getTime()) ? null : localTime;
+  const date = new Date(ms);
+  return Number.isNaN(date.getTime()) ? null : date;
 };
 
 const toUnixSeconds = (date) => {
   if (!date) return null;
-  // Garantir que a data está no timezone correto antes de converter
-  const tzOffset = date.getTimezoneOffset() * 60000;
-  const localDate = new Date(date.getTime() - tzOffset);
-  return Math.floor(localDate.getTime() / 1000);
+  return Math.floor(date.getTime() / 1000);
 };
 
 function useQueryRange() {

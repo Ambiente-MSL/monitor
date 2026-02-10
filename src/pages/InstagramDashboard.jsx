@@ -3751,13 +3751,6 @@ const profileViewsMetric = useMemo(() => {
                     <div className="ig-overview-stat__label">Total de seguidores</div>
                   </div>
                   <div className="ig-overview-stat" style={{ paddingBottom: '16px', borderBottom: '1px solid #e5e7eb' }}>
-                    <div className="ig-overview-stat__value">
-                      {metricsLoading ? (
-                        <span className="ig-skeleton ig-skeleton--stat" aria-hidden="true" />
-                      ) : (
-                        formatNumber(overviewMetrics.reach ?? null)
-                      )}
-                    </div>
                     {!metricsLoading && reachDeltaDisplay && reachDeltaDirection && (
                       <div className={`ig-overview-stat__trend ig-overview-stat__trend--${reachDeltaDirection}`}>
                         {reachDeltaDirection === "down" ? (
@@ -3770,6 +3763,13 @@ const profileViewsMetric = useMemo(() => {
                         <span>{reachDeltaDisplay}</span>
                       </div>
                     )}
+                    <div className="ig-overview-stat__value">
+                      {metricsLoading ? (
+                        <span className="ig-skeleton ig-skeleton--stat" aria-hidden="true" />
+                      ) : (
+                        formatNumber(overviewMetrics.reach ?? null)
+                      )}
+                    </div>
                     <div className="ig-overview-stat__label">Alcance</div>
                   </div>
                   <div className="ig-overview-stat" style={{ paddingTop: '8px' }}>
@@ -3783,13 +3783,6 @@ const profileViewsMetric = useMemo(() => {
                     <div className="ig-overview-stat__label">Posts criados</div>
                   </div>
                   <div className="ig-overview-stat" style={{ paddingTop: '8px' }}>
-                    <div className="ig-overview-stat__value">
-                      {metricsLoading ? (
-                        <span className="ig-skeleton ig-skeleton--stat" aria-hidden="true" />
-                      ) : (
-                        formatNumber(overviewMetrics.interactionsTotal ?? null)
-                      )}
-                    </div>
                     {!metricsLoading && interactionsDeltaDisplay && interactionsDeltaDirection && (
                       <div className={`ig-overview-stat__trend ig-overview-stat__trend--${interactionsDeltaDirection}`}>
                         {interactionsDeltaDirection === "down" ? (
@@ -3802,6 +3795,13 @@ const profileViewsMetric = useMemo(() => {
                         <span>{interactionsDeltaDisplay}</span>
                       </div>
                     )}
+                    <div className="ig-overview-stat__value">
+                      {metricsLoading ? (
+                        <span className="ig-skeleton ig-skeleton--stat" aria-hidden="true" />
+                      ) : (
+                        formatNumber(overviewMetrics.interactionsTotal ?? null)
+                      )}
+                    </div>
                     <div className="ig-overview-stat__label">Interações totais</div>
                   </div>
                 </div>
@@ -6083,6 +6083,7 @@ const profileViewsMetric = useMemo(() => {
                           dot={false}
                           activeDot={{ r: 5, fill: "#6366f1", stroke: "#fff", strokeWidth: 2 }}
                           connectNulls
+                          isAnimationActive={false}
                         />
                       </AreaChart>
                     </ResponsiveContainer>
