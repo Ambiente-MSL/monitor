@@ -54,6 +54,8 @@ import {
   ChevronRight,
   TrendingDown,
   TrendingUp,
+  Eye,
+  MousePointerClick,
 } from "lucide-react";
 import useQueryState from "../hooks/useQueryState";
 import { useAccounts } from "../context/AccountsContext";
@@ -6128,7 +6130,7 @@ const profileViewsMetric = useMemo(() => {
         {/* Novos Cards: Visualizações e Seguidores */}
         <div className="ig-analytics-grid ig-analytics-grid--pair" style={{ marginTop: '24px' }}>
           {/* Card de Visualizações - Estilo Aprimorado */}
-          <section className="ig-card-white ig-analytics-card" style={{ position: 'relative', overflow: 'hidden' }}>
+          <section className="ig-card-white ig-analytics-card" style={{ position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 
             <div className="ig-analytics-card__header" style={{
               display: 'flex',
@@ -6138,7 +6140,8 @@ const profileViewsMetric = useMemo(() => {
               zIndex: 1
             }}>
               <div>
-                <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#111827' }}>
+                <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Eye size={18} style={{ color: '#8b5cf6', flexShrink: 0 }} />
                   Visualizações
                   <InfoTooltip text="Soma de todas as reproduções de Reels, Feed e Stories no período." />
                 </h4>
@@ -6176,12 +6179,13 @@ const profileViewsMetric = useMemo(() => {
               </button>
             </div>
 
-            <div className="ig-analytics-card__body">
+            <div className="ig-analytics-card__body" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '20px',
-                padding: '16px 16px 16px'
+                padding: '16px 16px',
+                width: '100%'
               }}>
                 {/* Valor principal à esquerda */}
                 <div style={{ textAlign: 'center', flexShrink: 0 }}>
@@ -6254,7 +6258,8 @@ const profileViewsMetric = useMemo(() => {
               gap: '12px'
             }}>
               <div>
-                <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#111827' }}>
+                <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <MousePointerClick size={18} style={{ color: '#8b5cf6', flexShrink: 0 }} />
                   Interações
                   <InfoTooltip text="Soma de curtidas, comentários, salvamentos e compartilhamentos." />
                 </h4>
@@ -6398,8 +6403,8 @@ const profileViewsMetric = useMemo(() => {
                 ))}
               </select>
             </div>
-            <div className="ig-analytics-card__body">
-              <div className="ig-calendar">
+            <div className="ig-analytics-card__body" style={{ margin: '0 -20px -20px', borderBottomLeftRadius: 'inherit', borderBottomRightRadius: 'inherit', overflow: 'hidden' }}>
+              <div className="ig-calendar" style={{ padding: '16px 20px 20px' }}>
                 <div className="ig-calendar__weekdays">
                   <span className="ig-calendar__weekday">Dom</span>
                   <span className="ig-calendar__weekday">Seg</span>
