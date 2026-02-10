@@ -1179,27 +1179,78 @@ useEffect(() => {
     if (ordered.length) return ordered;
     return items;
   }, [audienceData]);
-
-  // Engagement breakdown
+  // Engagement breakdown por tipo de interacao
   const engagementBreakdown = useMemo(() => {
     const metric = pageMetricsByKey.post_engagement_total;
-    const breakdown = metric?.breakdown || overviewSource?.engagement || {};
+    const metricBreakdown = metric?.breakdown || {};
+    const payloadBreakdown = overviewSource?.breakdowns?.engagement || {};
+    const overviewEngagement = overviewSource?.engagement || {};
+    const postsSource = Array.isArray(fbPosts) ? fbPosts : [];
 
-    return [
+    const postsTotals = postsSource.reduce(
+      (acc, post) => ({
+        reactions: acc.reactions + extractNumber(post?.reactions, 0),
+        shares: acc.shares + extractNumber(post?.shares, 0),
+        comments: acc.comments + extractNumber(post?.comments, 0),
+      }),
+      { reactions: 0, shares: 0, comments: 0 },
+    );
+
+    const pickFirstFinite = (...candidates) => {
+      for (const candidate of candidates) {
+        if (candidate === null || candidate === undefined) continue;
+        const numeric = Number(candidate);
+        if (Number.isFinite(numeric)) return numeric;
+      }
+      return null;
+    };
+
+    const reactionsValue = pickFirstFinite(
+      metricBreakdown.reactions,
+      payloadBreakdown.reactions,
+      overviewEngagement.reactions,
+      pageMetricsByKey.reactions?.value,
+      postsSource.length ? postsTotals.reactions : null,
+    );
+    const sharesValue = pickFirstFinite(
+      metricBreakdown.shares,
+      payloadBreakdown.shares,
+      overviewEngagement.shares,
+      pageMetricsByKey.shares?.value,
+      postsSource.length ? postsTotals.shares : null,
+    );
+    const commentsValue = pickFirstFinite(
+      metricBreakdown.comments,
+      payloadBreakdown.comments,
+      overviewEngagement.comments,
+      pageMetricsByKey.comments?.value,
+      postsSource.length ? postsTotals.comments : null,
+    );
+
+    const rows = [
       {
-        name: "Reações",
-        value: extractNumber(breakdown.reactions, 0),
+        key: "reactions",
+        name: "Reacoes",
+        color: "#3b82f6",
+        value: Math.max(0, Math.round(extractNumber(reactionsValue, 0))),
       },
       {
-        name: "Comentários",
-        value: extractNumber(breakdown.comments, 0),
-      },
-      {
+        key: "shares",
         name: "Compartilhamentos",
-        value: extractNumber(breakdown.shares, 0),
+        color: "#10b981",
+        value: Math.max(0, Math.round(extractNumber(sharesValue, 0))),
       },
-    ].filter(item => item.value > 0);
-  }, [overviewSource, pageMetricsByKey]);
+      {
+        key: "comments",
+        name: "Comentarios",
+        color: "#fbbf24",
+        value: Math.max(0, Math.round(extractNumber(commentsValue, 0))),
+      },
+    ];
+
+    const total = rows.reduce((sum, item) => sum + item.value, 0);
+    return total > 0 ? rows : [];
+  }, [fbPosts, overviewSource, pageMetricsByKey]);
 
   const videoWatchStats = useMemo(() => {
     const pageVideo = overviewSource?.page_overview || {};
@@ -1578,9 +1629,9 @@ useEffect(() => {
                               onMouseEnter={(_, index) => setActiveEngagementIndex(index)}
                               onMouseLeave={() => setActiveEngagementIndex(-1)}
                             >
-                              <Cell fill="#3b82f6" />
-                              <Cell fill="#fbbf24" />
-                              <Cell fill="#10b981" />
+                              {engagementBreakdown.map((entry) => (
+                                <Cell key={entry.key || entry.name} fill={entry.color || "#3b82f6"} />
+                              ))}
                             </Pie>
                             <Tooltip
                               content={(
@@ -1596,10 +1647,10 @@ useEffect(() => {
 
                       <div className="ig-engagement-legend">
                         {engagementBreakdown.map((slice, index) => (
-                          <div key={slice.name || index} className="ig-engagement-legend__item">
+                          <div key={slice.key || slice.name || index} className="ig-engagement-legend__item">
                             <span
                               className="ig-engagement-legend__swatch"
-                              style={{ backgroundColor: index === 0 ? "#3b82f6" : index === 1 ? "#fbbf24" : "#10b981" }}
+                              style={{ backgroundColor: slice.color || "#3b82f6" }}
                             />
                             <span className="ig-engagement-legend__label" style={{ color: '#111827', fontWeight: 600 }}>{slice.name}</span>
                           </div>
@@ -2155,7 +2206,7 @@ useEffect(() => {
             <section className="ig-growth-clean">
               <header className="ig-card-header">
                 <div>
-                  <h2 className="ig-clean-title2">Crescimento do conteudo</h2>
+                  <h2 className="ig-clean-title2">Crescimento do conteúdo</h2>
                   <h3>Engajamento</h3>
                 </div>
                 <button
