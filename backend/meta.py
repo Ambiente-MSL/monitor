@@ -574,7 +574,9 @@ def fb_page_window(page_id: str, since: int, until: int, include_post_insights: 
 
     page_interactions_by_follow_type = None
     follow_type_metric_candidates = (
+        "page_engaged_users",
         "page_content_activity",
+        "page_consumptions",
         "page_post_engagements",
         "page_content_activity_by_action_type_unique",
     )
@@ -1635,97 +1637,139 @@ def ig_audience(ig_user_id: str, timeframe: Optional[str] = None) -> Dict[str, A
 
 def fb_audience(page_id: str) -> Dict[str, Any]:
     """
-    Retorna distribuição demográfica da audiência do Facebook.
-
-    Coleta dados de:
-    - Cidades (top 8)
-    - Países (top 5)
-    - Idade e gênero dos fãs da página
-
-    Args:
-        page_id: ID da página do Facebook
-
-    Returns:
-        Dict contendo cities, countries, ages, gender e totals
+    Retorna distribuicao demografica da audiencia do Facebook.
     """
     def as_percentage(value: float, total: float) -> float:
-        """Calcula percentual com 2 casas decimais"""
         if not total:
             return 0.0
         return round((value / total) * 100.0, 2)
 
+    def to_numeric_map(raw: Any) -> Dict[str, float]:
+        if not isinstance(raw, dict):
+            return {}
+        normalized: Dict[str, float] = {}
+        for key, value in raw.items():
+            coerced = _coerce_number(value)
+            if coerced is None:
+                continue
+            key_str = str(key)
+            normalized[key_str] = normalized.get(key_str, 0.0) + float(coerced)
+        return normalized
+
+    def extract_metric_map(payload: Dict[str, Any], metric_name: str) -> Dict[str, float]:
+        extracted = aggregate_dimension_values(payload, metric_name)
+        if extracted:
+            return {
+                str(key): float(value)
+                for key, value in extracted.items()
+                if _coerce_number(value) is not None
+            }
+        if not isinstance(payload, dict):
+            return {}
+        for item in payload.get("data", []) or []:
+            if item.get("name") != metric_name:
+                continue
+            values = item.get("values") or []
+            if values and isinstance(values[-1], dict):
+                latest_value = values[-1].get("value")
+                mapped = to_numeric_map(latest_value)
+                if mapped:
+                    return mapped
+            total_value = item.get("total_value")
+            if isinstance(total_value, dict):
+                mapped = to_numeric_map(total_value.get("value"))
+                if mapped:
+                    return mapped
+        return {}
+
+    def fetch_breakdown(metric_candidates: Sequence[str]) -> Dict[str, Any]:
+        last_error: Optional[str] = None
+        for metric_name in metric_candidates:
+            param_options = [
+                {
+                    "metric": metric_name,
+                    "period": "lifetime",
+                },
+                {
+                    "metric": metric_name,
+                    "period": "lifetime",
+                    "metric_type": "total_value",
+                },
+            ]
+            for params in param_options:
+                try:
+                    payload = gget(
+                        f"/{page_id}/insights",
+                        params,
+                        token=page_token,
+                    )
+                except MetaAPIError as err:
+                    last_error = str(err)
+                    continue
+                mapped = extract_metric_map(payload, metric_name)
+                if mapped:
+                    return {
+                        "data": mapped,
+                        "metric": metric_name,
+                        "error": None,
+                    }
+        return {
+            "data": {},
+            "metric": None,
+            "error": last_error,
+        }
+
     page_token = get_page_access_token(page_id)
 
-    # ==== CIDADES ====
-    city_data = {}
-    try:
-        city_response = gget(
-            f"/{page_id}/insights",
-            {"metric": "page_fans_city", "period": "lifetime"},
-            token=page_token,
-        )
-        if city_response and "data" in city_response:
-            for item in city_response["data"]:
-                if "values" in item and len(item["values"]) > 0:
-                    city_data = item["values"][-1].get("value", {})
-    except MetaAPIError as e:
-        logger.warning(f"Erro ao buscar page_fans_city: {e}")
+    city_result = fetch_breakdown((
+        "page_fans_city",
+        "page_fans_city_unique",
+    ))
+    country_result = fetch_breakdown((
+        "page_fans_country",
+        "page_fans_country_unique",
+    ))
+    age_gender_result = fetch_breakdown((
+        "page_fans_gender_age",
+        "page_fans_by_age_gender",
+    ))
 
-    top_cities = sorted(city_data.items(), key=lambda kv: kv[1], reverse=True)[:8]
-    total_city = sum(city_data.values()) or 0.0
+    city_data = city_result.get("data") or {}
+    country_data = country_result.get("data") or {}
+    age_gender_data = age_gender_result.get("data") or {}
+
+    top_cities = sorted(
+        city_data.items(),
+        key=lambda kv: _coerce_number(kv[1]) or 0.0,
+        reverse=True,
+    )[:8]
+    total_city = sum(_coerce_number(value) or 0.0 for value in city_data.values()) or 0.0
 
     cities = [
         {
             "name": name,
-            "value": int(round(count)),
-            "percentage": as_percentage(count, total_city),
+            "value": int(round(_coerce_number(count) or 0.0)),
+            "percentage": as_percentage(_coerce_number(count) or 0.0, total_city),
         }
         for name, count in top_cities
     ]
 
-    # ==== PAÍSES ====
-    country_data = {}
-    try:
-        country_response = gget(
-            f"/{page_id}/insights",
-            {"metric": "page_fans_country", "period": "lifetime"},
-            token=page_token,
-        )
-        if country_response and "data" in country_response:
-            for item in country_response["data"]:
-                if "values" in item and len(item["values"]) > 0:
-                    country_data = item["values"][-1].get("value", {})
-    except MetaAPIError as e:
-        logger.warning(f"Erro ao buscar page_fans_country: {e}")
-
-    top_countries = sorted(country_data.items(), key=lambda kv: kv[1], reverse=True)[:5]
-    total_country = sum(country_data.values()) or 0.0
+    top_countries = sorted(
+        country_data.items(),
+        key=lambda kv: _coerce_number(kv[1]) or 0.0,
+        reverse=True,
+    )[:5]
+    total_country = sum(_coerce_number(value) or 0.0 for value in country_data.values()) or 0.0
 
     countries = [
         {
             "name": name,
-            "value": int(round(count)),
-            "percentage": as_percentage(count, total_country),
+            "value": int(round(_coerce_number(count) or 0.0)),
+            "percentage": as_percentage(_coerce_number(count) or 0.0, total_country),
         }
         for name, count in top_countries
     ]
 
-    # ==== IDADE E GÊNERO ====
-    age_gender_data = {}
-    try:
-        age_gender_response = gget(
-            f"/{page_id}/insights",
-            {"metric": "page_fans_gender_age", "period": "lifetime"},
-            token=page_token,
-        )
-        if age_gender_response and "data" in age_gender_response:
-            for item in age_gender_response["data"]:
-                if "values" in item and len(item["values"]) > 0:
-                    age_gender_data = item["values"][-1].get("value", {})
-    except MetaAPIError as e:
-        logger.warning(f"Erro ao buscar page_fans_gender_age: {e}")
-
-    # Processar idade e gênero
     age_buckets = {
         "18-24": 0.0,
         "25-34": 0.0,
@@ -1735,30 +1779,29 @@ def fb_audience(page_id: str) -> Dict[str, Any]:
     }
     gender_totals = {"female": 0.0, "male": 0.0, "unknown": 0.0}
 
-    # Formato do Facebook: {"F.18-24": 123, "M.25-34": 456, "U.35-44": 78}
     for key, value in age_gender_data.items():
-        parts = str(key).split('.')
+        numeric_value = _coerce_number(value)
+        if numeric_value is None:
+            continue
+        parts = str(key).split(".")
         if len(parts) != 2:
             continue
 
         gender_char = parts[0].upper()
         age_range = parts[1]
 
-        # Mapear gênero
-        if gender_char == 'F':
-            gender_totals["female"] += float(value or 0.0)
-        elif gender_char == 'M':
-            gender_totals["male"] += float(value or 0.0)
+        if gender_char == "F":
+            gender_totals["female"] += float(numeric_value)
+        elif gender_char == "M":
+            gender_totals["male"] += float(numeric_value)
         else:
-            gender_totals["unknown"] += float(value or 0.0)
+            gender_totals["unknown"] += float(numeric_value)
 
-        # Mapear faixa etária
         if age_range in ("18-24", "25-34", "35-44", "45-54"):
-            age_buckets[age_range] += float(value or 0.0)
+            age_buckets[age_range] += float(numeric_value)
         elif age_range in ("55-64", "65+"):
-            age_buckets["55+"] += float(value or 0.0)
+            age_buckets["55+"] += float(numeric_value)
 
-    # Formatar dados de idade
     age_total = sum(age_buckets.values()) or 0.0
     ages = [
         {
@@ -1769,8 +1812,7 @@ def fb_audience(page_id: str) -> Dict[str, Any]:
         for label, amount in age_buckets.items()
     ]
 
-    # Formatar dados de gênero
-    gender_labels = {"female": "Feminino", "male": "Masculino", "unknown": "Não informado"}
+    gender_labels = {"female": "Feminino", "male": "Masculino", "unknown": "Nao informado"}
     gender_total = sum(gender_totals.values()) or 0.0
     gender = [
         {
@@ -1792,6 +1834,16 @@ def fb_audience(page_id: str) -> Dict[str, Any]:
             "countries": int(round(total_country)) if total_country else 0,
             "ages": int(round(age_total)) if age_total else 0,
             "gender": int(round(gender_total)) if gender_total else 0,
+        },
+        "sources": {
+            "cities": city_result.get("metric"),
+            "countries": country_result.get("metric"),
+            "age_gender": age_gender_result.get("metric"),
+        },
+        "errors": {
+            "cities": city_result.get("error"),
+            "countries": country_result.get("error"),
+            "age_gender": age_gender_result.get("error"),
         },
     }
 
@@ -3153,3 +3205,4 @@ def ads_highlights(act_id: str, since_str: str, until_str: str):
         "spend_by_region": spend_by_region,
         "spend_by_city": spend_by_city,
     }
+

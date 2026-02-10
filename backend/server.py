@@ -3577,6 +3577,47 @@ def facebook_metrics():
             except (TypeError, ValueError):
                 return 0.0
         return 0.0
+
+    def _extract_content_activity_total(payload_obj):
+        for metric in payload_obj.get("metrics") or []:
+            if isinstance(metric, dict) and metric.get("key") == "content_activity":
+                try:
+                    return float(metric.get("value") or 0)
+                except (TypeError, ValueError):
+                    return 0.0
+        page_overview = payload_obj.get("page_overview") or {}
+        if isinstance(page_overview, dict):
+            try:
+                return float(page_overview.get("content_activity") or 0)
+            except (TypeError, ValueError):
+                return 0.0
+        return 0.0
+
+    def _has_follow_type_breakdown(payload_obj):
+        breakdown = payload_obj.get("page_interactions_by_follow_type")
+        if not isinstance(breakdown, dict):
+            overview = payload_obj.get("page_overview") or {}
+            if isinstance(overview, dict):
+                breakdown = overview.get("page_interactions_by_follow_type")
+        if not isinstance(breakdown, dict):
+            all_breakdowns = payload_obj.get("breakdowns") or {}
+            if isinstance(all_breakdowns, dict):
+                breakdown = all_breakdowns.get("page_interactions_follow_type")
+        if not isinstance(breakdown, dict):
+            return False
+        try:
+            followers = float(breakdown.get("followers") or 0)
+        except (TypeError, ValueError):
+            followers = 0.0
+        try:
+            non_followers = float(
+                breakdown.get("non_followers")
+                if breakdown.get("non_followers") is not None
+                else (breakdown.get("nonFollowers") or 0),
+            )
+        except (TypeError, ValueError):
+            non_followers = 0.0
+        return followers > 0 or non_followers > 0
     try:
         if force_refresh_flag:
             payload = fetch_facebook_metrics(page_id, since, until, extra)
@@ -3668,6 +3709,40 @@ def facebook_metrics():
             meta = refreshed_meta
         except Exception as refresh_err:  # noqa: BLE001
             logger.warning("Falha ao forçar refresh para completar engagement_timeseries: %s", refresh_err)
+    if (
+        not force_refresh_flag
+        and not _has_follow_type_breakdown(payload_obj)
+        and (
+            _extract_content_activity_total(payload_obj) > 0
+            or _extract_engagement_total(payload_obj) > 0
+        )
+    ):
+        try:
+            refreshed_payload, refreshed_meta = get_cached_payload(
+                "facebook_metrics",
+                page_id,
+                since,
+                until,
+                extra=extra,
+                fetcher=fetch_facebook_metrics,
+                platform="facebook",
+                force=True,
+                refresh_reason="missing_page_interactions_follow_type",
+            )
+            payload_obj = dict(refreshed_payload or {})
+            _enrich_facebook_metrics_payload(payload_obj)
+            if not payload_obj.get("reach_timeseries"):
+                page_overview = payload_obj.get("page_overview") or {}
+                if isinstance(page_overview, dict) and isinstance(page_overview.get("reach_timeseries"), list):
+                    payload_obj["reach_timeseries"] = page_overview.get("reach_timeseries")
+            if not payload_obj.get("engagement_timeseries"):
+                page_overview = payload_obj.get("page_overview") or {}
+                if isinstance(page_overview, dict) and isinstance(page_overview.get("engagement_timeseries"), list):
+                    payload_obj["engagement_timeseries"] = page_overview.get("engagement_timeseries")
+            meta = refreshed_meta
+        except Exception as refresh_err:  # noqa: BLE001
+            logger.warning("Falha ao forcar refresh para page_interactions_follow_type: %s", refresh_err)
+
     response = dict(payload_obj)
     response["cache"] = meta
     response["meta"] = {
@@ -3829,6 +3904,33 @@ def facebook_audience():
     page_id = request.args.get("pageId", PAGE_ID)
     if not page_id:
         return jsonify({"error": "META_PAGE_ID is not configured"}), 500
+    force_refresh = request.args.get("force")
+    force_refresh_flag = str(force_refresh).lower() in ("1", "true", "yes", "y")
+
+    def _has_audience_values(payload_obj):
+        if not isinstance(payload_obj, dict):
+            return False
+        totals = payload_obj.get("totals") or {}
+        if isinstance(totals, dict):
+            for key in ("cities", "ages", "gender"):
+                try:
+                    if float(totals.get(key) or 0) > 0:
+                        return True
+                except (TypeError, ValueError):
+                    continue
+        for key in ("cities", "ages", "gender"):
+            rows = payload_obj.get(key) or []
+            if not isinstance(rows, list):
+                continue
+            for row in rows:
+                if not isinstance(row, dict):
+                    continue
+                try:
+                    if float(row.get("value") or 0) > 0:
+                        return True
+                except (TypeError, ValueError):
+                    continue
+        return False
 
     try:
         payload, meta = get_cached_payload(
@@ -3837,8 +3939,23 @@ def facebook_audience():
             None,
             None,
             fetcher=fetch_facebook_audience,
+            force=force_refresh_flag,
+            refresh_reason="forced" if force_refresh_flag else None,
             platform="facebook",
         )
+        if not force_refresh_flag and not _has_audience_values(payload):
+            refreshed_payload, refreshed_meta = get_cached_payload(
+                "facebook_audience",
+                page_id,
+                None,
+                None,
+                fetcher=fetch_facebook_audience,
+                force=True,
+                refresh_reason="missing_audience_breakdown",
+                platform="facebook",
+            )
+            payload = refreshed_payload
+            meta = refreshed_meta
     except MetaAPIError as err:
         mark_cache_error("facebook_audience", page_id, None, None, None, err.args[0], platform="facebook")
         # Tentar fallback com último cache disponível
