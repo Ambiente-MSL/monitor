@@ -1230,7 +1230,7 @@ useEffect(() => {
     const rows = [
       {
         key: "reactions",
-        name: "Reacoes",
+        name: "Reações",
         color: "#3b82f6",
         value: Math.max(0, Math.round(extractNumber(reactionsValue, 0))),
       },
@@ -1242,7 +1242,7 @@ useEffect(() => {
       },
       {
         key: "comments",
-        name: "Comentarios",
+        name: "Comentários",
         color: "#fbbf24",
         value: Math.max(0, Math.round(extractNumber(commentsValue, 0))),
       },
