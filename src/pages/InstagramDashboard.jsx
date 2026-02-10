@@ -3769,8 +3769,11 @@ const profileViewsMetric = useMemo(() => {
                   @{accountInfo?.username || accountInfo?.name || "insta_sample"}
                 </h3>
 
-                <div className="ig-profile-vertical__stats-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '20px' }}>
+                <div className="ig-profile-vertical__stats-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0', marginTop: '20px' }}>
                   <div className="ig-overview-stat" style={{ paddingBottom: '16px', borderBottom: '1px solid #e5e7eb' }}>
+                    <div className="ig-overview-stat__trend" style={{ visibility: 'hidden' }}>
+                      <span>&nbsp;</span>
+                    </div>
                     <div className="ig-overview-stat__value">
                       {metricsLoading ? (
                         <span className="ig-skeleton ig-skeleton--stat" aria-hidden="true" />
@@ -3781,18 +3784,16 @@ const profileViewsMetric = useMemo(() => {
                     <div className="ig-overview-stat__label">Total de seguidores</div>
                   </div>
                   <div className="ig-overview-stat" style={{ paddingBottom: '16px', borderBottom: '1px solid #e5e7eb' }}>
-                    {!metricsLoading && reachDeltaDisplay && reachDeltaDirection && (
-                      <div className={`ig-overview-stat__trend ig-overview-stat__trend--${reachDeltaDirection}`}>
-                        {reachDeltaDirection === "down" ? (
-                          <TrendingDown size={12} aria-hidden="true" />
-                        ) : reachDeltaDirection === "up" ? (
-                          <TrendingUp size={12} aria-hidden="true" />
-                        ) : (
-                          <span className="ig-overview-stat__trend-flat" aria-hidden="true">-</span>
-                        )}
-                        <span>{reachDeltaDisplay}</span>
-                      </div>
-                    )}
+                    <div className={`ig-overview-stat__trend ${!metricsLoading && reachDeltaDisplay && reachDeltaDirection ? `ig-overview-stat__trend--${reachDeltaDirection}` : ''}`} style={!metricsLoading && reachDeltaDisplay && reachDeltaDirection ? {} : { visibility: 'hidden' }}>
+                      {reachDeltaDirection === "down" ? (
+                        <TrendingDown size={12} aria-hidden="true" />
+                      ) : reachDeltaDirection === "up" ? (
+                        <TrendingUp size={12} aria-hidden="true" />
+                      ) : (
+                        <span className="ig-overview-stat__trend-flat" aria-hidden="true">-</span>
+                      )}
+                      <span>{reachDeltaDisplay || '\u00A0'}</span>
+                    </div>
                     <div className="ig-overview-stat__value">
                       {metricsLoading ? (
                         <span className="ig-skeleton ig-skeleton--stat" aria-hidden="true" />
@@ -3802,7 +3803,10 @@ const profileViewsMetric = useMemo(() => {
                     </div>
                     <div className="ig-overview-stat__label">Alcance</div>
                   </div>
-                  <div className="ig-overview-stat" style={{ paddingTop: '8px' }}>
+                  <div className="ig-overview-stat" style={{ paddingTop: '16px' }}>
+                    <div className="ig-overview-stat__trend" style={{ visibility: 'hidden' }}>
+                      <span>&nbsp;</span>
+                    </div>
                     <div className="ig-overview-stat__value">
                       {metricsLoading ? (
                         <span className="ig-skeleton ig-skeleton--stat" aria-hidden="true" />
@@ -3812,19 +3816,17 @@ const profileViewsMetric = useMemo(() => {
                     </div>
                     <div className="ig-overview-stat__label">Posts criados</div>
                   </div>
-                  <div className="ig-overview-stat" style={{ paddingTop: '8px' }}>
-                    {!metricsLoading && interactionsDeltaDisplay && interactionsDeltaDirection && (
-                      <div className={`ig-overview-stat__trend ig-overview-stat__trend--${interactionsDeltaDirection}`}>
-                        {interactionsDeltaDirection === "down" ? (
-                          <TrendingDown size={12} aria-hidden="true" />
-                        ) : interactionsDeltaDirection === "up" ? (
-                          <TrendingUp size={12} aria-hidden="true" />
-                        ) : (
-                          <span className="ig-overview-stat__trend-flat" aria-hidden="true">-</span>
-                        )}
-                        <span>{interactionsDeltaDisplay}</span>
-                      </div>
-                    )}
+                  <div className="ig-overview-stat" style={{ paddingTop: '16px' }}>
+                    <div className={`ig-overview-stat__trend ${!metricsLoading && interactionsDeltaDisplay && interactionsDeltaDirection ? `ig-overview-stat__trend--${interactionsDeltaDirection}` : ''}`} style={!metricsLoading && interactionsDeltaDisplay && interactionsDeltaDirection ? {} : { visibility: 'hidden' }}>
+                      {interactionsDeltaDirection === "down" ? (
+                        <TrendingDown size={12} aria-hidden="true" />
+                      ) : interactionsDeltaDirection === "up" ? (
+                        <TrendingUp size={12} aria-hidden="true" />
+                      ) : (
+                        <span className="ig-overview-stat__trend-flat" aria-hidden="true">-</span>
+                      )}
+                      <span>{interactionsDeltaDisplay || '\u00A0'}</span>
+                    </div>
                     <div className="ig-overview-stat__value">
                       {metricsLoading ? (
                         <span className="ig-skeleton ig-skeleton--stat" aria-hidden="true" />

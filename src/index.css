@@ -10830,20 +10830,20 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 
 .ig-overview-stat__trend--up {
   color: #047857;
-  background: #ecfdf5;
-  border-color: #a7f3d0;
+  background: transparent;
+  border-color: transparent;
 }
 
 .ig-overview-stat__trend--down {
   color: #b91c1c;
-  background: #fef2f2;
-  border-color: #fecaca;
+  background: transparent;
+  border-color: transparent;
 }
 
 .ig-overview-stat__trend--flat {
   color: #6b7280;
-  background: #f9fafb;
-  border-color: #e5e7eb;
+  background: transparent;
+  border-color: transparent;
 }
 
 .ig-overview-stat__trend-flat {
