@@ -1128,21 +1128,18 @@ useEffect(() => {
       ?? overviewSource?.breakdowns?.engagement?.reactions,
     null,
   );
-  const contentClicksValue = extractNumber(
-    pageMetricsByKey.content_activity?.value,
-    extractNumber(overviewSource?.page_overview?.content_activity, null),
-  );
   const totalFansValue = extractNumber(
     pageMetricsByKey.followers_total?.value,
     extractNumber(overviewSource?.page_overview?.followers_total, followersOverride),
   );
-
-  const audienceCities = useMemo(() => (
-    Array.isArray(audienceData?.cities) ? audienceData.cities.slice(0, 6) : []
-  ), [audienceData]);
-  const audienceCountries = useMemo(() => (
-    Array.isArray(audienceData?.countries) ? audienceData.countries.slice(0, 6) : []
-  ), [audienceData]);
+  const netFollowersMetricValue = extractNumber(
+    pageMetricsByKey.net_followers?.value,
+    extractNumber(overviewSource?.page_overview?.net_followers, null),
+  );
+  const unfollowedMetricValue = extractNumber(
+    pageMetricsByKey.followers_lost?.value,
+    extractNumber(overviewSource?.page_overview?.followers_lost, null),
+  );
   // Engagement breakdown por tipo de interacao
   const engagementBreakdown = useMemo(() => {
     const metric = pageMetricsByKey.post_engagement_total;
@@ -1320,25 +1317,6 @@ useEffect(() => {
     return [];
   }, [netFollowersSeries, pageMetricsByKey.followers_gained?.value, overviewSource?.page_overview?.followers_gained, sinceDate, untilDate]);
 
-  const followersDailyRows = useMemo(() => {
-    const source = Array.isArray(netFollowersSeries) ? netFollowersSeries : [];
-    if (!source.length) return [];
-    return [...source]
-      .map((entry) => {
-        const dateStr = entry.date || entry.dateKey || "";
-        const parsedDate = dateStr ? new Date(`${dateStr}T00:00:00`) : null;
-        return {
-          dateKey: dateStr,
-          label: parsedDate ? SHORT_DATE_FORMATTER.format(parsedDate) : dateStr,
-          adds: extractNumber(entry.adds, 0),
-          removes: extractNumber(entry.removes, 0),
-          net: extractNumber(entry.net, 0),
-        };
-      })
-      .filter((item) => item.dateKey)
-      .slice(-7);
-  }, [netFollowersSeries]);
-
   const peakReachPoint = useMemo(() => {
     if (!reachTimelineData.length) return null;
     return reachTimelineData.reduce(
@@ -1429,7 +1407,16 @@ useEffect(() => {
         </div>
 
         {/* Grid Principal - Layout 2 Colunas (mesmo padrão do Instagram) */}
-        <div className="ig-clean-grid" style={(showWordCloudDetail || showContentDetails) ? { display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' } : {}}>
+        <div
+          className="ig-clean-grid"
+          style={(showWordCloudDetail || showContentDetails)
+            ? {
+              display: 'grid',
+              gridTemplateColumns: showContentDetails ? '1fr 1.55fr' : '1fr 2fr',
+              gap: '24px',
+            }
+            : {}}
+        >
           {/* Coluna Esquerda */}
           <div className="ig-clean-grid__left">
             <section className="ig-profile-vertical">
@@ -1714,7 +1701,7 @@ useEffect(() => {
           <div className="ig-clean-grid__right">
             {showWordCloudDetail ? (
               /* Painel detalhado de Palavras-chave (mesmo layout do Instagram) */
-              <div className="ig-wordcloud-detail-panel">
+              <div className="ig-wordcloud-detail-panel" style={{ width: '100%', maxWidth: '1060px', margin: '0 auto' }}>
                 {/* Header com botão voltar */}
                 <div style={{
                   display: 'flex',
@@ -1890,7 +1877,7 @@ useEffect(() => {
               </div>
             ) : showContentDetails ? (
               /* Painel detalhado de Crescimento do conteúdo (inline, mesmo padrão do Instagram) */
-              <div className="ig-wordcloud-detail-panel">
+              <div className="ig-wordcloud-detail-panel" style={{ width: '100%', maxWidth: '1060px', margin: '0 auto' }}>
                 {/* Header com botão voltar */}
                 <div style={{
                   display: 'flex',
@@ -1933,7 +1920,7 @@ useEffect(() => {
                 {/* KPIs */}
                 <div style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(2, 1fr)',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
                   gap: '16px',
                   marginBottom: '24px'
                 }}>
@@ -1950,87 +1937,12 @@ useEffect(() => {
                     <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Reacoes totais</div>
                   </div>
                   <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '28px', fontWeight: 700, color: '#22c55e' }}>
-                      {formatNumber(contentClicksValue)}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Cliques em conteudos</div>
-                  </div>
-                  <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
                     <div style={{ fontSize: '28px', fontWeight: 700, color: '#16a34a' }}>
                       {formatNumber(totalFansValue)}
                     </div>
                     <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Fas totais</div>
                   </div>
                 </div>
-
-                {/* Novos fãs e remoções por dia */}
-                <section className="ig-card-white" style={{ marginBottom: '16px' }}>
-                  <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb' }}>
-                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827' }}>Novos fas e remocoes por dia</h4>
-                  </div>
-                  <div style={{ padding: '16px 20px' }}>
-                    {followersDailyRows.length ? (
-                      <div className="fb-detail-followers-list">
-                        {followersDailyRows.map((row) => (
-                          <div className="fb-detail-followers-row" key={row.dateKey}>
-                            <span className="fb-detail-followers-row__date">{row.label || row.dateKey}</span>
-                            <span className="fb-detail-followers-row__adds">+{formatNumber(row.adds)}</span>
-                            <span className="fb-detail-followers-row__removes">-{formatNumber(row.removes)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <DataState state="empty" label="Sem dados de seguidores." size="sm" />
-                    )}
-                  </div>
-                </section>
-
-                {/* Origem dos fãs */}
-                <section className="ig-card-white" style={{ marginBottom: '16px' }}>
-                  <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb' }}>
-                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827' }}>Origem dos fas</h4>
-                  </div>
-                  <div style={{ padding: '16px 20px' }}>
-                    {audienceLoading ? (
-                      <DataState state="loading" label="Carregando audiencia..." size="sm" />
-                    ) : audienceError ? (
-                      <DataState state="error" label={audienceError} size="sm" />
-                    ) : (
-                      <div className="fb-detail-origin-grid">
-                        <div className="fb-detail-origin">
-                          <h5>Cidades</h5>
-                          {audienceCities.length ? (
-                            <ul>
-                              {audienceCities.map((city) => (
-                                <li key={city?.name || "city"}>
-                                  <span>{city?.name || "--"}</span>
-                                  <strong>{formatNumber(city?.value)}</strong>
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <span className="fb-detail-origin__empty">Sem cidades</span>
-                          )}
-                        </div>
-                        <div className="fb-detail-origin">
-                          <h5>Paises</h5>
-                          {audienceCountries.length ? (
-                            <ul>
-                              {audienceCountries.map((country) => (
-                                <li key={country?.name || "country"}>
-                                  <span>{country?.name || "--"}</span>
-                                  <strong>{formatNumber(country?.value)}</strong>
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <span className="fb-detail-origin__empty">Sem paises</span>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </section>
 
                 {/* Posts e engajamento */}
                 <section className="ig-card-white" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -2538,8 +2450,64 @@ useEffect(() => {
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <DataState state="empty" label="Sem dados de ganho de seguidores no período." size="sm" />
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                    gap: '16px',
+                  }}>
+                    <div
+                      className="ig-card-white"
+                      style={{
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '12px',
+                        padding: '20px',
+                        textAlign: 'center',
+                      }}
+                    >
+                      <div style={{ fontSize: '28px', fontWeight: 700, color: '#16a34a' }}>
+                        {formatNumber(netFollowersMetricValue)}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                        Seguidores líquidos
+                      </div>
+                    </div>
+                    <div
+                      className="ig-card-white"
+                      style={{
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '12px',
+                        padding: '20px',
+                        textAlign: 'center',
+                      }}
+                    >
+                      <div style={{ fontSize: '28px', fontWeight: 700, color: '#ef4444' }}>
+                        {formatNumber(unfollowedMetricValue)}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                        Deixaram de seguir
+                      </div>
+                    </div>
+                  </div>
                 )}
+              </div>
+            </section>
+
+            <section className="ig-card-white ig-analytics-card ig-analytics-card--large">
+              <div className="ig-analytics-card__header">
+                <h4>Palavras chaves mais comentadas</h4>
+              </div>
+              <div className="ig-analytics-card__body">
+                <WordCloudCard
+                  apiBaseUrl={API_BASE_URL}
+                  platform="facebook"
+                  pageId={accountConfig?.facebookPageId}
+                  since={sinceIso}
+                  until={untilIso}
+                  top={120}
+                  showCommentsCount={false}
+                  externalPanelMode={true}
+                  onWordClick={handleWordCloudWordClick}
+                />
               </div>
             </section>
 
@@ -2563,27 +2531,6 @@ useEffect(() => {
           </div>
         </div>
 
-        {/* Palavras-chave - Largura Total */}
-        <div className="ig-analytics-grid ig-analytics-grid--stack">
-          <section className="ig-card-white ig-analytics-card ig-analytics-card--large">
-            <div className="ig-analytics-card__header">
-              <h4>Palavras chaves mais comentadas</h4>
-            </div>
-            <div className="ig-analytics-card__body">
-              <WordCloudCard
-                apiBaseUrl={API_BASE_URL}
-                platform="facebook"
-                pageId={accountConfig?.facebookPageId}
-                since={sinceIso}
-                until={untilIso}
-                top={120}
-                showCommentsCount={false}
-                externalPanelMode={true}
-                onWordClick={handleWordCloudWordClick}
-              />
-            </div>
-          </section>
-        </div>
       </div>
 
       {/* Painel de detalhes de conteúdo agora é inline na coluna direita */}
