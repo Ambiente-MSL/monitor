@@ -2388,9 +2388,12 @@ useEffect(() => {
                   <DataState state="error" label={fbPostsError} size="sm" />
                 ) : fbTopPosts.length ? (
                   <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                    gap: '16px'
+                    display: 'flex',
+                    gap: '14px',
+                    overflowX: 'auto',
+                    padding: '4px 2px 8px',
+                    scrollSnapType: 'x mandatory',
+                    WebkitOverflowScrolling: 'touch'
                   }}>
                     {fbTopPosts.map((post) => (
                       <a
@@ -2399,48 +2402,146 @@ useEffect(() => {
                         target="_blank"
                         rel="noreferrer"
                         style={{
-                          background: 'white',
-                          borderRadius: '12px',
-                          border: '1px solid #e5e7eb',
-                          overflow: 'hidden',
-                          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                          width: 'clamp(160px, 22vw, 190px)',
+                          minWidth: '160px',
+                          height: '320px',
+                          borderRadius: '18px',
+                          border: '1px solid rgba(255,255,255,0.22)',
+                          background: post?.previewUrl
+                            ? `linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.72) 72%), url(${post.previewUrl}) center/cover no-repeat`
+                            : 'linear-gradient(160deg, #1877f2 0%, #0b3d91 55%, #0f172a 100%)',
+                          boxShadow: '0 10px 28px rgba(15, 23, 42, 0.24)',
                           textDecoration: 'none',
                           color: 'inherit',
-                          display: 'block'
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          position: 'relative',
+                          overflow: 'hidden',
+                          scrollSnapAlign: 'start',
+                          flexShrink: 0
                         }}
                       >
+                        {!post?.previewUrl ? (
+                          <div style={{
+                            position: 'absolute',
+                            inset: 0,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            opacity: 0.14,
+                            pointerEvents: 'none'
+                          }}>
+                            <Facebook size={74} color="#ffffff" />
+                          </div>
+                        ) : null}
+
                         <div style={{
-                          height: '160px',
-                          background: post?.previewUrl ? `url(${post.previewUrl}) center/cover no-repeat` : 'linear-gradient(135deg, #1877f2 0%, #0b3d91 100%)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          position: 'relative'
+                          padding: '10px 10px 0',
+                          display: 'grid',
+                          gap: '8px',
+                          position: 'relative',
+                          zIndex: 1
                         }}>
-                          {!post?.previewUrl && (
-                            <Facebook size={40} color="rgba(255,255,255,0.6)" />
-                          )}
+                          <div style={{
+                            height: '4px',
+                            borderRadius: '999px',
+                            background: 'rgba(255,255,255,0.35)',
+                            overflow: 'hidden'
+                          }}>
+                            <span style={{
+                              display: 'block',
+                              width: '72%',
+                              height: '100%',
+                              borderRadius: '999px',
+                              background: 'rgba(255,255,255,0.96)'
+                            }} />
+                          </div>
+
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                          }}>
+                            <div style={{
+                              width: '28px',
+                              height: '28px',
+                              borderRadius: '999px',
+                              background: 'rgba(255,255,255,0.24)',
+                              border: '1px solid rgba(255,255,255,0.52)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}>
+                              <Facebook size={14} color="#ffffff" />
+                            </div>
+                            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.92)', fontWeight: 600 }}>
+                              {formatPostDate(post?.timestamp)}
+                            </span>
+                          </div>
                         </div>
-                        <div style={{ padding: '14px' }}>
-                          <p style={{ fontSize: '13px', color: '#374151', marginBottom: '12px', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+
+                        <div style={{ padding: '0 10px 10px', position: 'relative', zIndex: 1 }}>
+                          <p style={{
+                            fontSize: '12px',
+                            color: '#ffffff',
+                            marginBottom: '10px',
+                            lineHeight: 1.35,
+                            display: '-webkit-box',
+                            WebkitLineClamp: 4,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                            textShadow: '0 1px 2px rgba(0,0,0,0.38)'
+                          }}>
                             {post?.message || 'Post sem texto'}
                           </p>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div style={{ display: 'flex', gap: '12px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <Heart size={14} color="#ef4444" fill="#ef4444" />
-                                <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>{formatNumber(post?.reactions)}</span>
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <MessageCircle size={14} color="#3b82f6" />
-                                <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>{formatNumber(post?.comments)}</span>
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <Share2 size={14} color="#10b981" />
-                                <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>{formatNumber(post?.shares)}</span>
-                              </div>
+
+                          <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                            gap: '6px'
+                          }}>
+                            <div style={{
+                              background: 'rgba(255,255,255,0.16)',
+                              border: '1px solid rgba(255,255,255,0.24)',
+                              borderRadius: '8px',
+                              padding: '6px 4px',
+                              display: 'grid',
+                              justifyItems: 'center',
+                              gap: '3px',
+                              backdropFilter: 'blur(2px)'
+                            }}>
+                              <Heart size={12} color="#ffffff" fill="#ffffff" />
+                              <span style={{ fontSize: '11px', fontWeight: 700, color: '#ffffff' }}>{formatNumber(post?.reactions)}</span>
                             </div>
-                            <span style={{ fontSize: '11px', color: '#9ca3af' }}>{formatPostDate(post?.timestamp)}</span>
+
+                            <div style={{
+                              background: 'rgba(255,255,255,0.16)',
+                              border: '1px solid rgba(255,255,255,0.24)',
+                              borderRadius: '8px',
+                              padding: '6px 4px',
+                              display: 'grid',
+                              justifyItems: 'center',
+                              gap: '3px',
+                              backdropFilter: 'blur(2px)'
+                            }}>
+                              <MessageCircle size={12} color="#ffffff" />
+                              <span style={{ fontSize: '11px', fontWeight: 700, color: '#ffffff' }}>{formatNumber(post?.comments)}</span>
+                            </div>
+
+                            <div style={{
+                              background: 'rgba(255,255,255,0.16)',
+                              border: '1px solid rgba(255,255,255,0.24)',
+                              borderRadius: '8px',
+                              padding: '6px 4px',
+                              display: 'grid',
+                              justifyItems: 'center',
+                              gap: '3px',
+                              backdropFilter: 'blur(2px)'
+                            }}>
+                              <Share2 size={12} color="#ffffff" />
+                              <span style={{ fontSize: '11px', fontWeight: 700, color: '#ffffff' }}>{formatNumber(post?.shares)}</span>
+                            </div>
                           </div>
                         </div>
                       </a>
