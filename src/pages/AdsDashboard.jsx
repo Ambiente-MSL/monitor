@@ -35,11 +35,6 @@ import {
   Instagram as InstagramIcon,
   Settings,
   Shield,
-  Info,
-  Heart,
-  MessageCircle,
-  Share2,
-  Bookmark,
   Image,
   Play,
 } from "lucide-react";
@@ -274,6 +269,25 @@ const translateObjective = (value) => {
   return value;
 };
 
+const parseAdsHighlightsResponse = (resp) => {
+  if (isApiEnvelope(resp)) {
+    return {
+      envelope: resp,
+      data: resp.data ?? null,
+      error: resp.error ?? null,
+    };
+  }
+  const legacyError =
+    resp && typeof resp === "object" && resp.error
+      ? { code: "INTEGRATION_ERROR", message: String(resp.error) }
+      : null;
+  return {
+    envelope: null,
+    data: resp || null,
+    error: legacyError,
+  };
+};
+
 export default function AdsDashboard() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -296,6 +310,7 @@ export default function AdsDashboard() {
   const [activeCampaignIndex, setActiveCampaignIndex] = useState(-1);
   const [adsEnvelope, setAdsEnvelope] = useState(null);
   const [adsData, setAdsData] = useState(null);
+  const [adsComparisonData, setAdsComparisonData] = useState(null);
   const [adsError, setAdsError] = useState(null);
   const [adsLoading, setAdsLoading] = useState(false);
   const [adsReloadKey, setAdsReloadKey] = useState(0);
@@ -400,6 +415,7 @@ export default function AdsDashboard() {
   // reset quando trocar conta ou range para evitar exibir dados da conta anterior
   useEffect(() => {
     setAdsData(null);
+    setAdsComparisonData(null);
     setAdsEnvelope(null);
     setAdsError(null);
   }, [queryAccountId, adAccountId, sinceDate?.getTime?.(), untilDate?.getTime?.()]);
@@ -419,32 +435,49 @@ export default function AdsDashboard() {
       setAdsEnvelope(null);
       if (!actParam) {
         setAdsData(null);
+        setAdsComparisonData(null);
         setAdsLoading(false);
         return;
       }
       try {
-        const params = new URLSearchParams();
-        params.set("actId", actParam);
-        if (sinceDate) params.set("since", format(startOfDay(sinceDate), "yyyy-MM-dd"));
-        if (untilDate) params.set("until", format(startOfDay(untilDate), "yyyy-MM-dd"));
-        const resp = await apiFetch(`/api/ads/highlights?${params.toString()}`);
-        if (isStale()) return;
-        if (isApiEnvelope(resp)) {
-          setAdsEnvelope(resp);
-          setAdsData(resp.data ?? null);
-          setAdsError(resp.error ?? null);
-        } else {
-          const legacyError =
-            resp && typeof resp === "object" && resp.error
-              ? { code: "INTEGRATION_ERROR", message: String(resp.error) }
-              : null;
-          setAdsEnvelope(null);
-          setAdsData(resp || null);
-          setAdsError(legacyError);
+        const currentSince = sinceDate ? startOfDay(sinceDate) : null;
+        const currentUntil = untilDate ? startOfDay(untilDate) : null;
+
+        const currentParams = new URLSearchParams();
+        currentParams.set("actId", actParam);
+        if (currentSince) currentParams.set("since", format(currentSince, "yyyy-MM-dd"));
+        if (currentUntil) currentParams.set("until", format(currentUntil, "yyyy-MM-dd"));
+
+        let previousQuery = null;
+        if (currentSince && currentUntil && currentSince <= currentUntil) {
+          const periodDays = Math.max(1, differenceInCalendarDays(currentUntil, currentSince) + 1);
+          const previousUntil = subDays(currentSince, 1);
+          const previousSince = subDays(previousUntil, periodDays - 1);
+          const previousParams = new URLSearchParams();
+          previousParams.set("actId", actParam);
+          previousParams.set("since", format(previousSince, "yyyy-MM-dd"));
+          previousParams.set("until", format(previousUntil, "yyyy-MM-dd"));
+          previousQuery = previousParams.toString();
         }
+
+        const [currentResp, previousResp] = await Promise.all([
+          apiFetch(`/api/ads/highlights?${currentParams.toString()}`),
+          previousQuery ? apiFetch(`/api/ads/highlights?${previousQuery}`) : Promise.resolve(null),
+        ]);
+
+        if (isStale()) return;
+
+        const currentParsed = parseAdsHighlightsResponse(currentResp);
+        const previousParsed = previousResp ? parseAdsHighlightsResponse(previousResp) : null;
+
+        setAdsEnvelope(currentParsed.envelope);
+        setAdsData(currentParsed.data);
+        setAdsError(currentParsed.error);
+        setAdsComparisonData(previousParsed?.data ?? null);
       } catch (err) {
         if (isStale()) return;
         setAdsData(null);
+        setAdsComparisonData(null);
         setAdsEnvelope(null);
         setAdsError({
           code: "INTEGRATION_ERROR",
@@ -503,6 +536,55 @@ export default function AdsDashboard() {
   const formatPercentage = (num) => {
     if (!Number.isFinite(num)) return num;
     return num.toFixed(2);
+  };
+
+  const getFiniteNumber = (value, fallback = null) => {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) return numeric;
+    return fallback;
+  };
+
+  const computeDeltaPercentage = (current, previous) => {
+    if (!Number.isFinite(current) || !Number.isFinite(previous) || previous === 0) {
+      return null;
+    }
+    return ((current - previous) / previous) * 100;
+  };
+
+  const getDeltaMeta = (delta, invert = false) => {
+    if (!Number.isFinite(delta)) {
+      return { text: "—", color: "#9ca3af" };
+    }
+    const rounded = Number(formatPercentage(Number(delta)));
+    const isPositive = rounded > 0;
+    const isNegative = rounded < 0;
+    let color = "#6b7280";
+    if (invert) {
+      if (isPositive) color = "#ef4444";
+      else if (isNegative) color = "#10b981";
+    } else if (isPositive) {
+      color = "#10b981";
+    } else if (isNegative) {
+      color = "#ef4444";
+    }
+    const prefix = rounded > 0 ? "+" : "";
+    return { text: `${prefix}${formatPercentage(rounded)}%`, color };
+  };
+
+  const resolveConversionsTotal = (actionsList) => {
+    if (!Array.isArray(actionsList) || !actionsList.length) return 0;
+    const targetTypes = [
+      "offsite_conversion",
+      "onsite_conversion.purchase",
+      "purchase",
+      "lead",
+      "complete_registration",
+    ];
+    for (const target of targetTypes) {
+      const found = actionsList.find((action) => (action?.type || "").includes(target));
+      if (found?.value != null) return Number(found.value) || 0;
+    }
+    return 0;
   };
 
   const formatDuration = (seconds) => {
@@ -583,34 +665,77 @@ export default function AdsDashboard() {
   const totals = adsData?.totals || {};
   const averages = adsData?.averages || {};
   const actions = Array.isArray(adsData?.actions) ? adsData.actions : [];
+  const previousTotals = adsComparisonData?.totals || {};
+  const previousAverages = adsComparisonData?.averages || {};
+  const previousActions = Array.isArray(adsComparisonData?.actions) ? adsComparisonData.actions : [];
 
-  const conversions = useMemo(() => {
-    if (!actions.length) return 0;
-    const targetTypes = [
-      "offsite_conversion",
-      "onsite_conversion.purchase",
-      "purchase",
-      "lead",
-      "complete_registration",
-    ];
-    for (const target of targetTypes) {
-      const found = actions.find((action) => (action?.type || "").includes(target));
-      if (found?.value != null) return Number(found.value) || 0;
-    }
-    return 0;
-  }, [actions]);
+  const conversions = useMemo(() => resolveConversionsTotal(actions), [actions]);
+  const previousConversions = useMemo(() => resolveConversionsTotal(previousActions), [previousActions]);
 
-  const ctrValue = Number(averages.ctr) || 0;
-  const cpcValue = Number(averages.cpc) || 0;
-  const cpaValue = conversions > 0 ? (totals.spend || 0) / conversions : 0;
+  const spendValue = getFiniteNumber(totals.spend, 0);
+  const previousSpendValue = getFiniteNumber(previousTotals.spend, null);
+  const impressionsValue = getFiniteNumber(totals.impressions, 0);
+  const previousImpressionsValue = getFiniteNumber(previousTotals.impressions, null);
+  const reachValue = getFiniteNumber(totals.reach, 0);
+  const previousReachValue = getFiniteNumber(previousTotals.reach, null);
+  const clicksValue = getFiniteNumber(totals.clicks, 0);
+  const previousClicksValue = getFiniteNumber(previousTotals.clicks, null);
+  const ctrValue = getFiniteNumber(averages.ctr, 0);
+  const previousCtrValue = getFiniteNumber(previousAverages.ctr, null);
+  const cpcValue = getFiniteNumber(averages.cpc, 0);
+  const previousCpcValue = getFiniteNumber(previousAverages.cpc, null);
+  const cpaValue = conversions > 0 ? spendValue / conversions : 0;
+  const previousCpaValue = previousConversions > 0
+    ? (getFiniteNumber(previousTotals.spend, 0) / previousConversions)
+    : null;
 
   const overviewStats = {
-    spend: { value: Number(totals.spend || 0), delta: 0, label: "Investimento Total" },
-    impressions: { value: Number(totals.impressions || 0), delta: 0, label: "Impressões" },
-    reach: { value: Number(totals.reach || 0), delta: 0, label: "Alcance" },
-    clicks: { value: Number(totals.clicks || 0), delta: 0, label: "Cliques" },
-    ctr: { value: ctrValue, delta: 0, label: "CTR (taxa de cliques)", suffix: "%" },
-    cpc: { value: cpcValue, delta: 0, label: "CPC (custo por clique)", prefix: "R$" },
+    spend: {
+      value: spendValue,
+      delta: computeDeltaPercentage(spendValue, previousSpendValue),
+      label: "Investimento Total",
+    },
+    impressions: {
+      value: impressionsValue,
+      delta: computeDeltaPercentage(impressionsValue, previousImpressionsValue),
+      label: "Impressões",
+    },
+    reach: {
+      value: reachValue,
+      delta: computeDeltaPercentage(reachValue, previousReachValue),
+      label: "Alcance",
+    },
+    clicks: {
+      value: clicksValue,
+      delta: computeDeltaPercentage(clicksValue, previousClicksValue),
+      label: "Cliques",
+    },
+    ctr: {
+      value: ctrValue,
+      delta: computeDeltaPercentage(ctrValue, previousCtrValue),
+      label: "CTR (taxa de cliques)",
+      suffix: "%",
+    },
+    cpc: {
+      value: cpcValue,
+      delta: computeDeltaPercentage(cpcValue, previousCpcValue),
+      label: "CPC (custo por clique)",
+      prefix: "R$",
+    },
+    cpa: {
+      value: cpaValue,
+      delta: computeDeltaPercentage(cpaValue, previousCpaValue),
+      label: "CPA",
+      prefix: "R$",
+    },
+  };
+  const overviewDeltaMeta = {
+    spend: getDeltaMeta(overviewStats.spend.delta),
+    reach: getDeltaMeta(overviewStats.reach.delta),
+    impressions: getDeltaMeta(overviewStats.impressions.delta),
+    clicks: getDeltaMeta(overviewStats.clicks.delta),
+    ctr: getDeltaMeta(overviewStats.ctr.delta),
+    cpc: getDeltaMeta(overviewStats.cpc.delta, true),
   };
 
   const videoSummary = adsData?.video_summary || {};
@@ -1025,6 +1150,38 @@ export default function AdsDashboard() {
     }));
   }, [adsData?.spend_by_region]);
 
+  const audienceCityData = useMemo(() => {
+    if (!Array.isArray(adsData?.spend_by_city)) return [];
+    const palette = ["#6366f1", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#0ea5e9", "#f97316", "#84cc16"];
+    const raw = adsData.spend_by_city
+      .map((item) => {
+        const reachValue = Number(item.reach || 0);
+        const impressionsValue = Number(item.impressions || 0);
+        const value = reachValue > 0 ? reachValue : impressionsValue;
+        return {
+          name: item.name || "Desconhecido",
+          value,
+        };
+      })
+      .filter((item) => item.value > 0);
+
+    if (!raw.length) return [];
+
+    raw.sort((a, b) => b.value - a.value);
+    const maxItems = 5;
+    const top = raw.slice(0, maxItems);
+    const rest = raw.slice(maxItems);
+    const restValue = rest.reduce((sum, item) => sum + item.value, 0);
+    if (restValue > 0) {
+      top.push({ name: "Outros", value: restValue });
+    }
+
+    return top.map((item, index) => ({
+      ...item,
+      color: palette[index % palette.length],
+    }));
+  }, [adsData?.spend_by_city]);
+
   const audienceGenderReachData = useMemo(() => {
     if (!Array.isArray(adsData?.demographics?.byGender)) return [];
     const palette = {
@@ -1213,6 +1370,22 @@ export default function AdsDashboard() {
     }
     return [];
   }, [adsData?.creatives]);
+  const videoCreativeIds = useMemo(() => {
+    const ids = new Set();
+    videoAds.forEach((entry) => {
+      const id = entry?.ad_id || entry?.id;
+      if (id) ids.add(String(id));
+    });
+    return ids;
+  }, [videoAds]);
+  const recentPosts = useMemo(
+    () => topCreatives.slice(0, 6).map((item, index) => ({
+      ...item,
+      mediaType: videoCreativeIds.has(String(item.id || "")) ? "video" : "image",
+      rankLabel: `${index + 1}º no período`,
+    })),
+    [topCreatives, videoCreativeIds],
+  );
   const highlightedSpendIndex = activeSpendBar >= 0 ? activeSpendBar : peakSpendPoint?.index ?? -1;
   const highlightedSpendPoint = highlightedSpendIndex >= 0 ? spendSeries[highlightedSpendIndex] : null;
 
@@ -1374,8 +1547,8 @@ export default function AdsDashboard() {
                   <div style={{ fontSize: '18px', fontWeight: 700, color: '#111827', marginBottom: '2px' }}>
                     {formatCurrency(MOCK_OVERVIEW_STATS.spend.value)}
                   </div>
-                  <div style={{ fontSize: '11px', color: '#10b981', fontWeight: 600 }}>
-                    +{MOCK_OVERVIEW_STATS.spend.delta}%
+                  <div style={{ fontSize: '11px', color: overviewDeltaMeta.spend.color, fontWeight: 600 }}>
+                    {overviewDeltaMeta.spend.text}
                   </div>
                 </div>
 
@@ -1405,8 +1578,8 @@ export default function AdsDashboard() {
                   <div style={{ fontSize: '18px', fontWeight: 700, color: '#111827', marginBottom: '2px' }}>
                     {formatNumber(MOCK_OVERVIEW_STATS.reach.value)}
                   </div>
-                  <div style={{ fontSize: '11px', color: '#10b981', fontWeight: 600 }}>
-                    +{MOCK_OVERVIEW_STATS.reach.delta}%
+                  <div style={{ fontSize: '11px', color: overviewDeltaMeta.reach.color, fontWeight: 600 }}>
+                    {overviewDeltaMeta.reach.text}
                   </div>
                 </div>
 
@@ -1436,8 +1609,8 @@ export default function AdsDashboard() {
                   <div style={{ fontSize: '18px', fontWeight: 700, color: '#111827', marginBottom: '2px' }}>
                     {formatNumber(MOCK_OVERVIEW_STATS.impressions.value)}
                   </div>
-                  <div style={{ fontSize: '11px', color: '#10b981', fontWeight: 600 }}>
-                    +{MOCK_OVERVIEW_STATS.impressions.delta}%
+                  <div style={{ fontSize: '11px', color: overviewDeltaMeta.impressions.color, fontWeight: 600 }}>
+                    {overviewDeltaMeta.impressions.text}
                   </div>
                 </div>
 
@@ -1467,8 +1640,8 @@ export default function AdsDashboard() {
                   <div style={{ fontSize: '18px', fontWeight: 700, color: '#111827', marginBottom: '2px' }}>
                     {formatNumber(MOCK_OVERVIEW_STATS.clicks.value)}
                   </div>
-                  <div style={{ fontSize: '11px', color: '#10b981', fontWeight: 600 }}>
-                    +{MOCK_OVERVIEW_STATS.clicks.delta}%
+                  <div style={{ fontSize: '11px', color: overviewDeltaMeta.clicks.color, fontWeight: 600 }}>
+                    {overviewDeltaMeta.clicks.text}
                   </div>
                 </div>
 
@@ -1498,8 +1671,8 @@ export default function AdsDashboard() {
                   <div style={{ fontSize: '18px', fontWeight: 700, color: '#111827', marginBottom: '2px' }}>
                     {formatPercentage(MOCK_OVERVIEW_STATS.ctr.value)}%
                   </div>
-                  <div style={{ fontSize: '11px', color: '#10b981', fontWeight: 600 }}>
-                    +{MOCK_OVERVIEW_STATS.ctr.delta}%
+                  <div style={{ fontSize: '11px', color: overviewDeltaMeta.ctr.color, fontWeight: 600 }}>
+                    {overviewDeltaMeta.ctr.text}
                   </div>
                 </div>
 
@@ -1529,8 +1702,8 @@ export default function AdsDashboard() {
                   <div style={{ fontSize: '18px', fontWeight: 700, color: '#111827', marginBottom: '2px' }}>
                     {formatCurrency(MOCK_OVERVIEW_STATS.cpc.value)}
                   </div>
-                  <div style={{ fontSize: '11px', color: '#ef4444', fontWeight: 600 }}>
-                    {MOCK_OVERVIEW_STATS.cpc.delta}%
+                  <div style={{ fontSize: '11px', color: overviewDeltaMeta.cpc.color, fontWeight: 600 }}>
+                    {overviewDeltaMeta.cpc.text}
                   </div>
                 </div>
 
@@ -2008,240 +2181,160 @@ export default function AdsDashboard() {
                 </div>
               </header>
 
-              <div style={{ marginTop: '16px' }}>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                  gap: '16px'
-                }}>
-                  {/* Post 1 */}
-                  <div style={{
-                    background: 'white',
-                    borderRadius: '12px',
-                    border: '1px solid #e5e7eb',
-                    overflow: 'hidden',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
-                  }}>
-                    <div style={{
-                      height: '160px',
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      position: 'relative'
-                    }}>
-                      <Image size={40} color="rgba(255,255,255,0.6)" />
-                      <span style={{
-                        position: 'absolute',
-                        top: '8px',
-                        right: '8px',
-                        background: 'rgba(0,0,0,0.5)',
-                        color: 'white',
-                        padding: '4px 8px',
-                        borderRadius: '6px',
-                        fontSize: '11px',
-                        fontWeight: 600
-                      }}>Imagem</span>
-                    </div>
-                    <div style={{ padding: '14px' }}>
-                      <p style={{ fontSize: '13px', color: '#374151', marginBottom: '12px', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                        Novo lançamento! Confira as novidades que preparamos para você neste mês...
-                      </p>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', gap: '12px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Heart size={14} color="#ef4444" fill="#ef4444" />
-                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>1.2k</span>
+              <div style={{ marginTop: "16px" }}>
+                {shouldShowAdsFallback && adsFallbackProps ? (
+                  <DataState
+                    state={adsFallbackProps.state}
+                    label={adsFallbackProps.label}
+                    hint={adsFallbackProps.hint}
+                    size="sm"
+                    actionLabel={adsFallbackProps.actionLabel}
+                    onAction={adsFallbackProps.onAction}
+                  />
+                ) : recentPosts.length ? (
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                      gap: "16px",
+                    }}
+                  >
+                    {recentPosts.map((post) => {
+                      const isVideo = post.mediaType === "video";
+                      const mediaLabel = isVideo ? "Video" : "Imagem";
+                      return (
+                        <div
+                          key={post.id || post.name}
+                          style={{
+                            background: "white",
+                            borderRadius: "12px",
+                            border: "1px solid #e5e7eb",
+                            overflow: "hidden",
+                            boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                          }}
+                        >
+                          <div
+                            style={{
+                              height: "160px",
+                              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              position: "relative",
+                            }}
+                          >
+                            {post.previewUrl ? (
+                              <img
+                                src={post.previewUrl}
+                                alt={post.name}
+                                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                              />
+                            ) : (
+                              isVideo ? (
+                                <Play size={40} color="rgba(255,255,255,0.8)" fill="rgba(255,255,255,0.55)" />
+                              ) : (
+                                <Image size={40} color="rgba(255,255,255,0.6)" />
+                              )
+                            )}
+                            {isVideo && post.previewUrl ? (
+                              <span
+                                style={{
+                                  position: "absolute",
+                                  left: "50%",
+                                  top: "50%",
+                                  transform: "translate(-50%, -50%)",
+                                  width: "42px",
+                                  height: "42px",
+                                  borderRadius: "999px",
+                                  background: "rgba(17, 24, 39, 0.45)",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                }}
+                              >
+                                <Play size={18} color="#ffffff" fill="#ffffff" />
+                              </span>
+                            ) : null}
+                            <span
+                              style={{
+                                position: "absolute",
+                                top: "8px",
+                                right: "8px",
+                                background: "rgba(0,0,0,0.6)",
+                                color: "white",
+                                padding: "4px 8px",
+                                borderRadius: "6px",
+                                fontSize: "11px",
+                                fontWeight: 600,
+                              }}
+                            >
+                              {mediaLabel}
+                            </span>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <MessageCircle size={14} color="#3b82f6" />
-                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>89</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Share2 size={14} color="#10b981" />
-                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>45</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Bookmark size={14} color="#f59e0b" />
-                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>120</span>
-                          </div>
-                        </div>
-                        <span style={{ fontSize: '11px', color: '#9ca3af' }}>há 2h</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Post 2 */}
-                  <div style={{
-                    background: 'white',
-                    borderRadius: '12px',
-                    border: '1px solid #e5e7eb',
-                    overflow: 'hidden',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
-                  }}>
-                    <div style={{
-                      height: '160px',
-                      background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      position: 'relative'
-                    }}>
-                      <Play size={40} color="rgba(255,255,255,0.8)" fill="rgba(255,255,255,0.6)" />
-                      <span style={{
-                        position: 'absolute',
-                        top: '8px',
-                        right: '8px',
-                        background: 'rgba(0,0,0,0.5)',
-                        color: 'white',
-                        padding: '4px 8px',
-                        borderRadius: '6px',
-                        fontSize: '11px',
-                        fontWeight: 600
-                      }}>Vídeo</span>
-                    </div>
-                    <div style={{ padding: '14px' }}>
-                      <p style={{ fontSize: '13px', color: '#374151', marginBottom: '12px', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                        Bastidores do nosso evento especial! Veja como foi incrível...
-                      </p>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', gap: '12px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Heart size={14} color="#ef4444" fill="#ef4444" />
-                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>3.5k</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <MessageCircle size={14} color="#3b82f6" />
-                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>256</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Share2 size={14} color="#10b981" />
-                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>178</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Bookmark size={14} color="#f59e0b" />
-                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>89</span>
-                          </div>
-                        </div>
-                        <span style={{ fontSize: '11px', color: '#9ca3af' }}>há 1d</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Post 3 */}
-                  <div style={{
-                    background: 'white',
-                    borderRadius: '12px',
-                    border: '1px solid #e5e7eb',
-                    overflow: 'hidden',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
-                  }}>
-                    <div style={{
-                      height: '160px',
-                      background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      position: 'relative'
-                    }}>
-                      <Image size={40} color="rgba(255,255,255,0.6)" />
-                      <span style={{
-                        position: 'absolute',
-                        top: '8px',
-                        right: '8px',
-                        background: 'rgba(0,0,0,0.5)',
-                        color: 'white',
-                        padding: '4px 8px',
-                        borderRadius: '6px',
-                        fontSize: '11px',
-                        fontWeight: 600
-                      }}>Carrossel</span>
-                    </div>
-                    <div style={{ padding: '14px' }}>
-                      <p style={{ fontSize: '13px', color: '#374151', marginBottom: '12px', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                        5 dicas essenciais para o seu negócio crescer em 2025! Arraste para o lado...
-                      </p>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', gap: '12px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Heart size={14} color="#ef4444" fill="#ef4444" />
-                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>890</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <MessageCircle size={14} color="#3b82f6" />
-                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>67</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Share2 size={14} color="#10b981" />
-                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>34</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Bookmark size={14} color="#f59e0b" />
-                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>210</span>
+                          <div style={{ padding: "14px" }}>
+                            <p
+                              style={{
+                                fontSize: "13px",
+                                color: "#374151",
+                                marginBottom: "12px",
+                                lineHeight: 1.4,
+                                display: "-webkit-box",
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: "vertical",
+                                overflow: "hidden",
+                              }}
+                            >
+                              {post.name}
+                            </p>
+                            <div
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                                gap: "8px 12px",
+                                marginBottom: "8px",
+                              }}
+                            >
+                              <div style={{ display: "flex", alignItems: "center", gap: "5px", minWidth: 0 }}>
+                                <Eye size={13} color="#8b5cf6" />
+                                <span style={{ fontSize: "12px", fontWeight: 600, color: "#374151" }}>
+                                  {formatNumber(post.impressions || 0)}
+                                </span>
+                              </div>
+                              <div style={{ display: "flex", alignItems: "center", gap: "5px", minWidth: 0 }}>
+                                <MousePointerClick size={13} color="#0ea5e9" />
+                                <span style={{ fontSize: "12px", fontWeight: 600, color: "#374151" }}>
+                                  {formatNumber(post.clicks || 0)}
+                                </span>
+                              </div>
+                              <div style={{ display: "flex", alignItems: "center", gap: "5px", minWidth: 0 }}>
+                                <Target size={13} color="#10b981" />
+                                <span style={{ fontSize: "12px", fontWeight: 600, color: "#374151" }}>
+                                  {Number.isFinite(post.ctr) ? `${formatPercentage(post.ctr)}%` : "—"}
+                                </span>
+                              </div>
+                              <div style={{ display: "flex", alignItems: "center", gap: "5px", minWidth: 0 }}>
+                                <DollarSign size={13} color="#f59e0b" />
+                                <span style={{ fontSize: "12px", fontWeight: 600, color: "#374151" }}>
+                                  {formatCurrency(post.spend || 0)}
+                                </span>
+                              </div>
+                            </div>
+                            <div style={{ fontSize: "11px", color: "#9ca3af", fontWeight: 600 }}>
+                              {post.rankLabel}
+                            </div>
                           </div>
                         </div>
-                        <span style={{ fontSize: '11px', color: '#9ca3af' }}>há 3d</span>
-                      </div>
-                    </div>
+                      );
+                    })}
                   </div>
-
-                  {/* Post 4 */}
-                  <div style={{
-                    background: 'white',
-                    borderRadius: '12px',
-                    border: '1px solid #e5e7eb',
-                    overflow: 'hidden',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
-                  }}>
-                    <div style={{
-                      height: '160px',
-                      background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      position: 'relative'
-                    }}>
-                      <Image size={40} color="rgba(255,255,255,0.6)" />
-                      <span style={{
-                        position: 'absolute',
-                        top: '8px',
-                        right: '8px',
-                        background: 'rgba(0,0,0,0.5)',
-                        color: 'white',
-                        padding: '4px 8px',
-                        borderRadius: '6px',
-                        fontSize: '11px',
-                        fontWeight: 600
-                      }}>Imagem</span>
-                    </div>
-                    <div style={{ padding: '14px' }}>
-                      <p style={{ fontSize: '13px', color: '#374151', marginBottom: '12px', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                        Promoção especial de fim de mês! Não perca essa oportunidade única...
-                      </p>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', gap: '12px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Heart size={14} color="#ef4444" fill="#ef4444" />
-                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>2.1k</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <MessageCircle size={14} color="#3b82f6" />
-                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>145</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Share2 size={14} color="#10b981" />
-                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>92</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Bookmark size={14} color="#f59e0b" />
-                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>156</span>
-                          </div>
-                        </div>
-                        <span style={{ fontSize: '11px', color: '#9ca3af' }}>há 5d</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                ) : (
+                  <DataState
+                    state="empty"
+                    label="Sem posts recentes no período"
+                    hint="Tente outro período ou conta"
+                    size="sm"
+                  />
+                )}
               </div>
             </section>
 
@@ -2871,6 +2964,68 @@ export default function AdsDashboard() {
                         </div>
                       ))}
                     </div>
+                  )}
+                </div>
+
+                <div style={{
+                  background: 'rgba(255, 255, 255, 0.9)',
+                  border: '1px solid rgba(0, 0, 0, 0.08)',
+                  borderRadius: '12px',
+                  padding: '20px'
+                }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '16px' }}>
+                    Audiência por cidades
+                  </h4>
+                  {audienceCityData.length === 0 ? (
+                    <DataState
+                      state="empty"
+                      label="Sem dados de cidades no período"
+                      hint="Tente outro período ou conta"
+                      size="sm"
+                    />
+                  ) : (
+                    <>
+                      <ResponsiveContainer width="100%" height={180}>
+                        <PieChart>
+                          <Pie
+                            data={audienceCityData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={50}
+                            outerRadius={70}
+                            paddingAngle={4}
+                            dataKey="value"
+                          >
+                            {audienceCityData.map((entry, index) => (
+                              <Cell key={`city-cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            content={(
+                              <CustomChartTooltip
+                                variant="pie"
+                                valueFormatter={(v) => `: ${formatTooltipNumber(v)}`}
+                              />
+                            )}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '12px' }}>
+                        {audienceCityData.map((item) => (
+                          <div key={item.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: item.color }}></span>
+                              <span style={{ fontSize: '12px', color: '#111827', fontWeight: 600 }}>
+                                {formatCityLabel(item.name)}
+                              </span>
+                            </div>
+                            <span style={{ fontSize: '12px', color: '#111827', fontWeight: 600 }}>
+                              {formatNumber(item.value)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
                   )}
                 </div>
                   </>
