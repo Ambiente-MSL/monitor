@@ -3,6 +3,8 @@ import { Link, useLocation, useOutletContext } from "react-router-dom";
 import { differenceInCalendarDays, endOfDay, startOfDay, subDays } from "date-fns";
 import {
   ResponsiveContainer,
+  BarChart,
+  Bar,
   Area,
   CartesianGrid,
   XAxis,
@@ -1273,14 +1275,18 @@ useEffect(() => {
         .map((entry) => {
           const dateStr = entry.date || entry.dateKey || "";
           const parsedDate = dateStr ? new Date(`${dateStr}T00:00:00`) : new Date();
-          const adds = extractNumber(entry.adds, 0);
+          const adds = extractNumber(entry.adds, null);
           const removes = extractNumber(entry.removes, 0);
-          const net = extractNumber(entry.net ?? entry.value, adds - removes);
+          const net = extractNumber(entry.net ?? entry.value, 0);
+          const gains = Number.isFinite(adds) ? adds : (net > 0 ? net : 0);
           return {
             dateKey: dateStr,
             label: SHORT_DATE_FORMATTER.format(parsedDate),
             tooltipDate: parsedDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" }),
-            value: net,
+            value: Math.max(0, gains),
+            adds: Math.max(0, Number.isFinite(adds) ? adds : gains),
+            removes: Math.max(0, removes),
+            net,
           };
         })
         .filter((item) => Number.isFinite(item.value))
@@ -1303,7 +1309,10 @@ useEffect(() => {
           dateKey: "period",
           label: tooltipDate,
           tooltipDate,
-          value: fallbackGain,
+          value: Math.max(0, fallbackGain),
+          adds: Math.max(0, fallbackGain),
+          removes: 0,
+          net: fallbackGain,
         },
       ];
     }
@@ -2388,12 +2397,9 @@ useEffect(() => {
                   <DataState state="error" label={fbPostsError} size="sm" />
                 ) : fbTopPosts.length ? (
                   <div style={{
-                    display: 'flex',
-                    gap: '14px',
-                    overflowX: 'auto',
-                    padding: '4px 2px 8px',
-                    scrollSnapType: 'x mandatory',
-                    WebkitOverflowScrolling: 'touch'
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                    gap: '16px'
                   }}>
                     {fbTopPosts.map((post) => (
                       <a
@@ -2402,146 +2408,63 @@ useEffect(() => {
                         target="_blank"
                         rel="noreferrer"
                         style={{
-                          width: 'clamp(160px, 22vw, 190px)',
-                          minWidth: '160px',
-                          height: '320px',
-                          borderRadius: '18px',
-                          border: '1px solid rgba(255,255,255,0.22)',
-                          background: post?.previewUrl
-                            ? `linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.72) 72%), url(${post.previewUrl}) center/cover no-repeat`
-                            : 'linear-gradient(160deg, #1877f2 0%, #0b3d91 55%, #0f172a 100%)',
-                          boxShadow: '0 10px 28px rgba(15, 23, 42, 0.24)',
+                          background: 'white',
+                          borderRadius: '12px',
+                          border: '1px solid #e5e7eb',
+                          overflow: 'hidden',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
                           textDecoration: 'none',
                           color: 'inherit',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          justifyContent: 'space-between',
-                          position: 'relative',
-                          overflow: 'hidden',
-                          scrollSnapAlign: 'start',
-                          flexShrink: 0
+                          display: 'block'
                         }}
                       >
-                        {!post?.previewUrl ? (
-                          <div style={{
-                            position: 'absolute',
-                            inset: 0,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            opacity: 0.14,
-                            pointerEvents: 'none'
-                          }}>
-                            <Facebook size={74} color="#ffffff" />
-                          </div>
-                        ) : null}
-
                         <div style={{
-                          padding: '10px 10px 0',
-                          display: 'grid',
-                          gap: '8px',
-                          position: 'relative',
-                          zIndex: 1
+                          height: '220px',
+                          background: '#f8fafc',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: '10px'
                         }}>
                           <div style={{
-                            height: '4px',
-                            borderRadius: '999px',
-                            background: 'rgba(255,255,255,0.35)',
-                            overflow: 'hidden'
-                          }}>
-                            <span style={{
-                              display: 'block',
-                              width: '72%',
-                              height: '100%',
-                              borderRadius: '999px',
-                              background: 'rgba(255,255,255,0.96)'
-                            }} />
-                          </div>
-
-                          <div style={{
+                            width: '124px',
+                            maxWidth: '100%',
+                            height: '196px',
+                            borderRadius: '14px',
+                            border: '1px solid #e5e7eb',
+                            background: post?.previewUrl
+                              ? `url(${post.previewUrl}) center/cover no-repeat`
+                              : 'linear-gradient(135deg, #1877f2 0%, #0b3d91 100%)',
+                            boxShadow: '0 6px 16px rgba(15, 23, 42, 0.22)',
                             display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center'
+                            alignItems: 'center',
+                            justifyContent: 'center'
                           }}>
-                            <div style={{
-                              width: '28px',
-                              height: '28px',
-                              borderRadius: '999px',
-                              background: 'rgba(255,255,255,0.24)',
-                              border: '1px solid rgba(255,255,255,0.52)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center'
-                            }}>
-                              <Facebook size={14} color="#ffffff" />
-                            </div>
-                            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.92)', fontWeight: 600 }}>
-                              {formatPostDate(post?.timestamp)}
-                            </span>
+                            {!post?.previewUrl && (
+                              <Facebook size={40} color="rgba(255,255,255,0.6)" />
+                            )}
                           </div>
                         </div>
-
-                        <div style={{ padding: '0 10px 10px', position: 'relative', zIndex: 1 }}>
-                          <p style={{
-                            fontSize: '12px',
-                            color: '#ffffff',
-                            marginBottom: '10px',
-                            lineHeight: 1.35,
-                            display: '-webkit-box',
-                            WebkitLineClamp: 4,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden',
-                            textShadow: '0 1px 2px rgba(0,0,0,0.38)'
-                          }}>
+                        <div style={{ padding: '14px' }}>
+                          <p style={{ fontSize: '13px', color: '#374151', marginBottom: '12px', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                             {post?.message || 'Post sem texto'}
                           </p>
-
-                          <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-                            gap: '6px'
-                          }}>
-                            <div style={{
-                              background: 'rgba(255,255,255,0.16)',
-                              border: '1px solid rgba(255,255,255,0.24)',
-                              borderRadius: '8px',
-                              padding: '6px 4px',
-                              display: 'grid',
-                              justifyItems: 'center',
-                              gap: '3px',
-                              backdropFilter: 'blur(2px)'
-                            }}>
-                              <Heart size={12} color="#ffffff" fill="#ffffff" />
-                              <span style={{ fontSize: '11px', fontWeight: 700, color: '#ffffff' }}>{formatNumber(post?.reactions)}</span>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', gap: '12px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Heart size={14} color="#ef4444" fill="#ef4444" />
+                                <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>{formatNumber(post?.reactions)}</span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <MessageCircle size={14} color="#3b82f6" />
+                                <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>{formatNumber(post?.comments)}</span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Share2 size={14} color="#10b981" />
+                                <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>{formatNumber(post?.shares)}</span>
+                              </div>
                             </div>
-
-                            <div style={{
-                              background: 'rgba(255,255,255,0.16)',
-                              border: '1px solid rgba(255,255,255,0.24)',
-                              borderRadius: '8px',
-                              padding: '6px 4px',
-                              display: 'grid',
-                              justifyItems: 'center',
-                              gap: '3px',
-                              backdropFilter: 'blur(2px)'
-                            }}>
-                              <MessageCircle size={12} color="#ffffff" />
-                              <span style={{ fontSize: '11px', fontWeight: 700, color: '#ffffff' }}>{formatNumber(post?.comments)}</span>
-                            </div>
-
-                            <div style={{
-                              background: 'rgba(255,255,255,0.16)',
-                              border: '1px solid rgba(255,255,255,0.24)',
-                              borderRadius: '8px',
-                              padding: '6px 4px',
-                              display: 'grid',
-                              justifyItems: 'center',
-                              gap: '3px',
-                              backdropFilter: 'blur(2px)'
-                            }}>
-                              <Share2 size={12} color="#ffffff" />
-                              <span style={{ fontSize: '11px', fontWeight: 700, color: '#ffffff' }}>{formatNumber(post?.shares)}</span>
-                            </div>
+                            <span style={{ fontSize: '11px', color: '#9ca3af' }}>{formatPostDate(post?.timestamp)}</span>
                           </div>
                         </div>
                       </a>
@@ -2549,6 +2472,73 @@ useEffect(() => {
                   </div>
                 ) : (
                   <DataState state="empty" label="Sem posts no periodo." size="sm" />
+                )}
+              </div>
+            </section>
+
+            {/* Crescimento de seguidores */}
+            <section className="ig-growth-clean">
+              <header className="ig-card-header">
+                <div>
+                  <h3>
+                    Crescimento de seguidores
+                    <InfoTooltip text="Ganho diário real de seguidores da página no período selecionado." />
+                  </h3>
+                  <p className="ig-card-subtitle">Ganho diário de seguidores</p>
+                </div>
+              </header>
+
+              <div className="ig-chart-area">
+                {followerGrowthSeries.length ? (
+                  <ResponsiveContainer width="100%" height={240}>
+                    <BarChart
+                      data={followerGrowthSeries}
+                      margin={{ top: 16, right: 20, left: 8, bottom: 8 }}
+                    >
+                      <CartesianGrid vertical={false} strokeDasharray="4 8" stroke="#f3f4f6" />
+                      <XAxis
+                        dataKey="label"
+                        tick={{ fill: "#111827" }}
+                        fontSize={12}
+                        tickLine={false}
+                        axisLine={{ stroke: "#e5e7eb" }}
+                        interval="preserveStartEnd"
+                        minTickGap={24}
+                        tickFormatter={formatAxisDate}
+                      />
+                      <YAxis
+                        tick={{ fill: "#111827" }}
+                        fontSize={12}
+                        tickLine={false}
+                        axisLine={{ stroke: "#e5e7eb" }}
+                        allowDecimals={false}
+                        domain={[0, (dataMax) => (Number.isFinite(dataMax) ? Math.max(1, Math.ceil(dataMax * 1.2)) : 1)]}
+                        tickFormatter={(value) => formatCompactNumber(value)}
+                      />
+                      <Tooltip
+                        cursor={{ fill: "rgba(24, 119, 242, 0.08)" }}
+                        content={(props) => {
+                          const tooltipDate = props?.payload?.[0]?.payload?.tooltipDate || props?.label;
+                          return (
+                            <CustomChartTooltip
+                              {...props}
+                              labelFormatter={() => String(tooltipDate || "")}
+                              labelMap={{ value: "Seguidores ganhos" }}
+                              valueFormatter={(value) => `: ${formatTooltipNumber(value)}`}
+                            />
+                          );
+                        }}
+                      />
+                      <Bar
+                        dataKey="value"
+                        fill="#1877F2"
+                        radius={[8, 8, 0, 0]}
+                        maxBarSize={40}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <DataState state="empty" label="Sem dados de ganho de seguidores no período." size="sm" />
                 )}
               </div>
             </section>
