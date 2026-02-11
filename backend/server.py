@@ -3877,6 +3877,8 @@ def facebook_posts():
         limit = int(limit_param) if limit_param is not None else 6
     except ValueError:
         limit = 6
+    payload: Any = None
+    meta: Dict[str, Any] = {}
     try:
         payload, meta = get_cached_payload(
             "facebook_posts",
@@ -3889,8 +3891,53 @@ def facebook_posts():
         )
     except MetaAPIError as err:
         mark_cache_error("facebook_posts", page_id, since, until, {"limit": limit}, err.args[0], platform="facebook")
-        return meta_error_response(err)
-    response = dict(payload)
+        fallback = get_latest_cached_payload(
+            "facebook_posts",
+            page_id,
+            extra={"limit": limit},
+            platform="facebook",
+        )
+        if not fallback:
+            fallback = get_latest_cached_payload("facebook_posts", page_id, platform="facebook")
+        if not fallback:
+            return meta_error_response(err)
+        payload, meta = fallback
+        meta = dict(meta or {})
+        meta["fallback_error"] = err.args[0] if err.args else "Meta API error"
+        meta["fallback_reason"] = "meta_api_error"
+        meta["requested_since"] = since
+        meta["requested_until"] = until
+        meta["requested_limit"] = limit
+    except Exception as err:  # noqa: BLE001
+        logger.exception("Falha inesperada em facebook_posts")
+        fallback = get_latest_cached_payload(
+            "facebook_posts",
+            page_id,
+            extra={"limit": limit},
+            platform="facebook",
+        )
+        if not fallback:
+            fallback = get_latest_cached_payload("facebook_posts", page_id, platform="facebook")
+        if not fallback:
+            return jsonify({"error": "Nao foi possivel carregar os posts do Facebook."}), 500
+        payload, meta = fallback
+        meta = dict(meta or {})
+        meta["fallback_error"] = str(err)
+        meta["fallback_reason"] = "unexpected_error"
+        meta["requested_since"] = since
+        meta["requested_until"] = until
+        meta["requested_limit"] = limit
+
+    if isinstance(payload, dict):
+        response = dict(payload)
+    elif isinstance(payload, list):
+        response = {"posts": payload}
+    else:
+        response = {"posts": []}
+    if "posts" not in response and isinstance(response.get("data"), list):
+        response["posts"] = response.get("data")
+    if not isinstance(response.get("posts"), list):
+        response["posts"] = []
     response["cache"] = meta
     return jsonify(response)
 

@@ -2390,26 +2390,44 @@ def fb_recent_posts(page_id: str, limit: int = 6, since_ts: Optional[int] = None
     except (TypeError, ValueError):
         limit_int = 6
     limit_sanitized = max(1, min(limit_int, 25))
-    fields = (
+    core_fields = (
         "id,created_time,message,permalink_url,full_picture,story,"
         "attachments{media_type,type,media,url,description,subattachments},"
-        "insights.metric(post_impressions,post_impressions_unique,post_engaged_users,post_clicks),"
         "reactions.summary(true).limit(0),comments.summary(true).limit(0),shares"
     )
+    insights_fields = "insights.metric(post_impressions,post_impressions_unique,post_engaged_users,post_clicks)"
     params: Dict[str, Any] = {
         "limit": limit_sanitized,
-        "fields": fields,
+        "fields": f"{core_fields},{insights_fields}",
     }
     if since_ts is not None:
         params["since"] = int(since_ts)
     if until_ts is not None:
         params["until"] = int(until_ts)
 
-    res = gget(f"/{page_id}/posts", params, token=page_token)
+    try:
+        res = gget(f"/{page_id}/posts", params, token=page_token)
+    except MetaAPIError as err:
+        # Some accounts cannot query post-level insights in the same call.
+        logger.warning("Fallback em fb_recent_posts sem insights para page %s: %s", page_id, err)
+        fallback_params = dict(params)
+        fallback_params["fields"] = core_fields
+        res = gget(f"/{page_id}/posts", fallback_params, token=page_token)
+
     posts: List[Dict[str, Any]] = []
 
+    def to_int(value: Any, default: int = 0) -> int:
+        numeric = _coerce_number(value)
+        if numeric is None:
+            return default
+        return int(round(numeric))
+
     def extract_preview(att_list):
+        if not isinstance(att_list, list):
+            return None
         for att in att_list:
+            if not isinstance(att, dict):
+                continue
             media = att.get("media") or {}
             image = (media.get("image") or {}).get("src") or media.get("source")
             if image:
@@ -2440,12 +2458,18 @@ def fb_recent_posts(page_id: str, limit: int = 6, since_ts: Optional[int] = None
             return False
         return True
 
-    for item in res.get("data", []):
+    data_rows = res.get("data") if isinstance(res, dict) else None
+    if not isinstance(data_rows, list):
+        data_rows = []
+
+    for item in data_rows:
+        if not isinstance(item, dict):
+            continue
         attachments = (item.get("attachments") or {}).get("data", [])
         preview = item.get("full_picture") or extract_preview(attachments)
-        reactions = ((item.get("reactions") or {}).get("summary") or {}).get("total_count", 0) or 0
-        comments = ((item.get("comments") or {}).get("summary") or {}).get("total_count", 0) or 0
-        shares = (item.get("shares") or {}).get("count", 0) or 0
+        reactions = to_int(((item.get("reactions") or {}).get("summary") or {}).get("total_count", 0), 0)
+        comments = to_int(((item.get("comments") or {}).get("summary") or {}).get("total_count", 0), 0)
+        shares = to_int((item.get("shares") or {}).get("count", 0), 0)
         insights_data = (item.get("insights") or {}).get("data", [])
         impressions_val = insight_value_from_list(insights_data, "post_impressions")
         reach_val = insight_value_from_list(insights_data, "post_impressions_unique")
@@ -2456,7 +2480,7 @@ def fb_recent_posts(page_id: str, limit: int = 6, since_ts: Optional[int] = None
         reach = int(round(reach_val)) if reach_val is not None else impressions
         engaged_users = int(round(engaged_users_val)) if engaged_users_val is not None else None
         post_clicks = int(round(clicks_val)) if clicks_val is not None else None
-        engagement_total = int(reactions) + int(comments) + int(shares)
+        engagement_total = reactions + comments + shares
 
         posts.append({
             "id": item.get("id"),
@@ -2464,9 +2488,9 @@ def fb_recent_posts(page_id: str, limit: int = 6, since_ts: Optional[int] = None
             "permalink": item.get("permalink_url"),
             "timestamp": item.get("created_time"),
             "previewUrl": preview,
-            "reactions": int(reactions),
-            "comments": int(comments),
-            "shares": int(shares),
+            "reactions": reactions,
+            "comments": comments,
+            "shares": shares,
             "impressions": impressions,
             "reach": reach,
             "engagedUsers": engaged_users,
@@ -2502,7 +2526,9 @@ def fb_recent_posts(page_id: str, limit: int = 6, since_ts: Optional[int] = None
         "post_top_comments": top_post("comments"),
     }
 
-    paging = res.get("paging") or {}
+    paging = res.get("paging") if isinstance(res, dict) else {}
+    if not isinstance(paging, dict):
+        paging = {}
     return {
         "posts": posts,
         "highlights": highlights,
