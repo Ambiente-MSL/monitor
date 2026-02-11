@@ -117,30 +117,6 @@ const formatNumber = (value) => {
   return numeric.toString();
 };
 
-const formatPercentValue = (value) => {
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return "--";
-  return `${numeric.toLocaleString("pt-BR", {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-  })}%`;
-};
-
-const formatAgeRangeLabel = (value) => {
-  const normalized = String(value || "").trim();
-  if (!normalized) return "";
-  const map = {
-    "18-24": "Entre 18 e 24 anos",
-    "25-34": "Entre 25 e 34 anos",
-    "35-44": "Entre 35 e 44 anos",
-    "45-54": "Entre 45 e 54 anos",
-    "55-64": "Entre 55 e 64 anos",
-    "65+": "Mais de 65 anos",
-    "55+": "55 anos ou mais",
-  };
-  return map[normalized] || normalized;
-};
-
 const formatDurationSeconds = (seconds) => {
   const total = Number(seconds);
   if (!Number.isFinite(total) || total < 0) return "00:00:00";
@@ -1116,12 +1092,7 @@ useEffect(() => {
       .slice(0, 6);
   }, [fbPosts]);
 
-  const reachPeriodLabel = useMemo(() => {
-    if (!selectedRange.since || !selectedRange.until) return "Alcance";
-    const sinceLabel = SHORT_DATE_FORMATTER.format(selectedRange.since);
-    const untilLabel = SHORT_DATE_FORMATTER.format(selectedRange.until);
-    return sinceLabel === untilLabel ? `Alcance (${sinceLabel})` : `Alcance (${sinceLabel} - ${untilLabel})`;
-  }, [selectedRange.since, selectedRange.until]);
+  const reachPeriodLabel = "Alcance";
 
   const followersDailyDisplay = useMemo(() => (
     Number.isFinite(overviewMetrics.followersDaily)
@@ -1170,66 +1141,6 @@ useEffect(() => {
   const audienceCountries = useMemo(() => (
     Array.isArray(audienceData?.countries) ? audienceData.countries.slice(0, 6) : []
   ), [audienceData]);
-  const audienceAgeRows = useMemo(() => (
-    Array.isArray(audienceData?.ages)
-      ? audienceData.ages
-        .map((entry) => ({
-          age: entry?.range || "",
-          value: extractNumber(entry?.value, null),
-          percentage: extractNumber(entry?.percentage, null),
-        }))
-        .filter((entry) => entry.age && Number.isFinite(entry.value) && entry.value > 0)
-        .sort((a, b) => {
-          const pctA = Number.isFinite(a.percentage) ? a.percentage : 0;
-          const pctB = Number.isFinite(b.percentage) ? b.percentage : 0;
-          return pctB - pctA;
-        })
-      : []
-  ), [audienceData]);
-  const audienceCityRows = useMemo(() => {
-    const total = audienceCities.reduce((sum, entry) => sum + extractNumber(entry?.value, 0), 0);
-    return audienceCities
-      .map((entry) => {
-        const value = extractNumber(entry?.value, 0);
-        const rawPct = extractNumber(entry?.percentage, null);
-        const percentage = Number.isFinite(rawPct)
-          ? rawPct
-          : (total > 0 ? (value / total) * 100 : 0);
-        return {
-          name: entry?.name || "",
-          value,
-          percentage,
-        };
-      })
-      .filter((entry) => entry.name && entry.value > 0);
-  }, [audienceCities]);
-  const audienceCountryRows = useMemo(() => {
-    const total = audienceCountries.reduce((sum, entry) => sum + extractNumber(entry?.value, 0), 0);
-    return audienceCountries
-      .map((entry) => {
-        const value = extractNumber(entry?.value, 0);
-        const rawPct = extractNumber(entry?.percentage, null);
-        const percentage = Number.isFinite(rawPct)
-          ? rawPct
-          : (total > 0 ? (value / total) * 100 : 0);
-        return {
-          name: entry?.name || "",
-          value,
-          percentage,
-        };
-      })
-      .filter((entry) => entry.name && entry.value > 0);
-  }, [audienceCountries]);
-  const audienceGenderItems = useMemo(() => {
-    if (!Array.isArray(audienceData?.gender)) return [];
-    const items = audienceData.gender.filter((entry) => Number.isFinite(entry?.percentage));
-    const male = items.find((entry) => entry.key === "male" || /mascul/i.test(entry.label || ""));
-    const female = items.find((entry) => entry.key === "female" || /femin/i.test(entry.label || ""));
-    const unknown = items.find((entry) => entry.key === "unknown" || /nao informado|desconhecido/i.test(entry.label || ""));
-    const ordered = [female, male, unknown].filter(Boolean);
-    if (ordered.length) return ordered;
-    return items;
-  }, [audienceData]);
   // Engagement breakdown por tipo de interacao
   const engagementBreakdown = useMemo(() => {
     const metric = pageMetricsByKey.post_engagement_total;
@@ -2461,118 +2372,82 @@ useEffect(() => {
 
             {/* Cards de alcance removidos */}
 
-            <section className="ig-card-white fb-analytics-card">
-              <div className="ig-analytics-card__header">
+            {/* Posts recentes */}
+            <section className="ig-growth-clean">
+              <header className="ig-card-header">
                 <div>
-                  <h4>Demografia da audiencia</h4>
-                  <p style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
-                    Idade e genero, cidades e paises
-                  </p>
+                  <h3>Posts recentes</h3>
+                  <p className="ig-card-subtitle">Publicações recentes da página</p>
                 </div>
-              </div>
-              <div className="ig-analytics-card__body">
-                {audienceLoading ? (
-                  <DataState state="loading" label="Carregando demografia..." size="sm" />
-                ) : audienceError ? (
-                  <DataState state="error" label={audienceError} size="sm" />
-                ) : (audienceAgeRows.length || audienceCityRows.length || audienceCountryRows.length) ? (
+              </header>
+
+              <div style={{ marginTop: '16px' }}>
+                {fbPostsLoading ? (
+                  <DataState state="loading" label="Carregando posts..." size="sm" />
+                ) : fbPostsError ? (
+                  <DataState state="error" label={fbPostsError} size="sm" />
+                ) : fbTopPosts.length ? (
                   <div style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-                    gap: "16px",
-                  }}
-                  >
-                    <div style={{ border: "1px solid #e5e7eb", borderRadius: "12px", padding: "14px" }}>
-                      <h5 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "#111827" }}>Idade e genero</h5>
-                      <div style={{ marginTop: "4px", color: "#6b7280", fontSize: "12px", fontWeight: 600 }}>Total</div>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "10px" }}>
-                        {audienceGenderItems.length ? audienceGenderItems.map((entry) => {
-                          const key = String(entry?.key || "").toLowerCase();
-                          const color = key === "female"
-                            ? "#2f80ed"
-                            : key === "male"
-                              ? "#0b3d91"
-                              : "#cbd5e1";
-                          return (
-                            <div key={entry?.key || entry?.label} style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#374151" }}>
-                              <span style={{ width: "10px", height: "10px", borderRadius: "999px", backgroundColor: color }} />
-                              <span>{entry?.label || "Genero"}</span>
-                            </div>
-                          );
-                        }) : (
-                          <span style={{ color: "#9ca3af", fontSize: "12px" }}>Sem recorte de genero.</span>
-                        )}
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "14px" }}>
-                        {audienceAgeRows.length ? audienceAgeRows.map((entry) => {
-                          const pct = Number.isFinite(entry?.percentage) ? entry.percentage : 0;
-                          return (
-                            <div key={entry?.age}>
-                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", marginBottom: "4px" }}>
-                                <span style={{ fontSize: "14px", color: "#111827", fontWeight: 500 }}>
-                                  {formatAgeRangeLabel(entry?.age)}
-                                </span>
-                                <strong style={{ fontSize: "14px", color: "#111827" }}>{formatPercentValue(pct)}</strong>
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                    gap: '16px'
+                  }}>
+                    {fbTopPosts.map((post) => (
+                      <a
+                        key={post?.id}
+                        href={post?.permalink || '#'}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          background: 'white',
+                          borderRadius: '12px',
+                          border: '1px solid #e5e7eb',
+                          overflow: 'hidden',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                          textDecoration: 'none',
+                          color: 'inherit',
+                          display: 'block'
+                        }}
+                      >
+                        <div style={{
+                          height: '160px',
+                          background: post?.previewUrl ? `url(${post.previewUrl}) center/cover no-repeat` : 'linear-gradient(135deg, #1877f2 0%, #0b3d91 100%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          position: 'relative'
+                        }}>
+                          {!post?.previewUrl && (
+                            <Facebook size={40} color="rgba(255,255,255,0.6)" />
+                          )}
+                        </div>
+                        <div style={{ padding: '14px' }}>
+                          <p style={{ fontSize: '13px', color: '#374151', marginBottom: '12px', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                            {post?.message || 'Post sem texto'}
+                          </p>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', gap: '12px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Heart size={14} color="#ef4444" fill="#ef4444" />
+                                <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>{formatNumber(post?.reactions)}</span>
                               </div>
-                              <div style={{ width: "100%", height: "8px", borderRadius: "999px", backgroundColor: "#e5e7eb", overflow: "hidden" }}>
-                                <div style={{ width: `${Math.max(0, Math.min(100, pct))}%`, height: "100%", backgroundColor: "#0b3d91" }} />
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <MessageCircle size={14} color="#3b82f6" />
+                                <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>{formatNumber(post?.comments)}</span>
                               </div>
-                            </div>
-                          );
-                        }) : (
-                          <DataState state="empty" label="Sem dados de idade." size="sm" />
-                        )}
-                      </div>
-                    </div>
-
-                    <div style={{ border: "1px solid #e5e7eb", borderRadius: "12px", padding: "14px" }}>
-                      <h5 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "#111827" }}>Cidades</h5>
-                      <div style={{ marginTop: "4px", color: "#6b7280", fontSize: "12px", fontWeight: 600 }}>Total</div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "14px" }}>
-                        {audienceCityRows.length ? audienceCityRows.map((entry) => {
-                          const pct = Number.isFinite(entry?.percentage) ? entry.percentage : 0;
-                          return (
-                            <div key={`city-${entry?.name}`}>
-                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", marginBottom: "4px" }}>
-                                <span style={{ fontSize: "14px", color: "#111827", fontWeight: 500 }}>{entry?.name}</span>
-                                <strong style={{ fontSize: "14px", color: "#111827" }}>{formatPercentValue(pct)}</strong>
-                              </div>
-                              <div style={{ width: "100%", height: "8px", borderRadius: "999px", backgroundColor: "#e5e7eb", overflow: "hidden" }}>
-                                <div style={{ width: `${Math.max(0, Math.min(100, pct))}%`, height: "100%", backgroundColor: "#1e88e5" }} />
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Share2 size={14} color="#10b981" />
+                                <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>{formatNumber(post?.shares)}</span>
                               </div>
                             </div>
-                          );
-                        }) : (
-                          <DataState state="empty" label="Sem dados de cidades." size="sm" />
-                        )}
-                      </div>
-                    </div>
-
-                    <div style={{ border: "1px solid #e5e7eb", borderRadius: "12px", padding: "14px" }}>
-                      <h5 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "#111827" }}>Paises</h5>
-                      <div style={{ marginTop: "4px", color: "#6b7280", fontSize: "12px", fontWeight: 600 }}>Total</div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "14px" }}>
-                        {audienceCountryRows.length ? audienceCountryRows.map((entry) => {
-                          const pct = Number.isFinite(entry?.percentage) ? entry.percentage : 0;
-                          return (
-                            <div key={`country-${entry?.name}`}>
-                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", marginBottom: "4px" }}>
-                                <span style={{ fontSize: "14px", color: "#111827", fontWeight: 500 }}>{entry?.name}</span>
-                                <strong style={{ fontSize: "14px", color: "#111827" }}>{formatPercentValue(pct)}</strong>
-                              </div>
-                              <div style={{ width: "100%", height: "8px", borderRadius: "999px", backgroundColor: "#e5e7eb", overflow: "hidden" }}>
-                                <div style={{ width: `${Math.max(0, Math.min(100, pct))}%`, height: "100%", backgroundColor: "#1e88e5" }} />
-                              </div>
-                            </div>
-                          );
-                        }) : (
-                          <DataState state="empty" label="Sem dados de paises." size="sm" />
-                        )}
-                      </div>
-                    </div>
+                            <span style={{ fontSize: '11px', color: '#9ca3af' }}>{formatPostDate(post?.timestamp)}</span>
+                          </div>
+                        </div>
+                      </a>
+                    ))}
                   </div>
                 ) : (
-                  <DataState state="empty" label="Sem dados de demografia para o periodo." size="sm" />
+                  <DataState state="empty" label="Sem posts no periodo." size="sm" />
                 )}
               </div>
             </section>
