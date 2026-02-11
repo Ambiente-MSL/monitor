@@ -51,7 +51,6 @@ import { fetchWithTimeout } from "../lib/fetchWithTimeout";
 import { normalizeSyncInfo } from "../lib/syncInfo";
 
 const API_BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
-const ADS_MOCK_ENABLED = false;
 
 // Hero Tabs
 const HERO_TABS = [
@@ -61,188 +60,6 @@ const HERO_TABS = [
   { id: "reports", label: "Relatórios", href: "/relatorios", icon: FileText, iconClass: "hero-icon-reports" },
   { id: "settings", label: "Configurações", href: "/configuracoes", icon: Settings, iconClass: "hero-icon-settings" },
   { id: "admin", label: "Admin", href: "/admin", icon: Shield, iconClass: "hero-icon-admin" },
-];
-
-const MOCK_SPEND_SERIES = [
-  { date: "01/02", value: 1580 },
-  { date: "02/02", value: 1720 },
-  { date: "03/02", value: 1650 },
-  { date: "04/02", value: 1890 },
-  { date: "05/02", value: 1950 },
-  { date: "06/02", value: 1820 },
-  { date: "07/02", value: 2100 },
-  { date: "08/02", value: 1980 },
-  { date: "09/02", value: 2250 },
-  { date: "10/02", value: 2100 },
-];
-
-const MOCK_PERFORMANCE_SERIES = [
-  { date: "01/02", impressions: 65000, clicks: 1800, conversions: 145 },
-  { date: "02/02", impressions: 72000, clicks: 2050, conversions: 168 },
-  { date: "03/02", impressions: 68000, clicks: 1920, conversions: 152 },
-  { date: "04/02", impressions: 78000, clicks: 2200, conversions: 189 },
-  { date: "05/02", impressions: 82000, clicks: 2350, conversions: 205 },
-  { date: "06/02", impressions: 75000, clicks: 2100, conversions: 178 },
-  { date: "07/02", impressions: 88000, clicks: 2500, conversions: 225 },
-];
-
-const MOCK_AGE_DISTRIBUTION = [
-  { range: "18-24", value: 15, color: "#6366f1" },
-  { range: "25-34", value: 35, color: "#8b5cf6" },
-  { range: "35-44", value: 28, color: "#a855f7" },
-  { range: "45-54", value: 15, color: "#c084fc" },
-  { range: "55+", value: 7, color: "#d8b4fe" },
-];
-
-const MOCK_GENDER_DISTRIBUTION = [
-  { name: "Homens", value: 45 },
-  { name: "Mulheres", value: 55 },
-];
-
-const MOCK_TOP_CAMPAIGNS = [
-  {
-    id: "1",
-    name: "Campanha Verão 2025",
-    objective: "Conversões",
-    impressions: 125000,
-    clicks: 3200,
-    ctr: 2.56,
-    spend: 4500,
-    conversions: 380,
-    cpa: 11.84,
-  },
-  {
-    id: "2",
-    name: "Lançamento Produto X",
-    objective: "Tráfego",
-    impressions: 98000,
-    clicks: 2800,
-    ctr: 2.86,
-    spend: 3800,
-    conversions: 290,
-    cpa: 13.1,
-  },
-  {
-    id: "3",
-    name: "Promoção Relâmpago",
-    objective: "Awareness",
-    impressions: 87000,
-    clicks: 2500,
-    ctr: 2.87,
-    spend: 3200,
-    conversions: 245,
-    cpa: 13.06,
-  },
-  {
-    id: "4",
-    name: "Engajamento Stories",
-    objective: "Engajamento",
-    impressions: 65000,
-    clicks: 1950,
-    ctr: 3.0,
-    spend: 2100,
-    conversions: 180,
-    cpa: 11.67,
-  },
-];
-
-const MOCK_DETAILED_CAMPAIGNS = [
-  {
-    id: "c1",
-    name: "Prefeito 2025 - 1ª fase",
-    objective: "Conversões",
-    spend: 3500,
-    impressions: 250000,
-    clicks: 5200,
-    ctr: 2.1,
-    conversions: 220,
-    cpa: 15.90,
-    status: "active",
-    statusLabel: "Ativa"
-  },
-  {
-    id: "c2",
-    name: "Tráfego Instagram",
-    objective: "Tráfego",
-    spend: 1800,
-    impressions: 180000,
-    clicks: 2400,
-    ctr: 1.3,
-    conversions: 80,
-    cpa: 22.50,
-    status: "paused",
-    statusLabel: "Pausada"
-  },
-];
-
-const MOCK_CREATIVES = [
-  {
-    id: "cr1",
-    name: "imagem1.jpg",
-    type: "Imagem",
-    preview: "📷",
-    clicks: 2300,
-    ctr: 2.9,
-    cpc: 0.85,
-    conversions: 145,
-    cpa: 14.20,
-    roas: 3.2
-  },
-  {
-    id: "cr2",
-    name: "video1.mp4",
-    type: "Vídeo",
-    preview: "🎥",
-    clicks: 1100,
-    ctr: 1.8,
-    cpc: 1.10,
-    conversions: 70,
-    cpa: 15.70,
-    roas: 2.9
-  },
-  {
-    id: "cr3",
-    name: "carrossel1.jpg",
-    type: "Carrossel",
-    preview: "🎨",
-    clicks: 1800,
-    ctr: 2.4,
-    cpc: 0.95,
-    conversions: 110,
-    cpa: 16.36,
-    roas: 2.7
-  },
-];
-
-const MOCK_INSIGHTS = [
-  {
-    id: "i1",
-    type: "warning",
-    icon: "⚠️",
-    message: "Custo por resultado ↑ 18% esta semana.",
-    color: "#f59e0b"
-  },
-  {
-    id: "i2",
-    type: "success",
-    icon: "🔥",
-    message: "Criativo \"Vídeo 02\" performa 2x melhor que \"Imagem 03\".",
-    color: "#10b981"
-  },
-  {
-    id: "i3",
-    type: "info",
-    icon: "💡",
-    message: "Melhor horário para anúncios: 18h-21h (CTR +35%).",
-    color: "#3b82f6"
-  },
-];
-
-const MOCK_CAMPAIGN_PERFORMANCE = [
-  { name: "Conversão", value: 35, color: "#6366f1" },
-  { name: "Tráfego", value: 28, color: "#8b5cf6" },
-  { name: "Reconhecimento", value: 22, color: "#a855f7" },
-  { name: "Engajamento", value: 15, color: "#c084fc" },
 ];
 
 const IG_DONUT_COLORS = ["#6366f1", "#f97316", "#a855f7", "#c084fc", "#d8b4fe"];
@@ -930,13 +747,9 @@ export default function AdsDashboard() {
     [videoAvgTime, videoDropOff, videoViewSeries, videoAdsGrowth.data.length, avgVideoViews],
   );
 
-  // manter compatibilidade com seções que ainda usam o nome antigo
-  const MOCK_OVERVIEW_STATS = overviewStats;
-
   const spendSeries = useMemo(() => {
     if (Array.isArray(adsData?.spend_series)) return adsData.spend_series;
-    if (adsData) return [];
-    return ADS_MOCK_ENABLED ? MOCK_SPEND_SERIES : [];
+    return [];
   }, [adsData]);
 
   const adsHasData = useMemo(() => {
@@ -1263,32 +1076,7 @@ export default function AdsDashboard() {
           objectiveLabel: translateObjective(campaign.objective),
         }));
     }
-    if (adsData) return [];
-    return ADS_MOCK_ENABLED ? MOCK_TOP_CAMPAIGNS : [];
-  }, [adsData]);
-
-  const activeCampaigns = useMemo(() => {
-    if (Array.isArray(adsData?.campaigns)) {
-      const onlyActive = adsData.campaigns.filter((campaign) => {
-        const status = campaign.effective_status || campaign.status || "";
-        if (!status) return true; // se backend não retornar status, assume ativo para não esconder dados
-        return status.toUpperCase() === "ACTIVE";
-      });
-      return onlyActive.map((campaign) => ({
-        id: campaign.id || campaign.campaign_id || campaign.name,
-        name: campaign.name || campaign.campaign_name || "Campanha",
-        objective: translateObjective(campaign.objective),
-        spend: Number(campaign.spend || 0),
-        impressions: Number(campaign.impressions || 0),
-        clicks: Number(campaign.clicks || 0),
-        ctr: Number.isFinite(campaign.ctr) ? campaign.ctr : Number(campaign.ctr || 0),
-        conversions: Number(campaign.conversions || 0),
-        cpa: Number.isFinite(campaign.cpa) ? campaign.cpa : null,
-        status: (campaign.effective_status || campaign.status || "ACTIVE").toUpperCase(),
-      }));
-    }
-    if (adsData) return [];
-    return ADS_MOCK_ENABLED ? MOCK_DETAILED_CAMPAIGNS : [];
+    return [];
   }, [adsData]);
 
   const objectivePerformance = useMemo(() => {
@@ -1320,23 +1108,17 @@ export default function AdsDashboard() {
     }));
   }, [adsData]);
 
-  // Gera série temporal de impressões e alcance baseada nos dados reais
   const performanceSeries = useMemo(() => {
-    // Se não temos dados reais, usa o mock
-    if (!adsData || !spendSeries.length) {
-      return ADS_MOCK_ENABLED ? MOCK_PERFORMANCE_SERIES : [];
-    }
+    if (!adsData || !spendSeries.length) return [];
 
     const totalImpressions = Number(totals.impressions || 0);
     const totalReach = Number(totals.reach || 0);
     const totalSpend = Number(totals.spend || 0);
 
-    // Se não temos totais, retorna array vazio
     if (totalSpend === 0 || spendSeries.length === 0) {
       return [];
     }
 
-    // Distribui impressões e alcance proporcionalmente ao spend de cada dia
     return spendSeries.map((day) => {
       const proportion = day.value / totalSpend;
       return {
@@ -1386,6 +1168,78 @@ export default function AdsDashboard() {
     })),
     [topCreatives, videoCreativeIds],
   );
+  const adsInsights = useMemo(() => {
+    const tones = {
+      warning: { icon: "!", color: "#f59e0b" },
+      success: { icon: "+", color: "#10b981" },
+      info: { icon: "i", color: "#3b82f6" },
+    };
+    const items = [];
+    const addInsight = (type, message) => {
+      if (!message || items.length >= 3) return;
+      const tone = tones[type] || tones.info;
+      items.push({
+        id: `insight-${items.length + 1}`,
+        type,
+        icon: tone.icon,
+        color: tone.color,
+        message,
+      });
+    };
+    const formatDelta = (value) => {
+      const numeric = Number(value);
+      if (!Number.isFinite(numeric)) return null;
+      const sign = numeric > 0 ? "+" : "";
+      return `${sign}${formatPercentage(numeric)}%`;
+    };
+
+    const cpcDelta = overviewStats?.cpc?.delta;
+    const cpcDeltaLabel = formatDelta(cpcDelta);
+    if (cpcDeltaLabel) {
+      if (cpcDelta >= 5) {
+        addInsight("warning", `CPC subiu ${cpcDeltaLabel} vs período anterior.`);
+      } else if (cpcDelta <= -5) {
+        addInsight("success", `CPC caiu ${cpcDeltaLabel} vs período anterior, com melhor eficiência.`);
+      }
+    }
+
+    const ctrDelta = overviewStats?.ctr?.delta;
+    const ctrDeltaLabel = formatDelta(ctrDelta);
+    if (ctrDeltaLabel) {
+      if (ctrDelta >= 5) {
+        addInsight("success", `CTR subiu ${ctrDeltaLabel} vs período anterior.`);
+      } else if (ctrDelta <= -5) {
+        addInsight("warning", `CTR caiu ${ctrDeltaLabel} vs período anterior.`);
+      }
+    }
+
+    const bestCreative = [...topCreatives]
+      .filter((item) => Number(item?.clicks || 0) > 0 && Number.isFinite(Number(item?.ctr)))
+      .sort((a, b) => (Number(b.ctr || 0) - Number(a.ctr || 0)) || (Number(b.clicks || 0) - Number(a.clicks || 0)))[0];
+    if (bestCreative) {
+      addInsight(
+        "info",
+        `Criativo ${bestCreative.name} lidera o CTR com ${formatPercentage(Number(bestCreative.ctr || 0))}% e ${formatNumber(Number(bestCreative.clicks || 0))} cliques.`,
+      );
+    }
+
+    const strongestCampaign = [...topCampaigns]
+      .sort((a, b) => Number(b.spend || 0) - Number(a.spend || 0))[0];
+    if (strongestCampaign) {
+      addInsight(
+        "info",
+        `Maior investimento do período: ${strongestCampaign.name} (${formatCurrency(Number(strongestCampaign.spend || 0))}).`,
+      );
+    }
+
+    if (!items.length && spendValue > 0) {
+      addInsight(
+        "info",
+        `No período, o investimento foi ${formatCurrency(spendValue)} para ${formatNumber(clicksValue)} cliques.`,
+      );
+    }
+    return items;
+  }, [overviewStats, topCreatives, topCampaigns, spendValue, clicksValue]);
   const highlightedSpendIndex = activeSpendBar >= 0 ? activeSpendBar : peakSpendPoint?.index ?? -1;
   const highlightedSpendPoint = highlightedSpendIndex >= 0 ? spendSeries[highlightedSpendIndex] : null;
 
@@ -1545,7 +1399,7 @@ export default function AdsDashboard() {
                     </span>
                   </div>
                   <div style={{ fontSize: '18px', fontWeight: 700, color: '#111827', marginBottom: '2px' }}>
-                    {formatCurrency(MOCK_OVERVIEW_STATS.spend.value)}
+                    {formatCurrency(overviewStats.spend.value)}
                   </div>
                   <div style={{ fontSize: '11px', color: overviewDeltaMeta.spend.color, fontWeight: 600 }}>
                     {overviewDeltaMeta.spend.text}
@@ -1576,7 +1430,7 @@ export default function AdsDashboard() {
                     </span>
                   </div>
                   <div style={{ fontSize: '18px', fontWeight: 700, color: '#111827', marginBottom: '2px' }}>
-                    {formatNumber(MOCK_OVERVIEW_STATS.reach.value)}
+                    {formatNumber(overviewStats.reach.value)}
                   </div>
                   <div style={{ fontSize: '11px', color: overviewDeltaMeta.reach.color, fontWeight: 600 }}>
                     {overviewDeltaMeta.reach.text}
@@ -1607,7 +1461,7 @@ export default function AdsDashboard() {
                     </span>
                   </div>
                   <div style={{ fontSize: '18px', fontWeight: 700, color: '#111827', marginBottom: '2px' }}>
-                    {formatNumber(MOCK_OVERVIEW_STATS.impressions.value)}
+                    {formatNumber(overviewStats.impressions.value)}
                   </div>
                   <div style={{ fontSize: '11px', color: overviewDeltaMeta.impressions.color, fontWeight: 600 }}>
                     {overviewDeltaMeta.impressions.text}
@@ -1638,7 +1492,7 @@ export default function AdsDashboard() {
                     </span>
                   </div>
                   <div style={{ fontSize: '18px', fontWeight: 700, color: '#111827', marginBottom: '2px' }}>
-                    {formatNumber(MOCK_OVERVIEW_STATS.clicks.value)}
+                    {formatNumber(overviewStats.clicks.value)}
                   </div>
                   <div style={{ fontSize: '11px', color: overviewDeltaMeta.clicks.color, fontWeight: 600 }}>
                     {overviewDeltaMeta.clicks.text}
@@ -1669,7 +1523,7 @@ export default function AdsDashboard() {
                     </span>
                   </div>
                   <div style={{ fontSize: '18px', fontWeight: 700, color: '#111827', marginBottom: '2px' }}>
-                    {formatPercentage(MOCK_OVERVIEW_STATS.ctr.value)}%
+                    {formatPercentage(overviewStats.ctr.value)}%
                   </div>
                   <div style={{ fontSize: '11px', color: overviewDeltaMeta.ctr.color, fontWeight: 600 }}>
                     {overviewDeltaMeta.ctr.text}
@@ -1700,7 +1554,7 @@ export default function AdsDashboard() {
                     </span>
                   </div>
                   <div style={{ fontSize: '18px', fontWeight: 700, color: '#111827', marginBottom: '2px' }}>
-                    {formatCurrency(MOCK_OVERVIEW_STATS.cpc.value)}
+                    {formatCurrency(overviewStats.cpc.value)}
                   </div>
                   <div style={{ fontSize: '11px', color: overviewDeltaMeta.cpc.color, fontWeight: 600 }}>
                     {overviewDeltaMeta.cpc.text}
@@ -1807,8 +1661,8 @@ export default function AdsDashboard() {
                     actionLabel={adsFallbackProps.actionLabel}
                     onAction={adsFallbackProps.onAction}
                   />
-                ) : (
-                  MOCK_INSIGHTS.map((insight) => (
+                ) : adsInsights.length ? (
+                  adsInsights.map((insight) => (
                     <div
                       key={insight.id}
                       style={{
@@ -1837,6 +1691,13 @@ export default function AdsDashboard() {
                       </span>
                     </div>
                   ))
+                ) : (
+                  <DataState
+                    state="empty"
+                    label="Sem insights relevantes para este período"
+                    hint="Aumente a janela do período para identificar tendências"
+                    size="sm"
+                  />
                 )}
               </div>
             </section>
