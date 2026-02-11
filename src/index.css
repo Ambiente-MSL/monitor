@@ -3346,6 +3346,7 @@ body.theme-light {
 /* Estilos específicos para topbar */
 .topbar__account .account-dropdown {
   min-width: auto;
+  position: static;
 }
 
 .topbar__account .account-dropdown__label {
@@ -3398,6 +3399,7 @@ body.theme-light {
   animation: accountDropdownFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1100 !important;
   width: 240px;
+  top: calc(100% + 4px);
 }
 
 .topbar__account .account-dropdown__item {
@@ -13959,7 +13961,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 
 .fb-detail-post {
   display: grid;
-  grid-template-columns: 64px 1fr auto;
+  grid-template-columns: 74px 1fr auto;
   gap: 10px;
   align-items: center;
   text-decoration: none;
@@ -13978,8 +13980,8 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 }
 
 .fb-detail-post__thumb {
-  width: 64px;
-  height: 64px;
+  width: 74px;
+  height: 74px;
   border-radius: 10px;
   overflow: hidden;
   background: #e5e7eb;
@@ -14002,10 +14004,18 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   color: #6b7280;
 }
 
+.fb-detail-post__content {
+  min-width: 0;
+  overflow: hidden;
+}
+
 .fb-detail-post__title {
   font-size: 12px;
   font-weight: 600;
   color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .fb-detail-post__date {
@@ -14528,7 +14538,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   }
 
   .fb-detail-post {
-    grid-template-columns: 56px 1fr;
+    grid-template-columns: 64px 1fr;
   }
 
   .fb-detail-post__engagement {

@@ -31,6 +31,10 @@ import {
   X,
   Settings,
   Shield,
+  Users,
+  ThumbsUp,
+  UserCheck,
+  Newspaper,
 } from "lucide-react";
 import useQueryState from "../hooks/useQueryState";
 import { useAccounts } from "../context/AccountsContext";
@@ -1911,8 +1915,8 @@ useEffect(() => {
                       </svg>
                     </button>
                     <div>
-                      <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Detalhes do conteudo</h3>
-                      <p style={{ margin: 0, fontSize: '13px', opacity: 0.9 }}>Engajamento, audiencia e posts no periodo</p>
+                      <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Detalhes do conteúdo</h3>
+                      <p style={{ margin: 0, fontSize: '13px', opacity: 0.9 }}>Engajamento, audiência e posts no período</p>
                     </div>
                   </div>
                 </div>
@@ -1920,36 +1924,46 @@ useEffect(() => {
                 {/* KPIs */}
                 <div style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                   gap: '16px',
                   marginBottom: '24px'
                 }}>
-                  <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                  <div className="ig-card-white" style={{ padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(34, 197, 94, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Users size={20} color="#22c55e" />
+                    </div>
                     <div style={{ fontSize: '28px', fontWeight: 700, color: '#22c55e' }}>
                       {formatNumber(engagedUsersValue)}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Usuarios engajados</div>
+                    <div style={{ fontSize: '12px', color: '#6b7280' }}>Usuários engajados</div>
                   </div>
-                  <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                  <div className="ig-card-white" style={{ padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(22, 163, 74, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <ThumbsUp size={20} color="#16a34a" />
+                    </div>
                     <div style={{ fontSize: '28px', fontWeight: 700, color: '#16a34a' }}>
                       {formatNumber(reactionsTotalValue)}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Reacoes totais</div>
+                    <div style={{ fontSize: '12px', color: '#6b7280' }}>Reações totais</div>
                   </div>
-                  <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                  <div className="ig-card-white" style={{ padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(22, 163, 74, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <UserCheck size={20} color="#16a34a" />
+                    </div>
                     <div style={{ fontSize: '28px', fontWeight: 700, color: '#16a34a' }}>
                       {formatNumber(totalFansValue)}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Fas totais</div>
+                    <div style={{ fontSize: '12px', color: '#6b7280' }}>Fãs totais</div>
                   </div>
                 </div>
 
                 {/* Posts e engajamento */}
-                <section className="ig-card-white" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                  <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb' }}>
+                <section className="ig-card-white" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                  <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Newspaper size={18} color="#1877F2" />
                     <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827' }}>Posts e engajamento</h4>
                   </div>
-                  <div style={{ padding: '16px 20px', flex: 1 }}>
+                  <div style={{ padding: '16px 20px', flex: 1, overflow: 'auto' }}>
                     {fbPostsLoading ? (
                       <DataState state="loading" label="Carregando posts..." size="sm" />
                     ) : fbPostsError ? (
@@ -1990,7 +2004,7 @@ useEffect(() => {
                         })}
                       </div>
                     ) : (
-                      <DataState state="empty" label="Sem posts no periodo." size="sm" />
+                      <DataState state="empty" label="Sem posts no período." size="sm" />
                     )}
                   </div>
                 </section>
@@ -2051,14 +2065,14 @@ useEffect(() => {
                           if (!props?.active || !props?.payload?.length) return null;
                           const item = props.payload[0]?.payload;
                           const numericValue = Number(props.payload[0]?.value ?? item?.value ?? 0);
-                          const labelValue = item?.label || props.label || "Periodo";
+                          const labelValue = item?.label || props.label || "Período";
                           const isPeak =
                             !!peakReachPoint &&
                             item?.dateKey === peakReachPoint.dateKey &&
                             numericValue === peakReachPoint.value;
                           const footer = isPeak ? (
                             <div style={{ marginTop: 6, fontSize: 12, color: '#6b7280' }}>
-                              Pico do periodo
+                              Pico do período
                             </div>
                           ) : null;
                           return (
@@ -2066,7 +2080,7 @@ useEffect(() => {
                               {...props}
                               payload={props.payload.slice(0, 1)}
                               labelFormatter={() => labelValue}
-                              labelMap={{ value: "Contas alcancadas" }}
+                              labelMap={{ value: "Contas alcançadas" }}
                               valueFormatter={(value) => `: ${formatTooltipNumber(value)}`}
                               footer={footer}
                             />
@@ -2210,14 +2224,14 @@ useEffect(() => {
                           if (!props?.active || !props?.payload?.length) return null;
                           const item = props.payload[0]?.payload;
                           const numericValue = Number(props.payload[0]?.value ?? item?.value ?? 0);
-                          const labelValue = item?.label || props.label || "Periodo";
+                          const labelValue = item?.label || props.label || "Período";
                           const isPeak =
                             !!peakContentGrowthPoint &&
                             item?.dateKey === peakContentGrowthPoint.dateKey &&
                             numericValue === peakContentGrowthPoint.value;
                           const footer = isPeak ? (
                             <div style={{ marginTop: 6, fontSize: 12, color: "#6b7280" }}>
-                              Pico do periodo
+                              Pico do período
                             </div>
                           ) : null;
                           return (
@@ -2494,7 +2508,7 @@ useEffect(() => {
 
             <section className="ig-card-white ig-analytics-card ig-analytics-card--large">
               <div className="ig-analytics-card__header">
-                <h4>Palavras chaves mais comentadas</h4>
+                <h4>Palavras-chave mais comentadas</h4>
               </div>
               <div className="ig-analytics-card__body">
                 <WordCloudCard
