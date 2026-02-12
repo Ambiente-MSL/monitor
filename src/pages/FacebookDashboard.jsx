@@ -37,6 +37,7 @@ import {
   Newspaper,
   TrendingDown,
   TrendingUp,
+  Hash,
 } from "lucide-react";
 import useQueryState from "../hooks/useQueryState";
 import { useAccounts } from "../context/AccountsContext";
@@ -523,6 +524,12 @@ useEffect(() => {
       dateStyle: "short",
       timeStyle: "short",
     }).format(date);
+  };
+
+  const buildFacebookProfileUrl = (username) => {
+    const normalized = String(username || "").trim().replace(/^@+/, "");
+    if (!normalized) return null;
+    return `https://www.facebook.com/${encodeURIComponent(normalized)}`;
   };
 
   const handleOpenContentDetails = useCallback(() => {
@@ -1771,7 +1778,7 @@ useEffect(() => {
                   justifyContent: 'space-between',
                   marginBottom: '24px',
                   padding: '16px 20px',
-                  background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                  background: 'linear-gradient(135deg, #1877f2 0%, #1565d8 100%)',
                   borderRadius: '16px',
                   color: 'white'
                 }}>
@@ -1815,14 +1822,20 @@ useEffect(() => {
                     gap: '16px',
                     marginBottom: '24px'
                   }}>
-                    <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
-                      <div style={{ fontSize: '28px', fontWeight: 700, color: '#dc2626' }}>
+                    <div className="ig-card-white ig-kpi-hover" style={{ padding: '20px', textAlign: 'center' }}>
+                      <div className="ig-kpi-icon" style={{ background: 'rgba(24, 119, 242, 0.12)', margin: '0 auto 10px' }}>
+                        <Hash size={20} color="#1877f2" />
+                      </div>
+                      <div style={{ fontSize: '28px', fontWeight: 700, color: '#1877f2' }}>
                         {wordCloudDetails.total_occurrences?.toLocaleString('pt-BR') || 0}
                       </div>
                       <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Ocorrências</div>
                     </div>
-                    <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
-                      <div style={{ fontSize: '28px', fontWeight: 700, color: '#f87171' }}>
+                    <div className="ig-card-white ig-kpi-hover" style={{ padding: '20px', textAlign: 'center' }}>
+                      <div className="ig-kpi-icon" style={{ background: 'rgba(59, 130, 246, 0.12)', margin: '0 auto 10px' }}>
+                        <MessageCircle size={20} color="#3b82f6" />
+                      </div>
+                      <div style={{ fontSize: '28px', fontWeight: 700, color: '#3b82f6' }}>
                         {wordCloudDetails.total_comments?.toLocaleString('pt-BR') || 0}
                       </div>
                       <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Comentários</div>
@@ -1856,9 +1869,26 @@ useEffect(() => {
                               border: '1px solid #e5e7eb'
                             }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                                <span style={{ fontWeight: 600, fontSize: '13px', color: '#111827' }}>
-                                  {comment.username ? `@${comment.username}` : 'Comentário'}
-                                </span>
+                                {comment.username ? (
+                                  <a
+                                    href={buildFacebookProfileUrl(comment.username)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                      fontWeight: 600,
+                                      fontSize: '13px',
+                                      color: '#111827',
+                                      textDecoration: 'underline',
+                                      textUnderlineOffset: '2px',
+                                    }}
+                                  >
+                                    @{String(comment.username).replace(/^@+/, "")}
+                                  </a>
+                                ) : (
+                                  <span style={{ fontWeight: 600, fontSize: '13px', color: '#111827' }}>
+                                    Comentário
+                                  </span>
+                                )}
                                 {comment.timestamp && (
                                   <span style={{ fontSize: '12px', color: '#9ca3af' }}>
                                     {formatWordCloudDetailDate(comment.timestamp)}
@@ -1868,8 +1898,8 @@ useEffect(() => {
                                   <span style={{
                                     fontSize: '11px',
                                     fontWeight: 600,
-                                    color: '#ef4444',
-                                    background: '#fef2f2',
+                                    color: '#1877f2',
+                                    background: '#eff6ff',
                                     padding: '2px 8px',
                                     borderRadius: '10px'
                                   }}>
