@@ -60,6 +60,9 @@ import {
   Zap,
   Award,
   MessageSquareText,
+  MapPin,
+  Users,
+  Crown,
 } from "lucide-react";
 import useQueryState from "../hooks/useQueryState";
 import { useAccounts } from "../context/AccountsContext";
@@ -4732,7 +4735,7 @@ const profileViewsMetric = useMemo(() => {
                     <div style={{ fontSize: '28px', fontWeight: 700, color: '#ec4899' }}>
                       {formatNumber(interactionsBreakdown.total)}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Total de Interações</div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Total de interações</div>
                   </div>
                   <div className="ig-card-white ig-kpi-hover" style={{ padding: '20px', textAlign: 'center' }}>
                     <div className="ig-kpi-icon" style={{ background: 'rgba(244, 114, 182, 0.12)', margin: '0 auto 10px' }}>
@@ -4743,7 +4746,7 @@ const profileViewsMetric = useMemo(() => {
                         ? `${((interactionsBreakdown.total / profileReachTotal) * 100).toFixed(2)}%`
                         : '--'}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Taxa de Engajamento</div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Taxa de engajamento</div>
                   </div>
                 </div>
 
@@ -5437,7 +5440,7 @@ const profileViewsMetric = useMemo(() => {
                       </svg>
                     </button>
                     <div>
-                      <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Top Cidades</h3>
+                      <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Top cidades</h3>
                       <p style={{ margin: 0, fontSize: '13px', opacity: 0.9 }}>
                         Distribuição geográfica do público · {audienceTimeframeLabel}
                       </p>
@@ -5468,23 +5471,32 @@ const profileViewsMetric = useMemo(() => {
                   gap: '16px',
                   marginBottom: '24px'
                 }}>
-                  <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                  <div className="ig-card-white ig-kpi-hover" style={{ padding: '20px', textAlign: 'center' }}>
+                    <div className="ig-kpi-icon" style={{ background: 'rgba(59, 130, 246, 0.12)', margin: '0 auto 10px' }}>
+                      <MapPin size={20} color="#3b82f6" />
+                    </div>
                     <div style={{ fontSize: '28px', fontWeight: 700, color: '#3b82f6' }}>
                       {audienceCities.length}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Total de Cidades</div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Total de cidades</div>
                   </div>
-                  <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                  <div className="ig-card-white ig-kpi-hover" style={{ padding: '20px', textAlign: 'center' }}>
+                    <div className="ig-kpi-icon" style={{ background: 'rgba(99, 102, 241, 0.12)', margin: '0 auto 10px' }}>
+                      <Users size={20} color="#6366f1" />
+                    </div>
                     <div style={{ fontSize: '28px', fontWeight: 700, color: '#6366f1' }}>
                       {formatNumber(audienceCitiesTotal)}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Total de Seguidores</div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Total de seguidores</div>
                   </div>
-                  <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                  <div className="ig-card-white ig-kpi-hover" style={{ padding: '20px', textAlign: 'center' }}>
+                    <div className="ig-kpi-icon" style={{ background: 'rgba(139, 92, 246, 0.12)', margin: '0 auto 10px' }}>
+                      <Crown size={20} color="#8b5cf6" />
+                    </div>
                     <div style={{ fontSize: '28px', fontWeight: 700, color: '#8b5cf6' }}>
                       {audienceTopCity?.cityName || '--'}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Cidade Principal</div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Cidade principal</div>
                   </div>
                 </div>
 
