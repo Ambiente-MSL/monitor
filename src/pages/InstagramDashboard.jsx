@@ -56,6 +56,10 @@ import {
   TrendingUp,
   Eye,
   MousePointerClick,
+  Clock,
+  Zap,
+  Award,
+  MessageSquareText,
 } from "lucide-react";
 import useQueryState from "../hooks/useQueryState";
 import { useAccounts } from "../context/AccountsContext";
@@ -4452,25 +4456,37 @@ const profileViewsMetric = useMemo(() => {
                   gap: '16px',
                   marginBottom: '24px'
                 }}>
-                  <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                  <div className="ig-card-white ig-kpi-hover" style={{ padding: '20px', textAlign: 'center' }}>
+                    <div className="ig-kpi-icon" style={{ background: 'rgba(99, 102, 241, 0.12)', margin: '0 auto 10px' }}>
+                      <Eye size={20} color="#6366f1" />
+                    </div>
                     <div style={{ fontSize: '28px', fontWeight: 700, color: '#6366f1' }}>
                       {formatNumber(profileViewsTotal ?? 0)}
                     </div>
                     <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Total no período</div>
                   </div>
-                  <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                  <div className="ig-card-white ig-kpi-hover" style={{ padding: '20px', textAlign: 'center' }}>
+                    <div className="ig-kpi-icon" style={{ background: 'rgba(139, 92, 246, 0.12)', margin: '0 auto 10px' }}>
+                      <BarChart3 size={20} color="#8b5cf6" />
+                    </div>
                     <div style={{ fontSize: '28px', fontWeight: 700, color: '#8b5cf6' }}>
                       {profileViewsAverage != null ? formatNumber(Math.round(profileViewsAverage)) : '--'}
                     </div>
                     <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Média diária</div>
                   </div>
-                  <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                  <div className="ig-card-white ig-kpi-hover" style={{ padding: '20px', textAlign: 'center' }}>
+                    <div className="ig-kpi-icon" style={{ background: 'rgba(168, 85, 247, 0.12)', margin: '0 auto 10px' }}>
+                      <TrendingUp size={20} color="#a855f7" />
+                    </div>
                     <div style={{ fontSize: '28px', fontWeight: 700, color: '#a855f7' }}>
                       {profileViewsPeak != null ? formatNumber(profileViewsPeak) : '--'}
                     </div>
                     <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Pico diário</div>
                   </div>
-                  <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                  <div className="ig-card-white ig-kpi-hover" style={{ padding: '20px', textAlign: 'center' }}>
+                    <div className="ig-kpi-icon" style={{ background: 'rgba(14, 165, 233, 0.12)', margin: '0 auto 10px' }}>
+                      <Clock size={20} color="#0ea5e9" />
+                    </div>
                     <div style={{ fontSize: '28px', fontWeight: 700, color: '#0ea5e9' }}>
                       {videoAvgWatchTimeDisplay}
                     </div>
@@ -4709,13 +4725,19 @@ const profileViewsMetric = useMemo(() => {
                   gap: '16px',
                   marginBottom: '24px'
                 }}>
-                  <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                  <div className="ig-card-white ig-kpi-hover" style={{ padding: '20px', textAlign: 'center' }}>
+                    <div className="ig-kpi-icon" style={{ background: 'rgba(236, 72, 153, 0.12)', margin: '0 auto 10px' }}>
+                      <Zap size={20} color="#ec4899" />
+                    </div>
                     <div style={{ fontSize: '28px', fontWeight: 700, color: '#ec4899' }}>
                       {formatNumber(interactionsBreakdown.total)}
                     </div>
                     <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Total de Interações</div>
                   </div>
-                  <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                  <div className="ig-card-white ig-kpi-hover" style={{ padding: '20px', textAlign: 'center' }}>
+                    <div className="ig-kpi-icon" style={{ background: 'rgba(244, 114, 182, 0.12)', margin: '0 auto 10px' }}>
+                      <TrendingUp size={20} color="#f472b6" />
+                    </div>
                     <div style={{ fontSize: '28px', fontWeight: 700, color: '#f472b6' }}>
                       {interactionsBreakdown.total > 0 && profileReachTotal > 0
                         ? `${((interactionsBreakdown.total / profileReachTotal) * 100).toFixed(2)}%`
@@ -4734,7 +4756,7 @@ const profileViewsMetric = useMemo(() => {
                   </div>
                   <div style={{ padding: '16px 20px' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
-                      <div style={{ padding: '12px', background: '#fef2f2', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div className="ig-breakdown-hover" style={{ padding: '12px', background: '#fef2f2', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <Heart size={18} color="#ef4444" />
                         </div>
@@ -4745,7 +4767,7 @@ const profileViewsMetric = useMemo(() => {
                           <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>Curtidas</div>
                         </div>
                       </div>
-                      <div style={{ padding: '12px', background: '#eff6ff', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div className="ig-breakdown-hover" style={{ padding: '12px', background: '#eff6ff', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'rgba(59, 130, 246, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <MessageCircle size={18} color="#3b82f6" />
                         </div>
@@ -4756,7 +4778,7 @@ const profileViewsMetric = useMemo(() => {
                           <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>Comentários</div>
                         </div>
                       </div>
-                      <div style={{ padding: '12px', background: '#f0fdf4', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div className="ig-breakdown-hover" style={{ padding: '12px', background: '#f0fdf4', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'rgba(34, 197, 94, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <Share2 size={18} color="#22c55e" />
                         </div>
@@ -4767,7 +4789,7 @@ const profileViewsMetric = useMemo(() => {
                           <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>Compartilhamentos</div>
                         </div>
                       </div>
-                      <div style={{ padding: '12px', background: '#faf5ff', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div className="ig-breakdown-hover" style={{ padding: '12px', background: '#faf5ff', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'rgba(168, 85, 247, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <Bookmark size={18} color="#a855f7" />
                         </div>
@@ -5097,13 +5119,19 @@ const profileViewsMetric = useMemo(() => {
                   gap: '12px',
                   marginBottom: '24px'
                 }}>
-                  <div className="ig-card-white" style={{ padding: '16px', textAlign: 'center' }}>
+                  <div className="ig-card-white ig-kpi-hover" style={{ padding: '16px', textAlign: 'center' }}>
+                    <div className="ig-kpi-icon" style={{ background: 'rgba(249, 115, 22, 0.12)', margin: '0 auto 8px' }}>
+                      <FileText size={18} color="#f97316" />
+                    </div>
                     <div style={{ fontSize: '24px', fontWeight: 700, color: '#f97316' }}>
                       {recentPosts?.length || 0}
                     </div>
                     <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>Total de Posts</div>
                   </div>
-                  <div className="ig-card-white" style={{ padding: '16px', textAlign: 'center' }}>
+                  <div className="ig-card-white ig-kpi-hover" style={{ padding: '16px', textAlign: 'center' }}>
+                    <div className="ig-kpi-icon" style={{ background: 'rgba(251, 146, 60, 0.12)', margin: '0 auto 8px' }}>
+                      <Heart size={18} color="#fb923c" />
+                    </div>
                     <div style={{ fontSize: '24px', fontWeight: 700, color: '#fb923c' }}>
                       {formatNumber(
                         recentPosts?.length > 0
@@ -5113,7 +5141,10 @@ const profileViewsMetric = useMemo(() => {
                     </div>
                     <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>Média Engajamento</div>
                   </div>
-                  <div className="ig-card-white" style={{ padding: '16px', textAlign: 'center' }}>
+                  <div className="ig-card-white ig-kpi-hover" style={{ padding: '16px', textAlign: 'center' }}>
+                    <div className="ig-kpi-icon" style={{ background: 'rgba(253, 186, 116, 0.15)', margin: '0 auto 8px' }}>
+                      <Award size={18} color="#fdba74" />
+                    </div>
                     <div style={{ fontSize: '24px', fontWeight: 700, color: '#fdba74' }}>
                       {formatNumber(
                         recentPosts?.length > 0
@@ -6497,7 +6528,7 @@ const profileViewsMetric = useMemo(() => {
               <div className="ig-top-cities-content">
                 {/* Hero - Cidade Principal */}
                 {audienceTopCity && (
-                  <div className="ig-top-cities__hero">
+                  <div className="ig-top-cities__hero ig-city-hero-hover">
                     <div className="ig-top-cities__hero-icon">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
@@ -6533,7 +6564,7 @@ const profileViewsMetric = useMemo(() => {
                     const rankNum = index + 1;
                     const rankClass = rankNum <= 3 ? `ig-top-city-row__rank--${rankNum}` : 'ig-top-city-row__rank--default';
                     return (
-                      <div className="ig-top-city-row" key={`${city.name || city.cityName}-${index}`}>
+                      <div className="ig-top-city-row ig-city-row-hover" key={`${city.name || city.cityName}-${index}`}>
                         <span className={`ig-top-city-row__rank ${rankClass}`}>
                           {rankNum}
                         </span>
@@ -6672,7 +6703,8 @@ const profileViewsMetric = useMemo(() => {
           <div className="ig-keywords">
             {keywordList.length ? (
               keywordList.slice(0, 10).map((item) => (
-                <span key={item.word} className="ig-keywords__item">
+                <span key={item.word} className="ig-keywords__item ig-keyword-hover">
+                  <MessageSquareText size={13} style={{ flexShrink: 0, opacity: 0.6 }} />
                   {item.word}
                   <small>{item.value}</small>
                 </span>
