@@ -3473,6 +3473,12 @@ const profileViewsMetric = useMemo(() => {
     }).format(date);
   };
 
+  const buildInstagramProfileUrl = (username) => {
+    const normalized = String(username || "").trim().replace(/^@+/, "");
+    if (!normalized) return null;
+    return `https://www.instagram.com/${encodeURIComponent(normalized)}/`;
+  };
+
   const accountInitial = (accountInfo?.username || accountInfo?.name || "IG").charAt(0).toUpperCase();
   const [coverImage, setCoverImage] = useState(null);
   const [coverLoading, setCoverLoading] = useState(false);
@@ -5236,9 +5242,26 @@ const profileViewsMetric = useMemo(() => {
                               border: '1px solid #e5e7eb'
                             }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                                <span style={{ fontWeight: 600, fontSize: '13px', color: '#111827' }}>
-                                  {comment.username ? `@${comment.username}` : 'Comentário'}
-                                </span>
+                                {comment.username ? (
+                                  <a
+                                    href={buildInstagramProfileUrl(comment.username)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                      fontWeight: 600,
+                                      fontSize: '13px',
+                                      color: '#111827',
+                                      textDecoration: 'underline',
+                                      textUnderlineOffset: '2px',
+                                    }}
+                                  >
+                                    @{String(comment.username).replace(/^@+/, "")}
+                                  </a>
+                                ) : (
+                                  <span style={{ fontWeight: 600, fontSize: '13px', color: '#111827' }}>
+                                    Comentario
+                                  </span>
+                                )}
                                 {comment.timestamp && (
                                   <span style={{ fontSize: '12px', color: '#9ca3af' }}>
                                     {formatWordCloudDetailDate(comment.timestamp)}
