@@ -4632,23 +4632,14 @@ const profileViewsMetric = useMemo(() => {
                           return (
                             <div
                               key={post.id || idx}
-                              style={{
-                                flexShrink: 0,
-                                width: '132px',
-                                borderRadius: '12px',
-                                overflow: 'hidden',
-                                background: 'white',
-                                border: '1px solid #e5e7eb',
-                                cursor: 'pointer',
-                                transition: 'transform 0.2s'
-                              }}
+                              className="ig-top-post-card"
                               onClick={() => setSelectedPost(post)}
                             >
-                              <div style={{ width: '132px', height: '236px', background: '#f3f4f6', position: 'relative' }}>
+                              <div className="ig-top-post-card__thumb">
                                 {previewUrl ? (
-                                  <img src={previewUrl} alt="Post" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                  <img src={previewUrl} alt="Post" />
                                 ) : (
-                                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
+                                  <div className="ig-top-post-card__placeholder">
                                     <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                       <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                                       <circle cx="8.5" cy="8.5" r="1.5" />
@@ -4656,18 +4647,10 @@ const profileViewsMetric = useMemo(() => {
                                     </svg>
                                   </div>
                                 )}
-                                <div style={{
-                                  position: 'absolute',
-                                  bottom: 0,
-                                  left: 0,
-                                  right: 0,
-                                  background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%)',
-                                  padding: '24px 10px 10px',
-                                  color: 'white'
-                                }}>
-                                  <div style={{ fontSize: '15px', fontWeight: 700 }}>{formatNumber(views)}</div>
-                                  <div style={{ fontSize: '11px', opacity: 0.9 }}>visualizações</div>
-                                </div>
+                              </div>
+                              <div className="ig-top-post-card__info">
+                                <span className="ig-top-post-card__value">{formatNumber(views)}</span>
+                                <span className="ig-top-post-card__label">visualizações</span>
                               </div>
                             </div>
                           );
@@ -5026,23 +5009,14 @@ const profileViewsMetric = useMemo(() => {
                           return (
                             <div
                               key={post.id || idx}
-                              style={{
-                                flexShrink: 0,
-                                width: '132px',
-                                borderRadius: '12px',
-                                overflow: 'hidden',
-                                background: 'white',
-                                border: '1px solid #e5e7eb',
-                                cursor: 'pointer',
-                                transition: 'transform 0.2s'
-                              }}
+                              className="ig-top-post-card"
                               onClick={() => setSelectedPost(post)}
                             >
-                              <div style={{ width: '132px', height: '236px', background: '#f3f4f6', position: 'relative' }}>
+                              <div className="ig-top-post-card__thumb">
                                 {previewUrl ? (
-                                  <img src={previewUrl} alt="Post" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                  <img src={previewUrl} alt="Post" />
                                 ) : (
-                                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
+                                  <div className="ig-top-post-card__placeholder">
                                     <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                       <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                                       <circle cx="8.5" cy="8.5" r="1.5" />
@@ -5050,18 +5024,10 @@ const profileViewsMetric = useMemo(() => {
                                     </svg>
                                   </div>
                                 )}
-                                <div style={{
-                                  position: 'absolute',
-                                  bottom: 0,
-                                  left: 0,
-                                  right: 0,
-                                  background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%)',
-                                  padding: '24px 10px 10px',
-                                  color: 'white'
-                                }}>
-                                  <div style={{ fontSize: '15px', fontWeight: 700 }}>{formatNumber(engagement)}</div>
-                                  <div style={{ fontSize: '11px', opacity: 0.9 }}>interações</div>
-                                </div>
+                              </div>
+                              <div className="ig-top-post-card__info">
+                                <span className="ig-top-post-card__value">{formatNumber(engagement)}</span>
+                                <span className="ig-top-post-card__label">interações</span>
                               </div>
                             </div>
                           );
