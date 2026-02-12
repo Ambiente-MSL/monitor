@@ -35,6 +35,8 @@ import {
   ThumbsUp,
   UserCheck,
   Newspaper,
+  TrendingDown,
+  TrendingUp,
 } from "lucide-react";
 import useQueryState from "../hooks/useQueryState";
 import { useAccounts } from "../context/AccountsContext";
@@ -121,6 +123,28 @@ const formatNumber = (value) => {
     return numeric.toLocaleString("pt-BR");
   }
   return numeric.toString();
+};
+
+const formatDeltaPercent = (value) => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return null;
+  const roundedAbsolute = Math.abs(Math.round(numeric * 10) / 10);
+  const hasFraction = roundedAbsolute % 1 !== 0;
+  const formatted = roundedAbsolute.toLocaleString("pt-BR", {
+    minimumFractionDigits: hasFraction ? 1 : 0,
+    maximumFractionDigits: 1,
+  });
+  if (numeric > 0) return `+${formatted}%`;
+  if (numeric < 0) return `-${formatted}%`;
+  return "0%";
+};
+
+const getTrendDirection = (value) => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return null;
+  if (numeric > 0) return "up";
+  if (numeric < 0) return "down";
+  return "flat";
 };
 
 const formatDurationSeconds = (seconds) => {
@@ -715,7 +739,6 @@ useEffect(() => {
         params.set("pageId", accountConfig.facebookPageId);
         params.set("since", sinceParam);
         params.set("until", untilParam);
-        params.set("lite", "1");
         const url = `${API_BASE_URL}/api/facebook/metrics?${params.toString()}`;
         const fetchMetrics = async (timeoutMs) => {
           const response = await fetchWithTimeout(url, { signal: controller.signal }, timeoutMs);
@@ -872,7 +895,7 @@ useEffect(() => {
         params.set("pageId", accountConfig.facebookPageId);
         params.set("since", sinceParam);
         params.set("until", untilParam);
-        params.set("limit", "8");
+        params.set("limit", "20");
         const resp = await apiFetch(`/api/facebook/posts?${params.toString()}`);
         if (cancelled || postsRequestIdRef.current !== requestId) return;
         const posts = Array.isArray(resp?.posts) ? resp.posts : [];
@@ -1086,6 +1109,18 @@ useEffect(() => {
       reachMetricValue,
     ],
   );
+  const reachDeltaPct = useMemo(
+    () => extractNumber(pageMetricsByKey.reach?.deltaPct, null),
+    [pageMetricsByKey.reach?.deltaPct],
+  );
+  const reachDeltaDirection = useMemo(() => getTrendDirection(reachDeltaPct), [reachDeltaPct]);
+  const reachDeltaDisplay = useMemo(() => formatDeltaPercent(reachDeltaPct), [reachDeltaPct]);
+  const engagementDeltaPct = useMemo(
+    () => extractNumber(pageMetricsByKey.post_engagement_total?.deltaPct, null),
+    [pageMetricsByKey.post_engagement_total?.deltaPct],
+  );
+  const engagementDeltaDirection = useMemo(() => getTrendDirection(engagementDeltaPct), [engagementDeltaPct]);
+  const engagementDeltaDisplay = useMemo(() => formatDeltaPercent(engagementDeltaPct), [engagementDeltaPct]);
 
   const fbTopPosts = useMemo(() => {
     if (!Array.isArray(fbPosts) || !fbPosts.length) return [];
@@ -1161,30 +1196,33 @@ useEffect(() => {
       { reactions: 0, shares: 0, comments: 0 },
     );
 
-    const pickFirstFinite = (...candidates) => {
+    const pickFirstMeaningful = (...candidates) => {
+      let fallbackValue = null;
       for (const candidate of candidates) {
         if (candidate === null || candidate === undefined) continue;
         const numeric = Number(candidate);
-        if (Number.isFinite(numeric)) return numeric;
+        if (!Number.isFinite(numeric)) continue;
+        if (numeric > 0) return numeric;
+        if (fallbackValue === null) fallbackValue = numeric;
       }
-      return null;
+      return fallbackValue;
     };
 
-    const reactionsValue = pickFirstFinite(
+    const reactionsValue = pickFirstMeaningful(
       metricBreakdown.reactions,
       payloadBreakdown.reactions,
       overviewEngagement.reactions,
       pageMetricsByKey.reactions?.value,
       postsSource.length ? postsTotals.reactions : null,
     );
-    const sharesValue = pickFirstFinite(
+    const sharesValue = pickFirstMeaningful(
       metricBreakdown.shares,
       payloadBreakdown.shares,
       overviewEngagement.shares,
       pageMetricsByKey.shares?.value,
       postsSource.length ? postsTotals.shares : null,
     );
-    const commentsValue = pickFirstFinite(
+    const commentsValue = pickFirstMeaningful(
       metricBreakdown.comments,
       payloadBreakdown.comments,
       overviewEngagement.comments,
@@ -1564,8 +1602,18 @@ useEffect(() => {
                     <div className="ig-overview-stat__label">Total de seguidores</div>
                   </div>
                   <div className="ig-overview-stat" style={{ paddingBottom: '16px', borderBottom: '1px solid #e5e7eb' }}>
-                    <div className="ig-overview-stat__trend" style={{ visibility: 'hidden' }}>
-                      <span>&nbsp;</span>
+                    <div
+                      className={`ig-overview-stat__trend ${!overviewIsLoading && reachDeltaDisplay && reachDeltaDirection ? `ig-overview-stat__trend--${reachDeltaDirection}` : ''}`}
+                      style={!overviewIsLoading && reachDeltaDisplay && reachDeltaDirection ? {} : { visibility: 'hidden' }}
+                    >
+                      {reachDeltaDirection === "down" ? (
+                        <TrendingDown size={12} aria-hidden="true" />
+                      ) : reachDeltaDirection === "up" ? (
+                        <TrendingUp size={12} aria-hidden="true" />
+                      ) : (
+                        <span className="ig-overview-stat__trend-flat" aria-hidden="true">-</span>
+                      )}
+                      <span>{reachDeltaDisplay || '\u00A0'}</span>
                     </div>
                     <div className="ig-overview-stat__value">
                       {overviewIsLoading ? (
@@ -1577,8 +1625,18 @@ useEffect(() => {
                     <div className="ig-overview-stat__label">{reachPeriodLabel}</div>
                   </div>
                   <div className="ig-overview-stat" style={{ paddingTop: '16px' }}>
-                    <div className="ig-overview-stat__trend" style={{ visibility: 'hidden' }}>
-                      <span>&nbsp;</span>
+                    <div
+                      className={`ig-overview-stat__trend ${!overviewIsLoading && engagementDeltaDisplay && engagementDeltaDirection ? `ig-overview-stat__trend--${engagementDeltaDirection}` : ''}`}
+                      style={!overviewIsLoading && engagementDeltaDisplay && engagementDeltaDirection ? {} : { visibility: 'hidden' }}
+                    >
+                      {engagementDeltaDirection === "down" ? (
+                        <TrendingDown size={12} aria-hidden="true" />
+                      ) : engagementDeltaDirection === "up" ? (
+                        <TrendingUp size={12} aria-hidden="true" />
+                      ) : (
+                        <span className="ig-overview-stat__trend-flat" aria-hidden="true">-</span>
+                      )}
+                      <span>{engagementDeltaDisplay || '\u00A0'}</span>
                     </div>
                     <div className="ig-overview-stat__value">
                       {overviewIsLoading ? (
