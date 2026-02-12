@@ -5125,26 +5125,50 @@ const profileViewsMetric = useMemo(() => {
                   </div>
                 </div>
 
-                {/* Tabela de Posts Recentes */}
-                <section className="ig-card-white">
-                  <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb' }}>
-                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827' }}>
-                      Posts Recentes
-                    </h4>
-                    <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#6b7280' }}>
-                      Publicações mais recentes no período filtrado
-                      {recentPostsFetching && !recentPostsLoading ? (
-                        <span style={{ marginLeft: '8px', fontWeight: 600, color: '#9ca3af' }}>Atualizando...</span>
-                      ) : null}
-                    </p>
+                {/* Posts Recentes */}
+                <section className="ig-card-white" style={{ overflow: 'hidden' }}>
+                  <div style={{
+                    padding: '16px 20px',
+                    borderBottom: '1px solid #e5e7eb',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}>
+                    <div>
+                      <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#111827' }}>
+                        Posts Recentes
+                      </h4>
+                      <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#9ca3af' }}>
+                        Publicações no período filtrado
+                      </p>
+                    </div>
+                    {recentPostsFetching && !recentPostsLoading && (
+                      <span style={{
+                        fontSize: '0.68rem',
+                        fontWeight: 600,
+                        color: '#9ca3af',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}>
+                        <span style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          border: '2px solid #d1d5db',
+                          borderTopColor: '#9ca3af',
+                          animation: 'spin 0.8s linear infinite',
+                          display: 'inline-block',
+                        }} />
+                        Atualizando
+                      </span>
+                    )}
                   </div>
-                  <div style={{ padding: 0 }}>
-                    <PostsTable
-                      posts={recentPosts.slice(0, RECENT_POSTS_TABLE_LIMIT)}
-                      loading={recentPostsLoading}
-                      error={recentPostsError}
-                    />
-                  </div>
+                  <PostsTable
+                    posts={recentPosts.slice(0, RECENT_POSTS_TABLE_LIMIT)}
+                    loading={recentPostsLoading}
+                    error={recentPostsError}
+                  />
                 </section>
               </div>
             ) : showWordCloudDetail ? (
