@@ -5256,13 +5256,19 @@ const profileViewsMetric = useMemo(() => {
                     gap: '16px',
                     marginBottom: '24px'
                   }}>
-                    <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                    <div className="ig-card-white ig-kpi-hover" style={{ padding: '20px', textAlign: 'center' }}>
+                      <div className="ig-kpi-icon" style={{ background: 'rgba(220, 38, 38, 0.12)', margin: '0 auto 10px' }}>
+                        <Hash size={20} color="#dc2626" />
+                      </div>
                       <div style={{ fontSize: '28px', fontWeight: 700, color: '#dc2626' }}>
                         {wordCloudDetails.total_occurrences?.toLocaleString('pt-BR') || 0}
                       </div>
                       <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Ocorrências</div>
                     </div>
-                    <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
+                    <div className="ig-card-white ig-kpi-hover" style={{ padding: '20px', textAlign: 'center' }}>
+                      <div className="ig-kpi-icon" style={{ background: 'rgba(248, 113, 113, 0.12)', margin: '0 auto 10px' }}>
+                        <MessageCircle size={20} color="#f87171" />
+                      </div>
                       <div style={{ fontSize: '28px', fontWeight: 700, color: '#f87171' }}>
                         {wordCloudDetails.total_comments?.toLocaleString('pt-BR') || 0}
                       </div>
@@ -6471,17 +6477,22 @@ const profileViewsMetric = useMemo(() => {
                 </h4>
                 <span className="ig-calendar__month">{postCalendar.title}</span>
               </div>
-              <select
-                className="ig-calendar__month-select"
-                value={calendarMonth}
-                onChange={(event) => setCalendarMonth(event.target.value)}
-              >
-                {calendarMonthOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              <div className="ig-month-select-wrapper">
+                <select
+                  className="ig-month-select"
+                  value={calendarMonth}
+                  onChange={(event) => setCalendarMonth(event.target.value)}
+                >
+                  {calendarMonthOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <svg className="ig-month-select__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </div>
             </div>
             <div className="ig-analytics-card__body" style={{ margin: '0 -20px -20px', borderBottomLeftRadius: 'inherit', borderBottomRightRadius: 'inherit', overflow: 'hidden' }}>
               <div className="ig-calendar" style={{ padding: '16px 20px 20px' }}>
@@ -6569,7 +6580,12 @@ const profileViewsMetric = useMemo(() => {
                           {rankNum}
                         </span>
                         <div className="ig-top-city-row__left">
-                          <span className="ig-top-city-row__icon" style={{ backgroundColor: color }}></span>
+                          <span className="ig-top-city-row__icon" style={{ backgroundColor: color }}>
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                              <circle cx="12" cy="10" r="3" />
+                            </svg>
+                          </span>
                           <span className="ig-top-city-row__name">{city.cityName || '--'}</span>
                         </div>
                         <div className="ig-top-city-row__bar">

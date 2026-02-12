@@ -11959,6 +11959,54 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   font-weight: 600;
 }
 
+/* ========== Month Select Dropdown (Calendar Card) ========== */
+.ig-month-select-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.ig-month-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 8px 34px 8px 14px;
+  border: 1px solid var(--ig-card-border, #e5e7eb);
+  border-radius: 10px;
+  background: var(--ig-card-bg, #fff);
+  color: var(--ig-text-primary, #111827);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  min-width: 140px;
+}
+
+.ig-month-select:hover {
+  border-color: rgba(99, 102, 241, 0.35);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
+}
+
+.ig-month-select:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.ig-month-select__chevron {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #9ca3af;
+  transition: color 0.2s ease;
+}
+
+.ig-month-select-wrapper:hover .ig-month-select__chevron {
+  color: #6366f1;
+}
+
 .ig-analytics-card__body {
   display: flex;
   flex-direction: column;
@@ -12169,7 +12217,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   border-radius: var(--ig-card-radius);
   padding: var(--ig-card-padding);
   box-shadow: var(--ig-card-shadow);
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  transition: box-shadow 0.3s ease, transform 0.3s ease, border-color 0.3s ease;
 }
 
 .ig-card-white:hover {
@@ -12184,55 +12232,61 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  transition: transform 0.3s ease;
 }
 
 .ig-kpi-hover:hover .ig-kpi-icon {
   transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 /* ========== Hover Animations ========== */
+/* All hover classes use the SAME properties in base and :hover
+   so transition-out is always smooth (no flash / flicker).       */
 
-/* KPI cards hover – subtle background tint + lift */
+/* KPI cards hover */
 .ig-kpi-hover {
-  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease, border-color 0.25s ease !important;
-  cursor: default;
+  transform: translateY(0);
+  box-shadow: var(--ig-card-shadow);
+  border-color: var(--ig-card-border);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .ig-kpi-hover:hover {
   transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1) !important;
-  background: linear-gradient(135deg, var(--ig-card-bg) 0%, #f0f4ff 100%);
-  border-color: rgba(99, 102, 241, 0.15);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  border-color: rgba(99, 102, 241, 0.18);
 }
 
 /* Interactions breakdown cards hover */
 .ig-breakdown-hover {
-  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
-  cursor: default;
+  transform: translateY(0);
+  box-shadow: none;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .ig-breakdown-hover:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
-  filter: brightness(0.97);
 }
 
-/* City rows hover – enhanced */
+/* City rows hover */
 .ig-city-row-hover {
-  transition: all 0.2s ease, box-shadow 0.2s ease !important;
+  transform: translateX(0);
+  box-shadow: none;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
 }
 
 .ig-city-row-hover:hover {
-  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%) !important;
   transform: translateX(3px);
   box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
+  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
 }
 
 /* City hero card hover */
 .ig-city-hero-hover {
-  transition: transform 0.25s ease, box-shadow 0.25s ease !important;
+  transform: translateY(0);
+  box-shadow: none;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .ig-city-hero-hover:hover {
@@ -12242,14 +12296,14 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 
 /* Keyword pills hover */
 .ig-keyword-hover {
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease !important;
-  cursor: default;
+  transform: translateY(0);
+  box-shadow: none;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .ig-keyword-hover:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(236, 72, 153, 0.12);
-  background: rgba(236, 72, 153, 0.06);
   border-color: rgba(236, 72, 153, 0.25);
 }
 
@@ -12666,10 +12720,12 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 
 .ig-top-city-row__icon {
   flex-shrink: 0;
-  width: 10px;
-  height: 10px;
-  display: block;
-  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
   box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
 }
 
