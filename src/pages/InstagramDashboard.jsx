@@ -3844,9 +3844,9 @@ const profileViewsMetric = useMemo(() => {
 
                 <div className="ig-profile-vertical__engagement">
                   <h4>Engajamento por conteúdo</h4>
-                  {metricsLoading || loadingPosts ? (
+                  {(metricsLoading || loadingPosts) && !contentBreakdown.length ? (
                     <DataState state="loading" label="Carregando engajamento..." size="sm" />
-                  ) : (postsError || metricsError) ? (
+                  ) : (postsError || metricsError) && !contentBreakdown.length ? (
                     <DataState state="error" label="Falha ao carregar engajamento." size="sm" />
                   ) : contentBreakdown.length ? (
                     <>
@@ -3861,6 +3861,7 @@ const profileViewsMetric = useMemo(() => {
                               outerRadius={100}
                               paddingAngle={3}
                               stroke="none"
+                              isAnimationActive={false}
                               activeIndex={activeEngagementIndex}
                               activeShape={renderActiveShape}
                               onMouseEnter={(_, index) => setActiveEngagementIndex(index)}
@@ -5974,6 +5975,7 @@ const profileViewsMetric = useMemo(() => {
                         stroke="url(#igReachGradient)"
                         strokeWidth={3}
                         dot={false}
+                        isAnimationActive={false}
                         activeDot={{ r: 6, fill: '#ffffff', stroke: '#ef4444', strokeWidth: 2 }}
                       />
                       {peakReachPoint ? (
