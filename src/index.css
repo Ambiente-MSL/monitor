@@ -11429,11 +11429,13 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   height: 12px;
 }
 
-.instagram-dashboard .ig-overview-stat__trend {
+.instagram-dashboard .ig-overview-stat__trend,
+.facebook-dashboard .ig-overview-stat__trend {
   font-size: 11.55px;
 }
 
-.instagram-dashboard .ig-overview-stat__trend svg {
+.instagram-dashboard .ig-overview-stat__trend svg,
+.facebook-dashboard .ig-overview-stat__trend svg {
   width: 12.6px;
   height: 12.6px;
 }

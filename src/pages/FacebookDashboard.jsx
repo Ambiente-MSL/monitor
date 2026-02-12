@@ -1128,6 +1128,12 @@ useEffect(() => {
   );
   const engagementDeltaDirection = useMemo(() => getTrendDirection(engagementDeltaPct), [engagementDeltaPct]);
   const engagementDeltaDisplay = useMemo(() => formatDeltaPercent(engagementDeltaPct), [engagementDeltaPct]);
+  const pageViewsDeltaPct = useMemo(
+    () => extractNumber(pageMetricsByKey.page_views?.deltaPct, null),
+    [pageMetricsByKey.page_views?.deltaPct],
+  );
+  const pageViewsDeltaDirection = useMemo(() => getTrendDirection(pageViewsDeltaPct), [pageViewsDeltaPct]);
+  const pageViewsDeltaDisplay = useMemo(() => formatDeltaPercent(pageViewsDeltaPct), [pageViewsDeltaPct]);
 
   const fbTopPosts = useMemo(() => {
     if (!Array.isArray(fbPosts) || !fbPosts.length) return [];
@@ -1655,8 +1661,18 @@ useEffect(() => {
                     <div className="ig-overview-stat__label">Engajamento total</div>
                   </div>
                   <div className="ig-overview-stat" style={{ paddingTop: '16px' }}>
-                    <div className="ig-overview-stat__trend" style={{ visibility: 'hidden' }}>
-                      <span>&nbsp;</span>
+                    <div
+                      className={`ig-overview-stat__trend ${!overviewIsLoading && pageViewsDeltaDisplay && pageViewsDeltaDirection ? `ig-overview-stat__trend--${pageViewsDeltaDirection}` : ''}`}
+                      style={!overviewIsLoading && pageViewsDeltaDisplay && pageViewsDeltaDirection ? {} : { visibility: 'hidden' }}
+                    >
+                      {pageViewsDeltaDirection === "down" ? (
+                        <TrendingDown size={12} aria-hidden="true" />
+                      ) : pageViewsDeltaDirection === "up" ? (
+                        <TrendingUp size={12} aria-hidden="true" />
+                      ) : (
+                        <span className="ig-overview-stat__trend-flat" aria-hidden="true">-</span>
+                      )}
+                      <span>{pageViewsDeltaDisplay || '\u00A0'}</span>
                     </div>
                     <div className="ig-overview-stat__value">
                       {overviewIsLoading ? (
