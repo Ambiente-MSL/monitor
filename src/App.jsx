@@ -4,8 +4,20 @@ import Topbar from './components/Topbar';
 import { useAuth } from './context/AuthContext';
 
 function DashboardSkeleton() {
+  const loc = useLocation();
+  const isFacebook = loc.pathname === '/facebook' || loc.pathname.startsWith('/facebook/');
+  const isAds = loc.pathname === '/ads' || loc.pathname.startsWith('/ads/');
+
+  const wrapperClass = isFacebook
+    ? 'facebook-dashboard facebook-dashboard--clean'
+    : 'instagram-dashboard instagram-dashboard--clean';
+
+  const brandLabel = isFacebook ? 'Facebook' : isAds ? 'Anúncios' : 'Instagram';
+  const tabCount = isFacebook ? 4 : isAds ? 3 : 3;
+  const cardCount = isFacebook ? 4 : isAds ? 3 : 4;
+
   return (
-    <div className="instagram-dashboard instagram-dashboard--clean" aria-hidden="true">
+    <div className={wrapperClass} aria-hidden="true">
       <div className="ig-clean-container">
         <div className="ig-hero-gradient" />
         <div className="ig-clean-header">
@@ -13,10 +25,10 @@ function DashboardSkeleton() {
             <div className="ig-clean-header__logo">
               <span className="ig-skeleton" style={{ width: 32, height: 32, borderRadius: 12 }} />
             </div>
-            <span className="ig-skeleton" style={{ width: 140, height: 22 }} />
+            <span className="ig-skeleton" style={{ width: brandLabel.length * 12, height: 22 }} />
           </div>
           <div className="ig-clean-tabs">
-            {Array.from({ length: 3 }).map((_, index) => (
+            {Array.from({ length: tabCount }).map((_, index) => (
               <span
                 key={`tab-skeleton-${index}`}
                 className="ig-skeleton"
@@ -29,7 +41,7 @@ function DashboardSkeleton() {
           <span className="ig-skeleton" style={{ height: 24 }} />
         </div>
         <div className="ig-analytics-grid ig-analytics-grid--pair">
-          {Array.from({ length: 4 }).map((_, index) => (
+          {Array.from({ length: cardCount }).map((_, index) => (
             <div key={`metric-skeleton-${index}`} className="ig-card-white ig-analytics-card">
               <span className="ig-skeleton" style={{ height: 18, marginBottom: '12px', maxWidth: '160px' }} />
               <span className="ig-skeleton ig-skeleton--stat" />

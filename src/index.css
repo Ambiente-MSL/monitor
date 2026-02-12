@@ -2925,6 +2925,7 @@ body.theme-light {
   flex-direction: column;
   gap: 6px;
   min-width: 180px;
+  cursor: pointer;
 }
 
 .account-dropdown__label {
@@ -2932,6 +2933,8 @@ body.theme-light {
   letter-spacing: 0.26em;
   text-transform: uppercase;
   color: var(--muted);
+  cursor: pointer;
+  user-select: none;
 }
 
 .account-dropdown__trigger {
@@ -11735,9 +11738,9 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   flex-direction: column;
   gap: 6px;
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.25);
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  text-align: center;
+  text-align: left;
 }
 
 .ig-engagement-mini-card--teal {

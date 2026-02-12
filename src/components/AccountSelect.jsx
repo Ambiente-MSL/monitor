@@ -166,7 +166,14 @@ export default function AccountSelect() {
 
   return (
     <div className="account-dropdown" ref={dropdownRef}>
-      <label className="account-dropdown__label" htmlFor="account-select">Conta</label>
+      <label
+        className="account-dropdown__label"
+        htmlFor="account-select"
+        onClick={() => { if (!isDisabled) setIsOpen((prev) => !prev); }}
+        style={{ cursor: isDisabled ? 'default' : 'pointer' }}
+      >
+        Conta
+      </label>
       {isDisabled ? (
         <div className="filter-select__empty" role="note">
           <span>Cadastre uma conta nas configuracoes.</span>
