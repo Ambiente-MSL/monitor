@@ -1317,8 +1317,8 @@ export default function AdsDashboard() {
         {/* Grid Principal */}
         <div className="ig-clean-grid">
           {/* Left Column - Overview Card */}
-          <div className="ig-clean-grid__left">
-            <section className="ig-profile-vertical">
+          <div className="ig-clean-grid__left" style={{ gap: 0 }}>
+            <section className="ig-profile-vertical" style={{ borderRadius: '16px 16px 0 0' }}>
               {/* Cover com gradiente Ads */}
               <div
                 className="ig-profile-vertical__cover"
@@ -1360,7 +1360,7 @@ export default function AdsDashboard() {
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
                 gap: '10px',
-                padding: '12px 20px 16px'
+                padding: '4px 20px 16px'
               }}>
                 {shouldShowAdsFallback && adsFallbackProps ? (
                   <div style={{ gridColumn: "1 / -1" }}>
@@ -1640,7 +1640,7 @@ export default function AdsDashboard() {
             </section>
 
             {/* INSIGHTS AUTOMÁTICOS - ALERTAS IMPORTANTES */}
-            <section className="ig-growth-clean">
+            <section className="ig-growth-clean" style={{ borderRadius: 0, borderTop: '1px solid #e5e7eb' }}>
               <header className="ig-card-header">
                 <div>
                   <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1703,7 +1703,7 @@ export default function AdsDashboard() {
             </section>
 
             {/* Performance por Objetivo - Pie Chart */}
-            <section className="ig-growth-clean">
+            <section className="ig-growth-clean" style={{ borderRadius: '0 0 16px 16px', borderTop: '1px solid #e5e7eb' }}>
               <header className="ig-card-header">
                 <div>
                   <h3>Performance por Objetivo</h3>
@@ -1828,6 +1828,7 @@ export default function AdsDashboard() {
                     onAction={adsFallbackProps.onAction}
                   />
                 ) : spendSeries.length ? (
+                <>
                 <ResponsiveContainer width="100%" height={240}>
                   <BarChart
                     data={spendSeries}
@@ -1900,6 +1901,7 @@ export default function AdsDashboard() {
                           barSize={spendSeries.length > 15 ? 30 : 36}
                           onMouseEnter={(_, index) => setActiveSpendBar(index)}
                           onMouseLeave={() => setActiveSpendBar(-1)}
+                          name="Investimento"
                         >
                           {spendSeries.map((entry, index) => (
                             <Cell
@@ -1926,6 +1928,13 @@ export default function AdsDashboard() {
                         )}
                       </BarChart>
                     </ResponsiveContainer>
+                    <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
+                        <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#6366f1' }}></span>
+                        <span style={{ color: '#111827', fontWeight: 600 }}>Investimento (R$)</span>
+                      </div>
+                    </div>
+                </>
                 ) : (
                   <DataState
                     state="empty"
@@ -1958,6 +1967,7 @@ export default function AdsDashboard() {
                     onAction={adsFallbackProps.onAction}
                   />
                 ) : performanceSeries.length ? (
+                <>
                 <ResponsiveContainer width="100%" height={240}>
                   <ComposedChart
                     data={performanceSeries}
@@ -2021,6 +2031,17 @@ export default function AdsDashboard() {
                     )}
                   </ComposedChart>
                 </ResponsiveContainer>
+                <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
+                    <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#6366f1' }}></span>
+                    <span style={{ color: '#111827', fontWeight: 600 }}>Impressões</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
+                    <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#f97316' }}></span>
+                    <span style={{ color: '#111827', fontWeight: 600 }}>Alcance</span>
+                  </div>
+                </div>
+                </>
                 ) : (
                   <DataState
                     state="empty"
@@ -2569,8 +2590,9 @@ export default function AdsDashboard() {
                   </div>
                 ) : (
                   <>
-                {/* Gráfico Idade x Gênero */}
+                {/* Gráfico Idade x Gênero - full width */}
                 <div style={{
+                  gridColumn: '1 / -1',
                   background: 'rgba(255, 255, 255, 0.9)',
                   border: '1px solid rgba(0, 0, 0, 0.08)',
                   borderRadius: '12px',
@@ -2581,50 +2603,46 @@ export default function AdsDashboard() {
                   </h4>
                   {hasAudienceAgeGender ? (
                     <>
-                      <div style={{ width: '100%', overflowX: 'auto', overflowY: 'hidden' }}>
-                        <div style={{ minWidth: Math.max(audienceAgeGenderData.length * 60, 100) + '%' }}>
-                          <ResponsiveContainer width="100%" height={220}>
-                            <BarChart
-                              data={audienceAgeGenderData}
-                              layout="vertical"
-                              margin={{ left: 0, right: 10, top: 5, bottom: 5 }}
-                              barGap={4}
-                              barCategoryGap="20%"
-                            >
-                              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
-                              <XAxis
-                                type="number"
-                                tick={{ fill: '#6b7280', fontSize: 11 }}
-                                axisLine={false}
-                                tickLine={false}
-                                tickFormatter={(value) => formatCompactNumber(value)}
+                      <ResponsiveContainer width="100%" height={320}>
+                        <BarChart
+                          data={audienceAgeGenderData}
+                          layout="vertical"
+                          margin={{ left: 4, right: 20, top: 8, bottom: 8 }}
+                          barGap={3}
+                          barCategoryGap="25%"
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
+                          <XAxis
+                            type="number"
+                            tick={{ fill: '#6b7280', fontSize: 12 }}
+                            axisLine={false}
+                            tickLine={false}
+                            tickFormatter={(value) => formatCompactNumber(value)}
+                          />
+                          <YAxis
+                            type="category"
+                            dataKey="age"
+                            tick={{ fill: '#374151', fontSize: 13, fontWeight: 600 }}
+                            width={55}
+                            axisLine={false}
+                            tickLine={false}
+                          />
+                          <Tooltip
+                            cursor={{ fill: 'rgba(99, 102, 241, 0.08)' }}
+                            content={(
+                              <CustomChartTooltip
+                                labelFormatter={(value) => `Faixa ${String(value || "")}`}
+                                valueFormatter={(v) => `: ${formatTooltipNumber(v)}`}
                               />
-                              <YAxis
-                                type="category"
-                                dataKey="age"
-                                tick={{ fill: '#374151', fontSize: 12, fontWeight: 600 }}
-                                width={50}
-                                axisLine={false}
-                                tickLine={false}
-                              />
-                              <Tooltip
-                                cursor={{ fill: 'rgba(99, 102, 241, 0.08)' }}
-                                content={(
-                                  <CustomChartTooltip
-                                    labelFormatter={(value) => String(value || "")}
-                                    valueFormatter={(v) => `: ${formatTooltipNumber(v)}`}
-                                  />
-                                )}
-                              />
-                              <Bar dataKey="male" fill="#6366f1" radius={[0, 6, 6, 0]} barSize={12} name="Homens" />
-                              <Bar dataKey="female" fill="#ec4899" radius={[0, 6, 6, 0]} barSize={12} name="Mulheres" />
-                              {hasUnknownAudienceGender && (
-                                <Bar dataKey="unknown" fill="#94a3b8" radius={[0, 6, 6, 0]} barSize={12} name="Indefinido" />
-                              )}
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </div>
+                            )}
+                          />
+                          <Bar dataKey="male" fill="#6366f1" radius={[0, 6, 6, 0]} barSize={14} name="Homens" />
+                          <Bar dataKey="female" fill="#ec4899" radius={[0, 6, 6, 0]} barSize={14} name="Mulheres" />
+                          {hasUnknownAudienceGender && (
+                            <Bar dataKey="unknown" fill="#94a3b8" radius={[0, 6, 6, 0]} barSize={14} name="Indefinido" />
+                          )}
+                        </BarChart>
+                      </ResponsiveContainer>
                       <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '8px', flexWrap: 'wrap' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
                           <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#6366f1' }}></span>
@@ -2652,8 +2670,9 @@ export default function AdsDashboard() {
                   )}
                 </div>
 
-                {/* Gráfico Alcance por gênero */}
+                {/* Gráfico Alcance por gênero - full width, below */}
                 <div style={{
+                  gridColumn: '1 / -1',
                   background: 'rgba(255, 255, 255, 0.9)',
                   border: '1px solid rgba(0, 0, 0, 0.08)',
                   borderRadius: '12px',
@@ -2674,13 +2693,13 @@ export default function AdsDashboard() {
                       <BarChart
                         data={audienceGenderReachData}
                         layout="vertical"
-                        margin={{ left: 0, right: 10, top: 5, bottom: 5 }}
+                        margin={{ left: 4, right: 20, top: 5, bottom: 5 }}
                         barGap={6}
                       >
                         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
                         <XAxis
                           type="number"
-                          tick={{ fill: '#6b7280', fontSize: 11 }}
+                          tick={{ fill: '#6b7280', fontSize: 12 }}
                           axisLine={false}
                           tickLine={false}
                           tickFormatter={(value) => formatCompactNumber(value)}
@@ -2688,8 +2707,8 @@ export default function AdsDashboard() {
                         <YAxis
                           type="category"
                           dataKey="label"
-                          tick={{ fill: '#374151', fontSize: 12, fontWeight: 600 }}
-                          width={70}
+                          tick={{ fill: '#374151', fontSize: 13, fontWeight: 600 }}
+                          width={75}
                           axisLine={false}
                           tickLine={false}
                         />
@@ -2703,7 +2722,7 @@ export default function AdsDashboard() {
                             />
                           )}
                         />
-                        <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={14}>
+                        <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={16}>
                           {audienceGenderReachData.map((entry, index) => (
                             <Cell key={`${entry.label}-${index}`} fill={entry.color} />
                           ))}
