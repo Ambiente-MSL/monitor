@@ -3919,11 +3919,11 @@ const profileViewsMetric = useMemo(() => {
                       <div className="ig-engagement-mini-grid" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-start' }}>
                         <div className="ig-engagement-mini-card ig-engagement-mini-card--teal" style={{ flex: '0 1 auto', minWidth: '140px' }}>
                           <span className="ig-engagement-mini-card__label">Melhor horário para postar</span>
-                          <span className="ig-engagement-mini-card__value" style={{ whiteSpace: 'nowrap' }}>{bestTimes.bestTimeRange || "--"}</span>
+                          <span className="ig-engagement-mini-card__value">{bestTimes.bestTimeRange || "--"}</span>
                         </div>
                         <div className="ig-engagement-mini-card ig-engagement-mini-card--pink" style={{ flex: '0 1 auto', minWidth: '140px' }}>
                           <span className="ig-engagement-mini-card__label">Melhor dia</span>
-                          <span className="ig-engagement-mini-card__value" style={{ whiteSpace: 'nowrap' }}>{bestTimes.bestDay || "--"}</span>
+                          <span className="ig-engagement-mini-card__value">{bestTimes.bestDay || "--"}</span>
                         </div>
                       </div>
                       <p className="ig-best-time-caption">{bestTimesCaption}</p>

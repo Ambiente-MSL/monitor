@@ -11734,15 +11734,15 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 
 .ig-engagement-mini-card {
   border-radius: 18px;
-  padding: 14px 16px;
+  padding: 14px 20px;
   color: #f9fafb;
   display: flex;
   flex-direction: column;
   gap: 6px;
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.25);
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  text-align: left;
+  text-align: center;
 }
 
 .ig-engagement-mini-card--teal {

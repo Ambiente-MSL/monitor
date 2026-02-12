@@ -2548,7 +2548,7 @@ export default function AdsDashboard() {
               <header className="ig-card-header">
                 <div>
                   <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '20px' }}>🧭</span>
+                    <span style={{ fontSize: '20px' }}></span>
                     Audiência
                   </h3>
                   <p className="ig-card-subtitle">Distribuição demográfica e de alcance</p>
