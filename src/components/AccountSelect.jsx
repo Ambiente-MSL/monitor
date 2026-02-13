@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState, useRef } from "react";
-import { ChevronDown, Plus, X } from "lucide-react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
+import { ChevronDown, LogOut, Plus, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import useQueryState from "../hooks/useQueryState";
 import { useAccounts } from "../context/AccountsContext";
 import { useAuth } from "../context/AuthContext";
@@ -18,7 +19,8 @@ const EMPTY_ACCOUNT_FORM = {
 
 export default function AccountSelect() {
   const { accounts, loading, addAccount } = useAccounts();
-  const { token } = useAuth();
+  const { token, signOut } = useAuth();
+  const navigate = useNavigate();
   const availableAccounts = accounts.length ? accounts : DEFAULT_ACCOUNTS;
   const [get, set] = useQueryState({ account: FALLBACK_ACCOUNT_ID });
   const queryAccount = get("account");
@@ -27,6 +29,7 @@ export default function AccountSelect() {
   const [formData, setFormData] = useState(EMPTY_ACCOUNT_FORM);
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [accountsData, setAccountsData] = useState({});
   const dropdownRef = useRef(null);
   const addFirstInputRef = useRef(null);
@@ -110,6 +113,21 @@ export default function AccountSelect() {
     set({ account: accountId });
     setIsOpen(false);
   };
+
+  const handleLogout = useCallback(async () => {
+    if (!signOut || isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      setIsOpen(false);
+      setIsAddFormVisible(false);
+      await signOut();
+      navigate("/login");
+    } catch (err) {
+      console.error("Falha ao desconectar", err);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  }, [isLoggingOut, navigate, signOut]);
 
   const isDisabled = availableAccounts.length === 0;
 
@@ -267,6 +285,18 @@ export default function AccountSelect() {
                       }}
                     >
                       <Plus size={14} /> Adicionar conta
+                    </button>
+                  </div>
+                  <div className="account-dropdown__divider" role="presentation" />
+                  <div role="presentation">
+                    <button
+                      type="button"
+                      className="account-dropdown__logout-button"
+                      onClick={handleLogout}
+                      disabled={!signOut || isLoggingOut}
+                    >
+                      <LogOut size={14} />
+                      <span>{isLoggingOut ? "Saindo..." : "Sair"}</span>
                     </button>
                   </div>
                 </>

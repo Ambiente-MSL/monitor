@@ -1,14 +1,12 @@
-import { useMemo, useCallback, useState } from "react";
+import { useMemo } from "react";
 import PropTypes from "prop-types";
 import { endOfDay, startOfDay, subDays, differenceInCalendarDays } from "date-fns";
-import { Bell, LogOut } from "lucide-react";
+import { Bell } from "lucide-react";
 import DateRangePicker from "./DateRangePicker";
 import AccountSelect from "./AccountSelect";
 import InfoTooltip from "./InfoTooltip";
 import useQueryState from "../hooks/useQueryState";
-import { useAuth } from "../context/AuthContext";
 import logo from "../assets/logo-dashboard.svg";
-import { useNavigate } from "react-router-dom";
 
 const DEFAULT_PRESETS = [
   { id: "7d", label: "7 dias", days: 7 },
@@ -62,11 +60,6 @@ export default function Topbar({
   className = "",
   showFilters = true,
 }) {
-
-  const { signOut, user } = useAuth();
-  const navigate = useNavigate();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-
   const { since, until, setRange } = useQueryRange();
   const now = useMemo(() => new Date(), []);
   const defaultEnd = useMemo(() => endOfDay(subDays(startOfDay(now), 1)), [now]);
@@ -101,20 +94,6 @@ export default function Topbar({
 
   const displayNotification = Number.isFinite(notificationCount) && notificationCount > 0;
 
-  const handleLogout = useCallback(async () => {
-    if (!signOut || isLoggingOut) return;
-    setIsLoggingOut(true);
-    try {
-      await signOut();
-      navigate("/login");
-    } catch (err) {
-      console.error("Falha ao desconectar", err);
-    } finally {
-      setIsLoggingOut(false);
-    }
-  }, [isLoggingOut, navigate, signOut]);
-
-  const logoutLabel = isLoggingOut ? "Saindo..." : "Sair";
   return (
     <header className={`topbar topbar--dark ${className}`.trim()}>
       <div className="topbar__inner">
@@ -156,15 +135,6 @@ export default function Topbar({
           <div className="topbar__account">
             <AccountSelect />
           </div>
-          <button
-            type="button"
-            className="topbar__logout-btn"
-            onClick={handleLogout}
-            disabled={!signOut || isLoggingOut}
-          >
-            <LogOut size={16} />
-            <span>{logoutLabel}</span>
-          </button>
         </div>
       </div>
     </header>
