@@ -417,12 +417,6 @@ export default function AdsDashboard() {
   const formatShortDate = (value) => formatChartDate(value, "short");
   const formatTooltipDate = (value) => formatChartDate(value, "medium");
 
-  const formatCityLabel = (value) => {
-    if (!value) return "";
-    const text = String(value);
-    return text.length > 18 ? `${text.slice(0, 16)}...` : text;
-  };
-
   const normalizeAdsError = (err) => {
     if (!err) return null;
     if (typeof err === "string") {
@@ -963,38 +957,6 @@ export default function AdsDashboard() {
       color: palette[index % palette.length],
     }));
   }, [adsData?.spend_by_region]);
-
-  const audienceCityData = useMemo(() => {
-    if (!Array.isArray(adsData?.spend_by_city)) return [];
-    const palette = ["#6366f1", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#0ea5e9", "#f97316", "#84cc16"];
-    const raw = adsData.spend_by_city
-      .map((item) => {
-        const reachValue = Number(item.reach || 0);
-        const impressionsValue = Number(item.impressions || 0);
-        const value = reachValue > 0 ? reachValue : impressionsValue;
-        return {
-          name: item.name || "Desconhecido",
-          value,
-        };
-      })
-      .filter((item) => item.value > 0);
-
-    if (!raw.length) return [];
-
-    raw.sort((a, b) => b.value - a.value);
-    const maxItems = 5;
-    const top = raw.slice(0, maxItems);
-    const rest = raw.slice(maxItems);
-    const restValue = rest.reduce((sum, item) => sum + item.value, 0);
-    if (restValue > 0) {
-      top.push({ name: "Outros", value: restValue });
-    }
-
-    return top.map((item, index) => ({
-      ...item,
-      color: palette[index % palette.length],
-    }));
-  }, [adsData?.spend_by_city]);
 
   const audienceGenderReachData = useMemo(() => {
     if (!Array.isArray(adsData?.demographics?.byGender)) return [];
@@ -2265,7 +2227,6 @@ export default function AdsDashboard() {
                         <th style={{ textAlign: "right", padding: "8px 12px", width: "10%" }}>Impressões</th>
                         <th style={{ textAlign: "right", padding: "8px 12px", width: "10%" }}>Cliques</th>
                         <th style={{ textAlign: "right", padding: "8px 12px", width: "8%" }}>CTR</th>
-                        <th style={{ textAlign: "right", padding: "8px 12px", width: "10%" }}>Seguidores</th>
                         <th style={{ textAlign: "right", padding: "8px 12px", width: "10%" }}>Investimento</th>
                         <th style={{ textAlign: "right", padding: "8px 12px", width: "10%" }}>CPA</th>
                       </tr>
@@ -2330,9 +2291,6 @@ export default function AdsDashboard() {
                           </td>
                           <td style={{ padding: "14px 12px", textAlign: "right", fontWeight: 700, color: "#0ea5e9" }}>
                             {item.ctr != null ? `${formatPercentage(item.ctr)}%` : "—"}
-                          </td>
-                          <td style={{ padding: "14px 12px", textAlign: "right", fontWeight: 700, color: "#10b981" }}>
-                            {formatNumber(item.followers || 0)}
                           </td>
                           <td style={{ padding: "14px 12px", textAlign: "right", fontWeight: 700, color: "#111827" }}>
                             {formatCurrency(item.spend)}
@@ -2855,67 +2813,6 @@ export default function AdsDashboard() {
                   )}
                 </div>
 
-                <div style={{
-                  background: 'rgba(255, 255, 255, 0.9)',
-                  border: '1px solid rgba(0, 0, 0, 0.08)',
-                  borderRadius: '12px',
-                  padding: '20px'
-                }}>
-                  <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '16px' }}>
-                    Audiência por cidades
-                  </h4>
-                  {audienceCityData.length === 0 ? (
-                    <DataState
-                      state="empty"
-                      label="Sem dados de cidades no período"
-                      hint="Tente outro período ou conta"
-                      size="sm"
-                    />
-                  ) : (
-                    <>
-                      <ResponsiveContainer width="100%" height={180}>
-                        <PieChart>
-                          <Pie
-                            data={audienceCityData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={50}
-                            outerRadius={70}
-                            paddingAngle={4}
-                            dataKey="value"
-                          >
-                            {audienceCityData.map((entry, index) => (
-                              <Cell key={`city-cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip
-                            content={(
-                              <CustomChartTooltip
-                                variant="pie"
-                                valueFormatter={(v) => `: ${formatTooltipNumber(v)}`}
-                              />
-                            )}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '12px' }}>
-                        {audienceCityData.map((item) => (
-                          <div key={item.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: item.color }}></span>
-                              <span style={{ fontSize: '12px', color: '#111827', fontWeight: 600 }}>
-                                {formatCityLabel(item.name)}
-                              </span>
-                            </div>
-                            <span style={{ fontSize: '12px', color: '#111827', fontWeight: 600 }}>
-                              {formatNumber(item.value)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
                   </>
                 )}
               </div>
