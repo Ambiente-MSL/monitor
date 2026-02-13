@@ -72,6 +72,12 @@ const DEFAULT_FACEBOOK_RANGE_DAYS = 7;
 const FB_METRICS_TIMEOUT_MS = 20000;
 const FB_METRICS_RETRY_TIMEOUT_MS = 30000;
 const WORDCLOUD_DETAILS_PAGE_SIZE = 10;
+const FB_DEFAULT_TIMEOUT_MS = 15000;
+const FB_POSTS_INITIAL_LIMIT = 8;
+const FB_POSTS_DEFER_MS = 400;
+const FB_AUDIENCE_DEFER_MS = 1000;
+const FB_WORDCLOUD_DEFER_MS = 1600;
+const FB_FOLLOWERS_DEFER_MS = 1200;
 
 const WEEKDAY_LABELS = ["D", "S", "T", "Q", "Q", "S", "S"];
 const DEFAULT_WEEKLY_FOLLOWERS = [3, 4, 5, 6, 7, 5, 4];
@@ -276,7 +282,7 @@ useEffect(() => {
       accountId: accountSnapshotKey || "none",
       since: sinceParam || "auto",
       until: untilParam || "auto",
-      extra: { limit: 20 },
+      extra: { limit: FB_POSTS_INITIAL_LIMIT },
     }),
     [accountSnapshotKey, sinceParam, untilParam],
   );
@@ -543,6 +549,7 @@ useEffect(() => {
   const [netFollowersSeries, setNetFollowersSeries] = useState([]);
   const [reachSeries, setReachSeries] = useState([]);
   const [contentGrowthSeries, setContentGrowthSeries] = useState([]);
+  const [wordCloudEnabled, setWordCloudEnabled] = useState(false);
 
   const [overviewSnapshot, setOverviewSnapshot] = useState(null);
   const [overviewLoading, setOverviewLoading] = useState(false);
@@ -566,6 +573,19 @@ useEffect(() => {
     () => (overviewSnapshot?.accountId === accountSnapshotKey && accountSnapshotKey ? overviewSnapshot : null),
     [accountSnapshotKey, overviewSnapshot],
   );
+
+  useEffect(() => {
+    setWordCloudEnabled(false);
+    if (!accountConfig?.facebookPageId || !sinceIso || !untilIso) {
+      return () => {};
+    }
+    const timer = setTimeout(() => {
+      setWordCloudEnabled(true);
+    }, FB_WORDCLOUD_DEFER_MS);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [accountConfig?.facebookPageId, sinceIso, untilIso]);
 
   useEffect(() => {
     const previousKey = lastCacheAccountKeyRef.current;
@@ -671,7 +691,10 @@ useEffect(() => {
 
     const loadPageInfo = async () => {
       try {
-        const resp = await apiFetch(`/api/facebook/page-info?pageId=${encodeURIComponent(accountConfig.facebookPageId)}`);
+        const resp = await apiFetch(
+          `/api/facebook/page-info?pageId=${encodeURIComponent(accountConfig.facebookPageId)}`,
+          { timeoutMs: FB_DEFAULT_TIMEOUT_MS },
+        );
         if (isStale()) return;
         setPageInfo(resp?.page || null);
         mergeDashboardCache(pageCacheKey, { pageInfo: resp?.page || null });
@@ -686,6 +709,7 @@ useEffect(() => {
       try {
         const resp = await apiFetch(
           `/api/covers?platform=facebook&account_id=${encodeURIComponent(accountConfig.facebookPageId)}`,
+          { timeoutMs: FB_DEFAULT_TIMEOUT_MS },
         );
         if (isStale()) return;
         const cover = resp?.cover?.url || resp?.cover?.storage_url || null;
@@ -833,6 +857,19 @@ useEffect(() => {
       return () => {};
     }
 
+    const hasFollowersMetric = Array.isArray(pageMetrics)
+      && pageMetrics.some((metric) => (
+        metric?.key === "followers_total" && Number.isFinite(Number(metric?.value))
+      ));
+    if (hasFollowersMetric) {
+      return () => {};
+    }
+
+    const cachedFollowers = getDashboardCache(followersCacheKey);
+    if (cachedFollowers && cachedFollowers.value !== undefined && cachedFollowers.value !== null) {
+      return () => {};
+    }
+
     const requestId = (followersRequestIdRef.current || 0) + 1;
     followersRequestIdRef.current = requestId;
     let cancelled = false;
@@ -842,7 +879,10 @@ useEffect(() => {
       try {
         const params = new URLSearchParams();
         params.set("pageId", accountConfig.facebookPageId);
-        const resp = await apiFetch(`/api/facebook/followers?${params.toString()}`);
+        const resp = await apiFetch(
+          `/api/facebook/followers?${params.toString()}`,
+          { timeoutMs: FB_DEFAULT_TIMEOUT_MS },
+        );
         if (isStale()) return;
         const val = resp?.followers?.value;
         if (val !== undefined && val !== null) {
@@ -856,11 +896,16 @@ useEffect(() => {
       }
     };
 
-    loadFollowers();
+    const delayTimer = setTimeout(() => {
+      if (isStale()) return;
+      loadFollowers();
+    }, FB_FOLLOWERS_DEFER_MS);
+
     return () => {
       cancelled = true;
+      clearTimeout(delayTimer);
     };
-  }, [accountConfig?.facebookPageId, apiFetch, followersCacheKey]);
+  }, [accountConfig?.facebookPageId, apiFetch, followersCacheKey, pageMetrics]);
 
   useEffect(() => {
     if (!accountConfig?.facebookPageId) {
@@ -889,6 +934,7 @@ useEffect(() => {
     postsRequestIdRef.current = requestId;
     let cancelled = false;
     const shouldBlockUi = !hasCachedPosts;
+    const requestLimit = FB_POSTS_INITIAL_LIMIT;
 
     const loadPosts = async () => {
       if (shouldBlockUi) {
@@ -903,8 +949,11 @@ useEffect(() => {
         params.set("pageId", accountConfig.facebookPageId);
         params.set("since", sinceParam);
         params.set("until", untilParam);
-        params.set("limit", "20");
-        const resp = await apiFetch(`/api/facebook/posts?${params.toString()}`);
+        params.set("limit", String(requestLimit));
+        const resp = await apiFetch(
+          `/api/facebook/posts?${params.toString()}`,
+          { timeoutMs: FB_DEFAULT_TIMEOUT_MS },
+        );
         if (cancelled || postsRequestIdRef.current !== requestId) return;
         const posts = Array.isArray(resp?.posts) ? resp.posts : [];
         setFbPosts(posts);
@@ -926,9 +975,14 @@ useEffect(() => {
       }
     };
 
-    loadPosts();
+    const delayTimer = setTimeout(() => {
+      if (cancelled || postsRequestIdRef.current !== requestId) return;
+      loadPosts();
+    }, hasCachedPosts ? FB_POSTS_DEFER_MS : 0);
+
     return () => {
       cancelled = true;
+      clearTimeout(delayTimer);
     };
   }, [accountConfig?.facebookPageId, apiFetch, sinceParam, untilParam, fbPostsCacheKey]);
 
@@ -952,8 +1006,6 @@ useEffect(() => {
     const requestId = (audienceRequestIdRef.current || 0) + 1;
     audienceRequestIdRef.current = requestId;
     const controller = new AbortController();
-    const REQUEST_TIMEOUT_MS = 15000;
-    const hardTimeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     const shouldBlockUi = !hasCached;
     let cancelled = false;
 
@@ -964,15 +1016,20 @@ useEffect(() => {
       setAudienceLoading(false);
     }
     setAudienceError("");
-    setAudienceFetching(true);
 
     const params = new URLSearchParams();
     params.set("pageId", accountConfig.facebookPageId);
     const url = `${API_BASE_URL}/api/facebook/audience?${params.toString()}`;
 
-    (async () => {
+    const runFetch = async () => {
+      if (cancelled || audienceRequestIdRef.current !== requestId) return;
+      setAudienceFetching(true);
       try {
-        const resp = await fetch(url, { signal: controller.signal });
+        const resp = await fetchWithTimeout(
+          url,
+          { signal: controller.signal },
+          FB_DEFAULT_TIMEOUT_MS,
+        );
         const text = await resp.text();
         const json = safeParseJson(text) || {};
         if (!resp.ok) {
@@ -991,15 +1048,19 @@ useEffect(() => {
         }
       } finally {
         if (cancelled || audienceRequestIdRef.current !== requestId) return;
-        clearTimeout(hardTimeout);
         setAudienceLoading(false);
         setAudienceFetching(false);
       }
-    })();
+    };
+
+    const delayTimer = setTimeout(
+      runFetch,
+      hasCached ? FB_AUDIENCE_DEFER_MS : 0,
+    );
 
     return () => {
       cancelled = true;
-      clearTimeout(hardTimeout);
+      clearTimeout(delayTimer);
       controller.abort();
     };
   }, [accountConfig?.facebookPageId, audienceCacheKey]);
@@ -2512,17 +2573,28 @@ useEffect(() => {
                 <h4>Palavras-chave mais comentadas</h4>
               </div>
               <div className="ig-analytics-card__body">
-                <WordCloudCard
-                  apiBaseUrl={API_BASE_URL}
-                  platform="facebook"
-                  pageId={accountConfig?.facebookPageId}
-                  since={sinceIso}
-                  until={untilIso}
-                  top={120}
-                  showCommentsCount={false}
-                  externalPanelMode={true}
-                  onWordClick={handleWordCloudWordClick}
-                />
+                {!accountConfig?.facebookPageId ? (
+                  <DataState state="empty" label="Pagina do Facebook nao configurada." size="sm" />
+                ) : !wordCloudEnabled ? (
+                  <DataState
+                    state="loading"
+                    label="Preparando nuvem de palavras..."
+                    hint="Carregando apos os principais indicadores."
+                    size="sm"
+                  />
+                ) : (
+                  <WordCloudCard
+                    apiBaseUrl={API_BASE_URL}
+                    platform="facebook"
+                    pageId={accountConfig?.facebookPageId}
+                    since={sinceIso}
+                    until={untilIso}
+                    top={120}
+                    showCommentsCount={false}
+                    externalPanelMode={true}
+                    onWordClick={handleWordCloudWordClick}
+                  />
+                )}
               </div>
             </section>
 
