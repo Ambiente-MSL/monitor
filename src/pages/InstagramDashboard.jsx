@@ -109,7 +109,7 @@ const DEFAULT_GENDER_STATS = [
   { name: "Mulheres", value: 70 },
 ];
 const POSTS_INSIGHTS_LIMIT = 10;
-const RECENT_POSTS_TABLE_LIMIT = 5;
+const POSTS_DETAIL_INSIGHTS_LIMIT = 30;
 
 
 const DEFAULT_AUDIENCE_TYPE = [
@@ -860,6 +860,17 @@ export default function InstagramDashboard() {
     }),
     [accountSnapshotKey, sinceParam, untilParam],
   );
+  const postsInsightsDetailCacheKey = useMemo(
+    () => makeCacheKey({
+      page: "instagram",
+      endpoint: "posts-insights-detail",
+      accountId: accountSnapshotKey,
+      since: sinceParam || "auto",
+      until: untilParam || "auto",
+      extra: { limit: POSTS_DETAIL_INSIGHTS_LIMIT },
+    }),
+    [accountSnapshotKey, sinceParam, untilParam],
+  );
   const sinceDate = useMemo(() => parseQueryDate(sinceParam), [sinceParam]);
   const untilDate = useMemo(() => parseQueryDate(untilParam), [untilParam]);
   const sinceIso = useMemo(() => toLocalDateString(sinceDate), [sinceDate]);
@@ -1022,6 +1033,11 @@ export default function InstagramDashboard() {
   const [recentPostsFetching, setRecentPostsFetching] = useState(false);
   const [recentPostsError, setRecentPostsError] = useState("");
   const recentPostsRequestIdRef = useRef(0);
+  const [recentPostsDetail, setRecentPostsDetail] = useState([]);
+  const [recentPostsDetailLoading, setRecentPostsDetailLoading] = useState(false);
+  const [recentPostsDetailFetching, setRecentPostsDetailFetching] = useState(false);
+  const [recentPostsDetailError, setRecentPostsDetailError] = useState("");
+  const recentPostsDetailRequestIdRef = useRef(0);
   const topReelsScrollRef = useRef(null);
 
   const calendarMonthOptions = useMemo(() => {
@@ -1122,6 +1138,10 @@ export default function InstagramDashboard() {
       setRecentPostsError("");
       setRecentPostsFetching(false);
       setRecentPostsLoading(false);
+      setRecentPostsDetail([]);
+      setRecentPostsDetailError("");
+      setRecentPostsDetailFetching(false);
+      setRecentPostsDetailLoading(false);
 
       setAudienceData(null);
       setAudienceError("");
@@ -1661,6 +1681,93 @@ export default function InstagramDashboard() {
       controller.abort();
     };
   }, [accountConfig?.instagramUserId, accountSnapshotKey, sinceParam, untilParam, postsInsightsCacheKey]);
+
+  useEffect(() => {
+    if (!showPostsDetail) return undefined;
+
+    if (!accountConfig?.instagramUserId) {
+      setRecentPostsDetail([]);
+      setRecentPostsDetailError("Conta do Instagram nao configurada.");
+      setRecentPostsDetailLoading(false);
+      setRecentPostsDetailFetching(false);
+      return undefined;
+    }
+
+    const cachedPosts = getDashboardCache(postsInsightsDetailCacheKey);
+    const hasCachedPosts = Boolean(cachedPosts);
+    if (cachedPosts) {
+      const cachedList = normalizePostsList(Array.isArray(cachedPosts.posts) ? cachedPosts.posts : []);
+      setRecentPostsDetail(cachedList);
+      setRecentPostsDetailError("");
+      setRecentPostsDetailLoading(false);
+    }
+
+    const requestId = (recentPostsDetailRequestIdRef.current || 0) + 1;
+    recentPostsDetailRequestIdRef.current = requestId;
+    const controller = new AbortController();
+    const REQUEST_TIMEOUT_MS = 20000;
+    const hardTimeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    const shouldBlockUi = !hasCachedPosts;
+    let cancelled = false;
+
+    if (shouldBlockUi) {
+      setRecentPostsDetail([]);
+      setRecentPostsDetailLoading(true);
+    } else {
+      setRecentPostsDetailLoading(false);
+    }
+    setRecentPostsDetailError("");
+    setRecentPostsDetailFetching(true);
+
+    const url = (() => {
+      const params = new URLSearchParams({ igUserId: accountConfig.instagramUserId, limit: String(POSTS_DETAIL_INSIGHTS_LIMIT) });
+      if (sinceParam) params.set("since", sinceParam);
+      if (untilParam) params.set("until", untilParam);
+      return `${API_BASE_URL}/api/instagram/posts/insights?${params.toString()}`;
+    })();
+
+    (async () => {
+      try {
+        const resp = await fetch(url, { signal: controller.signal });
+        const text = await resp.text();
+        const json = safeParseJson(text) || {};
+        if (!resp.ok) {
+          throw new Error(describeApiError(json, "Nao foi possivel carregar os posts dos ultimos 30 dias."));
+        }
+        if (cancelled || recentPostsDetailRequestIdRef.current !== requestId) return;
+        const data = unwrapApiData(json, {});
+        const normalizedPosts = normalizePostsList(Array.isArray(data?.posts) ? data.posts : []);
+        setRecentPostsDetail(normalizedPosts);
+        setDashboardCache(postsInsightsDetailCacheKey, { posts: normalizedPosts });
+        setRecentPostsDetailError("");
+      } catch (err) {
+        if (cancelled || recentPostsDetailRequestIdRef.current !== requestId) return;
+        if (err?.name === "AbortError") {
+          setRecentPostsDetailError("Tempo esgotado ao carregar posts dos ultimos 30 dias.");
+        } else {
+          setRecentPostsDetailError(err?.message || "Nao foi possivel carregar posts dos ultimos 30 dias.");
+        }
+      } finally {
+        if (cancelled || recentPostsDetailRequestIdRef.current !== requestId) return;
+        clearTimeout(hardTimeout);
+        setRecentPostsDetailLoading(false);
+        setRecentPostsDetailFetching(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      clearTimeout(hardTimeout);
+      controller.abort();
+    };
+  }, [
+    accountConfig?.instagramUserId,
+    accountSnapshotKey,
+    postsInsightsDetailCacheKey,
+    showPostsDetail,
+    sinceParam,
+    untilParam,
+  ]);
 
   useEffect(() => {
     if (!accountConfig?.instagramUserId) {
@@ -2937,6 +3044,29 @@ const profileViewsMetric = useMemo(() => {
       ? [...recentPosts].sort((a, b) => resolvePostViews(b) - resolvePostViews(a)).slice(0, 10)
       : []
   ), [recentPosts]);
+
+  const postsDetailList = useMemo(
+    () => (recentPostsDetail.length ? recentPostsDetail : recentPosts),
+    [recentPostsDetail, recentPosts],
+  );
+
+  const postsDetailLoading = useMemo(
+    () => (
+      (recentPostsDetailLoading && !postsDetailList.length)
+      || (!recentPostsDetail.length && recentPostsLoading && !postsDetailList.length)
+    ),
+    [postsDetailList.length, recentPostsDetail.length, recentPostsDetailLoading, recentPostsLoading],
+  );
+
+  const postsDetailFetching = useMemo(
+    () => recentPostsDetailFetching || (!recentPostsDetail.length && recentPostsFetching),
+    [recentPostsDetail.length, recentPostsDetailFetching, recentPostsFetching],
+  );
+
+  const postsDetailError = useMemo(
+    () => recentPostsDetailError || (!postsDetailList.length ? recentPostsError : ""),
+    [postsDetailList.length, recentPostsDetailError, recentPostsError],
+  );
 
   const followerGrowthSeriesSorted = useMemo(() => {
     if (metricsLoading) return [];
@@ -5091,7 +5221,7 @@ const profileViewsMetric = useMemo(() => {
                       <FileText size={18} color="#f97316" />
                     </div>
                     <div style={{ fontSize: '24px', fontWeight: 700, color: '#f97316' }}>
-                      {recentPosts?.length || 0}
+                      {postsDetailList?.length || 0}
                     </div>
                     <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>Total de Posts</div>
                   </div>
@@ -5101,8 +5231,8 @@ const profileViewsMetric = useMemo(() => {
                     </div>
                     <div style={{ fontSize: '24px', fontWeight: 700, color: '#fb923c' }}>
                       {formatNumber(
-                        recentPosts?.length > 0
-                          ? Math.round(recentPosts.reduce((sum, p) => sum + (resolvePostMetric(p, 'likes', 0) + resolvePostMetric(p, 'comments', 0)), 0) / recentPosts.length)
+                        postsDetailList?.length > 0
+                          ? Math.round(postsDetailList.reduce((sum, p) => sum + (resolvePostMetric(p, 'likes', 0) + resolvePostMetric(p, 'comments', 0)), 0) / postsDetailList.length)
                           : 0
                       )}
                     </div>
@@ -5114,8 +5244,8 @@ const profileViewsMetric = useMemo(() => {
                     </div>
                     <div style={{ fontSize: '24px', fontWeight: 700, color: '#fdba74' }}>
                       {formatNumber(
-                        recentPosts?.length > 0
-                          ? Math.max(...recentPosts.map(p => resolvePostMetric(p, 'likes', 0) + resolvePostMetric(p, 'comments', 0)))
+                        postsDetailList?.length > 0
+                          ? Math.max(...postsDetailList.map(p => resolvePostMetric(p, 'likes', 0) + resolvePostMetric(p, 'comments', 0)))
                           : 0
                       )}
                     </div>
@@ -5137,10 +5267,10 @@ const profileViewsMetric = useMemo(() => {
                         Posts Recentes
                       </h4>
                       <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#9ca3af' }}>
-                        Publicações no período filtrado
+                        Publicacoes no periodo filtrado (ate 30 posts)
                       </p>
                     </div>
-                    {recentPostsFetching && !recentPostsLoading && (
+                    {postsDetailFetching && !postsDetailLoading && (
                       <span style={{
                         fontSize: '0.68rem',
                         fontWeight: 600,
@@ -5163,9 +5293,9 @@ const profileViewsMetric = useMemo(() => {
                     )}
                   </div>
                   <PostsTable
-                    posts={recentPosts.slice(0, RECENT_POSTS_TABLE_LIMIT)}
-                    loading={recentPostsLoading}
-                    error={recentPostsError}
+                    posts={postsDetailList}
+                    loading={postsDetailLoading}
+                    error={postsDetailError}
                   />
                 </section>
               </div>

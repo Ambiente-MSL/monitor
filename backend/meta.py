@@ -2212,7 +2212,7 @@ def ig_recent_posts_insights(
         limit_int = int(limit or 5)
     except (TypeError, ValueError):
         limit_int = 5
-    limit_sanitized = max(1, min(limit_int, 10))
+    limit_sanitized = max(1, min(limit_int, 30))
     fetch_limit = max(limit_sanitized * 5, 20)
     fetch_limit = max(1, min(fetch_limit, 50))
 
