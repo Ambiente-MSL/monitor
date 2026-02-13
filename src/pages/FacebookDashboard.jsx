@@ -69,8 +69,8 @@ const FB_TOPBAR_PRESETS = [
   { id: "1y", label: "365 dias", days: 365 },
 ];
 const DEFAULT_FACEBOOK_RANGE_DAYS = 7;
-const FB_METRICS_TIMEOUT_MS = 60000;
-const FB_METRICS_RETRY_TIMEOUT_MS = 90000;
+const FB_METRICS_TIMEOUT_MS = 20000;
+const FB_METRICS_RETRY_TIMEOUT_MS = 30000;
 const WORDCLOUD_DETAILS_PAGE_SIZE = 10;
 
 const WEEKDAY_LABELS = ["D", "S", "T", "Q", "Q", "S", "S"];
@@ -746,6 +746,7 @@ useEffect(() => {
         params.set("pageId", accountConfig.facebookPageId);
         params.set("since", sinceParam);
         params.set("until", untilParam);
+        params.set("lite", "1");
         const url = `${API_BASE_URL}/api/facebook/metrics?${params.toString()}`;
         const fetchMetrics = async (timeoutMs) => {
           const response = await fetchWithTimeout(url, { signal: controller.signal }, timeoutMs);

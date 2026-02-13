@@ -839,12 +839,16 @@ def fetch_facebook_metrics(
         raise ValueError("since_ts e until_ts são obrigatórios para facebook_metrics")
 
     lite = bool(_extra and _extra.get("lite"))
-    cur = fb_page_window(page_id, since_ts, until_ts, include_post_insights=(False if lite else None))
-    prev = {} if lite else fb_page_window(page_id, since_ts - _duration(since_ts, until_ts), since_ts)
+    include_post_insights = False if lite else None
+    cur = fb_page_window(page_id, since_ts, until_ts, include_post_insights=include_post_insights)
+    prev = fb_page_window(
+        page_id,
+        since_ts - _duration(since_ts, until_ts),
+        since_ts,
+        include_post_insights=include_post_insights,
+    )
 
     def pct(current, previous):
-        if lite:
-            return None
         return round(((current - previous) / previous) * 100, 2) if previous and previous > 0 and current is not None else None
 
     engagement_cur = cur.get("engagement") or {}
@@ -3681,6 +3685,7 @@ def facebook_metrics():
     # Para garantir o gráfico "Crescimento do conteúdo", força refresh quando necessário.
     if (
         not force_refresh_flag
+        and not lite_flag
         and not payload_obj.get("engagement_timeseries")
         and _extract_engagement_total(payload_obj) > 0
     ):
@@ -3711,6 +3716,7 @@ def facebook_metrics():
             logger.warning("Falha ao forçar refresh para completar engagement_timeseries: %s", refresh_err)
     if (
         not force_refresh_flag
+        and not lite_flag
         and not _has_follow_type_breakdown(payload_obj)
         and (
             _extract_content_activity_total(payload_obj) > 0
