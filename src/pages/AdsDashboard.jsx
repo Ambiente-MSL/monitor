@@ -80,7 +80,8 @@ const translateObjective = (value) => {
   if (!value) return "";
   const upper = String(value).toUpperCase();
   if (upper === "CONVERSIONS") return "Conversão";
-  if (upper === "TRAFFIC" || upper === "LINK_CLICKS") return "Tráfego";
+  if (upper === "LINK_CLICKS") return "Cliques";
+  if (upper === "TRAFFIC") return "Tráfego";
   if (upper === "ENGAGEMENT" || upper === "OUTCOME_ENGAGEMENT") return "Engajamento";
   if (upper === "AWARENESS" || upper === "BRAND_AWARENESS" || upper === "OUTCOME_AWARENESS") return "Reconhecimento";
   return value;
@@ -2440,7 +2441,13 @@ export default function AdsDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {topCampaigns.map((campaign, index) => (
+                    {topCampaigns.map((campaign, index) => {
+                      const objectiveLabel = campaign.objectiveLabel || translateObjective(campaign.objective) || "—";
+                      const isConversionObjective = objectiveLabel === "Conversão";
+                      const isTrafficObjective = objectiveLabel === "Tráfego" || objectiveLabel === "Cliques";
+                      const isAwarenessObjective = objectiveLabel === "Reconhecimento";
+
+                      return (
                       <tr key={campaign.id || campaign.name} style={{
                         background: "linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%)",
                         border: "1px solid rgba(0, 0, 0, 0.06)",
@@ -2499,15 +2506,15 @@ export default function AdsDashboard() {
                             borderRadius: "6px",
                             fontSize: "11px",
                             fontWeight: "600",
-                            background: campaign.objective === "Conversões" ? "#dbeafe" :
-                                       campaign.objective === "Tráfego" ? "#fce7f3" :
-                                       campaign.objectiveLabel === "Reconhecimento" ? "#e0e7ff" : "#f3f4f6",
-                            color: campaign.objective === "Conversões" ? "#1e40af" :
-                                  campaign.objective === "Tráfego" ? "#9f1239" :
-                                  campaign.objectiveLabel === "Reconhecimento" ? "#3730a3" : "#374151",
+                            background: isConversionObjective ? "#dbeafe" :
+                                       isTrafficObjective ? "#fce7f3" :
+                                       isAwarenessObjective ? "#e0e7ff" : "#f3f4f6",
+                            color: isConversionObjective ? "#1e40af" :
+                                  isTrafficObjective ? "#9f1239" :
+                                  isAwarenessObjective ? "#3730a3" : "#374151",
                             whiteSpace: "nowrap"
                           }}>
-                            {campaign.objective || "—"}
+                            {objectiveLabel}
                           </span>
                         </td>
                         <td style={{
@@ -2549,7 +2556,8 @@ export default function AdsDashboard() {
                           {formatCurrency(Number(campaign.spend || 0))}
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
                 ) : (
