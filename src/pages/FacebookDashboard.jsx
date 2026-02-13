@@ -55,6 +55,7 @@ import CustomChartTooltip from "../components/CustomChartTooltip";
 import WordCloudCard from "../components/WordCloudCard";
 import DateRangeIndicator from "../components/DateRangeIndicator";
 import InfoTooltip from "../components/InfoTooltip";
+import { fetchWithTimeout, isTimeoutError } from "../lib/fetchWithTimeout";
 import { formatChartDate, formatCompactNumber, formatTooltipNumber } from "../lib/chartFormatters";
 import { normalizeSyncInfo } from "../lib/syncInfo";
 const API_BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
@@ -68,11 +69,9 @@ const FB_TOPBAR_PRESETS = [
   { id: "1y", label: "365 dias", days: 365 },
 ];
 const DEFAULT_FACEBOOK_RANGE_DAYS = 7;
-const FB_REQUEST_TIMEOUT_MS = 30000;
-const FB_REQUEST_MAX_ATTEMPTS = 2;
-const FB_REQUEST_RETRY_DELAY_MS = 600;
+const FB_METRICS_TIMEOUT_MS = 60000;
+const FB_METRICS_RETRY_TIMEOUT_MS = 90000;
 const WORDCLOUD_DETAILS_PAGE_SIZE = 10;
-const RETRYABLE_HTTP_STATUS = new Set([429, 502, 503, 504]);
 
 const WEEKDAY_LABELS = ["D", "S", "T", "Q", "Q", "S", "S"];
 const DEFAULT_WEEKLY_FOLLOWERS = [3, 4, 5, 6, 7, 5, 4];
@@ -92,7 +91,6 @@ const toUnixSeconds = (date) => Math.floor(date.getTime() / 1000);
 
 const SHORT_DATE_FORMATTER = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" });
 const formatAxisDate = (value) => formatChartDate(value, "short");
-const isRetryableStatusCode = (status) => RETRYABLE_HTTP_STATUS.has(Number(status));
 
 const safeParseJson = (text) => {
   if (!text) return null;
@@ -669,26 +667,11 @@ useEffect(() => {
     }
 
     let cancelled = false;
-    const controllers = [];
-    const timeouts = [];
-    const trackTimeout = (handle) => {
-      timeouts.push(handle);
-      return handle;
-    };
-    const clearAllTimeouts = () => {
-      timeouts.forEach((handle) => clearTimeout(handle));
-    };
-    const sleep = (ms) => new Promise((resolve) => {
-      trackTimeout(setTimeout(resolve, ms));
-    });
     const isStale = () => cancelled || overviewRequestIdRef.current !== requestId;
 
     const loadPageInfo = async () => {
       try {
-        const resp = await apiFetch(
-          `/api/facebook/page-info?pageId=${encodeURIComponent(accountConfig.facebookPageId)}`,
-          { timeoutMs: 15000 },
-        );
+        const resp = await apiFetch(`/api/facebook/page-info?pageId=${encodeURIComponent(accountConfig.facebookPageId)}`);
         if (isStale()) return;
         setPageInfo(resp?.page || null);
         mergeDashboardCache(pageCacheKey, { pageInfo: resp?.page || null });
@@ -703,7 +686,6 @@ useEffect(() => {
       try {
         const resp = await apiFetch(
           `/api/covers?platform=facebook&account_id=${encodeURIComponent(accountConfig.facebookPageId)}`,
-          { timeoutMs: 15000 },
         );
         if (isStale()) return;
         const cover = resp?.cover?.url || resp?.cover?.storage_url || null;
@@ -733,11 +715,7 @@ useEffect(() => {
       setOverviewSource(null);
       setOverviewLoading(true);
       setOverviewFetching(false);
-      return () => {
-        cancelled = true;
-        clearAllTimeouts();
-        controllers.forEach((controller) => controller.abort());
-      };
+      return () => { cancelled = true; };
     }
 
     if (cachedOverview) {
@@ -752,59 +730,42 @@ useEffect(() => {
       setPageError("");
     }
 
+    const controller = new AbortController();
     const shouldBlockUi = !hasCachedOverview;
-    const params = new URLSearchParams();
-    params.set("pageId", accountConfig.facebookPageId);
-    params.set("since", sinceParam);
-    params.set("until", untilParam);
-    const url = `${API_BASE_URL}/api/facebook/metrics?${params.toString()}`;
 
-    const fetchOverviewPayload = async (attempt = 0) => {
-      const controller = new AbortController();
-      controllers.push(controller);
-
-      let timedOut = false;
-      const hardTimeout = trackTimeout(setTimeout(() => {
-        timedOut = true;
-        controller.abort();
-      }, FB_REQUEST_TIMEOUT_MS));
-
-      try {
-        const response = await fetch(url, { signal: controller.signal });
-        const raw = await response.text();
-        const json = safeParseJson(raw) || {};
-        if (!response.ok) {
-          const error = new Error(describeApiError(json, "Falha ao carregar metricas do Facebook."));
-          error.status = response.status;
-          throw error;
-        }
-        return json;
-      } catch (err) {
-        const status = err?.status;
-        const shouldRetry = !isStale()
-          && attempt < FB_REQUEST_MAX_ATTEMPTS - 1
-          && (timedOut || err?.name === "AbortError" || isRetryableStatusCode(status));
-        if (shouldRetry) {
-          await sleep(FB_REQUEST_RETRY_DELAY_MS);
-          return fetchOverviewPayload(attempt + 1);
-        }
-        throw err;
-      } finally {
-        clearTimeout(hardTimeout);
+    const loadOverviewMetrics = async () => {
+      if (shouldBlockUi) {
+        setOverviewLoading(true);
+      } else {
+        setOverviewLoading(false);
       }
-    };
-
-    if (shouldBlockUi) {
-      setOverviewLoading(true);
-    } else {
-      setOverviewLoading(false);
-    }
-    setOverviewFetching(true);
-    setPageError("");
-
-    (async () => {
+      setOverviewFetching(true);
+      setPageError("");
       try {
-        const json = await fetchOverviewPayload(0);
+        const params = new URLSearchParams();
+        params.set("pageId", accountConfig.facebookPageId);
+        params.set("since", sinceParam);
+        params.set("until", untilParam);
+        const url = `${API_BASE_URL}/api/facebook/metrics?${params.toString()}`;
+        const fetchMetrics = async (timeoutMs) => {
+          const response = await fetchWithTimeout(url, { signal: controller.signal }, timeoutMs);
+          const raw = await response.text();
+          const json = safeParseJson(raw) || {};
+          if (!response.ok) {
+            throw new Error(describeApiError(json, "Falha ao carregar metricas do Facebook."));
+          }
+          return json;
+        };
+        let json;
+        try {
+          json = await fetchMetrics(FB_METRICS_TIMEOUT_MS);
+        } catch (err) {
+          if (isTimeoutError(err) && !controller.signal.aborted) {
+            json = await fetchMetrics(FB_METRICS_RETRY_TIMEOUT_MS);
+          } else {
+            throw err;
+          }
+        }
         if (isStale()) return;
         const syncInfo = normalizeSyncInfo(json.meta || null);
         setOverviewSync(syncInfo);
@@ -831,10 +792,12 @@ useEffect(() => {
           reachSeries: reachSeriesPayload,
           contentGrowthSeries: contentGrowthSeriesPayload,
           overviewSource: json,
+          followersOverride,
           sync: syncInfo,
         });
       } catch (err) {
-        if (isStale()) return;
+        if (controller.signal.aborted || isStale()) return;
+        console.error(err);
         if (shouldBlockUi) {
           setPageMetrics([]);
           setNetFollowersSeries([]);
@@ -842,37 +805,30 @@ useEffect(() => {
           setContentGrowthSeries([]);
           setOverviewSource(null);
           setPageError(
-            err?.name === "AbortError"
+            isTimeoutError(err)
               ? "Tempo esgotado ao carregar metricas do Facebook."
-              : err?.message || "Nao foi possivel carregar as metricas do Facebook.",
+              : err.message || "Nao foi possivel carregar as metricas do Facebook.",
           );
         } else {
           setPageError("");
         }
       } finally {
         if (isStale()) return;
-        clearAllTimeouts();
         setOverviewLoading(false);
         setOverviewFetching(false);
       }
-    })();
+    };
 
+    loadOverviewMetrics();
     return () => {
       cancelled = true;
-      clearAllTimeouts();
-      controllers.forEach((controller) => controller.abort());
+      controller.abort();
     };
   }, [accountConfig?.facebookPageId, sinceParam, untilParam, apiFetch, pageCacheKey, overviewCacheKey]);
 
   useEffect(() => {
     if (!accountConfig?.facebookPageId) {
       setFollowersOverride(null);
-      return () => {};
-    }
-
-    const cachedFollowers = getDashboardCache(followersCacheKey);
-    if (cachedFollowers && cachedFollowers.value !== undefined) {
-      setFollowersOverride(cachedFollowers.value);
       return () => {};
     }
 
@@ -885,7 +841,7 @@ useEffect(() => {
       try {
         const params = new URLSearchParams();
         params.set("pageId", accountConfig.facebookPageId);
-        const resp = await apiFetch(`/api/facebook/followers?${params.toString()}`, { timeoutMs: 15000 });
+        const resp = await apiFetch(`/api/facebook/followers?${params.toString()}`);
         if (isStale()) return;
         const val = resp?.followers?.value;
         if (val !== undefined && val !== null) {
@@ -930,111 +886,50 @@ useEffect(() => {
 
     const requestId = (postsRequestIdRef.current || 0) + 1;
     postsRequestIdRef.current = requestId;
-    const shouldBlockUi = !hasCachedPosts;
-    const controllers = [];
-    const timeouts = [];
-    const trackTimeout = (handle) => {
-      timeouts.push(handle);
-      return handle;
-    };
-    const clearAllTimeouts = () => {
-      timeouts.forEach((handle) => clearTimeout(handle));
-    };
-    const sleep = (ms) => new Promise((resolve) => {
-      trackTimeout(setTimeout(resolve, ms));
-    });
     let cancelled = false;
-    const isStale = () => cancelled || postsRequestIdRef.current !== requestId;
+    const shouldBlockUi = !hasCachedPosts;
 
-    const params = new URLSearchParams();
-    params.set("pageId", accountConfig.facebookPageId);
-    params.set("since", sinceParam);
-    params.set("until", untilParam);
-    params.set("limit", "20");
-    const url = `${API_BASE_URL}/api/facebook/posts?${params.toString()}`;
-
-    const fetchPostsPayload = async (attempt = 0) => {
-      const controller = new AbortController();
-      controllers.push(controller);
-
-      let timedOut = false;
-      const hardTimeout = trackTimeout(setTimeout(() => {
-        timedOut = true;
-        controller.abort();
-      }, FB_REQUEST_TIMEOUT_MS));
-
-      try {
-        const response = await fetch(url, { signal: controller.signal });
-        const raw = await response.text();
-        const json = safeParseJson(raw) || {};
-        if (!response.ok) {
-          const error = new Error(describeApiError(json, "Nao foi possivel carregar os posts."));
-          error.status = response.status;
-          throw error;
-        }
-        return json;
-      } catch (err) {
-        const status = err?.status;
-        const shouldRetry = !isStale()
-          && attempt < FB_REQUEST_MAX_ATTEMPTS - 1
-          && (timedOut || err?.name === "AbortError" || isRetryableStatusCode(status));
-        if (shouldRetry) {
-          await sleep(FB_REQUEST_RETRY_DELAY_MS);
-          return fetchPostsPayload(attempt + 1);
-        }
-        throw err;
-      } finally {
-        clearTimeout(hardTimeout);
+    const loadPosts = async () => {
+      if (shouldBlockUi) {
+        setFbPostsLoading(true);
+      } else {
+        setFbPostsLoading(false);
       }
-    };
-
-    if (shouldBlockUi) {
-      setFbPostsLoading(true);
-    } else {
-      setFbPostsLoading(false);
-    }
-    setFbPostsFetching(true);
-    setFbPostsError("");
-
-    (async () => {
+      setFbPostsFetching(true);
+      setFbPostsError("");
       try {
-        const resp = await fetchPostsPayload(0);
-        if (isStale()) return;
-        const posts = Array.isArray(resp?.posts)
-          ? resp.posts
-          : Array.isArray(resp?.data)
-            ? resp.data
-            : [];
+        const params = new URLSearchParams();
+        params.set("pageId", accountConfig.facebookPageId);
+        params.set("since", sinceParam);
+        params.set("until", untilParam);
+        params.set("limit", "20");
+        const resp = await apiFetch(`/api/facebook/posts?${params.toString()}`);
+        if (cancelled || postsRequestIdRef.current !== requestId) return;
+        const posts = Array.isArray(resp?.posts) ? resp.posts : [];
         setFbPosts(posts);
         setDashboardCache(fbPostsCacheKey, { posts });
       } catch (err) {
-        if (isStale()) return;
+        if (cancelled || postsRequestIdRef.current !== requestId) return;
         if (shouldBlockUi) {
           setFbPosts([]);
         }
-        if (err?.name === "AbortError") {
-          setFbPostsError("Tempo esgotado ao carregar os posts do Facebook.");
-        } else {
-          const rawMessage = err?.message || "";
-          const friendlyMessage = rawMessage.includes("<")
-            ? "Nao foi possivel carregar os posts (erro 502)."
-            : rawMessage;
-          setFbPostsError(friendlyMessage || "Nao foi possivel carregar os posts.");
-        }
+        const rawMessage = err?.message || "";
+        const friendlyMessage = rawMessage.includes("<")
+          ? "Nao foi possivel carregar os posts (erro 502)."
+          : rawMessage;
+        setFbPostsError(friendlyMessage || "Nao foi possivel carregar os posts.");
       } finally {
-        if (isStale()) return;
-        clearAllTimeouts();
+        if (cancelled || postsRequestIdRef.current !== requestId) return;
         setFbPostsLoading(false);
         setFbPostsFetching(false);
       }
-    })();
+    };
 
+    loadPosts();
     return () => {
       cancelled = true;
-      clearAllTimeouts();
-      controllers.forEach((controller) => controller.abort());
     };
-  }, [accountConfig?.facebookPageId, sinceParam, untilParam, fbPostsCacheKey]);
+  }, [accountConfig?.facebookPageId, apiFetch, sinceParam, untilParam, fbPostsCacheKey]);
 
   useEffect(() => {
     if (!accountConfig?.facebookPageId) {
@@ -1055,21 +950,11 @@ useEffect(() => {
 
     const requestId = (audienceRequestIdRef.current || 0) + 1;
     audienceRequestIdRef.current = requestId;
+    const controller = new AbortController();
+    const REQUEST_TIMEOUT_MS = 15000;
+    const hardTimeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     const shouldBlockUi = !hasCached;
-    const controllers = [];
-    const timeouts = [];
-    const trackTimeout = (handle) => {
-      timeouts.push(handle);
-      return handle;
-    };
-    const clearAllTimeouts = () => {
-      timeouts.forEach((handle) => clearTimeout(handle));
-    };
-    const sleep = (ms) => new Promise((resolve) => {
-      trackTimeout(setTimeout(resolve, ms));
-    });
     let cancelled = false;
-    const isStale = () => cancelled || audienceRequestIdRef.current !== requestId;
 
     if (shouldBlockUi) {
       setAudienceData(null);
@@ -1084,61 +969,28 @@ useEffect(() => {
     params.set("pageId", accountConfig.facebookPageId);
     const url = `${API_BASE_URL}/api/facebook/audience?${params.toString()}`;
 
-    const fetchAudiencePayload = async (attempt = 0) => {
-      const controller = new AbortController();
-      controllers.push(controller);
-
-      let timedOut = false;
-      const hardTimeout = trackTimeout(setTimeout(() => {
-        timedOut = true;
-        controller.abort();
-      }, FB_REQUEST_TIMEOUT_MS));
-
+    (async () => {
       try {
         const resp = await fetch(url, { signal: controller.signal });
         const text = await resp.text();
         const json = safeParseJson(text) || {};
         if (!resp.ok) {
-          const error = new Error(describeApiError(json, "Nao foi possivel carregar a audiencia."));
-          error.status = resp.status;
-          throw error;
+          throw new Error(describeApiError(json, "Nao foi possivel carregar a audiencia."));
         }
-        return json;
-      } catch (err) {
-        const status = err?.status;
-        const shouldRetry = !isStale()
-          && attempt < FB_REQUEST_MAX_ATTEMPTS - 1
-          && (timedOut || err?.name === "AbortError" || isRetryableStatusCode(status));
-        if (shouldRetry) {
-          await sleep(FB_REQUEST_RETRY_DELAY_MS);
-          return fetchAudiencePayload(attempt + 1);
-        }
-        throw err;
-      } finally {
-        clearTimeout(hardTimeout);
-      }
-    };
-
-    (async () => {
-      try {
-        const json = await fetchAudiencePayload(0);
-        if (isStale()) return;
+        if (cancelled || audienceRequestIdRef.current !== requestId) return;
         setAudienceData(json);
         setDashboardCache(audienceCacheKey, json);
         setAudienceError("");
       } catch (err) {
-        if (isStale()) return;
-        if (shouldBlockUi) {
-          setAudienceData(null);
-        }
+        if (cancelled || audienceRequestIdRef.current !== requestId) return;
         if (err?.name === "AbortError") {
           setAudienceError("Tempo esgotado ao carregar audiencia.");
         } else {
           setAudienceError(err?.message || "Nao foi possivel carregar a audiencia.");
         }
       } finally {
-        if (isStale()) return;
-        clearAllTimeouts();
+        if (cancelled || audienceRequestIdRef.current !== requestId) return;
+        clearTimeout(hardTimeout);
         setAudienceLoading(false);
         setAudienceFetching(false);
       }
@@ -1146,8 +998,8 @@ useEffect(() => {
 
     return () => {
       cancelled = true;
-      clearAllTimeouts();
-      controllers.forEach((controller) => controller.abort());
+      clearTimeout(hardTimeout);
+      controller.abort();
     };
   }, [accountConfig?.facebookPageId, audienceCacheKey]);
   const avatarUrl = useMemo(
