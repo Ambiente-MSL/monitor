@@ -3960,8 +3960,6 @@ const profileViewsMetric = useMemo(() => {
                         const postDate = post.timestamp ? new Date(post.timestamp) : null;
                         const dateStr = postDate ? postDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
                         const timeStr = postDate ? postDate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "";
-                        const postUrl = post.permalink || post.url || `https://www.instagram.com/p/${post.id || ''}`;
-
                         const handleThumbClick = () => {
                           setSelectedPost(post);
                         };

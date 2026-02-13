@@ -21,6 +21,10 @@ const formatDate = (timestamp) => {
   });
 };
 
+const isLikelyVideoUrl = (value) => (
+  typeof value === "string" && /\.(mp4|mov|m4v|webm)(\?|$)/i.test(value)
+);
+
 // Helper para extrair valor de caminhos aninhados
 const getNestedValue = (obj, path) => {
   if (!obj || !Array.isArray(path)) return undefined;
@@ -107,6 +111,7 @@ const resolvePostMetric = (post, metric, fallback = 0) => {
 
 export default function InstagramPostModal({ post, onClose, accountInfo }) {
   const [imageError, setImageError] = useState(false);
+  const [videoError, setVideoError] = useState(false);
 
   useEffect(() => {
     if (!post) return;
@@ -122,6 +127,7 @@ export default function InstagramPostModal({ post, onClose, accountInfo }) {
   // Reset imageError quando post mudar
   useEffect(() => {
     setImageError(false);
+    setVideoError(false);
   }, [post?.id]);
 
   const handleBackdropClick = useCallback((e) => {
@@ -132,8 +138,31 @@ export default function InstagramPostModal({ post, onClose, accountInfo }) {
 
   if (!post) return null;
 
-  const isVideo = post.media_type === "VIDEO" || post.media_type === "REELS" || post.is_video;
-  const isCarousel = post.media_type === "CAROUSEL_ALBUM" || post.media_type === "CAROUSEL";
+  const mediaType = String(post.media_type || post.mediaType || "").toUpperCase();
+  const mediaProductType = String(post.media_product_type || post.mediaProductType || "").toUpperCase();
+  const isVideo = (
+    mediaType === "VIDEO"
+    || mediaType === "REEL"
+    || mediaType === "REELS"
+    || mediaType === "IGTV"
+    || mediaProductType === "VIDEO"
+    || mediaProductType === "REEL"
+    || mediaProductType === "REELS"
+    || mediaProductType === "IGTV"
+    || post.is_video
+  );
+  const isCarousel = mediaType === "CAROUSEL_ALBUM" || mediaType === "CAROUSEL";
+
+  const videoUrl = [
+    post.videoUrl,
+    post.video_url,
+    post.mediaUrl,
+    post.media_url,
+  ].find((url) => {
+    if (!url) return false;
+    if (isVideo) return true;
+    return isLikelyVideoUrl(url);
+  });
 
   // Usar mesma logica dos cards - buscar primeira URL valida que nao seja video
   const mediaUrl = [
@@ -141,10 +170,13 @@ export default function InstagramPostModal({ post, onClose, accountInfo }) {
     post.preview_url,
     post.thumbnailUrl,
     post.thumbnail_url,
-    post.mediaUrl,
-    post.media_url,
+    post.mediaPreviewUrl,
+    post.media_preview_url,
+    !isVideo ? post.mediaUrl : null,
+    !isVideo ? post.media_url : null,
     post.thumbnail,
-  ].find((url) => url && !/\.(mp4|mov)$/i.test(url));
+  ].find((url) => url && !isLikelyVideoUrl(url));
+  const showVideoPlayer = isVideo && videoUrl && !videoError;
 
   // Usar resolvePostMetric para extrair metricas corretamente
   const likes = resolvePostMetric(post, "likes");
@@ -230,7 +262,24 @@ export default function InstagramPostModal({ post, onClose, accountInfo }) {
             minHeight: "400px"
           }}
         >
-          {imageError || !mediaUrl ? (
+          {showVideoPlayer ? (
+            <video
+              controls
+              playsInline
+              preload="metadata"
+              poster={mediaUrl || undefined}
+              style={{
+                maxWidth: "100%",
+                maxHeight: "90vh",
+                objectFit: "contain",
+                display: "block"
+              }}
+              onError={() => setVideoError(true)}
+            >
+              <source src={videoUrl} />
+              Seu navegador nao suporta reproducao de video.
+            </video>
+          ) : imageError || !mediaUrl ? (
             <div style={{
               display: "flex",
               flexDirection: "column",
@@ -246,7 +295,7 @@ export default function InstagramPostModal({ post, onClose, accountInfo }) {
                 <polyline points="21 15 16 10 5 21" />
               </svg>
               <p style={{ marginTop: "16px", fontSize: "14px" }}>
-                {isVideo ? "Pre-visualizacao do video indisponivel" : "Midia indisponivel"}
+                {isVideo ? "Nao foi possivel reproduzir este video no Monitor" : "Midia indisponivel"}
               </p>
               <a
                 href={permalink}
