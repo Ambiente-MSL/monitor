@@ -13935,6 +13935,278 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   background: var(--surface-100);
 }
 
+.reports-builder-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.reports-builder-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.reports-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reports-field--wide {
+  grid-column: 1 / -1;
+}
+
+.reports-field--block {
+  margin-top: 16px;
+}
+
+.reports-field label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.reports-field input,
+.reports-field select {
+  width: 100%;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--surface-50);
+  color: var(--text-primary);
+  font-size: 14px;
+  padding: 10px 12px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.reports-field input:focus,
+.reports-field select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 18%, transparent);
+}
+
+.reports-field__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.reports-metric-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reports-mini-btn {
+  border: 1px solid var(--border-color);
+  background: var(--surface-50);
+  color: var(--text-primary);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.reports-mini-btn:hover {
+  background: var(--surface-100);
+}
+
+.reports-metrics-grid {
+  margin-top: 4px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.reports-metric-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--surface-50);
+  padding: 9px 10px;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.reports-metric-option input {
+  width: auto;
+  margin: 0;
+}
+
+.reports-actions-row {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.reports-primary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  border-radius: 10px;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 11px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.reports-primary-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.reports-inline-error {
+  margin-top: 12px;
+  margin-bottom: 0;
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.reports-preview-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.reports-preview-title {
+  margin: 0;
+  font-size: 18px;
+  color: var(--text-primary);
+}
+
+.reports-preview-subtitle {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.reports-export-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reports-export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--surface-50);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.reports-export-btn:hover {
+  background: var(--surface-100);
+}
+
+.reports-export-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.reports-preview-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 8px 14px;
+  padding: 16px 20px 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.reports-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+
+.reports-preview-table th,
+.reports-preview-table td {
+  padding: 12px 20px;
+  border-top: 1px solid var(--border-color);
+  text-align: left;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.reports-preview-table th {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.reports-history {
+  margin-top: 24px;
+}
+
+.reports-inline-action {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--surface-50);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 9px;
+  margin-left: 6px;
+  cursor: pointer;
+}
+
+.reports-inline-action:hover {
+  background: var(--surface-100);
+}
+
+@media (max-width: 1024px) {
+  .reports-builder-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .reports-preview-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .reports-export-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 720px) {
+  .reports-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .reports-preview-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .reports-preview-table {
+    min-width: 600px;
+  }
+}
+
 /* FACEBOOK DASHBOARD STYLES - Based on Instagram layout with Facebook blue theme */
 
 /* ========================================
