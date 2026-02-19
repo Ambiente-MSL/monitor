@@ -918,6 +918,44 @@ export default function InstagramDashboard() {
   const [wordCloudDetailsPage, setWordCloudDetailsPage] = useState(1);
   const [interactionsTab, setInteractionsTab] = useState('reels'); // reels, videos, posts
 
+  const closeAllDetailPanels = useCallback(() => {
+    setShowDetailedView(false);
+    setShowFollowersDetail(false);
+    setShowInteractionsDetail(false);
+    setShowPostsDetail(false);
+    setShowWordCloudDetail(false);
+    setShowCitiesDetail(false);
+  }, []);
+
+  const resetWordCloudDetailState = useCallback(() => {
+    setSelectedWordCloud(null);
+    setWordCloudDetails(null);
+    setWordCloudDetailsError("");
+    setWordCloudDetailsLoading(false);
+    setWordCloudDetailsLoadingMore(false);
+    setWordCloudDetailsPage(1);
+  }, []);
+
+  const openDetailPanel = useCallback((panel) => {
+    closeAllDetailPanels();
+    if (panel !== "wordcloud") {
+      resetWordCloudDetailState();
+    }
+    if (panel === "views") setShowDetailedView(true);
+    if (panel === "followers") setShowFollowersDetail(true);
+    if (panel === "interactions") setShowInteractionsDetail(true);
+    if (panel === "posts") setShowPostsDetail(true);
+    if (panel === "wordcloud") setShowWordCloudDetail(true);
+    if (panel === "cities") setShowCitiesDetail(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [closeAllDetailPanels, resetWordCloudDetailState]);
+
+  const handleBackToDashboard = useCallback(() => {
+    closeAllDetailPanels();
+    resetWordCloudDetailState();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [closeAllDetailPanels, resetWordCloudDetailState]);
+
   // Estado para modal de post
   const [selectedPost, setSelectedPost] = useState(null);
 
@@ -3468,12 +3506,7 @@ const profileViewsMetric = useMemo(() => {
   }, [buildWordCloudDetailsUrl]);
 
   const handleWordCloudWordClick = useCallback((word, count) => {
-    // Close other panels
-    setShowDetailedView(false);
-    setShowFollowersDetail(false);
-    setShowInteractionsDetail(false);
-    setShowPostsDetail(false);
-    setShowCitiesDetail(false);
+    closeAllDetailPanels();
 
     // Set wordcloud panel state
     setSelectedWordCloud({ word, count });
@@ -3499,7 +3532,7 @@ const profileViewsMetric = useMemo(() => {
       .finally(() => {
         setWordCloudDetailsLoading(false);
       });
-  }, [fetchWordCloudDetails]);
+  }, [closeAllDetailPanels, fetchWordCloudDetails]);
 
   const wordCloudDetailsTotalPages = useMemo(() => {
     if (!wordCloudDetails) return 0;
@@ -3508,28 +3541,9 @@ const profileViewsMetric = useMemo(() => {
   }, [wordCloudDetails]);
 
 
-  const closeWordCloudDetail = useCallback(() => {
-    setShowWordCloudDetail(false);
-    setSelectedWordCloud(null);
-    setWordCloudDetails(null);
-    setWordCloudDetailsError("");
-    setWordCloudDetailsLoading(false);
-    setWordCloudDetailsLoadingMore(false);
-    setWordCloudDetailsPage(1);
-  }, []);
-
   const handleShowCitiesDetail = useCallback(() => {
-    // Close other panels
-    setShowDetailedView(false);
-    setShowFollowersDetail(false);
-    setShowInteractionsDetail(false);
-    setShowPostsDetail(false);
-    setShowWordCloudDetail(false);
-    setSelectedWordCloud(null);
-    // Open cities panel
-    setShowCitiesDetail(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+    openDetailPanel("cities");
+  }, [openDetailPanel]);
 
   const wordCloudCanGoPrev = wordCloudDetailsPage > 1;
   const wordCloudCanGoNext = wordCloudDetailsPage < wordCloudDetailsTotalPages;
@@ -4155,11 +4169,7 @@ const profileViewsMetric = useMemo(() => {
                   {/* Botão Ver mais centralizado no final */}
                   <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
                     <button
-                      onClick={() => {
-                        closeWordCloudDetail();
-                        setShowPostsDetail(true);
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
+                      onClick={() => openDetailPanel("posts")}
                       style={{
                         padding: '10px 24px',
                         background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
@@ -4262,7 +4272,7 @@ const profileViewsMetric = useMemo(() => {
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <button
-                      onClick={() => setShowFollowersDetail(false)}
+                      onClick={handleBackToDashboard}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -4554,7 +4564,7 @@ const profileViewsMetric = useMemo(() => {
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <button
-                      onClick={() => setShowDetailedView(false)}
+                      onClick={handleBackToDashboard}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -4806,7 +4816,7 @@ const profileViewsMetric = useMemo(() => {
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <button
-                      onClick={() => setShowInteractionsDetail(false)}
+                      onClick={handleBackToDashboard}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -5183,7 +5193,7 @@ const profileViewsMetric = useMemo(() => {
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <button
-                      onClick={() => setShowPostsDetail(false)}
+                      onClick={handleBackToDashboard}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -5315,7 +5325,7 @@ const profileViewsMetric = useMemo(() => {
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <button
-                      onClick={closeWordCloudDetail}
+                      onClick={handleBackToDashboard}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -5514,7 +5524,7 @@ const profileViewsMetric = useMemo(() => {
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <button
-                      onClick={() => setShowCitiesDetail(false)}
+                      onClick={handleBackToDashboard}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -6217,11 +6227,7 @@ const profileViewsMetric = useMemo(() => {
                   <p className="ig-card-subtitle">Curtidas, comentários, compartilhamentos e salvamentos</p>
                 </div>
                 <button
-                  onClick={() => {
-                    closeWordCloudDetail();
-                    setShowInteractionsDetail(true);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
+                  onClick={() => openDetailPanel("interactions")}
                   style={{
                     padding: '8px 14px',
                     background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
@@ -6340,11 +6346,7 @@ const profileViewsMetric = useMemo(() => {
                 <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '2px', marginBottom: 0 }}>Total de reproduções (Reels, Feed e Stories)</p>
               </div>
               <button
-                onClick={() => {
-                  closeWordCloudDetail();
-                  setShowDetailedView(true);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
+                onClick={() => openDetailPanel("views")}
                 style={{
                   padding: '8px 14px',
                   background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
@@ -6458,11 +6460,7 @@ const profileViewsMetric = useMemo(() => {
                 <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '2px', marginBottom: 0 }}>Total de engajamento do público</p>
               </div>
               <button
-                onClick={() => {
-                  closeWordCloudDetail();
-                  setShowInteractionsDetail(true);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
+                onClick={() => openDetailPanel("interactions")}
                 style={{
                   padding: '8px 14px',
                   background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
