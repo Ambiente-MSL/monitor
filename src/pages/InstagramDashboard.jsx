@@ -3073,6 +3073,10 @@ const profileViewsMetric = useMemo(() => {
     [filteredPosts, mergePostMetrics, recentPostsById],
   );
 
+  const topPostsRealtime = useMemo(() => (posts.length
+    ? [...posts].sort((a, b) => sumInteractions(b) - sumInteractions(a)).slice(0, 6)
+    : []), [posts]);
+
   const topPosts = useMemo(() => (filteredPostsWithInsights.length
     ? [...filteredPostsWithInsights].sort((a, b) => sumInteractions(b) - sumInteractions(a)).slice(0, 6)
     : []), [filteredPostsWithInsights]);
@@ -4082,12 +4086,12 @@ const profileViewsMetric = useMemo(() => {
                 <div className="ig-profile-vertical__top-posts">
                   <h4>Melhores posts</h4>
                   <div className="ig-top-posts-list">
-                    {loadingPosts && !topPosts.length ? (
+                    {loadingPosts && !topPostsRealtime.length ? (
                       <DataState state="loading" label="Carregando posts..." size="sm" />
-                    ) : postsError && !topPosts.length ? (
+                    ) : postsError && !topPostsRealtime.length ? (
                       <DataState state="error" label="Falha ao carregar posts." size="sm" />
-                    ) : topPosts.length ? (
-                      topPosts.slice(0, 4).map((post) => {
+                    ) : topPostsRealtime.length ? (
+                      topPostsRealtime.slice(0, 4).map((post) => {
                         const likes = resolvePostMetric(post, "likes");
                         const comments = resolvePostMetric(post, "comments");
                         const saves = resolvePostMetric(post, "saves");
