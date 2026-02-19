@@ -2915,7 +2915,7 @@ def ads_highlights(act_id: str, since_str: str, until_str: str):
         ads_res = gget(
             f"/{act_id}/insights",
             {
-                "fields": "ad_id,ad_name,impressions,reach,clicks,spend,ctr,cpc,actions",
+                "fields": "ad_id,ad_name,campaign_name,impressions,reach,clicks,spend,ctr,cpc,actions",
                 "time_range[since]": since_str,
                 "time_range[until]": until_str,
                 "level": "ad",
@@ -2976,6 +2976,7 @@ def ads_highlights(act_id: str, since_str: str, until_str: str):
                 {
                     "id": row.get("ad_id"),
                     "name": row.get("ad_name") or row.get("ad_id") or "Anúncio",
+                    "campaign_name": row.get("campaign_name") or "",
                     "impressions": impressions,
                     "reach": int(row.get("reach", 0) or 0),
                     "clicks": clicks,
