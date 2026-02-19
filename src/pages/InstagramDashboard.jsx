@@ -69,6 +69,7 @@ import { useAccounts } from "../context/AccountsContext";
 import PostsTable from "../components/PostsTable";
 import DataState from "../components/DataState";
 import InstagramPostModal from "../components/InstagramPostModal";
+import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import WordCloudCard from "../components/WordCloudCard";
 import CustomChartTooltip from "../components/CustomChartTooltip";
 import InfoTooltip from "../components/InfoTooltip";
@@ -85,6 +86,7 @@ import { formatChartDate, formatCompactNumber, formatTooltipNumber } from "../li
 import { normalizeSyncInfo } from "../lib/syncInfo";
 
 const API_BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
+const FALLBACK_ACCOUNT_ID = DEFAULT_ACCOUNTS[0]?.id || "";
 const HASHTAG_REGEX = /#([A-Za-z0-9_]+)/g;
 const STOP_WORDS = new Set([
   "a", "ao", "aos", "as", "com", "da", "das", "de", "do", "dos", "e", "em", "no", "nos", "na", "nas", "o", "os", "para",
@@ -792,15 +794,11 @@ export default function InstagramDashboard() {
   const outlet = useOutletContext() || {};
   const { setTopbarConfig, resetTopbarConfig } = outlet;
   const location = useLocation();
-  const { apiFetch, token } = useAuth();
+  const { apiFetch } = useAuth();
   const { accounts, loading: accountsLoading } = useAccounts();
-  const availableAccounts = accounts;
-  const [getQuery, setQuery] = useQueryState({ account: "" });
+  const availableAccounts = accounts.length ? accounts : DEFAULT_ACCOUNTS;
+  const [getQuery, setQuery] = useQueryState({ account: FALLBACK_ACCOUNT_ID });
   const queryAccountId = getQuery("account");
-  const authHeaders = useMemo(
-    () => (token ? { Authorization: `Bearer ${token}` } : {}),
-    [token],
-  );
 
   useEffect(() => {
     if (!availableAccounts.length) return;
@@ -1295,7 +1293,7 @@ export default function InstagramDashboard() {
       }, REQUEST_TIMEOUT_MS));
 
       try {
-        const resp = await fetch(url, { signal: controller.signal, headers: authHeaders });
+        const resp = await fetch(url, { signal: controller.signal });
          const text = await resp.text();
          const json = safeParseJson(text) || {};
          if (!resp.ok) {
@@ -1448,7 +1446,7 @@ export default function InstagramDashboard() {
       clearAllTimeouts();
       controllers.forEach((c) => c.abort());
     };
-  }, [accountConfig?.instagramUserId, accountSnapshotKey, sinceDate, untilDate, defaultEnd, sinceParam, untilParam, metricsCacheKey, authHeaders]);
+  }, [accountConfig?.instagramUserId, accountSnapshotKey, sinceDate, untilDate, defaultEnd, sinceParam, untilParam, metricsCacheKey]);
 
   useEffect(() => {
     const currentAccountKey = accountSnapshotKey;
@@ -1519,7 +1517,7 @@ export default function InstagramDashboard() {
       }, REQUEST_TIMEOUT_MS));
 
       try {
-        const resp = await fetch(url, { signal: controller.signal, headers: authHeaders });
+        const resp = await fetch(url, { signal: controller.signal });
          const text = await resp.text();
          const json = safeParseJson(text) || {};
          if (!resp.ok) {
@@ -1604,7 +1602,7 @@ export default function InstagramDashboard() {
       clearAllTimeouts();
       controllers.forEach((c) => c.abort());
     };
-  }, [accountConfig?.instagramUserId, accountSnapshotKey, sinceParam, untilParam, postsCacheKey, authHeaders]);
+  }, [accountConfig?.instagramUserId, accountSnapshotKey, sinceParam, untilParam, postsCacheKey]);
 
   useEffect(() => {
     if (!accountConfig?.instagramUserId) {
@@ -1650,7 +1648,7 @@ export default function InstagramDashboard() {
 
     (async () => {
       try {
-         const resp = await fetch(url, { signal: controller.signal, headers: authHeaders });
+         const resp = await fetch(url, { signal: controller.signal });
          const text = await resp.text();
          const json = safeParseJson(text) || {};
          if (!resp.ok) {
@@ -1682,7 +1680,7 @@ export default function InstagramDashboard() {
       clearTimeout(hardTimeout);
       controller.abort();
     };
-  }, [accountConfig?.instagramUserId, accountSnapshotKey, sinceParam, untilParam, postsInsightsCacheKey, authHeaders]);
+  }, [accountConfig?.instagramUserId, accountSnapshotKey, sinceParam, untilParam, postsInsightsCacheKey]);
 
   useEffect(() => {
     if (!showPostsDetail) return undefined;
@@ -1730,7 +1728,7 @@ export default function InstagramDashboard() {
 
     (async () => {
       try {
-        const resp = await fetch(url, { signal: controller.signal, headers: authHeaders });
+        const resp = await fetch(url, { signal: controller.signal });
         const text = await resp.text();
         const json = safeParseJson(text) || {};
         if (!resp.ok) {
@@ -1769,7 +1767,6 @@ export default function InstagramDashboard() {
     showPostsDetail,
     sinceParam,
     untilParam,
-    authHeaders,
   ]);
 
   useEffect(() => {
@@ -1820,7 +1817,7 @@ export default function InstagramDashboard() {
 
     (async () => {
       try {
-        const resp = await fetch(url, { signal: controller.signal, headers: authHeaders });
+        const resp = await fetch(url, { signal: controller.signal });
         const text = await resp.text();
         const json = safeParseJson(text) || {};
         if (!resp.ok) {
@@ -1851,7 +1848,7 @@ export default function InstagramDashboard() {
       clearTimeout(hardTimeout);
       controller.abort();
     };
-  }, [accountConfig?.instagramUserId, audienceCacheKey, audienceTimeframe, authHeaders]);
+  }, [accountConfig?.instagramUserId, audienceCacheKey, audienceTimeframe]);
 
 const metricsByKey = useMemo(() => mapByKey(metrics), [metrics]);
  const reachMetric = metricsByKey.reach;
@@ -3462,13 +3459,13 @@ const profileViewsMetric = useMemo(() => {
   const fetchWordCloudDetails = useCallback(async (word, offset = 0) => {
     const url = buildWordCloudDetailsUrl(word, offset);
     if (!url) return null;
-    const response = await fetch(url, { headers: authHeaders });
+    const response = await fetch(url);
     if (!response.ok) {
       const message = await response.text();
       throw new Error(message || "Falha ao carregar comentários.");
     }
     return response.json();
-  }, [buildWordCloudDetailsUrl, authHeaders]);
+  }, [buildWordCloudDetailsUrl]);
 
   const handleWordCloudWordClick = useCallback((word, count) => {
     // Close other panels

@@ -41,6 +41,7 @@ import {
 } from "lucide-react";
 import useQueryState from "../hooks/useQueryState";
 import { useAccounts } from "../context/AccountsContext";
+import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import { useAuth } from "../context/AuthContext";
 import {
   getDashboardCache,
@@ -58,6 +59,7 @@ import { fetchWithTimeout, isTimeoutError } from "../lib/fetchWithTimeout";
 import { formatChartDate, formatCompactNumber, formatTooltipNumber } from "../lib/chartFormatters";
 import { normalizeSyncInfo } from "../lib/syncInfo";
 const API_BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
+const FALLBACK_ACCOUNT_ID = DEFAULT_ACCOUNTS[0]?.id || "";
 
 const FB_TOPBAR_PRESETS = [
   { id: "7d", label: "7 dias", days: 7 },
@@ -213,14 +215,10 @@ export default function FacebookDashboard() {
   const outlet = useOutletContext() || {};
   const { setTopbarConfig, resetTopbarConfig } = outlet;
   const location = useLocation();
-  const { apiFetch, token } = useAuth();
+  const { apiFetch } = useAuth();
   const { accounts, loading: accountsLoading } = useAccounts();
-  const authHeaders = useMemo(
-    () => (token ? { Authorization: `Bearer ${token}` } : {}),
-    [token],
-  );
-  const availableAccounts = accounts;
-  const [getQuery, setQuery] = useQueryState({ account: "" });
+  const availableAccounts = accounts.length ? accounts : DEFAULT_ACCOUNTS;
+  const [getQuery, setQuery] = useQueryState({ account: FALLBACK_ACCOUNT_ID });
   const queryAccountId = getQuery("account");
 
 useEffect(() => {
@@ -413,8 +411,13 @@ useEffect(() => {
   const fetchWordCloudDetails = useCallback(async (word, offset = 0) => {
     const url = buildFbWordCloudDetailsUrl(word, offset);
     if (!url) return null;
-    return apiFetch(url);
-  }, [apiFetch, buildFbWordCloudDetailsUrl]);
+    const response = await fetch(url);
+    if (!response.ok) {
+      const message = await response.text();
+      throw new Error(message || "Falha ao carregar comentários.");
+    }
+    return response.json();
+  }, [buildFbWordCloudDetailsUrl]);
 
   const handleWordCloudWordClick = useCallback((word, count) => {
     setShowContentDetails(false);
@@ -770,11 +773,7 @@ useEffect(() => {
         params.set("lite", "1");
         const url = `${API_BASE_URL}/api/facebook/metrics?${params.toString()}`;
         const fetchMetrics = async (timeoutMs) => {
-          const response = await fetchWithTimeout(
-            url,
-            { signal: controller.signal, headers: authHeaders },
-            timeoutMs,
-          );
+          const response = await fetchWithTimeout(url, { signal: controller.signal }, timeoutMs);
           const raw = await response.text();
           const json = safeParseJson(raw) || {};
           if (!response.ok) {
@@ -850,7 +849,7 @@ useEffect(() => {
       cancelled = true;
       controller.abort();
     };
-  }, [accountConfig?.facebookPageId, sinceParam, untilParam, apiFetch, pageCacheKey, overviewCacheKey, authHeaders]);
+  }, [accountConfig?.facebookPageId, sinceParam, untilParam, apiFetch, pageCacheKey, overviewCacheKey]);
 
   useEffect(() => {
     if (!accountConfig?.facebookPageId) {
@@ -1028,7 +1027,7 @@ useEffect(() => {
       try {
         const resp = await fetchWithTimeout(
           url,
-          { signal: controller.signal, headers: authHeaders },
+          { signal: controller.signal },
           FB_DEFAULT_TIMEOUT_MS,
         );
         const text = await resp.text();
@@ -1064,7 +1063,7 @@ useEffect(() => {
       clearTimeout(delayTimer);
       controller.abort();
     };
-  }, [accountConfig?.facebookPageId, audienceCacheKey, authHeaders]);
+  }, [accountConfig?.facebookPageId, audienceCacheKey]);
   const avatarUrl = useMemo(
     () => pageInfo?.picture_url || accountConfig?.profilePictureUrl || accountConfig?.pagePictureUrl || "",
     [pageInfo?.picture_url, accountConfig?.pagePictureUrl, accountConfig?.profilePictureUrl],

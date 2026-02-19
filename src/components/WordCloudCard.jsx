@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import cloud from "d3-cloud";
 import { scaleSqrt } from "d3";
 import useSWR from "swr";
 import { fetchWithTimeout, isTimeoutError } from "../lib/fetchWithTimeout";
-import { useAuth } from "../context/AuthContext";
 import DataState from "./DataState";
 
 // Cores como na imagem de referência - verdes, laranjas, vermelhos, pretos
@@ -29,6 +28,23 @@ const DEFAULT_CLOUD_PADDING = 2;
 const RESIZE_DEBOUNCE_MS = 150;
 const DETAILS_PAGE_SIZE = 50;
 const COMMENTS_PER_PAGE = 10;
+
+const fetcher = async (url) => {
+  let response;
+  try {
+    response = await fetchWithTimeout(url);
+  } catch (err) {
+    if (isTimeoutError(err)) {
+      throw new Error("Tempo esgotado ao carregar nuvem de palavras.");
+    }
+    throw err;
+  }
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || "Falha ao carregar nuvem de palavras.");
+  }
+  return response.json();
+};
 
 const hashString = (value) => {
   let hash = 0;
@@ -127,11 +143,6 @@ export default function WordCloudCard({
   onWordClick = null,
   externalPanelMode = false,
 }) {
-  const { token } = useAuth();
-  const authHeaders = useMemo(
-    () => (token ? { Authorization: `Bearer ${token}` } : {}),
-    [token],
-  );
   const resolvedPlatform = platform === "facebook" ? "facebook" : "instagram";
   const resolvedAccountId = resolvedPlatform === "facebook"
     ? (pageId || accountId)
@@ -162,33 +173,12 @@ export default function WordCloudCard({
     const path = `/api/${resolvedPlatform}/comments/wordcloud?${params.toString()}`;
     return sanitizedBaseUrl ? `${sanitizedBaseUrl}${path}` : path;
   }, [resolvedAccountId, resolvedPlatform, since, until, top, sanitizedBaseUrl]);
-  const swrKey = useMemo(
-    () => (requestKey ? [requestKey, token || ""] : null),
-    [requestKey, token],
-  );
 
   useEffect(() => {
     setLoadingSlow(false);
-  }, [requestKey, token]);
+  }, [requestKey]);
 
-  const fetchWordCloud = useCallback(async (url) => {
-    let response;
-    try {
-      response = await fetchWithTimeout(url, { headers: authHeaders });
-    } catch (err) {
-      if (isTimeoutError(err)) {
-        throw new Error("Tempo esgotado ao carregar nuvem de palavras.");
-      }
-      throw err;
-    }
-    if (!response.ok) {
-      const message = await response.text();
-      throw new Error(message || "Falha ao carregar nuvem de palavras.");
-    }
-    return response.json();
-  }, [authHeaders]);
-
-  const buildDetailsUrl = useCallback((word, offset = 0) => {
+  const buildDetailsUrl = (word, offset = 0) => {
     if (!resolvedAccountId || !word) return null;
     const accountParam = resolvedPlatform === "facebook" ? "pageId" : "igUserId";
     const params = new URLSearchParams({
@@ -201,14 +191,14 @@ export default function WordCloudCard({
     if (until) params.set("until", until);
     const path = `/api/${resolvedPlatform}/comments/search?${params.toString()}`;
     return sanitizedBaseUrl ? `${sanitizedBaseUrl}${path}` : path;
-  }, [resolvedAccountId, resolvedPlatform, since, until, sanitizedBaseUrl]);
+  };
 
-  const fetchWordDetails = useCallback(async (word, offset = 0) => {
+  const fetchWordDetails = async (word, offset = 0) => {
     const url = buildDetailsUrl(word, offset);
     if (!url) return null;
     let response;
     try {
-      response = await fetchWithTimeout(url, { headers: authHeaders });
+      response = await fetchWithTimeout(url);
     } catch (err) {
       if (isTimeoutError(err)) {
         throw new Error("Tempo esgotado ao carregar comentarios.");
@@ -220,7 +210,7 @@ export default function WordCloudCard({
       throw new Error(message || "Falha ao carregar comentarios.");
     }
     return response.json();
-  }, [authHeaders, buildDetailsUrl]);
+  };
 
   const closeDetails = () => {
     setSelectedWord(null);
@@ -254,7 +244,7 @@ export default function WordCloudCard({
     return () => {
       cancelled = true;
     };
-  }, [selectedWord, fetchWordDetails]);
+  }, [selectedWord, resolvedAccountId, resolvedPlatform, since, until, sanitizedBaseUrl]);
 
   useEffect(() => {
     if (!selectedWord) return undefined;
@@ -270,7 +260,7 @@ export default function WordCloudCard({
     return undefined;
   }, [selectedWord]);
 
-  const { data, error, isLoading, isValidating } = useSWR(swrKey, ([url]) => fetchWordCloud(url), {
+  const { data, error, isLoading, isValidating } = useSWR(requestKey, fetcher, {
     revalidateOnFocus: false,
     shouldRetryOnError: false,
     keepPreviousData: true,

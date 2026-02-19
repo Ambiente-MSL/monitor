@@ -14,7 +14,7 @@ from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 from typing import Any, Dict, List, Optional, Sequence, Union
 
-from flask import Flask, g, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from psycopg2.extras import Json
@@ -42,8 +42,6 @@ from meta import (
     ig_window,
     normalize_ig_audience_timeframe,
     gget,
-    reset_runtime_access_token,
-    set_runtime_access_token,
 )
 from ig_audience_snapshots import load_latest_snapshot, persist_audience_snapshot, resolve_snapshot_date
 from jobs.instagram_ingest import ingest_account_range, daterange
@@ -108,7 +106,6 @@ def _ensure_connected_accounts_table() -> None:
             f"""
             CREATE TABLE IF NOT EXISTS {CONNECTED_ACCOUNTS_TABLE} (
                 id TEXT PRIMARY KEY,
-                user_id UUID REFERENCES {APP_USERS_TABLE}(id) ON DELETE CASCADE,
                 label TEXT NOT NULL,
                 facebook_page_id TEXT NOT NULL,
                 instagram_user_id TEXT NOT NULL,
@@ -123,15 +120,6 @@ def _ensure_connected_accounts_table() -> None:
         )
         execute(
             f"CREATE INDEX IF NOT EXISTS {CONNECTED_ACCOUNTS_TABLE}_page_idx ON {CONNECTED_ACCOUNTS_TABLE} (facebook_page_id);"
-        )
-        execute(
-            f"ALTER TABLE {CONNECTED_ACCOUNTS_TABLE} ADD COLUMN IF NOT EXISTS user_id UUID;"
-        )
-        execute(
-            f"CREATE INDEX IF NOT EXISTS {CONNECTED_ACCOUNTS_TABLE}_user_idx ON {CONNECTED_ACCOUNTS_TABLE} (user_id);"
-        )
-        execute(
-            f"CREATE UNIQUE INDEX IF NOT EXISTS {CONNECTED_ACCOUNTS_TABLE}_user_page_unique_idx ON {CONNECTED_ACCOUNTS_TABLE} (user_id, facebook_page_id);"
         )
     except Exception as err:  # noqa: BLE001
         logger.error("Falha ao garantir tabela de contas conectadas: %s", err)
@@ -169,18 +157,9 @@ def _ensure_meta_tokens_table() -> None:
         logger.error("Falha ao garantir tabela de tokens Meta: %s", err)
 
 
-def _load_connected_accounts(user_id: Optional[str]) -> List[Dict[str, Any]]:
+def _load_connected_accounts() -> List[Dict[str, Any]]:
     try:
-        if not user_id:
-            return []
-        rows = fetch_all(
-            f"""
-            SELECT * FROM {CONNECTED_ACCOUNTS_TABLE}
-            WHERE user_id = %(user_id)s
-            ORDER BY label ASC
-            """,
-            {"user_id": user_id},
-        )
+        rows = fetch_all(f"SELECT * FROM {CONNECTED_ACCOUNTS_TABLE} ORDER BY label ASC")
         return [
             {
                 "id": row.get("id"),
@@ -1755,75 +1734,6 @@ def _extract_bearer_token(req) -> Optional[str]:
     if token:
         return token.strip()
     return None
-
-
-def _load_latest_meta_user_access_token(user_id: str) -> Optional[str]:
-    if not user_id:
-        return None
-    try:
-        row = fetch_one(
-            f"""
-            SELECT user_access_token, user_access_expires_at
-            FROM {META_TOKENS_TABLE}
-            WHERE user_id = %(user_id)s
-            ORDER BY updated_at DESC NULLS LAST, created_at DESC NULLS LAST
-            LIMIT 1
-            """,
-            {"user_id": user_id},
-        )
-    except Exception as err:  # noqa: BLE001
-        logger.warning("Falha ao carregar token Meta do usuario %s: %s", user_id, err)
-        return None
-    if not row:
-        return None
-
-    expires_at = row.get("user_access_expires_at")
-    expires_dt: Optional[datetime] = None
-    if isinstance(expires_at, datetime):
-        expires_dt = expires_at if expires_at.tzinfo else expires_at.replace(tzinfo=timezone.utc)
-    elif expires_at:
-        parsed = _parse_iso_datetime(expires_at)
-        if parsed:
-            expires_dt = parsed
-    if expires_dt and expires_dt <= datetime.now(timezone.utc):
-        return None
-
-    token_value = str(row.get("user_access_token") or "").strip()
-    return token_value or None
-
-
-@app.before_request
-def _bind_meta_runtime_access_token() -> None:
-    g.meta_runtime_ctx = None
-    auth_header = request.headers.get("Authorization", "").strip()
-    has_bearer_header = auth_header.lower().startswith("bearer ")
-    if not has_bearer_header:
-        return
-
-    request_token = _extract_bearer_token(request)
-    if not request_token:
-        g.meta_runtime_ctx = set_runtime_access_token("")
-        return
-
-    user_id = _decode_auth_token(request_token)
-    if not user_id:
-        g.meta_runtime_ctx = set_runtime_access_token("")
-        return
-
-    meta_token = _load_latest_meta_user_access_token(user_id)
-    if not meta_token:
-        g.meta_runtime_ctx = set_runtime_access_token("")
-        return
-
-    g.meta_runtime_ctx = set_runtime_access_token(meta_token)
-
-
-@app.teardown_request
-def _clear_meta_runtime_access_token(_exc: Optional[BaseException]) -> None:
-    ctx = getattr(g, "meta_runtime_ctx", None)
-    if ctx is not None:
-        reset_runtime_access_token(ctx)
-        g.meta_runtime_ctx = None
 
 
 def _serialize_user_row(row: Dict[str, Any]) -> Dict[str, Any]:
@@ -5473,9 +5383,9 @@ def ads_high():
 @app.get("/api/accounts/discover")
 def discover_accounts():
     """
-    Descobre automaticamente contas conectadas ao token Meta do usuario autenticado.
+    Descobre automaticamente todas as contas conectadas ao token do System User.
     Retorna paginas do Facebook, perfis do Instagram e contas de anuncios, alem
-    de uma lista normalizada para preencher o seletor no frontend.
+    de uma lista normalizada pronta para preencher o seletor no frontend.
     """
     def _normalize_ad_id(raw: Optional[str]) -> str:
         if not raw:
@@ -5484,25 +5394,6 @@ def discover_accounts():
         if not raw_str:
             return ""
         return raw_str if raw_str.startswith("act_") else f"act_{raw_str}"
-
-    user, error = _authenticate_request(request)
-    if error:
-        return error
-    user_id = str(user.get("id") or "").strip()
-    persisted_accounts = _load_connected_accounts(user_id)
-    user_access_token = _load_latest_meta_user_access_token(user_id)
-    if not user_access_token:
-        return jsonify({
-            "pages": [],
-            "instagramAccounts": [],
-            "adAccounts": [],
-            "accounts": [],
-            "persistedAccounts": persisted_accounts,
-            "totalPages": 0,
-            "totalInstagram": 0,
-            "totalAdAccounts": 0,
-            "note": "Nenhum token Meta conectado para este usuário.",
-        })
 
     try:
         # 1. Buscar todas as páginas que o usuário administra
@@ -5606,7 +5497,7 @@ def discover_accounts():
             "instagramAccounts": instagram_accounts,
             "adAccounts": ad_accounts,
             "accounts": normalized_accounts,
-            "persistedAccounts": persisted_accounts,
+            "persistedAccounts": _load_connected_accounts(),
             "totalPages": len(pages),
             "totalInstagram": len(instagram_accounts),
             "totalAdAccounts": len(ad_accounts),
@@ -5627,19 +5518,11 @@ def discover_accounts():
         return jsonify({"error": str(err)}), 500
 
 
-def _persist_connected_account(
-    payload: Dict[str, Any],
-    *,
-    user_id: str,
-    account_id: Optional[str] = None,
-) -> Dict[str, Any]:
+def _persist_connected_account(payload: Dict[str, Any], *, account_id: Optional[str] = None) -> Dict[str, Any]:
     _ensure_connected_accounts_table()
-    if not user_id:
-        raise ValueError("user_id is required")
     account_id = account_id or str(uuid4())
     params = {
         "id": account_id,
-        "user_id": user_id,
         "label": payload.get("label"),
         "facebook_page_id": payload.get("facebookPageId") or payload.get("facebook_page_id"),
         "instagram_user_id": payload.get("instagramUserId") or payload.get("instagram_user_id"),
@@ -5650,14 +5533,13 @@ def _persist_connected_account(
     execute(
         f"""
         INSERT INTO {CONNECTED_ACCOUNTS_TABLE} (
-            id, user_id, label, facebook_page_id, instagram_user_id, ad_account_id,
+            id, label, facebook_page_id, instagram_user_id, ad_account_id,
             profile_picture_url, page_picture_url, source, created_at, updated_at
         ) VALUES (
-            %(id)s, %(user_id)s, %(label)s, %(facebook_page_id)s, %(instagram_user_id)s, %(ad_account_id)s,
+            %(id)s, %(label)s, %(facebook_page_id)s, %(instagram_user_id)s, %(ad_account_id)s,
             %(profile_picture_url)s, %(page_picture_url)s, 'manual', NOW(), NOW()
         )
         ON CONFLICT (id) DO UPDATE SET
-            user_id = EXCLUDED.user_id,
             label = EXCLUDED.label,
             facebook_page_id = EXCLUDED.facebook_page_id,
             instagram_user_id = EXCLUDED.instagram_user_id,
@@ -5686,14 +5568,7 @@ def list_connected_accounts():
     if error:
         return error
     try:
-        rows = fetch_all(
-            f"""
-            SELECT * FROM {CONNECTED_ACCOUNTS_TABLE}
-            WHERE user_id = %(user_id)s
-            ORDER BY label ASC
-            """,
-            {"user_id": user.get("id")},
-        )
+        rows = fetch_all(f"SELECT * FROM {CONNECTED_ACCOUNTS_TABLE} ORDER BY label ASC")
     except Exception as err:  # noqa: BLE001
         logger.error("Failed to list connected accounts: %s", err)
         return jsonify({"error": "could not list accounts"}), 500
@@ -5723,22 +5598,7 @@ def create_connected_account():
         if not body.get(field):
             return jsonify({"error": f"{field} is required"}), 400
     try:
-        existing = fetch_one(
-            f"""
-            SELECT id FROM {CONNECTED_ACCOUNTS_TABLE}
-            WHERE user_id = %(user_id)s AND facebook_page_id = %(facebook_page_id)s
-            LIMIT 1
-            """,
-            {
-                "user_id": user.get("id"),
-                "facebook_page_id": body.get("facebookPageId"),
-            },
-        )
-        account = _persist_connected_account(
-            body,
-            user_id=user.get("id"),
-            account_id=existing.get("id") if existing else None,
-        )
+        account = _persist_connected_account(body)
         return jsonify({"account": account}), 201
     except Exception as err:  # noqa: BLE001
         logger.error("Failed to create connected account: %s", err)
@@ -5754,20 +5614,7 @@ def update_connected_account(account_id: str):
     if not body.get("label"):
         return jsonify({"error": "label is required"}), 400
     try:
-        existing = fetch_one(
-            f"""
-            SELECT id, user_id
-            FROM {CONNECTED_ACCOUNTS_TABLE}
-            WHERE id = %(id)s
-            LIMIT 1
-            """,
-            {"id": account_id},
-        )
-        if not existing:
-            return jsonify({"error": "account not found"}), 404
-        if str(existing.get("user_id") or "") != str(user.get("id") or ""):
-            return jsonify({"error": "forbidden"}), 403
-        account = _persist_connected_account(body, user_id=user.get("id"), account_id=account_id)
+        account = _persist_connected_account(body, account_id=account_id)
         return jsonify({"account": account})
     except Exception as err:  # noqa: BLE001
         logger.error("Failed to update connected account %s: %s", account_id, err)
@@ -5780,13 +5627,7 @@ def delete_connected_account(account_id: str):
     if error:
         return error
     try:
-        execute(
-            f"""
-            DELETE FROM {CONNECTED_ACCOUNTS_TABLE}
-            WHERE id = %(id)s AND user_id = %(user_id)s
-            """,
-            {"id": account_id, "user_id": user.get("id")},
-        )
+        execute(f"DELETE FROM {CONNECTED_ACCOUNTS_TABLE} WHERE id = %(id)s", {"id": account_id})
     except Exception as err:  # noqa: BLE001
         logger.error("Failed to delete connected account %s: %s", account_id, err)
         return jsonify({"error": "could not delete account"}), 500

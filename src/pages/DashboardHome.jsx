@@ -12,13 +12,16 @@ import DataState from '../components/DataState';
 import useQueryState from '../hooks/useQueryState';
 
 import { useAccounts } from '../context/AccountsContext';
-import { useAuth } from '../context/AuthContext';
+
+import { DEFAULT_ACCOUNTS } from '../data/accounts';
 import { getApiErrorMessage, unwrapApiData } from '../lib/apiEnvelope';
 import { fetchWithTimeout, isTimeoutError } from '../lib/fetchWithTimeout';
 
 
 
 const API_BASE_URL = (process.env.REACT_APP_API_URL || '').replace(/\/$/, '');
+
+const FALLBACK_ACCOUNT_ID = DEFAULT_ACCOUNTS[0]?.id || '';
 
 const FACEBOOK_FEATURE_ENABLED = false;
 
@@ -112,13 +115,8 @@ const { setTopbarConfig, resetTopbarConfig } = outletContext;
   const buildLink = (pathname) => (search ? { pathname, search } : pathname);
 
   const { accounts, loading: accountsLoading } = useAccounts();
-  const { token } = useAuth();
-  const authHeaders = useMemo(
-    () => (token ? { Authorization: `Bearer ${token}` } : {}),
-    [token],
-  );
 
-  const availableAccounts = accounts;
+  const availableAccounts = accounts.length ? accounts : DEFAULT_ACCOUNTS;
 
   const topbarAccountControl = useMemo(() => <AccountSelect />, []);
 
@@ -132,7 +130,7 @@ const { setTopbarConfig, resetTopbarConfig } = outletContext;
     return () => resetTopbarConfig?.();
   }, [setTopbarConfig, resetTopbarConfig, topbarAccountControl]);
 
-  const [get, setQuery] = useQueryState({ account: '' });
+  const [get, setQuery] = useQueryState({ account: FALLBACK_ACCOUNT_ID });
 
   const accountIdQuery = get('account');
 
@@ -175,7 +173,7 @@ const { setTopbarConfig, resetTopbarConfig } = outletContext;
   const fetchJson = useCallback(async (url) => {
     let response;
     try {
-      response = await fetchWithTimeout(url, { headers: authHeaders });
+      response = await fetchWithTimeout(url);
     } catch (err) {
       if (isTimeoutError(err)) {
         throw new Error("Tempo esgotado ao carregar dados.");
@@ -195,7 +193,7 @@ const { setTopbarConfig, resetTopbarConfig } = outletContext;
       throw new Error(getApiErrorMessage(json, `HTTP ${response.status}`));
     }
     return unwrapApiData(json, {});
-  }, [authHeaders]);
+  }, []);
 
   const [instagramReach30d, setInstagramReach30d] = useState({ value: null, cacheAt: null });
 
