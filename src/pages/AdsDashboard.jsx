@@ -1042,6 +1042,27 @@ export default function AdsDashboard() {
     return [];
   }, [adsData]);
 
+  const topPerformers = useMemo(() => {
+    if (!topCampaigns.length) return { ctr: null, engagement: null, cpc: null, reach: null };
+    const withCtr = topCampaigns.filter((c) => Number(c.ctr) > 0);
+    const withCpc = topCampaigns.filter((c) => Number(c.cpc) > 0);
+    const withEngagement = topCampaigns.filter((c) => {
+      const impressions = Number(c.impressions || 0);
+      const clicks = Number(c.clicks || 0);
+      return impressions > 0 && clicks > 0;
+    });
+    const withReach = topCampaigns.filter((c) => Number(c.reach) > 0);
+    return {
+      ctr: withCtr.length ? withCtr.reduce((best, c) => Number(c.ctr) > Number(best.ctr) ? c : best) : null,
+      engagement: withEngagement.length ? withEngagement.reduce((best, c) => {
+        const rate = (c) => Number(c.impressions) > 0 ? Number(c.clicks) / Number(c.impressions) : 0;
+        return rate(c) > rate(best) ? c : best;
+      }) : null,
+      cpc: withCpc.length ? withCpc.reduce((best, c) => Number(c.cpc) < Number(best.cpc) ? c : best) : null,
+      reach: withReach.length ? withReach.reduce((best, c) => Number(c.reach) > Number(best.reach) ? c : best) : null,
+    };
+  }, [topCampaigns]);
+
   const objectivePerformance = useMemo(() => {
     if (!Array.isArray(adsData?.campaigns) || !adsData.campaigns.length) {
       return [];
@@ -2222,13 +2243,12 @@ export default function AdsDashboard() {
                           letterSpacing: "0.05em",
                         }}
                       >
-                        <th style={{ textAlign: "left", padding: "8px 12px", width: "28%" }}>Anúncio</th>
-                        <th style={{ textAlign: "left", padding: "8px 12px", width: "22%" }}>Campanha</th>
-                        <th style={{ textAlign: "right", padding: "8px 12px", width: "10%" }}>Impressões</th>
-                        <th style={{ textAlign: "right", padding: "8px 12px", width: "10%" }}>Cliques</th>
-                        <th style={{ textAlign: "right", padding: "8px 12px", width: "8%" }}>CTR</th>
-                        <th style={{ textAlign: "right", padding: "8px 12px", width: "10%" }}>Investimento</th>
-                        <th style={{ textAlign: "right", padding: "8px 12px", width: "10%" }}>CPA</th>
+                        <th style={{ textAlign: "left", padding: "8px 12px", width: "30%" }}>Anúncio</th>
+                        <th style={{ textAlign: "left", padding: "8px 12px", width: "24%" }}>Campanha</th>
+                        <th style={{ textAlign: "right", padding: "8px 12px", width: "12%" }}>Impressões</th>
+                        <th style={{ textAlign: "right", padding: "8px 12px", width: "11%" }}>Cliques</th>
+                        <th style={{ textAlign: "right", padding: "8px 12px", width: "9%" }}>CTR</th>
+                        <th style={{ textAlign: "right", padding: "8px 12px", width: "14%" }}>Investimento</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -2282,7 +2302,11 @@ export default function AdsDashboard() {
                               </div>
                             </div>
                           </td>
-                          <td style={{ padding: "14px 12px", color: "#374151", fontSize: "13px" }}>{item.campaign || "—"}</td>
+                          <td style={{ padding: "14px 12px", color: "#374151", fontSize: "13px", maxWidth: "180px" }}>
+                            <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={item.campaign}>
+                              {item.campaign || "—"}
+                            </span>
+                          </td>
                           <td style={{ padding: "14px 12px", textAlign: "right", fontWeight: 600, color: "#111827" }}>
                             {formatNumber(item.impressions)}
                           </td>
@@ -2292,11 +2316,8 @@ export default function AdsDashboard() {
                           <td style={{ padding: "14px 12px", textAlign: "right", fontWeight: 700, color: "#0ea5e9" }}>
                             {item.ctr != null ? `${formatPercentage(item.ctr)}%` : "—"}
                           </td>
-                          <td style={{ padding: "14px 12px", textAlign: "right", fontWeight: 700, color: "#111827" }}>
+                          <td style={{ padding: "14px 12px", textAlign: "right", fontWeight: 700, color: "#111827", borderTopRightRadius: "12px", borderBottomRightRadius: "12px" }}>
                             {formatCurrency(item.spend)}
-                          </td>
-                          <td style={{ padding: "14px 12px", textAlign: "right", fontWeight: 700, color: "#10b981" }}>
-                            {Number.isFinite(item.cpa) ? formatCurrency(item.cpa) : "—"}
                           </td>
                         </tr>
                       ))}
@@ -2348,54 +2369,14 @@ export default function AdsDashboard() {
                       textTransform: "uppercase",
                       letterSpacing: "0.05em"
                     }}>
-                      <th style={{
-                        textAlign: "left",
-                        padding: "8px 16px",
-                        width: "30%",
-                        minWidth: "200px",
-                        resize: "horizontal",
-                        overflow: "hidden"
-                      }}>Nome da Campanha</th>
-                      <th style={{
-                        textAlign: "left",
-                        padding: "8px 16px",
-                        width: "15%",
-                        minWidth: "120px",
-                        resize: "horizontal",
-                        overflow: "hidden"
-                      }}>Objetivo</th>
-                      <th style={{
-                        textAlign: "right",
-                        padding: "8px 16px",
-                        width: "15%",
-                        minWidth: "100px",
-                        resize: "horizontal",
-                        overflow: "hidden"
-                      }}>Impressões</th>
-                      <th style={{
-                        textAlign: "right",
-                        padding: "8px 16px",
-                        width: "12%",
-                        minWidth: "90px",
-                        resize: "horizontal",
-                        overflow: "hidden"
-                      }}>Cliques</th>
-                      <th style={{
-                        textAlign: "right",
-                        padding: "8px 16px",
-                        width: "10%",
-                        minWidth: "70px",
-                        resize: "horizontal",
-                        overflow: "hidden"
-                      }}>CTR</th>
-                      <th style={{
-                        textAlign: "right",
-                        padding: "8px 16px",
-                        width: "18%",
-                        minWidth: "120px",
-                        resize: "horizontal",
-                        overflow: "hidden"
-                      }}>Investimento</th>
+                      <th style={{ textAlign: "left", padding: "8px 16px", width: "28%" }}>Nome da Campanha</th>
+                      <th style={{ textAlign: "left", padding: "8px 16px", width: "13%" }}>Objetivo</th>
+                      <th style={{ textAlign: "right", padding: "8px 16px", width: "12%" }}>Alcance</th>
+                      <th style={{ textAlign: "right", padding: "8px 16px", width: "10%" }}>Cliques</th>
+                      <th style={{ textAlign: "right", padding: "8px 16px", width: "9%" }}>CTR</th>
+                      <th style={{ textAlign: "right", padding: "8px 16px", width: "9%" }}>CPC</th>
+                      <th style={{ textAlign: "right", padding: "8px 16px", width: "9%" }}>Eng.</th>
+                      <th style={{ textAlign: "right", padding: "8px 16px", width: "10%" }}>Invest.</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2451,14 +2432,16 @@ export default function AdsDashboard() {
                             }}>
                               #{index + 1}
                             </span>
-                            <span>{campaign.name || "—"}</span>
+                            <span style={{
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                              maxWidth: "180px",
+                              display: "block",
+                            }} title={campaign.name}>{campaign.name || "—"}</span>
                           </div>
                         </td>
-                        <td style={{
-                          padding: "16px",
-                          fontSize: "13px",
-                          color: "#6b7280"
-                        }}>
+                        <td style={{ padding: "16px", fontSize: "13px", color: "#6b7280" }}>
                           <span style={{
                             padding: "4px 10px",
                             borderRadius: "6px",
@@ -2475,33 +2458,49 @@ export default function AdsDashboard() {
                             {objectiveLabel}
                           </span>
                         </td>
-                        <td style={{
-                          padding: "16px",
-                          textAlign: "right",
-                          fontSize: "14px",
-                          fontWeight: "600",
-                          color: "#374151"
-                        }}>
-                          {formatNumber(Number(campaign.impressions || 0))}
+                        {/* Alcance */}
+                        <td style={{ padding: "16px", textAlign: "right", fontSize: "14px", fontWeight: "600", color: "#374151" }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "4px" }}>
+                            {topPerformers.reach?.id === campaign.id && (
+                              <span title="Maior alcance" style={{ fontSize: "14px" }}>🏆</span>
+                            )}
+                            {formatNumber(Number(campaign.reach || 0))}
+                          </div>
                         </td>
-                        <td style={{
-                          padding: "16px",
-                          textAlign: "right",
-                          fontSize: "14px",
-                          fontWeight: "600",
-                          color: "#374151"
-                        }}>
+                        {/* Cliques */}
+                        <td style={{ padding: "16px", textAlign: "right", fontSize: "14px", fontWeight: "600", color: "#374151" }}>
                           {formatNumber(Number(campaign.clicks || 0))}
                         </td>
-                        <td style={{
-                          padding: "16px",
-                          textAlign: "right",
-                          fontSize: "14px",
-                          fontWeight: "700",
-                          color: "#6366f1"
-                        }}>
-                          {campaign.ctr != null ? `${formatPercentage(Number(campaign.ctr))}%` : "—"}
+                        {/* CTR */}
+                        <td style={{ padding: "16px", textAlign: "right", fontSize: "14px", fontWeight: "700", color: topPerformers.ctr?.id === campaign.id ? "#6366f1" : "#374151" }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "4px" }}>
+                            {topPerformers.ctr?.id === campaign.id && (
+                              <span title="Maior taxa de cliques" style={{ fontSize: "14px" }}>🏆</span>
+                            )}
+                            {campaign.ctr != null ? `${formatPercentage(Number(campaign.ctr))}%` : "—"}
+                          </div>
                         </td>
+                        {/* CPC */}
+                        <td style={{ padding: "16px", textAlign: "right", fontSize: "14px", fontWeight: "600", color: topPerformers.cpc?.id === campaign.id ? "#10b981" : "#374151" }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "4px" }}>
+                            {topPerformers.cpc?.id === campaign.id && (
+                              <span title="Menor custo por clique" style={{ fontSize: "14px" }}>🏆</span>
+                            )}
+                            {campaign.cpc != null ? formatCurrency(Number(campaign.cpc)) : "—"}
+                          </div>
+                        </td>
+                        {/* Engajamento (clicks/impressions) */}
+                        <td style={{ padding: "16px", textAlign: "right", fontSize: "14px", fontWeight: "600", color: topPerformers.engagement?.id === campaign.id ? "#f97316" : "#374151" }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "4px" }}>
+                            {topPerformers.engagement?.id === campaign.id && (
+                              <span title="Maior taxa de engajamento" style={{ fontSize: "14px" }}>🏆</span>
+                            )}
+                            {Number(campaign.impressions) > 0
+                              ? `${formatPercentage((Number(campaign.clicks) / Number(campaign.impressions)) * 100)}%`
+                              : "—"}
+                          </div>
+                        </td>
+                        {/* Investimento */}
                         <td style={{
                           padding: "16px",
                           textAlign: "right",
