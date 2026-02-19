@@ -42,7 +42,6 @@ import DataState from "../components/DataState";
 import CustomChartTooltip from "../components/CustomChartTooltip";
 import DateRangeIndicator from "../components/DateRangeIndicator";
 import { useAccounts } from "../context/AccountsContext";
-import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import { useAuth } from "../context/AuthContext";
 import useQueryState from "../hooks/useQueryState";
 import { isApiEnvelope, unwrapApiData } from "../lib/apiEnvelope";
@@ -112,11 +111,12 @@ export default function AdsDashboard() {
   const outletContext = useOutletContext() || {};
   const { setTopbarConfig, resetTopbarConfig } = outletContext;
   const { accounts, loading: accountsLoading } = useAccounts();
-  const { apiFetch } = useAuth();
-  const availableAccounts = useMemo(
-    () => (accounts.length ? accounts : DEFAULT_ACCOUNTS),
-    [accounts],
+  const { apiFetch, token } = useAuth();
+  const authHeaders = useMemo(
+    () => (token ? { Authorization: `Bearer ${token}` } : {}),
+    [token],
   );
+  const availableAccounts = useMemo(() => accounts, [accounts]);
   const [getQuery, setQuery] = useQueryState({ account: availableAccounts[0]?.id || "" });
   const queryAccountId = getQuery("account");
   const selectedAccount = useMemo(() => {
@@ -321,7 +321,7 @@ export default function AdsDashboard() {
       try {
         const params = new URLSearchParams({ igUserId: selectedAccount.instagramUserId, limit: "1" });
         const url = `${API_BASE_URL}/api/instagram/posts?${params.toString()}`;
-        const resp = await fetchWithTimeout(url);
+        const resp = await fetchWithTimeout(url, { headers: authHeaders });
         const json = unwrapApiData(await resp.json(), {});
 
         if (json.account) {
@@ -336,7 +336,7 @@ export default function AdsDashboard() {
     };
 
     fetchInstagramProfile();
-  }, [selectedAccount?.instagramUserId]);
+  }, [selectedAccount?.instagramUserId, authHeaders]);
 
   const formatNumber = (num) => {
     if (typeof num !== "number") return num;

@@ -4,11 +4,9 @@ import { useNavigate } from "react-router-dom";
 import useQueryState from "../hooks/useQueryState";
 import { useAccounts } from "../context/AccountsContext";
 import { useAuth } from "../context/AuthContext";
-import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import { unwrapApiData } from "../lib/apiEnvelope";
 import { fetchWithTimeout } from "../lib/fetchWithTimeout";
 
-const FALLBACK_ACCOUNT_ID = DEFAULT_ACCOUNTS[0]?.id || "";
 const API_BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 const EMPTY_ACCOUNT_FORM = {
   label: "",
@@ -21,8 +19,8 @@ export default function AccountSelect() {
   const { accounts, loading, addAccount } = useAccounts();
   const { token, signOut } = useAuth();
   const navigate = useNavigate();
-  const availableAccounts = accounts.length ? accounts : DEFAULT_ACCOUNTS;
-  const [get, set] = useQueryState({ account: FALLBACK_ACCOUNT_ID });
+  const availableAccounts = accounts;
+  const [get, set] = useQueryState({ account: "" });
   const queryAccount = get("account");
   const [isOpen, setIsOpen] = useState(false);
   const [isAddFormVisible, setIsAddFormVisible] = useState(false);

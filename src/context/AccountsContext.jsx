@@ -1,6 +1,5 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { fetchWithTimeout, isTimeoutError } from "../lib/fetchWithTimeout";
-import { createDefaultAccounts } from "../data/accounts";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { isTimeoutError } from "../lib/fetchWithTimeout";
 import { useAuth } from "./AuthContext";
 
 const API_BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
@@ -96,7 +95,7 @@ function generateAccountId(label, existing = []) {
 }
 
 export function AccountsProvider({ children }) {
-  const [accounts, setAccounts] = useState(() => createDefaultAccounts());
+  const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const { apiFetch, token } = useAuth();
@@ -110,49 +109,44 @@ export function AccountsProvider({ children }) {
     const controller = new AbortController();
 
     const discoverAccounts = async () => {
+      if (!token) {
+        if (!cancelled) {
+          setAccounts([]);
+          setLoading(false);
+          setError("");
+        }
+        return;
+      }
       setLoading(true);
       setError("");
       // 1) Contas persistidas (manuais)
-      if (token) {
-        try {
-          const savedBody = await apiFetch(MANAGED_ACCOUNTS_ENDPOINT);
-          const rawSaved = Array.isArray(savedBody?.accounts) ? savedBody.accounts : [];
-          const normalizedSaved = [];
-          for (const item of rawSaved) {
-            const account = normalizeAccount({ ...item, source: item.source || "manual" }, normalizedSaved);
-            if (account) normalizedSaved.push(account);
-          }
-          if (!cancelled && normalizedSaved.length) {
-            setAccounts((prev) => {
-              const merged = [...prev];
-              const ids = new Set(merged.map((acc) => acc.id));
-              normalizedSaved.forEach((acc) => {
-                if (!ids.has(acc.id)) {
-                  merged.push(acc);
-                  ids.add(acc.id);
-                }
-              });
-              return merged;
-            });
-          }
-        } catch (err) {
-          if (!cancelled) {
-            setError("Falha ao carregar contas salvas.");
-          }
+      try {
+        const savedBody = await apiFetch(MANAGED_ACCOUNTS_ENDPOINT);
+        const rawSaved = Array.isArray(savedBody?.accounts) ? savedBody.accounts : [];
+        const normalizedSaved = [];
+        for (const item of rawSaved) {
+          const account = normalizeAccount({ ...item, source: item.source || "manual" }, normalizedSaved);
+          if (account) normalizedSaved.push(account);
+        }
+        if (!cancelled) {
+          setAccounts(normalizedSaved);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError("Falha ao carregar contas salvas.");
         }
       }
 
       // 2) Descobrir contas do token
       try {
-        const response = await fetchWithTimeout(DISCOVER_ACCOUNTS_ENDPOINT, {
+        const body = await apiFetch(DISCOVER_ACCOUNTS_ENDPOINT, {
           signal: controller.signal,
         });
-        if (!response.ok) {
-          throw new Error(`Request failed with status ${response.status}`);
-        }
-        const body = await response.json();
         const rawList = Array.isArray(body?.accounts) ? body.accounts : [];
-        if (!rawList.length || cancelled) {
+        if (cancelled) {
+          return;
+        }
+        if (!rawList.length) {
           if (!cancelled) {
             setLoading(false);
           }
@@ -256,7 +250,7 @@ export function AccountsProvider({ children }) {
     };
   }, [apiFetch, token]);
 
-  const addAccount = async (payload) => {
+  const addAccount = useCallback(async (payload) => {
     const body = {
       label: payload.label.trim(),
       facebookPageId: payload.facebookPageId.trim(),
@@ -286,9 +280,9 @@ export function AccountsProvider({ children }) {
       console.warn("Falha ao adicionar conta no backend, mantendo local.", err);
       setAccounts((prev) => [...prev, { ...body, id: generateAccountId(body.label, prev) }]);
     }
-  };
+  }, [apiFetch]);
 
-  const updateAccount = async (id, payload) => {
+  const updateAccount = useCallback(async (id, payload) => {
     const body = {
       label: payload.label.trim(),
       facebookPageId: payload.facebookPageId.trim(),
@@ -310,11 +304,11 @@ export function AccountsProvider({ children }) {
     } catch (err) {
       console.warn("Falha ao atualizar conta no backend.", err);
     }
-  };
+  }, [apiFetch]);
 
-  const removeAccount = async (id) => {
+  const removeAccount = useCallback(async (id) => {
     try {
-      const resp = await apiFetch(`${MANAGED_ACCOUNTS_ENDPOINT}/${id}`, {
+      await apiFetch(`${MANAGED_ACCOUNTS_ENDPOINT}/${id}`, {
         method: "DELETE",
       });
     } catch (err) {
@@ -322,9 +316,9 @@ export function AccountsProvider({ children }) {
     }
     setAccounts((prev) => {
       const next = prev.filter((account) => account.id !== id);
-      return next.length ? next : createDefaultAccounts();
+      return next;
     });
-  };
+  }, [apiFetch]);
 
   const value = useMemo(
     () => ({
@@ -335,7 +329,7 @@ export function AccountsProvider({ children }) {
       updateAccount,
       removeAccount,
     }),
-    [accounts, loading, error],
+    [accounts, loading, error, addAccount, updateAccount, removeAccount],
   );
 
   return <AccountsContext.Provider value={value}>{children}</AccountsContext.Provider>;

@@ -5,6 +5,7 @@ import hmac
 import hashlib
 import logging
 import copy
+from contextvars import ContextVar
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 import requests
@@ -26,6 +27,8 @@ VERSION = os.getenv("META_GRAPH_VERSION", "v23.0")
 TOKEN = os.getenv("META_SYSTEM_USER_TOKEN")
 SECRET = os.getenv("META_APP_SECRET")
 BASE = f"https://graph.facebook.com/{VERSION}"
+
+RUNTIME_ACCESS_TOKEN: ContextVar[Optional[str]] = ContextVar("meta_runtime_access_token", default=None)
 
 # Configurações
 REQUEST_TIMEOUT = 30  # segundos
@@ -71,6 +74,20 @@ def appsecret_proof(token: Optional[str]) -> Optional[str]:
     return hmac.new(SECRET.encode(), token.encode(), hashlib.sha256).hexdigest()
 
 
+def set_runtime_access_token(token: Optional[str]):
+    normalized = str(token).strip() if token is not None else None
+    return RUNTIME_ACCESS_TOKEN.set(normalized)
+
+
+def reset_runtime_access_token(ctx_token) -> None:
+    if ctx_token is None:
+        return
+    try:
+        RUNTIME_ACCESS_TOKEN.reset(ctx_token)
+    except Exception:  # noqa: BLE001
+        return
+
+
 def gget(path: str, params: Optional[dict] = None, token: Optional[str] = None):
     """
     Faz requisição GET à Meta Graph API com retry exponencial e timeout configurável.
@@ -86,9 +103,15 @@ def gget(path: str, params: Optional[dict] = None, token: Optional[str] = None):
     Raises:
         MetaAPIError: Se a requisição falhar após todos os retries
     """
-    request_token = token or TOKEN
+    runtime_token = RUNTIME_ACCESS_TOKEN.get()
+    if token:
+        request_token = token
+    elif runtime_token is not None:
+        request_token = runtime_token
+    else:
+        request_token = TOKEN
     if not request_token:
-        raise RuntimeError("META_SYSTEM_USER_TOKEN is not configured")
+        raise RuntimeError("META access token is not configured for this request")
 
     query = {"access_token": request_token}
     proof = appsecret_proof(request_token)
@@ -181,10 +204,16 @@ def get_page_access_token(page_id: str) -> str:
     Returns:
         str: Page access token
     """
+    runtime_token = RUNTIME_ACCESS_TOKEN.get()
+    scope = "system"
+    if runtime_token is not None:
+        scope = hashlib.sha1(runtime_token.encode()).hexdigest()[:16] if runtime_token else "strict-empty"
+    cache_key = f"{scope}:{page_id}"
+
     # Verificar cache primeiro
-    if page_id in PAGE_TOKEN_CACHE:
-        logger.debug(f"Using cached page token for {page_id}")
-        return PAGE_TOKEN_CACHE[page_id]
+    if cache_key in PAGE_TOKEN_CACHE:
+        logger.debug(f"Using cached page token for {page_id} ({scope})")
+        return PAGE_TOKEN_CACHE[cache_key]
 
     # Buscar token da API
     logger.info(f"Fetching page access token for {page_id}")
@@ -195,7 +224,7 @@ def get_page_access_token(page_id: str) -> str:
         raise RuntimeError(f"Could not fetch page access token for {page_id}")
 
     # Armazenar em cache
-    PAGE_TOKEN_CACHE[page_id] = token_value
+    PAGE_TOKEN_CACHE[cache_key] = token_value
     logger.info(f"Page token cached for {page_id}")
 
     return token_value
