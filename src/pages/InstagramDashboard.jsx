@@ -3839,7 +3839,7 @@ const profileViewsMetric = useMemo(() => {
                   </div>
                 )}
                 {!coverImage && (
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#6b7280" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--muted)" }}>
                     <InstagramIcon size={32} />
                     <span style={{ fontWeight: 600 }}>Capa não configurada</span>
                   </div>
@@ -3877,13 +3877,13 @@ const profileViewsMetric = useMemo(() => {
                   <label
                     htmlFor="ig-cover-upload"
                     style={{
-                      background: "rgba(255,255,255,0.9)",
-                      color: "#111827",
+                      background: "var(--panel)",
+                      color: "var(--fg)",
                       borderRadius: "6px",
                       padding: "4px 8px",
                       fontSize: "0.75rem",
                       cursor: "pointer",
-                      border: "1px solid #e5e7eb",
+                      border: "1px solid var(--stroke)",
                       fontWeight: 600,
                     }}
                   >
@@ -3933,7 +3933,7 @@ const profileViewsMetric = useMemo(() => {
                 </h3>
 
                 <div className="ig-profile-vertical__stats-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0', marginTop: '20px' }}>
-                  <div className="ig-overview-stat" style={{ paddingBottom: '16px', borderBottom: '1px solid #e5e7eb' }}>
+                  <div className="ig-overview-stat" style={{ paddingBottom: '16px', borderBottom: '1px solid var(--stroke)' }}>
                     <div className="ig-overview-stat__trend" style={{ visibility: 'hidden' }}>
                       <span>&nbsp;</span>
                     </div>
@@ -3946,7 +3946,7 @@ const profileViewsMetric = useMemo(() => {
                     </div>
                     <div className="ig-overview-stat__label">Total de seguidores</div>
                   </div>
-                  <div className="ig-overview-stat" style={{ paddingBottom: '16px', borderBottom: '1px solid #e5e7eb' }}>
+                  <div className="ig-overview-stat" style={{ paddingBottom: '16px', borderBottom: '1px solid var(--stroke)' }}>
                     <div className={`ig-overview-stat__trend ${!metricsLoading && reachDeltaDisplay && reachDeltaDirection ? `ig-overview-stat__trend--${reachDeltaDirection}` : ''}`} style={!metricsLoading && reachDeltaDisplay && reachDeltaDirection ? {} : { visibility: 'hidden' }}>
                       {reachDeltaDirection === "down" ? (
                         <TrendingDown size={12} aria-hidden="true" />
@@ -4205,8 +4205,8 @@ const profileViewsMetric = useMemo(() => {
 
             {/* Hashtags mais usadas - Coluna Esquerda */}
             <section className="ig-card-white" style={{ marginTop: '20px' }}>
-              <div className="ig-analytics-card__header" style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb' }}>
-                <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div className="ig-analytics-card__header" style={{ padding: '16px 20px', borderBottom: '1px solid var(--stroke)' }}>
+                <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--fg)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   Hashtags mais usadas
                   <InfoTooltip text="Hashtags que aparecem com maior frequência nas publicações." />
                 </h4>
@@ -4248,7 +4248,7 @@ const profileViewsMetric = useMemo(() => {
                     alignItems: 'center',
                     justifyContent: 'center',
                     height: '200px',
-                    color: '#9ca3af',
+                    color: 'var(--muted)',
                     fontSize: '14px'
                   }}>
                     Sem hashtags registradas no período.
@@ -4310,29 +4310,29 @@ const profileViewsMetric = useMemo(() => {
                   marginBottom: '24px'
                 }}>
                   <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '28px', fontWeight: 700, color: '#111827' }}>
+                    <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--fg)' }}>
                       {formatNumber(totalFollowers ?? 0)}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Total de Seguidores</div>
+                    <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>Total de Seguidores</div>
                   </div>
                   <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
                     <div style={{ fontSize: '28px', fontWeight: 700, color: '#10b981' }}>
                       {followersGainedDisplay}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Novos Seguidores</div>
+                    <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>Novos Seguidores</div>
                   </div>
                   <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
                     <div style={{ fontSize: '28px', fontWeight: 700, color: '#a855f7' }}>
                       {followersGrowthPctDisplay}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Crescimento</div>
+                    <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>Crescimento</div>
                   </div>
                 </div>
 
                 {/* Gráfico de Crescimento */}
                 <section className="ig-card-white" style={{ marginBottom: '24px' }}>
-                  <div style={{ padding: '20px', borderBottom: '1px solid #e5e7eb' }}>
-                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827' }}>
+                  <div style={{ padding: '20px', borderBottom: '1px solid var(--stroke)' }}>
+                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--fg)' }}>
                       Crescimento ao longo do período
                     </h4>
                   </div>
@@ -4400,8 +4400,8 @@ const profileViewsMetric = useMemo(() => {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', marginBottom: '24px' }}>
                   {/* Gênero */}
                   <section className="ig-card-white">
-                    <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb' }}>
-                      <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: '#111827' }}>
+                    <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--stroke)' }}>
+                      <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: 'var(--fg)' }}>
                         Gênero dos seguidores
                       </h4>
                     </div>
@@ -4444,8 +4444,8 @@ const profileViewsMetric = useMemo(() => {
 
                   {/* Faixa Etária */}
                   <section className="ig-card-white">
-                    <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb' }}>
-                      <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: '#111827' }}>
+                    <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--stroke)' }}>
+                      <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: 'var(--fg)' }}>
                         Faixa etária
                       </h4>
                     </div>
@@ -4496,8 +4496,8 @@ const profileViewsMetric = useMemo(() => {
 
                 {/* Principais Cidades */}
                 <section className="ig-card-white">
-                  <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb' }}>
-                    <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: '#111827' }}>
+                  <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--stroke)' }}>
+                    <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: 'var(--fg)' }}>
                       Principais cidades
                     </h4>
                   </div>
@@ -4505,10 +4505,10 @@ const profileViewsMetric = useMemo(() => {
                     {audienceCities.length ? (
                       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                         <thead>
-                          <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
-                            <th style={{ textAlign: 'left', padding: '8px 12px', fontSize: '11px', fontWeight: 600, color: '#6b7280' }}>Cidade</th>
-                            <th style={{ textAlign: 'right', padding: '8px 12px', fontSize: '11px', fontWeight: 600, color: '#6b7280' }}>Seguidores</th>
-                            <th style={{ textAlign: 'right', padding: '8px 12px', fontSize: '11px', fontWeight: 600, color: '#6b7280' }}>%</th>
+                          <tr style={{ borderBottom: '1px solid var(--stroke)' }}>
+                            <th style={{ textAlign: 'left', padding: '8px 12px', fontSize: '11px', fontWeight: 600, color: 'var(--muted)' }}>Cidade</th>
+                            <th style={{ textAlign: 'right', padding: '8px 12px', fontSize: '11px', fontWeight: 600, color: 'var(--muted)' }}>Seguidores</th>
+                            <th style={{ textAlign: 'right', padding: '8px 12px', fontSize: '11px', fontWeight: 600, color: 'var(--muted)' }}>%</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -4523,9 +4523,9 @@ const profileViewsMetric = useMemo(() => {
                                 : null;
                             const percentageDisplay = percentageValue != null ? formatPercent(percentageValue) : "--";
                             return (
-                              <tr key={city.name || index} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                                <td style={{ padding: '10px 12px', fontSize: '13px', color: '#111827' }}>{cityName}</td>
-                                <td style={{ padding: '10px 12px', fontSize: '13px', color: '#111827', textAlign: 'right', fontWeight: 500 }}>
+                              <tr key={city.name || index} style={{ borderBottom: '1px solid var(--stroke)' }}>
+                                <td style={{ padding: '10px 12px', fontSize: '13px', color: 'var(--fg)' }}>{cityName}</td>
+                                <td style={{ padding: '10px 12px', fontSize: '13px', color: 'var(--fg)', textAlign: 'right', fontWeight: 500 }}>
                                   {formatNumber(city.value)}
                                 </td>
                                 <td style={{ padding: '10px 12px', fontSize: '13px', textAlign: 'right' }}>
@@ -4608,7 +4608,7 @@ const profileViewsMetric = useMemo(() => {
                     <div style={{ fontSize: '28px', fontWeight: 700, color: '#6366f1' }}>
                       {formatNumber(profileViewsTotal ?? 0)}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Total no período</div>
+                    <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>Total no período</div>
                   </div>
                   <div className="ig-card-white ig-kpi-hover" style={{ padding: '20px', textAlign: 'center' }}>
                     <div className="ig-kpi-icon" style={{ background: 'rgba(139, 92, 246, 0.12)', margin: '0 auto 10px' }}>
@@ -4617,7 +4617,7 @@ const profileViewsMetric = useMemo(() => {
                     <div style={{ fontSize: '28px', fontWeight: 700, color: '#8b5cf6' }}>
                       {profileViewsAverage != null ? formatNumber(Math.round(profileViewsAverage)) : '--'}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Média diária</div>
+                    <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>Média diária</div>
                   </div>
                   <div className="ig-card-white ig-kpi-hover" style={{ padding: '20px', textAlign: 'center' }}>
                     <div className="ig-kpi-icon" style={{ background: 'rgba(168, 85, 247, 0.12)', margin: '0 auto 10px' }}>
@@ -4626,7 +4626,7 @@ const profileViewsMetric = useMemo(() => {
                     <div style={{ fontSize: '28px', fontWeight: 700, color: '#a855f7' }}>
                       {profileViewsPeak != null ? formatNumber(profileViewsPeak) : '--'}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Pico diário</div>
+                    <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>Pico diário</div>
                   </div>
                   <div className="ig-card-white ig-kpi-hover" style={{ padding: '20px', textAlign: 'center' }}>
                     <div className="ig-kpi-icon" style={{ background: 'rgba(14, 165, 233, 0.12)', margin: '0 auto 10px' }}>
@@ -4635,14 +4635,14 @@ const profileViewsMetric = useMemo(() => {
                     <div style={{ fontSize: '28px', fontWeight: 700, color: '#0ea5e9' }}>
                       {videoAvgWatchTimeDisplay}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Tempo médio assistido</div>
+                    <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>Tempo médio assistido</div>
                   </div>
                 </div>
 
                 {/* Gráfico de Tendência */}
                 <section className="ig-card-white" style={{ marginBottom: '24px' }}>
-                  <div style={{ padding: '20px 24px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#111827' }}>
+                  <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--stroke)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: 'var(--fg)' }}>
                       Tendência de visualizações
                     </h4>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -4652,7 +4652,7 @@ const profileViewsMetric = useMemo(() => {
                         borderRadius: '3px',
                         background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'
                       }} />
-                      <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Visualizações</span>
+                      <span style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500 }}>Visualizações</span>
                     </div>
                   </div>
                   <div style={{ padding: '20px', height: 320 }}>
@@ -4718,8 +4718,8 @@ const profileViewsMetric = useMemo(() => {
 
                 {/* Por tipo de conteúdo */}
                 <section className="ig-card-white" style={{ marginBottom: '24px' }}>
-                  <div style={{ padding: '20px 24px', borderBottom: '1px solid #e5e7eb' }}>
-                    <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#111827' }}>
+                  <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--stroke)' }}>
+                    <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: 'var(--fg)' }}>
                       Por tipo de conteúdo
                     </h4>
                   </div>
@@ -4727,10 +4727,10 @@ const profileViewsMetric = useMemo(() => {
                     {viewsByContentType.some((item) => item.raw > 0) ? (
                       viewsByContentType.map((item) => (
                         <div key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
-                          <span style={{ width: '70px', fontSize: '14px', fontWeight: 600, color: '#374151', flexShrink: 0 }}>
+                          <span style={{ width: '70px', fontSize: '14px', fontWeight: 600, color: 'var(--muted)', flexShrink: 0 }}>
                             {item.name}
                           </span>
-                          <div style={{ flex: 1, height: '10px', borderRadius: '6px', background: '#e5e7eb', overflow: 'hidden', position: 'relative' }}>
+                          <div style={{ flex: 1, height: '10px', borderRadius: '6px', background: 'var(--stroke)', overflow: 'hidden', position: 'relative' }}>
                             <div style={{
                               width: `${item.value}%`,
                               height: '100%',
@@ -4739,7 +4739,7 @@ const profileViewsMetric = useMemo(() => {
                               transition: 'width 0.5s ease'
                             }} />
                           </div>
-                          <span style={{ width: '52px', textAlign: 'right', fontSize: '14px', fontWeight: 600, color: '#6b7280', flexShrink: 0 }}>
+                          <span style={{ width: '52px', textAlign: 'right', fontSize: '14px', fontWeight: 600, color: 'var(--muted)', flexShrink: 0 }}>
                             {item.value.toFixed(1)}%
                           </span>
                         </div>
@@ -4752,8 +4752,8 @@ const profileViewsMetric = useMemo(() => {
 
                 {/* Top Posts por Visualizações */}
                 <section className="ig-card-white">
-                  <div style={{ padding: '20px', borderBottom: '1px solid #e5e7eb' }}>
-                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827' }}>
+                  <div style={{ padding: '20px', borderBottom: '1px solid var(--stroke)' }}>
+                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--fg)' }}>
                       Posts mais visualizados
                     </h4>
                   </div>
@@ -4860,7 +4860,7 @@ const profileViewsMetric = useMemo(() => {
                     <div style={{ fontSize: '28px', fontWeight: 700, color: '#ec4899' }}>
                       {formatNumber(interactionsBreakdown.total)}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Total de interações</div>
+                    <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>Total de interações</div>
                   </div>
                   <div className="ig-card-white ig-kpi-hover" style={{ padding: '20px', textAlign: 'center' }}>
                     <div className="ig-kpi-icon" style={{ background: 'rgba(244, 114, 182, 0.12)', margin: '0 auto 10px' }}>
@@ -4871,14 +4871,14 @@ const profileViewsMetric = useMemo(() => {
                         ? `${((interactionsBreakdown.total / profileReachTotal) * 100).toFixed(2)}%`
                         : '--'}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Taxa de engajamento</div>
+                    <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>Taxa de engajamento</div>
                   </div>
                 </div>
 
                 {/* Breakdown de Interações */}
                 <section className="ig-card-white" style={{ marginBottom: '24px' }}>
-                  <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb' }}>
-                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827' }}>
+                  <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--stroke)' }}>
+                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--fg)' }}>
                       Detalhamento por tipo
                     </h4>
                   </div>
@@ -4892,7 +4892,7 @@ const profileViewsMetric = useMemo(() => {
                           <div style={{ fontSize: '20px', fontWeight: 700, color: '#ef4444', lineHeight: 1.2 }}>
                             {formatNumber(interactionsBreakdown.likes)}
                           </div>
-                          <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>Curtidas</div>
+                          <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 500 }}>Curtidas</div>
                         </div>
                       </div>
                       <div className="ig-breakdown-hover" style={{ padding: '12px', background: '#eff6ff', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -4903,7 +4903,7 @@ const profileViewsMetric = useMemo(() => {
                           <div style={{ fontSize: '20px', fontWeight: 700, color: '#3b82f6', lineHeight: 1.2 }}>
                             {formatNumber(interactionsBreakdown.comments)}
                           </div>
-                          <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>Comentários</div>
+                          <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 500 }}>Comentários</div>
                         </div>
                       </div>
                       <div className="ig-breakdown-hover" style={{ padding: '12px', background: '#f0fdf4', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -4914,7 +4914,7 @@ const profileViewsMetric = useMemo(() => {
                           <div style={{ fontSize: '20px', fontWeight: 700, color: '#22c55e', lineHeight: 1.2 }}>
                             {formatNumber(interactionsBreakdown.shares)}
                           </div>
-                          <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>Compartilhamentos</div>
+                          <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 500 }}>Compartilhamentos</div>
                         </div>
                       </div>
                       <div className="ig-breakdown-hover" style={{ padding: '12px', background: '#faf5ff', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -4925,7 +4925,7 @@ const profileViewsMetric = useMemo(() => {
                           <div style={{ fontSize: '20px', fontWeight: 700, color: '#a855f7', lineHeight: 1.2 }}>
                             {formatNumber(interactionsBreakdown.saves)}
                           </div>
-                          <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>Salvos</div>
+                          <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 500 }}>Salvos</div>
                         </div>
                       </div>
                     </div>
@@ -4934,14 +4934,14 @@ const profileViewsMetric = useMemo(() => {
 
                 {/* Gráfico de Interações por Tempo */}
                 <section className="ig-card-white" style={{ marginBottom: '24px' }}>
-                  <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827' }}>
+                  <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--stroke)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--fg)' }}>
                       Interações por tempo
                     </h4>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#6366f1' }} />
-                        <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500 }}>Interações</span>
+                        <span style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 500 }}>Interações</span>
                       </div>
                     </div>
                   </div>
@@ -5010,26 +5010,26 @@ const profileViewsMetric = useMemo(() => {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '24px' }}>
                   {/* Gráfico de Pizza */}
                   <section className="ig-card-white">
-                    <div style={{ padding: '20px 24px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-                      <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#111827' }}>
+                    <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--stroke)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                      <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: 'var(--fg)' }}>
                         Distribuição de interações
                       </h4>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#ef4444' }} />
-                          <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500 }}>Curtidas</span>
+                          <span style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 500 }}>Curtidas</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#3b82f6' }} />
-                          <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500 }}>Comentários</span>
+                          <span style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 500 }}>Comentários</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#22c55e' }} />
-                          <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500 }}>Compartilhamentos</span>
+                          <span style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 500 }}>Compartilhamentos</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#a855f7' }} />
-                          <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500 }}>Salvos</span>
+                          <span style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 500 }}>Salvos</span>
                         </div>
                       </div>
                     </div>
@@ -5079,8 +5079,8 @@ const profileViewsMetric = useMemo(() => {
 
                   {/* Por tipo de conteúdo (Interações) */}
                   <section className="ig-card-white">
-                    <div style={{ padding: '20px 24px', borderBottom: '1px solid #e5e7eb' }}>
-                      <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#111827' }}>
+                    <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--stroke)' }}>
+                      <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: 'var(--fg)' }}>
                         Por tipo de conteúdo
                       </h4>
                     </div>
@@ -5129,8 +5129,8 @@ const profileViewsMetric = useMemo(() => {
 
                 {/* Top Posts por Engajamento */}
                 <section className="ig-card-white">
-                  <div style={{ padding: '20px', borderBottom: '1px solid #e5e7eb' }}>
-                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827' }}>
+                  <div style={{ padding: '20px', borderBottom: '1px solid var(--stroke)' }}>
+                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--fg)' }}>
                       Posts com maior engajamento
                     </h4>
                   </div>
@@ -5237,7 +5237,7 @@ const profileViewsMetric = useMemo(() => {
                     <div style={{ fontSize: '24px', fontWeight: 700, color: '#f97316' }}>
                       {postsDetailList?.length || 0}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>Total de Posts</div>
+                    <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px' }}>Total de Posts</div>
                   </div>
                   <div className="ig-card-white ig-kpi-hover" style={{ padding: '16px', textAlign: 'center' }}>
                     <div className="ig-kpi-icon" style={{ background: 'rgba(251, 146, 60, 0.12)', margin: '0 auto 8px' }}>
@@ -5250,7 +5250,7 @@ const profileViewsMetric = useMemo(() => {
                           : 0
                       )}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>Média Engajamento</div>
+                    <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px' }}>Média Engajamento</div>
                   </div>
                   <div className="ig-card-white ig-kpi-hover" style={{ padding: '16px', textAlign: 'center' }}>
                     <div className="ig-kpi-icon" style={{ background: 'rgba(253, 186, 116, 0.15)', margin: '0 auto 8px' }}>
@@ -5263,7 +5263,7 @@ const profileViewsMetric = useMemo(() => {
                           : 0
                       )}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>Maior Engajamento</div>
+                    <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px' }}>Maior Engajamento</div>
                   </div>
                 </div>
 
@@ -5271,16 +5271,16 @@ const profileViewsMetric = useMemo(() => {
                 <section className="ig-card-white" style={{ overflow: 'hidden' }}>
                   <div style={{
                     padding: '16px 20px',
-                    borderBottom: '1px solid #e5e7eb',
+                    borderBottom: '1px solid var(--stroke)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
                   }}>
                     <div>
-                      <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#111827' }}>
+                      <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: 'var(--fg)' }}>
                         Posts Recentes
                       </h4>
-                      <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#9ca3af' }}>
+                      <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--muted)' }}>
                         Publicacoes no periodo filtrado (ate 30 posts)
                       </p>
                     </div>
@@ -5288,7 +5288,7 @@ const profileViewsMetric = useMemo(() => {
                       <span style={{
                         fontSize: '0.68rem',
                         fontWeight: 600,
-                        color: '#9ca3af',
+                        color: 'var(--muted)',
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '6px',
@@ -5374,7 +5374,7 @@ const profileViewsMetric = useMemo(() => {
                       <div style={{ fontSize: '28px', fontWeight: 700, color: '#dc2626' }}>
                         {wordCloudDetails.total_occurrences?.toLocaleString('pt-BR') || 0}
                       </div>
-                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Ocorrências</div>
+                      <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>Ocorrências</div>
                     </div>
                     <div className="ig-card-white ig-kpi-hover" style={{ padding: '20px', textAlign: 'center' }}>
                       <div className="ig-kpi-icon" style={{ background: 'rgba(248, 113, 113, 0.12)', margin: '0 auto 10px' }}>
@@ -5383,15 +5383,15 @@ const profileViewsMetric = useMemo(() => {
                       <div style={{ fontSize: '28px', fontWeight: 700, color: '#f87171' }}>
                         {wordCloudDetails.total_comments?.toLocaleString('pt-BR') || 0}
                       </div>
-                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Comentários</div>
+                      <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>Comentários</div>
                     </div>
                   </div>
                 )}
 
                 {/* Lista de comentários */}
                 <section className="ig-card-white" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                  <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb' }}>
-                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--stroke)' }}>
+                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--fg)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                       </svg>
@@ -5409,9 +5409,9 @@ const profileViewsMetric = useMemo(() => {
                           {wordCloudDetails.comments.map((comment) => (
                             <li key={comment.id || `${comment.text}-${comment.timestamp}`} style={{
                               padding: '12px 16px',
-                              background: '#f9fafb',
+                              background: 'var(--bg-secondary)',
                               borderRadius: '10px',
-                              border: '1px solid #e5e7eb'
+                              border: '1px solid var(--stroke)'
                             }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
                                 {comment.username ? (
@@ -5422,7 +5422,7 @@ const profileViewsMetric = useMemo(() => {
                                     style={{
                                       fontWeight: 600,
                                       fontSize: '13px',
-                                      color: '#111827',
+                                      color: 'var(--fg)',
                                       textDecoration: 'underline',
                                       textUnderlineOffset: '2px',
                                     }}
@@ -5430,12 +5430,12 @@ const profileViewsMetric = useMemo(() => {
                                     @{String(comment.username).replace(/^@+/, "")}
                                   </a>
                                 ) : (
-                                  <span style={{ fontWeight: 600, fontSize: '13px', color: '#111827' }}>
+                                  <span style={{ fontWeight: 600, fontSize: '13px', color: 'var(--fg)' }}>
                                     Comentario
                                   </span>
                                 )}
                                 {comment.timestamp && (
-                                  <span style={{ fontSize: '12px', color: '#9ca3af' }}>
+                                  <span style={{ fontSize: '12px', color: 'var(--muted)' }}>
                                     {formatWordCloudDetailDate(comment.timestamp)}
                                   </span>
                                 )}
@@ -5452,7 +5452,7 @@ const profileViewsMetric = useMemo(() => {
                                   </span>
                                 )}
                               </div>
-                              <p style={{ margin: 0, fontSize: '14px', color: '#374151', lineHeight: 1.5 }}>
+                              <p style={{ margin: 0, fontSize: '14px', color: 'var(--muted)', lineHeight: 1.5 }}>
                                 {comment.text}
                               </p>
                             </li>
@@ -5586,7 +5586,7 @@ const profileViewsMetric = useMemo(() => {
                     <div style={{ fontSize: '28px', fontWeight: 700, color: '#3b82f6' }}>
                       {audienceCities.length}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Total de cidades</div>
+                    <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>Total de cidades</div>
                   </div>
                   <div className="ig-card-white ig-kpi-hover" style={{ padding: '20px', textAlign: 'center' }}>
                     <div className="ig-kpi-icon" style={{ background: 'rgba(99, 102, 241, 0.12)', margin: '0 auto 10px' }}>
@@ -5595,7 +5595,7 @@ const profileViewsMetric = useMemo(() => {
                     <div style={{ fontSize: '28px', fontWeight: 700, color: '#6366f1' }}>
                       {formatNumber(audienceCitiesTotal)}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Total de seguidores</div>
+                    <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>Total de seguidores</div>
                   </div>
                   <div className="ig-card-white ig-kpi-hover" style={{ padding: '20px', textAlign: 'center' }}>
                     <div className="ig-kpi-icon" style={{ background: 'rgba(139, 92, 246, 0.12)', margin: '0 auto 10px' }}>
@@ -5604,28 +5604,28 @@ const profileViewsMetric = useMemo(() => {
                     <div style={{ fontSize: '28px', fontWeight: 700, color: '#8b5cf6' }}>
                       {audienceTopCity?.cityName || '--'}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Cidade principal</div>
+                    <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>Cidade principal</div>
                   </div>
                 </div>
 
                 {/* Mapa do Brasil com Cidades */}
                 <section className="ig-card-white" style={{ marginBottom: '24px' }}>
-                  <div style={{ padding: '20px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#111827' }}>
+                  <div style={{ padding: '20px', borderBottom: '1px solid var(--stroke)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: 'var(--fg)' }}>
                       Mapa de distribuição
                     </h4>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#3b82f6' }} />
-                        <span style={{ fontSize: '12px', color: '#6b7280' }}>Menor</span>
+                        <span style={{ fontSize: '12px', color: 'var(--muted)' }}>Menor</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <span style={{ width: '16px', height: '16px', borderRadius: '50%', background: '#6366f1' }} />
-                        <span style={{ fontSize: '12px', color: '#6b7280' }}>Médio</span>
+                        <span style={{ fontSize: '12px', color: 'var(--muted)' }}>Médio</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#8b5cf6' }} />
-                        <span style={{ fontSize: '12px', color: '#6b7280' }}>Maior</span>
+                        <span style={{ fontSize: '12px', color: 'var(--muted)' }}>Maior</span>
                       </div>
                     </div>
                   </div>
@@ -5882,9 +5882,9 @@ const profileViewsMetric = useMemo(() => {
                           alignItems: 'center',
                           gap: '8px',
                           padding: '8px 12px',
-                          background: '#f9fafb',
+                          background: 'var(--bg-secondary)',
                           borderRadius: '8px',
-                          border: '1px solid #e5e7eb'
+                          border: '1px solid var(--stroke)'
                         }}>
                           <span style={{
                             width: '10px',
@@ -5892,8 +5892,8 @@ const profileViewsMetric = useMemo(() => {
                             borderRadius: '50%',
                             background: colors[index]
                           }} />
-                          <span style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>{cityName}</span>
-                          <span style={{ fontSize: '12px', color: '#6b7280' }}>{pct}%</span>
+                          <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--muted)' }}>{cityName}</span>
+                          <span style={{ fontSize: '12px', color: 'var(--muted)' }}>{pct}%</span>
                         </div>
                       );
                     })}
@@ -5902,13 +5902,13 @@ const profileViewsMetric = useMemo(() => {
 
                 {/* Gráfico de Barras Horizontal */}
                 <section className="ig-card-white" style={{ marginBottom: '24px' }}>
-                  <div style={{ padding: '20px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#111827' }}>
+                  <div style={{ padding: '20px', borderBottom: '1px solid var(--stroke)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: 'var(--fg)' }}>
                       Distribuição por cidade
                     </h4>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)' }} />
-                      <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Seguidores</span>
+                      <span style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500 }}>Seguidores</span>
                     </div>
                   </div>
                   <div style={{ padding: '20px', height: 400 }}>
@@ -5987,11 +5987,11 @@ const profileViewsMetric = useMemo(() => {
 
                 {/* Lista Completa de Cidades */}
                 <section className="ig-card-white">
-                  <div style={{ padding: '20px', borderBottom: '1px solid #e5e7eb' }}>
-                    <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#111827' }}>
+                  <div style={{ padding: '20px', borderBottom: '1px solid var(--stroke)' }}>
+                    <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: 'var(--fg)' }}>
                       Ranking completo de cidades
                     </h4>
-                    <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#6b7280' }}>
+                    <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--muted)' }}>
                       Todas as cidades ordenadas por número de seguidores
                     </p>
                   </div>
@@ -6038,15 +6038,15 @@ const profileViewsMetric = useMemo(() => {
                                 {index + 1}
                               </div>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: '14px', fontWeight: 600, color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                   {cityName}
                                 </div>
                                 {regionName && (
-                                  <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                     {regionName}
                                   </div>
                                 )}
-                                <div style={{ marginTop: '6px', height: '4px', background: '#e5e7eb', borderRadius: '2px', overflow: 'hidden' }}>
+                                <div style={{ marginTop: '6px', height: '4px', background: 'var(--stroke)', borderRadius: '2px', overflow: 'hidden' }}>
                                   <div style={{ height: '100%', width: `${barWidth}%`, background: `linear-gradient(90deg, ${color} 0%, ${colors[(index + 1) % colors.length]} 100%)`, borderRadius: '2px' }} />
                                 </div>
                               </div>
@@ -6054,7 +6054,7 @@ const profileViewsMetric = useMemo(() => {
                                 <div style={{ fontSize: '15px', fontWeight: 700, color: color }}>
                                   {pct.toFixed(1)}%
                                 </div>
-                                <div style={{ fontSize: '11px', color: '#9ca3af' }}>
+                                <div style={{ fontSize: '11px', color: 'var(--muted)' }}>
                                   {formatNumber(city.value)}
                                 </div>
                               </div>
@@ -6140,7 +6140,7 @@ const profileViewsMetric = useMemo(() => {
                             item?.dateKey === peakReachPoint.dateKey &&
                             numericValue === peakReachPoint.value;
                           const footer = isPeak ? (
-                            <div style={{ marginTop: 6, fontSize: 12, color: '#6b7280' }}>
+                            <div style={{ marginTop: 6, fontSize: 12, color: 'var(--muted)' }}>
                               Pico do periodo
                             </div>
                           ) : null;
@@ -6342,12 +6342,12 @@ const profileViewsMetric = useMemo(() => {
               zIndex: 1
             }}>
               <div>
-                <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: 'var(--fg)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Eye size={18} style={{ color: '#8b5cf6', flexShrink: 0 }} />
                   Visualizações
                   <InfoTooltip text="Soma de todas as reproduções de Reels, Feed e Stories no período." />
                 </h4>
-                <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '2px', marginBottom: 0 }}>Total de reproduções (Reels, Feed e Stories)</p>
+                <p style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '2px', marginBottom: 0 }}>Total de reproduções (Reels, Feed e Stories)</p>
               </div>
               <button
                 onClick={() => openDetailPanel("views")}
@@ -6397,7 +6397,7 @@ const profileViewsMetric = useMemo(() => {
                   }}>
                     {formatNumber(profileViewsTotal ?? null)}
                   </div>
-                  <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px', fontWeight: 500 }}>
+                  <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px', fontWeight: 500 }}>
                     Visualizações
                   </div>
                 </div>
@@ -6424,7 +6424,7 @@ const profileViewsMetric = useMemo(() => {
                     <div style={{ fontSize: '14px', fontWeight: 700, color: '#8b5cf6', marginBottom: '2px' }}>
                       {profileViewsAverage != null ? formatNumber(Math.round(profileViewsAverage)) : '--'}
                     </div>
-                    <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>Média diária</div>
+                    <div style={{ fontSize: '10px', color: 'var(--muted)', fontWeight: 500 }}>Média diária</div>
                   </div>
                   <div style={{
                     padding: '8px 8px',
@@ -6440,7 +6440,7 @@ const profileViewsMetric = useMemo(() => {
                     <div style={{ fontSize: '14px', fontWeight: 700, color: '#a855f7', marginBottom: '2px' }}>
                       {profileViewsPeak != null ? formatNumber(profileViewsPeak) : '--'}
                     </div>
-                    <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>Pico diário</div>
+                    <div style={{ fontSize: '10px', color: 'var(--muted)', fontWeight: 500 }}>Pico diário</div>
                   </div>
                 </div>
               </div>
@@ -6456,12 +6456,12 @@ const profileViewsMetric = useMemo(() => {
               gap: '12px'
             }}>
               <div>
-                <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: 'var(--fg)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <MousePointerClick size={18} style={{ color: '#8b5cf6', flexShrink: 0 }} />
                   Interações
                   <InfoTooltip text="Soma de curtidas, comentários, salvamentos e compartilhamentos." />
                 </h4>
-                <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '2px', marginBottom: 0 }}>Total de engajamento do público</p>
+                <p style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '2px', marginBottom: 0 }}>Total de engajamento do público</p>
               </div>
               <button
                 onClick={() => openDetailPanel("interactions")}
@@ -6509,7 +6509,7 @@ const profileViewsMetric = useMemo(() => {
                   }}>
                     {formatNumber(interactionsBreakdown.total)}
                   </div>
-                  <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px', fontWeight: 500 }}>
+                  <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px', fontWeight: 500 }}>
                     Interações
                   </div>
                 </div>
@@ -6531,7 +6531,7 @@ const profileViewsMetric = useMemo(() => {
                     <div style={{ fontSize: '14px', fontWeight: 700, color: '#8b5cf6', marginBottom: '2px' }}>
                       {formatNumber(interactionsBreakdown.likes)}
                     </div>
-                    <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>Curtidas</div>
+                    <div style={{ fontSize: '10px', color: 'var(--muted)', fontWeight: 500 }}>Curtidas</div>
                   </div>
                   <div style={{
                     padding: '8px 8px',
@@ -6543,7 +6543,7 @@ const profileViewsMetric = useMemo(() => {
                     <div style={{ fontSize: '14px', fontWeight: 700, color: '#a855f7', marginBottom: '2px' }}>
                       {formatNumber(interactionsBreakdown.comments)}
                     </div>
-                    <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>Comentários</div>
+                    <div style={{ fontSize: '10px', color: 'var(--muted)', fontWeight: 500 }}>Comentários</div>
                   </div>
                   <div style={{
                     padding: '8px 8px',
@@ -6555,7 +6555,7 @@ const profileViewsMetric = useMemo(() => {
                     <div style={{ fontSize: '14px', fontWeight: 700, color: '#8b5cf6', marginBottom: '2px' }}>
                       {formatNumber(interactionsBreakdown.saves)}
                     </div>
-                    <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>Salvamentos</div>
+                    <div style={{ fontSize: '10px', color: 'var(--muted)', fontWeight: 500 }}>Salvamentos</div>
                   </div>
                   <div style={{
                     padding: '8px 8px',
@@ -6567,7 +6567,7 @@ const profileViewsMetric = useMemo(() => {
                     <div style={{ fontSize: '14px', fontWeight: 700, color: '#a855f7', marginBottom: '2px' }}>
                       {formatNumber(interactionsBreakdown.shares)}
                     </div>
-                    <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>Compartilhamentos</div>
+                    <div style={{ fontSize: '10px', color: 'var(--muted)', fontWeight: 500 }}>Compartilhamentos</div>
                   </div>
                 </div>
               </div>

@@ -401,7 +401,7 @@ export default function AdsDashboard() {
 
   const getDeltaMeta = (delta, invert = false) => {
     if (!Number.isFinite(delta)) {
-      return { text: "—", color: "#9ca3af" };
+      return { text: "—", color: "var(--muted)" };
     }
     const rounded = Number(formatPercentage(Number(delta)));
     const isPositive = rounded > 0;
@@ -1387,11 +1387,11 @@ export default function AdsDashboard() {
                     }}>
                       <DollarSign size={12} color="white" strokeWidth={2.5} />
                     </div>
-                    <span style={{ fontSize: '10px', fontWeight: 600, color: '#1f2937', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 600, color: 'var(--fg)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                       Investimento
                     </span>
                   </div>
-                  <div style={{ fontSize: '18px', fontWeight: 700, color: '#111827', marginBottom: '2px' }}>
+                  <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--fg)', marginBottom: '2px' }}>
                     {formatCurrency(overviewStats.spend.value)}
                   </div>
                   <div style={{ fontSize: '11px', color: overviewDeltaMeta.spend.color, fontWeight: 600 }}>
@@ -1402,9 +1402,9 @@ export default function AdsDashboard() {
                 {/* Alcance */}
                 <div style={{
                   padding: '14px',
-                  background: 'rgba(255, 255, 255, 0.6)',
+                  background: 'var(--panel)',
                   borderRadius: '12px',
-                  border: '1px solid rgba(0, 0, 0, 0.08)'
+                  border: '1px solid var(--stroke)'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
                     <div style={{
@@ -1418,11 +1418,11 @@ export default function AdsDashboard() {
                     }}>
                       <Users size={12} color="#8b5cf6" strokeWidth={2.5} />
                     </div>
-                    <span style={{ fontSize: '10px', fontWeight: 600, color: '#1f2937', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 600, color: 'var(--fg)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                       Alcance
                     </span>
                   </div>
-                  <div style={{ fontSize: '18px', fontWeight: 700, color: '#111827', marginBottom: '2px' }}>
+                  <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--fg)', marginBottom: '2px' }}>
                     {formatNumber(overviewStats.reach.value)}
                   </div>
                   <div style={{ fontSize: '11px', color: overviewDeltaMeta.reach.color, fontWeight: 600 }}>
@@ -1433,9 +1433,9 @@ export default function AdsDashboard() {
                 {/* Impressões */}
                 <div style={{
                   padding: '14px',
-                  background: 'rgba(255, 255, 255, 0.6)',
+                  background: 'var(--panel)',
                   borderRadius: '12px',
-                  border: '1px solid rgba(0, 0, 0, 0.08)'
+                  border: '1px solid var(--stroke)'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
                     <div style={{
@@ -1449,11 +1449,11 @@ export default function AdsDashboard() {
                     }}>
                       <Eye size={12} color="#c084fc" strokeWidth={2.5} />
                     </div>
-                    <span style={{ fontSize: '10px', fontWeight: 600, color: '#1f2937', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 600, color: 'var(--fg)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                       Impressões
                     </span>
                   </div>
-                  <div style={{ fontSize: '18px', fontWeight: 700, color: '#111827', marginBottom: '2px' }}>
+                  <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--fg)', marginBottom: '2px' }}>
                     {formatNumber(overviewStats.impressions.value)}
                   </div>
                   <div style={{ fontSize: '11px', color: overviewDeltaMeta.impressions.color, fontWeight: 600 }}>
@@ -1464,9 +1464,9 @@ export default function AdsDashboard() {
                 {/* Cliques */}
                 <div style={{
                   padding: '14px',
-                  background: 'rgba(255, 255, 255, 0.6)',
+                  background: 'var(--panel)',
                   borderRadius: '12px',
-                  border: '1px solid rgba(0, 0, 0, 0.08)'
+                  border: '1px solid var(--stroke)'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
                     <div style={{
@@ -1480,11 +1480,11 @@ export default function AdsDashboard() {
                     }}>
                       <MousePointerClick size={12} color="#d8b4fe" strokeWidth={2.5} />
                     </div>
-                    <span style={{ fontSize: '10px', fontWeight: 600, color: '#1f2937', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 600, color: 'var(--fg)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                       Cliques
                     </span>
                   </div>
-                  <div style={{ fontSize: '18px', fontWeight: 700, color: '#111827', marginBottom: '2px' }}>
+                  <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--fg)', marginBottom: '2px' }}>
                     {formatNumber(overviewStats.clicks.value)}
                   </div>
                   <div style={{ fontSize: '11px', color: overviewDeltaMeta.clicks.color, fontWeight: 600 }}>
@@ -1495,9 +1495,9 @@ export default function AdsDashboard() {
                 {/* CTR */}
                 <div style={{
                   padding: '14px',
-                  background: 'rgba(255, 255, 255, 0.6)',
+                  background: 'var(--panel)',
                   borderRadius: '12px',
-                  border: '1px solid rgba(0, 0, 0, 0.08)'
+                  border: '1px solid var(--stroke)'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
                     <div style={{
@@ -1511,11 +1511,11 @@ export default function AdsDashboard() {
                     }}>
                       <Target size={12} color="#8b5cf6" strokeWidth={2.5} />
                     </div>
-                    <span style={{ fontSize: '10px', fontWeight: 600, color: '#1f2937', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 600, color: 'var(--fg)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                       CTR (taxa de cliques)
                     </span>
                   </div>
-                  <div style={{ fontSize: '18px', fontWeight: 700, color: '#111827', marginBottom: '2px' }}>
+                  <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--fg)', marginBottom: '2px' }}>
                     {formatPercentage(overviewStats.ctr.value)}%
                   </div>
                   <div style={{ fontSize: '11px', color: overviewDeltaMeta.ctr.color, fontWeight: 600 }}>
@@ -1526,9 +1526,9 @@ export default function AdsDashboard() {
                 {/* CPC */}
                 <div style={{
                   padding: '14px',
-                  background: 'rgba(255, 255, 255, 0.6)',
+                  background: 'var(--panel)',
                   borderRadius: '12px',
-                  border: '1px solid rgba(0, 0, 0, 0.08)'
+                  border: '1px solid var(--stroke)'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
                     <div style={{
@@ -1542,11 +1542,11 @@ export default function AdsDashboard() {
                     }}>
                       <Activity size={12} color="#a855f7" strokeWidth={2.5} />
                     </div>
-                    <span style={{ fontSize: '10px', fontWeight: 600, color: '#1f2937', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 600, color: 'var(--fg)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                       CPC (custo por clique)
                     </span>
                   </div>
-                  <div style={{ fontSize: '18px', fontWeight: 700, color: '#111827', marginBottom: '2px' }}>
+                  <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--fg)', marginBottom: '2px' }}>
                     {formatCurrency(overviewStats.cpc.value)}
                   </div>
                   <div style={{ fontSize: '11px', color: overviewDeltaMeta.cpc.color, fontWeight: 600 }}>
@@ -1563,7 +1563,7 @@ export default function AdsDashboard() {
               <div className="ig-profile-vertical__engagement" style={{ position: "relative" }}>
                 <div style={{ marginBottom: 16 }}>
                   <h4 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Performance de Vídeos</h4>
-                  <p style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>Visualizações e retenção</p>
+                  <p style={{ margin: 0, fontSize: 13, color: "var(--muted)" }}>Visualizações e retenção</p>
                 </div>
 
                 {shouldShowAdsFallback && adsFallbackProps ? (
@@ -1579,8 +1579,8 @@ export default function AdsDashboard() {
                   <div style={{ display: "grid", gap: 20 }}>
                     {/* Card Visualização de 3s com Retenção */}
                     <div style={{
-                      background: "white",
-                      border: "1px solid #e5e7eb",
+                      background: "var(--panel)",
+                      border: "1px solid var(--stroke)",
                       borderRadius: 16,
                       padding: 24,
                       boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
@@ -1597,10 +1597,10 @@ export default function AdsDashboard() {
                       }} />
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
                         <div>
-                          <div style={{ fontSize: 13, color: "#6b7280", fontWeight: 600, marginBottom: 8 }}>
+                          <div style={{ fontSize: 13, color: "var(--muted)", fontWeight: 600, marginBottom: 8 }}>
                             Visualização de 3s
                           </div>
-                          <div style={{ fontSize: 36, fontWeight: 800, color: "#111827" }}>
+                          <div style={{ fontSize: 36, fontWeight: 800, color: "var(--fg)" }}>
                             {formatNumber(videoViews3s)}
                           </div>
                         </div>
@@ -1633,7 +1633,7 @@ export default function AdsDashboard() {
             </section>
 
             {/* INSIGHTS AUTOMÁTICOS - ALERTAS IMPORTANTES */}
-            <section className="ig-growth-clean" style={{ borderRadius: 0, borderTop: '1px solid #e5e7eb' }}>
+            <section className="ig-growth-clean" style={{ borderRadius: 0, borderTop: '1px solid var(--stroke)' }}>
               <header className="ig-card-header">
                 <div>
                   <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1659,7 +1659,7 @@ export default function AdsDashboard() {
                     <div
                       key={insight.id}
                       style={{
-                        background: 'rgba(255, 255, 255, 0.9)',
+                        background: 'var(--panel)',
                         border: `1px solid ${insight.color}30`,
                         borderLeft: `4px solid ${insight.color}`,
                         borderRadius: '8px',
@@ -1679,7 +1679,7 @@ export default function AdsDashboard() {
                       }}
                     >
                       <span style={{ fontSize: '24px' }}>{insight.icon}</span>
-                      <span style={{ fontSize: '14px', color: '#374151', fontWeight: 500 }}>
+                      <span style={{ fontSize: '14px', color: 'var(--muted)', fontWeight: 500 }}>
                         {insight.message}
                       </span>
                     </div>
@@ -1696,7 +1696,7 @@ export default function AdsDashboard() {
             </section>
 
             {/* Performance por Objetivo - Pie Chart */}
-            <section className="ig-growth-clean" style={{ borderRadius: '0 0 16px 16px', borderTop: '1px solid #e5e7eb' }}>
+            <section className="ig-growth-clean" style={{ borderRadius: '0 0 16px 16px', borderTop: '1px solid var(--stroke)' }}>
               <header className="ig-card-header">
                 <div>
                   <h3>Performance por Objetivo</h3>
@@ -1788,8 +1788,8 @@ export default function AdsDashboard() {
                             borderRadius: '3px',
                             background: entry.color
                           }}></span>
-                          <span style={{ color: '#111827', fontWeight: 600 }}>{entry.name}</span>
-                          <span style={{ color: '#4b5563' }}>({entry.value}%)</span>
+                          <span style={{ color: 'var(--fg)', fontWeight: 600 }}>{entry.name}</span>
+                          <span style={{ color: 'var(--muted)' }}>({entry.value}%)</span>
                         </div>
                       ))}
                     </div>
@@ -1838,7 +1838,7 @@ export default function AdsDashboard() {
                             <stop offset="100%" stopColor="#8b5cf6" />
                           </linearGradient>
                         </defs>
-                        <CartesianGrid stroke="#e5e7eb" strokeDasharray="4 8" vertical={false} />
+                        <CartesianGrid stroke="var(--stroke)" strokeDasharray="4 8" vertical={false} />
                         <XAxis
                           dataKey="date"
                           tick={{ fill: "#9ca3af", fontSize: 12 }}
@@ -1924,7 +1924,7 @@ export default function AdsDashboard() {
                     <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '8px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
                         <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#6366f1' }}></span>
-                        <span style={{ color: '#111827', fontWeight: 600 }}>Investimento (R$)</span>
+                        <span style={{ color: 'var(--fg)', fontWeight: 600 }}>Investimento (R$)</span>
                       </div>
                     </div>
                 </>
@@ -1972,7 +1972,7 @@ export default function AdsDashboard() {
                         <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid stroke="#e5e7eb" strokeDasharray="4 8" vertical={false} />
+                    <CartesianGrid stroke="var(--stroke)" strokeDasharray="4 8" vertical={false} />
                     <XAxis
                       dataKey="date"
                       tick={{ fill: "#9ca3af", fontSize: 12 }}
@@ -2027,11 +2027,11 @@ export default function AdsDashboard() {
                 <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
                     <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#6366f1' }}></span>
-                    <span style={{ color: '#111827', fontWeight: 600 }}>Impressões</span>
+                    <span style={{ color: 'var(--fg)', fontWeight: 600 }}>Impressões</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
                     <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#f97316' }}></span>
-                    <span style={{ color: '#111827', fontWeight: 600 }}>Alcance</span>
+                    <span style={{ color: 'var(--fg)', fontWeight: 600 }}>Alcance</span>
                   </div>
                 </div>
                 </>
@@ -2081,9 +2081,9 @@ export default function AdsDashboard() {
                         <div
                           key={post.id || post.name}
                           style={{
-                            background: "white",
+                            background: "var(--panel)",
                             borderRadius: "12px",
-                            border: "1px solid #e5e7eb",
+                            border: "1px solid var(--stroke)",
                             overflow: "hidden",
                             boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
                           }}
@@ -2150,7 +2150,7 @@ export default function AdsDashboard() {
                             <p
                               style={{
                                 fontSize: "13px",
-                                color: "#374151",
+                                color: "var(--muted)",
                                 marginBottom: "12px",
                                 lineHeight: 1.4,
                                 display: "-webkit-box",
@@ -2171,30 +2171,30 @@ export default function AdsDashboard() {
                             >
                               <div style={{ display: "flex", alignItems: "center", gap: "5px", minWidth: 0 }}>
                                 <Eye size={13} color="#8b5cf6" />
-                                <span style={{ fontSize: "12px", fontWeight: 600, color: "#374151" }}>
+                                <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--muted)" }}>
                                   {formatNumber(post.impressions || 0)}
                                 </span>
                               </div>
                               <div style={{ display: "flex", alignItems: "center", gap: "5px", minWidth: 0 }}>
                                 <MousePointerClick size={13} color="#0ea5e9" />
-                                <span style={{ fontSize: "12px", fontWeight: 600, color: "#374151" }}>
+                                <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--muted)" }}>
                                   {formatNumber(post.clicks || 0)}
                                 </span>
                               </div>
                               <div style={{ display: "flex", alignItems: "center", gap: "5px", minWidth: 0 }}>
                                 <Target size={13} color="#10b981" />
-                                <span style={{ fontSize: "12px", fontWeight: 600, color: "#374151" }}>
+                                <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--muted)" }}>
                                   {Number.isFinite(post.ctr) ? `${formatPercentage(post.ctr)}%` : "—"}
                                 </span>
                               </div>
                               <div style={{ display: "flex", alignItems: "center", gap: "5px", minWidth: 0 }}>
                                 <DollarSign size={13} color="#f59e0b" />
-                                <span style={{ fontSize: "12px", fontWeight: 600, color: "#374151" }}>
+                                <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--muted)" }}>
                                   {formatCurrency(post.spend || 0)}
                                 </span>
                               </div>
                             </div>
-                            <div style={{ fontSize: "11px", color: "#9ca3af", fontWeight: 600 }}>
+                            <div style={{ fontSize: "11px", color: "var(--muted)", fontWeight: 600 }}>
                               {post.rankLabel}
                             </div>
                           </div>
@@ -2247,7 +2247,7 @@ export default function AdsDashboard() {
                           background: "transparent",
                           fontSize: "11px",
                           fontWeight: "600",
-                          color: "#6b7280",
+                          color: "var(--muted)",
                           textTransform: "uppercase",
                           letterSpacing: "0.05em",
                         }}
@@ -2265,7 +2265,7 @@ export default function AdsDashboard() {
                         <tr
                           key={item.id || item.name}
                           style={{
-                            background: "white",
+                            background: "var(--panel)",
                             boxShadow: "0 8px 24px rgba(0,0,0,0.04)",
                             borderRadius: "12px",
                           }}
@@ -2300,32 +2300,32 @@ export default function AdsDashboard() {
                                 )}
                               </div>
                               <div style={{ minWidth: 0, flex: 1 }}>
-                                <div style={{ fontWeight: 700, color: "#111827", fontSize: "15px", overflow: "hidden", textOverflow: "ellipsis", marginBottom: "6px" }}>
+                                <div style={{ fontWeight: 700, color: "var(--fg)", fontSize: "15px", overflow: "hidden", textOverflow: "ellipsis", marginBottom: "6px" }}>
                                   {item.name}
                                 </div>
                                 {item.campaign ? (
-                                  <div style={{ fontSize: "13px", color: "#6b7280", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                  <div style={{ fontSize: "13px", color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis" }}>
                                     {item.campaign}
                                   </div>
                                 ) : null}
                               </div>
                             </div>
                           </td>
-                          <td style={{ padding: "14px 12px", color: "#374151", fontSize: "13px", maxWidth: "180px" }}>
+                          <td style={{ padding: "14px 12px", color: "var(--muted)", fontSize: "13px", maxWidth: "180px" }}>
                             <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={item.campaign}>
                               {item.campaign || "—"}
                             </span>
                           </td>
-                          <td style={{ padding: "14px 12px", textAlign: "right", fontWeight: 600, color: "#111827" }}>
+                          <td style={{ padding: "14px 12px", textAlign: "right", fontWeight: 600, color: "var(--fg)" }}>
                             {formatNumber(item.impressions)}
                           </td>
-                          <td style={{ padding: "14px 12px", textAlign: "right", fontWeight: 600, color: "#111827" }}>
+                          <td style={{ padding: "14px 12px", textAlign: "right", fontWeight: 600, color: "var(--fg)" }}>
                             {formatNumber(item.clicks)}
                           </td>
                           <td style={{ padding: "14px 12px", textAlign: "right", fontWeight: 700, color: "#0ea5e9" }}>
                             {item.ctr != null ? `${formatPercentage(item.ctr)}%` : "—"}
                           </td>
-                          <td style={{ padding: "14px 12px", textAlign: "right", fontWeight: 700, color: "#111827", borderTopRightRadius: "12px", borderBottomRightRadius: "12px" }}>
+                          <td style={{ padding: "14px 12px", textAlign: "right", fontWeight: 700, color: "var(--fg)", borderTopRightRadius: "12px", borderBottomRightRadius: "12px" }}>
                             {formatCurrency(item.spend)}
                           </td>
                         </tr>
@@ -2374,7 +2374,7 @@ export default function AdsDashboard() {
                       background: "transparent",
                       fontSize: "11px",
                       fontWeight: "600",
-                      color: "#6b7280",
+                      color: "var(--muted)",
                       textTransform: "uppercase",
                       letterSpacing: "0.05em"
                     }}>
@@ -2415,7 +2415,7 @@ export default function AdsDashboard() {
                           padding: "16px",
                           fontWeight: "600",
                           fontSize: "14px",
-                          color: "#111827",
+                          color: "var(--fg)",
                           borderTopLeftRadius: "10px",
                           borderBottomLeftRadius: "10px",
                           whiteSpace: "nowrap",
@@ -2448,7 +2448,7 @@ export default function AdsDashboard() {
                             }} title={campaign.name}>{campaign.name || "—"}</span>
                           </div>
                         </td>
-                        <td style={{ padding: "16px", fontSize: "13px", color: "#6b7280" }}>
+                        <td style={{ padding: "16px", fontSize: "13px", color: "var(--muted)" }}>
                           <span style={{
                             padding: "4px 10px",
                             borderRadius: "6px",
@@ -2465,10 +2465,10 @@ export default function AdsDashboard() {
                             {objectiveLabel}
                           </span>
                         </td>
-                        <td style={{ padding: "16px", textAlign: "right", fontSize: "14px", fontWeight: "600", color: "#374151" }}>
+                        <td style={{ padding: "16px", textAlign: "right", fontSize: "14px", fontWeight: "600", color: "var(--muted)" }}>
                           {formatNumber(Number(campaign.impressions || 0))}
                         </td>
-                        <td style={{ padding: "16px", textAlign: "right", fontSize: "14px", fontWeight: "600", color: "#374151" }}>
+                        <td style={{ padding: "16px", textAlign: "right", fontSize: "14px", fontWeight: "600", color: "var(--muted)" }}>
                           {formatNumber(Number(campaign.clicks || 0))}
                         </td>
                         <td style={{ padding: "16px", textAlign: "right", fontSize: "14px", fontWeight: "700", color: "#6366f1" }}>
@@ -2479,7 +2479,7 @@ export default function AdsDashboard() {
                           textAlign: "right",
                           fontSize: "15px",
                           fontWeight: "700",
-                          color: "#111827",
+                          color: "var(--fg)",
                           borderTopRightRadius: "10px",
                           borderBottomRightRadius: "10px"
                         }}>
@@ -2531,12 +2531,12 @@ export default function AdsDashboard() {
                 {/* Gráfico Idade x Gênero - full width */}
                 <div style={{
                   gridColumn: '1 / -1',
-                  background: 'rgba(255, 255, 255, 0.9)',
-                  border: '1px solid rgba(0, 0, 0, 0.08)',
+                  background: 'var(--panel)',
+                  border: '1px solid var(--stroke)',
                   borderRadius: '12px',
                   padding: '20px'
                 }}>
-                  <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '16px' }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--fg)', marginBottom: '16px' }}>
                     Idade × Gênero
                   </h4>
                   {hasAudienceAgeGender ? (
@@ -2549,7 +2549,7 @@ export default function AdsDashboard() {
                           barGap={3}
                           barCategoryGap="25%"
                         >
-                          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
+                          <CartesianGrid strokeDasharray="3 3" stroke="var(--stroke)" horizontal={false} />
                           <XAxis
                             type="number"
                             tick={{ fill: '#6b7280', fontSize: 12 }}
@@ -2584,16 +2584,16 @@ export default function AdsDashboard() {
                       <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '8px', flexWrap: 'wrap' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
                           <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#6366f1' }}></span>
-                          <span style={{ color: '#111827', fontWeight: 600 }}>Homens</span>
+                          <span style={{ color: 'var(--fg)', fontWeight: 600 }}>Homens</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
                           <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#ec4899' }}></span>
-                          <span style={{ color: '#111827', fontWeight: 600 }}>Mulheres</span>
+                          <span style={{ color: 'var(--fg)', fontWeight: 600 }}>Mulheres</span>
                         </div>
                         {hasUnknownAudienceGender && (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
                             <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#94a3b8' }}></span>
-                            <span style={{ color: '#111827', fontWeight: 600 }}>Indefinido</span>
+                            <span style={{ color: 'var(--fg)', fontWeight: 600 }}>Indefinido</span>
                           </div>
                         )}
                       </div>
@@ -2611,12 +2611,12 @@ export default function AdsDashboard() {
                 {/* Gráfico Alcance por gênero - full width, below */}
                 <div style={{
                   gridColumn: '1 / -1',
-                  background: 'rgba(255, 255, 255, 0.9)',
-                  border: '1px solid rgba(0, 0, 0, 0.08)',
+                  background: 'var(--panel)',
+                  border: '1px solid var(--stroke)',
                   borderRadius: '12px',
                   padding: '20px'
                 }}>
-                  <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '16px' }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--fg)', marginBottom: '16px' }}>
                     Alcance Homens x Mulheres
                   </h4>
                   {audienceGenderReachData.length === 0 ? (
@@ -2634,7 +2634,7 @@ export default function AdsDashboard() {
                         margin={{ left: 4, right: 20, top: 5, bottom: 5 }}
                         barGap={6}
                       >
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--stroke)" horizontal={false} />
                         <XAxis
                           type="number"
                           tick={{ fill: '#6b7280', fontSize: 12 }}
@@ -2672,12 +2672,12 @@ export default function AdsDashboard() {
 
                 {/* Gráfico Localização */}
                 <div style={{
-                  background: 'rgba(255, 255, 255, 0.9)',
-                  border: '1px solid rgba(0, 0, 0, 0.08)',
+                  background: 'var(--panel)',
+                  border: '1px solid var(--stroke)',
                   borderRadius: '12px',
                   padding: '20px'
                 }}>
-                  <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '16px' }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--fg)', marginBottom: '16px' }}>
                     Localização (alcance)
                   </h4>
                   {audienceLocationData.length === 0 ? (
@@ -2719,9 +2719,9 @@ export default function AdsDashboard() {
                           <div key={item.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                               <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: item.color }}></span>
-                              <span style={{ fontSize: '12px', color: '#111827', fontWeight: 600 }}>{item.name}</span>
+                              <span style={{ fontSize: '12px', color: 'var(--fg)', fontWeight: 600 }}>{item.name}</span>
                             </div>
-                            <span style={{ fontSize: '12px', color: '#111827', fontWeight: 600 }}>
+                            <span style={{ fontSize: '12px', color: 'var(--fg)', fontWeight: 600 }}>
                               {formatNumber(item.value)}
                             </span>
                           </div>
@@ -2733,12 +2733,12 @@ export default function AdsDashboard() {
 
                 {/* Top segmentos de audiência */}
                 <div style={{
-                  background: 'rgba(255, 255, 255, 0.9)',
-                  border: '1px solid rgba(0, 0, 0, 0.08)',
+                  background: 'var(--panel)',
+                  border: '1px solid var(--stroke)',
                   borderRadius: '12px',
                   padding: '20px'
                 }}>
-                  <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '16px' }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--fg)', marginBottom: '16px' }}>
                     Top segmentos da audiência
                   </h4>
                   {audienceTopSegments.length === 0 ? (
@@ -2753,21 +2753,21 @@ export default function AdsDashboard() {
                       {audienceTopSegments.map((segment) => (
                         <div key={segment.name}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                            <span style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>
+                            <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--fg)' }}>
                               {segment.name}
                             </span>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                               <span style={{ fontSize: '12px', fontWeight: '700', color: '#6366f1' }}>
                                 {segment.percent}%
                               </span>
-                              <span style={{ fontSize: '12px', color: '#6b7280' }}>
+                              <span style={{ fontSize: '12px', color: 'var(--muted)' }}>
                                 ({formatNumber(segment.value)})
                               </span>
                             </div>
                           </div>
                           <div style={{
                             height: '8px',
-                            background: '#e5e7eb',
+                            background: 'var(--stroke)',
                             borderRadius: '4px',
                             overflow: 'hidden'
                           }}>

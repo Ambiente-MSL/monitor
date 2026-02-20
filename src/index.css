@@ -36,9 +36,14 @@
   --tooltip-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
 
   --surface-1: var(--bg-card);
-  --topbar-bg: var(--bg-card);
-  --topbar-fg: var(--text-primary);
-  --topbar-border: var(--border-color);
+  /* Topbar: sempre escura em ambos os modos */
+  --topbar-bg: #111827;
+  --topbar-fg: #f9fafb;
+  --topbar-border: rgba(255, 255, 255, 0.08);
+  --topbar-muted: rgba(249, 250, 251, 0.55);
+  --topbar-surface: rgba(255, 255, 255, 0.08);
+  --topbar-surface-hover: rgba(255, 255, 255, 0.13);
+  --topbar-stroke: rgba(255, 255, 255, 0.12);
 
   --radius: 16px;
 
@@ -147,9 +152,14 @@
   --tooltip-shadow: 0 8px 24px rgba(0,0,0,0.18);
 
   --surface-1: #0b0c0f;
-  --topbar-bg: var(--surface-1);
-  --topbar-fg: var(--text-primary);
-  --topbar-border: var(--stroke);
+  /* Topbar: mantém sempre escura no dark mode também */
+  --topbar-bg: #0d1117;
+  --topbar-fg: #f9fafb;
+  --topbar-border: rgba(255, 255, 255, 0.06);
+  --topbar-muted: rgba(249, 250, 251, 0.50);
+  --topbar-surface: rgba(255, 255, 255, 0.06);
+  --topbar-surface-hover: rgba(255, 255, 255, 0.10);
+  --topbar-stroke: rgba(255, 255, 255, 0.10);
 
   --panel-elevated: color-mix(in oklab, var(--panel) 96%, white 4%);
   --panel-strong: color-mix(in oklab, var(--panel) 88%, white 12%);
@@ -772,10 +782,7 @@ body.theme-light {
   transition: background var(--transition), border-color var(--transition), color var(--transition);
 }
 
-:root[data-theme="dark"] .topbar {
-  background: linear-gradient(180deg, #1f1f23 0%, #18181b 100%);
-  border-bottom-color: rgba(255, 255, 255, 0.06);
-}
+/* Topbar é sempre escura — sem override por tema */
 
 .topbar__inner {
   width: 100%;
@@ -810,9 +817,7 @@ body.theme-light {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
 }
 
-:root[data-theme="dark"] .topbar__logo-text {
-  color: #ffffff;
-}
+/* logo-text sempre usa --topbar-fg que já é claro */
 
 .topbar__controls {
   display: flex;
@@ -885,12 +890,12 @@ body.theme-light {
 
 .topbar__chip {
   position: relative;
-  border: 1px solid var(--stroke);
+  border: 1px solid var(--topbar-stroke);
   border-radius: 12px;
   padding: 10px 20px;
-  background: var(--panel);
+  background: var(--topbar-surface);
   backdrop-filter: blur(10px);
-  color: var(--fg);
+  color: var(--topbar-fg);
   font-size: 0.82rem;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -901,12 +906,7 @@ body.theme-light {
   justify-content: center;
   cursor: pointer;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
-:root[data-theme="dark"] .topbar__chip {
-  background: rgba(255, 255, 255, 0.07);
-  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
 .topbar__chip::before {
@@ -924,11 +924,11 @@ body.theme-light {
 }
 
 .topbar__chip:hover {
-  background: var(--panel-elevated);
-  color: var(--fg);
-  border-color: rgba(139, 92, 246, 0.3);
+  background: var(--topbar-surface-hover);
+  color: var(--topbar-fg);
+  border-color: rgba(139, 92, 246, 0.4);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
 }
 
 .topbar__chip:hover::before {
@@ -936,8 +936,8 @@ body.theme-light {
 }
 
 .topbar__chip--active {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(236, 72, 153, 0.25));
-  border: 1px solid rgba(139, 92, 246, 0.4);
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.45), rgba(236, 72, 153, 0.45));
+  border: 1px solid rgba(139, 92, 246, 0.6);
   color: #ffffff;
   box-shadow: 0 8px 24px rgba(139, 92, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   font-weight: 700;
@@ -977,6 +977,7 @@ body.theme-light {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  color: var(--topbar-fg);
 }
 
 .topbar__range svg {
@@ -1036,23 +1037,32 @@ body.theme-light {
 }
 
 .date-range-wrapper--compact .date-range-btn {
-  padding: 0;
-  background: transparent;
-  border: none;
-  color: inherit;
-  font-weight: inherit;
+  padding: 6px 12px;
+  background: var(--topbar-surface);
+  border: 1px solid var(--topbar-stroke);
+  border-radius: 12px;
+  color: var(--topbar-fg);
+  font-weight: 600;
   display: inline-flex;
   align-items: center;
   min-width: auto;
+  gap: 6px;
+  height: 40px;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.date-range-wrapper--compact .date-range-btn:hover {
+  background: var(--topbar-surface-hover);
+  border-color: rgba(139, 92, 246, 0.4);
 }
 
 .date-range-wrapper--compact .date-range-btn__text {
-  color: inherit;
+  color: var(--topbar-fg);
   white-space: nowrap;
 }
 
 .date-range-wrapper--compact .date-range-btn__icon {
-  display: none;
+  color: var(--topbar-muted);
 }
 
 .page-toolbar {
@@ -1074,20 +1084,15 @@ body.theme-light {
   gap: 10px;
   border-radius: 999px;
   padding: 4px 16px 4px 4px;
-  border: 1px solid var(--stroke);
-  background: var(--panel);
+  border: 1px solid var(--topbar-stroke);
+  background: var(--topbar-surface);
   backdrop-filter: blur(10px);
-  color: var(--fg);
+  color: var(--topbar-fg);
   font-weight: 600;
   height: 40px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: visible;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
-:root[data-theme="dark"] .topbar__account {
-  background: rgba(255, 255, 255, 0.07);
-  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
 .topbar__account::before {
@@ -1105,10 +1110,10 @@ body.theme-light {
 }
 
 .topbar__account:hover {
-  background: var(--panel-elevated);
-  border-color: rgba(139, 92, 246, 0.3);
+  background: var(--topbar-surface-hover);
+  border-color: rgba(139, 92, 246, 0.4);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
 }
 
 .topbar__account:hover::before {
@@ -1121,13 +1126,13 @@ body.theme-light {
   height: 32px;
   border-radius: 50%;
   object-fit: cover;
-  background: rgba(148, 163, 184, 0.4);
+  background: rgba(148, 163, 184, 0.3);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--fg);
+  color: var(--topbar-fg);
 }
 
 .topbar__account-name {
@@ -1150,7 +1155,7 @@ body.theme-light {
 .topbar__account .filter-select__input {
   background: transparent;
   border: none;
-  color: var(--fg);
+  color: var(--topbar-fg);
   font-weight: 600;
 }
 
@@ -1159,7 +1164,7 @@ body.theme-light {
 }
 
 .topbar__account .filter-select__icon {
-  color: var(--muted);
+  color: var(--topbar-muted);
 }
 
 @media (max-width: 768px) {
@@ -1187,17 +1192,6 @@ body.theme-light {
     justify-content: center;
     margin-right: 0;
   }
-}
-.topbar__icon-btn {
-  background: #1a1a1a;
-  border-color: #2a2a2a;
-  color: #e5e7eb;
-}
-
-:root:not([data-theme="light"]) .topbar__icon-btn:hover {
-  background: #222222;
-  border-color: #3a3a3a;
-  color: #e5e7eb;
 }
 
 :root:not([data-theme="light"]) .filter-dropdown {
@@ -2523,14 +2517,14 @@ body.theme-light {
 }
 
 .date-range-dropdown-new__btn--secondary {
-  background: rgba(0, 0, 0, 0.04);
-  color: #6b7280;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--bg-secondary);
+  color: var(--muted);
+  border: 1px solid var(--stroke);
 }
 
 .date-range-dropdown-new__btn--secondary:hover {
-  background: rgba(0, 0, 0, 0.08);
-  color: #374151;
+  background: var(--stroke);
+  color: var(--fg);
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
@@ -2569,7 +2563,7 @@ body.theme-light {
 /* Override react-date-range default styles */
 .rdrCalendarWrapper {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif !important;
-  color: #1a1a1a !important;
+  color: var(--fg) !important;
   width: 100% !important;
   margin: 0 !important;
   padding: 0 !important;
@@ -2650,14 +2644,14 @@ body.theme-light {
 }
 
 .rdrNextPrevButton:hover {
-  background: #f5f5f5 !important;
+  background: var(--bg-secondary) !important;
 }
 
 .rdrNextPrevButton i {
   border-width: 0 2px 2px 0 !important;
   padding: 4px !important;
   display: block !important;
-  border-color: #1a1a1a !important;
+  border-color: var(--fg) !important;
   border-style: solid !important;
 }
 
@@ -2678,7 +2672,7 @@ body.theme-light {
   flex: none !important;
   font-size: 15px !important;
   font-weight: 600 !important;
-  color: #1a1a1a !important;
+  color: var(--fg) !important;
   text-transform: capitalize !important;
   text-align: center !important;
 }
@@ -2718,7 +2712,7 @@ body.theme-light {
   text-align: center !important;
   font-size: 0 !important;
   font-weight: 500 !important;
-  color: #999999 !important;
+  color: var(--muted) !important;
   line-height: 1 !important;
   text-transform: uppercase !important;
 }
@@ -2750,16 +2744,16 @@ body.theme-light {
   border-radius: 50% !important;
   font-size: 13px !important;
   font-weight: 400 !important;
-  color: #1a1a1a !important;
+  color: var(--fg) !important;
   transition: all 0.2s ease !important;
 }
 
 .rdrDay:not(.rdrDayPassive):not(.rdrDayDisabled):hover .rdrDayNumber span {
-  background: #f5f5f5 !important;
+  background: var(--bg-secondary) !important;
 }
 
 .rdrDayToday .rdrDayNumber span {
-  border: 1px solid #e0e0e0 !important;
+  border: 1px solid var(--stroke) !important;
 }
 
 .rdrDayToday .rdrDayNumber span::after {
@@ -2767,7 +2761,8 @@ body.theme-light {
 }
 
 .rdrDayPassive .rdrDayNumber span {
-  color: #d0d0d0 !important;
+  color: var(--muted) !important;
+  opacity: 0.5;
 }
 
 .rdrDayDisabled {
@@ -2775,7 +2770,8 @@ body.theme-light {
 }
 
 .rdrDayDisabled .rdrDayNumber span {
-  color: #e5e5e5 !important;
+  color: var(--muted) !important;
+  opacity: 0.3;
 }
 
 .rdrSelected,
@@ -2793,24 +2789,24 @@ body.theme-light {
 
 .rdrStartEdge ~ .rdrDayNumber span,
 .rdrEndEdge ~ .rdrDayNumber span {
-  background: #1a1a1a !important;
+  background: var(--color-primary) !important;
   color: #ffffff !important;
 }
 
 .rdrInRange ~ .rdrDayNumber span {
-  background: #f0f0f0 !important;
-  color: #1a1a1a !important;
+  background: var(--purple-soft) !important;
+  color: var(--fg) !important;
 }
 
 .rdrDayStartPreview .rdrDayNumber span,
 .rdrDayEndPreview .rdrDayNumber span {
-  background: #e0e0e0 !important;
-  color: #1a1a1a !important;
+  background: var(--bg-secondary) !important;
+  color: var(--fg) !important;
 }
 
 .rdrDayInPreview .rdrDayNumber span {
-  background: #f0f0f0 !important;
-  color: #1a1a1a !important;
+  background: var(--purple-soft) !important;
+  color: var(--fg) !important;
 }
 
 .rdrDefinedRangesWrapper {
@@ -2882,8 +2878,8 @@ body.theme-light {
   transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
 }
 .filter-select__input option {
-  color: #000;
-  background-color: #fff;
+  color: var(--fg);
+  background-color: var(--panel);
 }
 
 .filter-select__input:focus {
@@ -3332,12 +3328,12 @@ body.theme-light {
 .account-add-modal__subtitle {
   margin: 4px 0 0;
   font-size: 0.88rem;
-  color: #6b7280;
+  color: var(--muted);
 }
 
 .account-add-modal__close {
   border: none;
-  background: #f3f4f6;
+  background: var(--bg-secondary);
   border-radius: 10px;
   width: 32px;
   height: 32px;
@@ -3349,7 +3345,7 @@ body.theme-light {
 }
 
 .account-add-modal__close:hover {
-  background: #e5e7eb;
+  background: var(--stroke);
 }
 
 .account-add-modal__footer {
@@ -3375,7 +3371,7 @@ body.theme-light {
 }
 
 .topbar__account .account-dropdown__name {
-  color: #1f2937;
+  color: var(--topbar-fg);
   font-weight: 600;
 }
 
@@ -3399,18 +3395,16 @@ body.theme-light {
 }
 
 .topbar__account .account-dropdown__icon {
-  color: #000000;
+  color: var(--topbar-muted);
 }
 
 .topbar__account .account-dropdown__list {
   right: 0;
   left: auto;
-  background: rgba(255, 255, 255, 0.98);
+  background: var(--panel);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15),
-              0 0 0 1px rgba(255, 255, 255, 0.5) inset,
-              0 1px 0 rgba(255, 255, 255, 0.8) inset;
+  border: 1px solid var(--stroke);
+  box-shadow: var(--shadow-lg);
   border-radius: 16px;
   animation: accountDropdownFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1100 !important;
@@ -3419,7 +3413,7 @@ body.theme-light {
 }
 
 .topbar__account .account-dropdown__item {
-  color: #1f2937 !important;
+  color: var(--fg) !important;
   border-radius: 10px;
   position: relative;
   overflow: hidden;
@@ -3441,7 +3435,7 @@ body.theme-light {
 
 .topbar__account .account-dropdown__item:hover {
   background: rgba(139, 92, 246, 0.1);
-  color: #1f2937;
+  color: var(--fg);
   transform: translateX(2px);
   box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
 }
@@ -3452,7 +3446,7 @@ body.theme-light {
 
 .topbar__account .account-dropdown__item--active {
   background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(236, 72, 153, 0.15));
-  color: #1f2937;
+  color: var(--fg);
   border: 1px solid rgba(139, 92, 246, 0.3);
   box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
@@ -3462,7 +3456,7 @@ body.theme-light {
 }
 
 .topbar__account .account-dropdown__item-name {
-  color: #1f2937 !important;
+  color: var(--fg) !important;
   font-weight: 500;
   position: relative;
   z-index: 2;
@@ -3480,62 +3474,7 @@ body.theme-light {
   box-shadow: 0 4px 12px rgba(244, 63, 94, 0.2);
 }
 
-/* Estilos específicos para Instagram dashboard */
-body:has(.instagram-dashboard--clean) .topbar__account .account-dropdown__name {
-  color: #374151;
-  font-weight: 600;
-}
-
-body:has(.instagram-dashboard--clean) .topbar__account .account-dropdown__list {
-  background: var(--panel);
-  border-color: var(--stroke);
-  box-shadow: var(--shadow-lg);
-}
-
-body:has(.instagram-dashboard--clean) .topbar__account .account-dropdown__item {
-  color: var(--fg);
-}
-
-body:has(.instagram-dashboard--clean) .topbar__account .account-dropdown__item:hover {
-  background: rgba(139, 92, 246, 0.1);
-  color: var(--fg);
-}
-
-body:has(.instagram-dashboard--clean) .topbar__account .account-dropdown__item--active {
-  background: rgba(139, 92, 246, 0.15);
-  color: var(--fg);
-}
-
-body:has(.instagram-dashboard--clean) .topbar__account .account-dropdown__item-name {
-  color: var(--fg);
-  font-weight: 500;
-}
-
-/* Facebook Dashboard - Dropdown */
-body:has(.facebook-dashboard--clean) .topbar__account .account-dropdown__list {
-  background: var(--panel);
-  border-color: var(--stroke);
-  box-shadow: var(--shadow-lg);
-}
-
-body:has(.facebook-dashboard--clean) .topbar__account .account-dropdown__item {
-  color: var(--fg);
-}
-
-body:has(.facebook-dashboard--clean) .topbar__account .account-dropdown__item:hover {
-  background: rgba(139, 92, 246, 0.1);
-  color: var(--fg);
-}
-
-body:has(.facebook-dashboard--clean) .topbar__account .account-dropdown__item--active {
-  background: rgba(139, 92, 246, 0.15);
-  color: var(--fg);
-}
-
-body:has(.facebook-dashboard--clean) .topbar__account .account-dropdown__item-name {
-  color: var(--fg);
-  font-weight: 500;
-}
+/* Overrides por dashboard removidos — agora o dropdown usa var(--panel)/var(--fg) globalmente */
 
 /* Admin Dashboard - Manter alinhamento consistente com outras páginas */
 .admin-dashboard--clean {
@@ -4101,7 +4040,7 @@ input:focus {
 
   border-bottom: 1px solid rgba(148, 163, 184, 0.3);
 
-  color: #000000;
+  color: var(--fg);
 
   padding: 8px 4px;
 
@@ -8599,8 +8538,8 @@ td.posts-table__metric + td.posts-table__metric {
 }
 
 .posts-table-compact__head {
-  background: #e5e7eb;
-  border-bottom: 1px solid rgba(103, 123, 170, 0.2);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--stroke);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -8611,7 +8550,7 @@ td.posts-table__metric + td.posts-table__metric {
   text-align: left;
   font-size: 0.75rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--fg);
   letter-spacing: 0.03em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -8641,8 +8580,8 @@ td.posts-table__metric + td.posts-table__metric {
 }
 
 .posts-table-compact__th:hover {
-  background: #d1d5db;
-  color: #111827;
+  background: var(--bg-secondary);
+  color: var(--fg);
 }
 
 .posts-table-compact__th:active {
@@ -8651,7 +8590,7 @@ td.posts-table__metric + td.posts-table__metric {
 
 .posts-table-compact__th--dragging {
   opacity: 0.5;
-  background: #d1d5db;
+  background: var(--bg-secondary);
 }
 
 .posts-table-compact__th--drag-over {
@@ -9452,8 +9391,8 @@ td.posts-table__metric + td.posts-table__metric {
 .recharts-polar-radius-axis-tick-value tspan,
 .recharts-legend-item-text,
 .recharts-legend-item-text tspan {
-  fill: #000000ff !important;
-  color: #000000ff !important;
+  fill: var(--muted) !important;
+  color: var(--muted) !important;
 }
 .recharts-cartesian-axis line,
 .recharts-cartesian-axis .recharts-cartesian-axis-line,
@@ -9804,7 +9743,7 @@ td.posts-table__metric + td.posts-table__metric {
   border: none;
   padding: 0;
   font-weight: 600;
-  color: #111827;
+  color: var(--fg);
   min-height: 0;
 }
 
@@ -11247,7 +11186,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .ig-clean-title2 {
   font-size: 28px;
   font-weight: 700;
-  color: #000000ff;
+  color: var(--fg);
   margin: 0 0 20px 0;
 }
 
@@ -11622,7 +11561,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .ig-weekly-chart__bar {
   width: 14px;
   min-height: 12px;
-  background: #e5e7eb;
+  background: var(--stroke);
   border-radius: 12px 12px 6px 6px;
   transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
@@ -11659,7 +11598,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 
 .ig-profile-vertical__divider {
   height: 1px;
-  background: #e5e7eb;
+  background: var(--stroke);
   margin: 24px -24px;
 }
 
@@ -11671,14 +11610,14 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .ig-profile-vertical__engagement h4 {
   font-size: 16px;
   font-weight: 700;
-  color: #111827;
+  color: var(--ig-text-primary);
   margin: 0 0 16px 0;
 }
 
 .ig-profile-vertical__top-posts h4 {
   font-size: 16px;
   font-weight: 700;
-  color: #111827;
+  color: var(--ig-text-primary);
   margin: 0 0 16px 0;
   padding: 0 24px;
 }
@@ -11697,7 +11636,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   gap: 10px;
   padding: 0 24px 12px;
   font-size: 12px;
-  color: #374151;
+  color: var(--ig-text-secondary);
 }
 
 .ig-engagement-legend__item {
@@ -11821,7 +11760,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   height: 72px;
   border-radius: 8px;
   overflow: hidden;
-  background: #d1d5db;
+  background: var(--bg-secondary);
 }
 
 .ig-top-post-card__thumb img {
@@ -12663,7 +12602,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 
 .ig-top-post-compact__caption {
   font-size: 12px;
-  color: #374151;
+  color: var(--ig-text-secondary);
   line-height: 1.5;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -12963,7 +12902,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .ig-chart-slider__track {
   position: relative;
   height: 4px;
-  background: #e5e7eb;
+  background: var(--stroke);
   border-radius: 2px;
   margin-top: 10px;
 }
@@ -12984,7 +12923,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   transform: translateY(-50%);
   width: 16px;
   height: 16px;
-  background: #ffffff;
+  background: var(--panel);
   border: 3px solid #a855f7;
   border-radius: 50%;
   cursor: pointer;
@@ -14303,6 +14242,20 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   box-shadow: 0 8px 24px rgba(99, 102, 241, 0.25);
 }
 
+/* Dark mode: substituir gradientes claros por versões escurecidas */
+:root[data-theme="dark"] .fb-content-type-card--video {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.18) 0%, rgba(37, 99, 235, 0.22) 100%);
+}
+:root[data-theme="dark"] .fb-content-type-card--image {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.18) 0%, rgba(217, 119, 6, 0.22) 100%);
+}
+:root[data-theme="dark"] .fb-content-type-card--text {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.18) 0%, rgba(5, 150, 105, 0.22) 100%);
+}
+:root[data-theme="dark"] .fb-content-type-card--link {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.18) 0%, rgba(79, 70, 229, 0.22) 100%);
+}
+
 .fb-content-type-card__icon {
   display: flex;
   align-items: center;
@@ -14314,6 +14267,10 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   margin: 0 auto 16px;
   color: #1877F2;
   backdrop-filter: blur(10px);
+}
+
+:root[data-theme="dark"] .fb-content-type-card__icon {
+  background: rgba(0, 0, 0, 0.25);
 }
 
 .fb-content-type-card--video .fb-content-type-card__icon {
@@ -14359,7 +14316,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   justify-content: center;
   gap: 6px;
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--muted);
 }
 
 .fb-content-type-card__badge {
@@ -14584,6 +14541,17 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
 }
 
+/* Dark mode: gradientes claros dos sentimentos */
+:root[data-theme="dark"] .fb-sentiment-item--positive {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.18) 0%, rgba(5, 150, 105, 0.22) 100%);
+}
+:root[data-theme="dark"] .fb-sentiment-item--neutral {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.18) 0%, rgba(79, 70, 229, 0.22) 100%);
+}
+:root[data-theme="dark"] .fb-sentiment-item--negative {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.18) 0%, rgba(220, 38, 38, 0.22) 100%);
+}
+
 .fb-sentiment-item__emoji {
   font-size: 40px;
   line-height: 1;
@@ -14669,6 +14637,17 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 
 .fb-city-item--3 {
   background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+}
+
+:root[data-theme="dark"] .fb-city-item--1 {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.20) 100%);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+:root[data-theme="dark"] .fb-city-item--2 {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.12) 0%, rgba(2, 132, 199, 0.16) 100%);
+}
+:root[data-theme="dark"] .fb-city-item--3 {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(109, 40, 217, 0.16) 100%);
 }
 
 .fb-city-item__rank {

@@ -1573,7 +1573,7 @@ useEffect(() => {
                   </div>
                 )}
                 {!coverImage && (
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#6b7280" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--muted)" }}>
                     <Facebook size={32} />
                     <span style={{ fontWeight: 600 }}>Capa não configurada</span>
                   </div>
@@ -1611,8 +1611,8 @@ useEffect(() => {
                   <label
                     htmlFor="fb-cover-upload"
                     style={{
-                      background: "rgba(255,255,255,0.9)",
-                      color: "#111827",
+                      background: "var(--panel)",
+                      color: "var(--fg)",
                       borderRadius: "6px",
                       padding: "4px 8px",
                       fontSize: "0.75rem",
@@ -1663,7 +1663,7 @@ useEffect(() => {
                 </h3>
 
                 <div className="ig-profile-vertical__stats-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0', marginTop: '20px' }}>
-                  <div className="ig-overview-stat" style={{ paddingBottom: '16px', borderBottom: '1px solid #e5e7eb' }}>
+                  <div className="ig-overview-stat" style={{ paddingBottom: '16px', borderBottom: '1px solid var(--stroke)' }}>
                     <div className="ig-overview-stat__trend" style={{ visibility: 'hidden' }}>
                       <span>&nbsp;</span>
                     </div>
@@ -1676,7 +1676,7 @@ useEffect(() => {
                     </div>
                     <div className="ig-overview-stat__label">Total de seguidores</div>
                   </div>
-                  <div className="ig-overview-stat" style={{ paddingBottom: '16px', borderBottom: '1px solid #e5e7eb' }}>
+                  <div className="ig-overview-stat" style={{ paddingBottom: '16px', borderBottom: '1px solid var(--stroke)' }}>
                     <div
                       className={`ig-overview-stat__trend ${!overviewIsLoading && reachDeltaDisplay && reachDeltaDirection ? `ig-overview-stat__trend--${reachDeltaDirection}` : ''}`}
                       style={!overviewIsLoading && reachDeltaDisplay && reachDeltaDirection ? {} : { visibility: 'hidden' }}
@@ -1828,10 +1828,10 @@ useEffect(() => {
                     <DataState state="error" label={pageError} size="sm" />
                   ) : hasVideoWatchData ? (
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", padding: "16px 0" }}>
-                      <div style={{ fontSize: "32px", fontWeight: 700, color: "#111827" }}>
+                      <div style={{ fontSize: "32px", fontWeight: 700, color: "var(--fg)" }}>
                         {formatDurationSeconds(videoWatchStats.avgWatchSec)}
                       </div>
-                      <div style={{ fontSize: "12px", color: "#6b7280", fontWeight: 600 }}>
+                      <div style={{ fontSize: "12px", color: "var(--muted)", fontWeight: 600 }}>
                         Retenção de audiência no período
                       </div>
                     </div>
@@ -1907,7 +1907,7 @@ useEffect(() => {
                       <div style={{ fontSize: '28px', fontWeight: 700, color: '#1877f2' }}>
                         {wordCloudDetails.total_occurrences?.toLocaleString('pt-BR') || 0}
                       </div>
-                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Ocorrências</div>
+                      <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>Ocorrências</div>
                     </div>
                     <div className="ig-card-white ig-kpi-hover" style={{ padding: '20px', textAlign: 'center' }}>
                       <div className="ig-kpi-icon" style={{ background: 'rgba(59, 130, 246, 0.12)', margin: '0 auto 10px' }}>
@@ -1916,15 +1916,15 @@ useEffect(() => {
                       <div style={{ fontSize: '28px', fontWeight: 700, color: '#3b82f6' }}>
                         {wordCloudDetails.total_comments?.toLocaleString('pt-BR') || 0}
                       </div>
-                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Comentários</div>
+                      <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>Comentários</div>
                     </div>
                   </div>
                 )}
 
                 {/* Lista de comentários */}
                 <section className="ig-card-white" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                  <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb' }}>
-                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--stroke)' }}>
+                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--fg)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                       </svg>
@@ -1942,9 +1942,9 @@ useEffect(() => {
                           {wordCloudDetails.comments.map((comment) => (
                             <li key={comment.id || `${comment.text}-${comment.timestamp}`} style={{
                               padding: '12px 16px',
-                              background: '#f9fafb',
+                              background: 'var(--bg-secondary)',
                               borderRadius: '10px',
-                              border: '1px solid #e5e7eb'
+                              border: '1px solid var(--stroke)'
                             }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
                                 {comment.username ? (
@@ -1955,7 +1955,7 @@ useEffect(() => {
                                     style={{
                                       fontWeight: 600,
                                       fontSize: '13px',
-                                      color: '#111827',
+                                      color: 'var(--fg)',
                                       textDecoration: 'underline',
                                       textUnderlineOffset: '2px',
                                     }}
@@ -1963,12 +1963,12 @@ useEffect(() => {
                                     @{String(comment.username).replace(/^@+/, "")}
                                   </a>
                                 ) : (
-                                  <span style={{ fontWeight: 600, fontSize: '13px', color: '#111827' }}>
+                                  <span style={{ fontWeight: 600, fontSize: '13px', color: 'var(--fg)' }}>
                                     Comentário
                                   </span>
                                 )}
                                 {comment.timestamp && (
-                                  <span style={{ fontSize: '12px', color: '#9ca3af' }}>
+                                  <span style={{ fontSize: '12px', color: 'var(--muted)' }}>
                                     {formatWordCloudDetailDate(comment.timestamp)}
                                   </span>
                                 )}
@@ -1977,7 +1977,7 @@ useEffect(() => {
                                     fontSize: '11px',
                                     fontWeight: 600,
                                     color: '#1877f2',
-                                    background: '#eff6ff',
+                                    background: 'rgba(24, 119, 242, 0.1)',
                                     padding: '2px 8px',
                                     borderRadius: '10px'
                                   }}>
@@ -1985,7 +1985,7 @@ useEffect(() => {
                                   </span>
                                 )}
                               </div>
-                              <p style={{ margin: 0, fontSize: '14px', color: '#374151', lineHeight: 1.5 }}>
+                              <p style={{ margin: 0, fontSize: '14px', color: 'var(--muted)', lineHeight: 1.5 }}>
                                 {comment.text}
                               </p>
                             </li>
@@ -2101,7 +2101,7 @@ useEffect(() => {
                     <div style={{ fontSize: '28px', fontWeight: 700, color: '#22c55e' }}>
                       {formatNumber(engagedUsersValue)}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#6b7280' }}>Usuários engajados</div>
+                    <div style={{ fontSize: '12px', color: 'var(--muted)' }}>Usuários engajados</div>
                   </div>
                   <div className="ig-card-white" style={{ padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                     <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(22, 163, 74, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -2110,7 +2110,7 @@ useEffect(() => {
                     <div style={{ fontSize: '28px', fontWeight: 700, color: '#16a34a' }}>
                       {formatNumber(reactionsTotalValue)}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#6b7280' }}>Reações totais</div>
+                    <div style={{ fontSize: '12px', color: 'var(--muted)' }}>Reações totais</div>
                   </div>
                   <div className="ig-card-white" style={{ padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                     <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(22, 163, 74, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -2119,15 +2119,15 @@ useEffect(() => {
                     <div style={{ fontSize: '28px', fontWeight: 700, color: '#16a34a' }}>
                       {formatNumber(totalFansValue)}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#6b7280' }}>Fãs totais</div>
+                    <div style={{ fontSize: '12px', color: 'var(--muted)' }}>Fãs totais</div>
                   </div>
                 </div>
 
                 {/* Posts e engajamento */}
                 <section className="ig-card-white" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                  <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--stroke)', display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <Newspaper size={18} color="#1877F2" />
-                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#111827' }}>Posts e engajamento</h4>
+                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--fg)' }}>Posts e engajamento</h4>
                   </div>
                   <div style={{ padding: '16px 20px', flex: 1, overflow: 'auto' }}>
                     {fbPostsLoading ? (
@@ -2237,7 +2237,7 @@ useEffect(() => {
                             item?.dateKey === peakReachPoint.dateKey &&
                             numericValue === peakReachPoint.value;
                           const footer = isPeak ? (
-                            <div style={{ marginTop: 6, fontSize: 12, color: '#6b7280' }}>
+                            <div style={{ marginTop: 6, fontSize: 12, color: 'var(--muted)' }}>
                               Pico do período
                             </div>
                           ) : null;
@@ -2396,7 +2396,7 @@ useEffect(() => {
                             item?.dateKey === peakContentGrowthPoint.dateKey &&
                             numericValue === peakContentGrowthPoint.value;
                           const footer = isPeak ? (
-                            <div style={{ marginTop: 6, fontSize: 12, color: "#6b7280" }}>
+                            <div style={{ marginTop: 6, fontSize: 12, color: "var(--muted)" }}>
                               Pico do período
                             </div>
                           ) : null;
@@ -2538,25 +2538,25 @@ useEffect(() => {
                           </div>
                         </div>
                         <div style={{ padding: '14px' }}>
-                          <p style={{ fontSize: '13px', color: '#374151', marginBottom: '12px', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                          <p style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '12px', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                             {post?.message || 'Post sem texto'}
                           </p>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div style={{ display: 'flex', gap: '12px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 <Heart size={14} color="#ef4444" fill="#ef4444" />
-                                <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>{formatNumber(post?.reactions)}</span>
+                                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--fg)' }}>{formatNumber(post?.reactions)}</span>
                               </div>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 <MessageCircle size={14} color="#3b82f6" />
-                                <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>{formatNumber(post?.comments)}</span>
+                                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--fg)' }}>{formatNumber(post?.comments)}</span>
                               </div>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 <Share2 size={14} color="#10b981" />
-                                <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>{formatNumber(post?.shares)}</span>
+                                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--fg)' }}>{formatNumber(post?.shares)}</span>
                               </div>
                             </div>
-                            <span style={{ fontSize: '11px', color: '#9ca3af' }}>{formatPostDate(post?.timestamp)}</span>
+                            <span style={{ fontSize: '11px', color: 'var(--muted)' }}>{formatPostDate(post?.timestamp)}</span>
                           </div>
                         </div>
                       </a>
