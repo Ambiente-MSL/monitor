@@ -13,8 +13,9 @@ from collections import Counter, defaultdict
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 from typing import Any, Dict, List, Optional, Sequence, Union
+from urllib.parse import urlparse
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, Response, jsonify, request, send_from_directory
 from flask_cors import CORS
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from psycopg2.extras import Json
@@ -270,6 +271,16 @@ WORDCLOUD_STOPWORDS = {
 }
 EMAIL_VALIDATION_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 VALID_USER_ROLES = {"analista", "admin"}
+IG_PROFILE_PICTURE_CACHE_TTL_SEC = int(os.getenv("IG_PROFILE_PICTURE_CACHE_TTL_SEC", "900"))
+IG_PROFILE_PICTURE_REQUEST_TIMEOUT_SEC = int(os.getenv("IG_PROFILE_PICTURE_REQUEST_TIMEOUT_SEC", "10"))
+IG_PROFILE_PICTURE_ALLOWED_HOSTS = (
+    "fbcdn.net",
+    "fbsbx.com",
+    "cdninstagram.com",
+    "instagram.com",
+    "facebook.com",
+)
+IG_PROFILE_PICTURE_MEM_CACHE: Dict[str, Dict[str, Any]] = {}
 
 _ensure_connected_accounts_table()
 _ensure_meta_tokens_table()
@@ -1914,6 +1925,83 @@ def _serialize_cover_row(row: Optional[Dict[str, Any]]) -> Optional[Dict[str, An
         "size_bytes": row.get("size_bytes"),
         "updated_at": updated_at_iso,
     }
+
+
+def _normalize_remote_image_url(value: Any) -> str:
+    if value is None:
+        return ""
+    candidate = str(value).strip()
+    if not candidate:
+        return ""
+    candidate = candidate.replace("&amp;", "&")
+    if candidate.startswith("//"):
+        candidate = f"https:{candidate}"
+    if candidate.lower().startswith("http://"):
+        candidate = f"https://{candidate[7:]}"
+    return candidate
+
+
+def _is_allowed_profile_picture_url(url: str) -> bool:
+    if not url:
+        return False
+    try:
+        parsed = urlparse(url)
+    except Exception:
+        return False
+    scheme = (parsed.scheme or "").lower()
+    host = (parsed.hostname or "").lower()
+    if scheme not in {"http", "https"} or not host:
+        return False
+    return any(host == suffix or host.endswith(f".{suffix}") for suffix in IG_PROFILE_PICTURE_ALLOWED_HOSTS)
+
+
+def _resolve_instagram_profile_picture_url(ig_user_id: str, *, force_refresh: bool = False) -> str:
+    normalized_ig_id = str(ig_user_id or "").strip()
+    if not normalized_ig_id:
+        return ""
+
+    now_ts = time.time()
+    if not force_refresh:
+        cached = IG_PROFILE_PICTURE_MEM_CACHE.get(normalized_ig_id)
+        if cached:
+            age_seconds = now_ts - float(cached.get("ts") or 0)
+            cached_url = str(cached.get("url") or "")
+            if age_seconds < IG_PROFILE_PICTURE_CACHE_TTL_SEC and cached_url:
+                return cached_url
+
+    profile_url = ""
+    try:
+        account_payload = gget(f"/{normalized_ig_id}", {"fields": "profile_picture_url"})
+        profile_url = _normalize_remote_image_url((account_payload or {}).get("profile_picture_url"))
+    except MetaAPIError as err:
+        logger.warning("Falha ao resolver profile_picture_url do IG %s via Meta: %s", normalized_ig_id, err)
+    except Exception as err:  # noqa: BLE001
+        logger.warning("Erro inesperado ao resolver profile_picture_url do IG %s: %s", normalized_ig_id, err)
+
+    if not profile_url:
+        try:
+            row = fetch_one(
+                f"""
+                SELECT profile_picture_url
+                FROM {CONNECTED_ACCOUNTS_TABLE}
+                WHERE instagram_user_id = %(ig_user_id)s
+                ORDER BY updated_at DESC
+                LIMIT 1
+                """,
+                {"ig_user_id": normalized_ig_id},
+            )
+            profile_url = _normalize_remote_image_url((row or {}).get("profile_picture_url"))
+        except Exception as err:  # noqa: BLE001
+            logger.warning("Falha ao buscar avatar IG %s na base local: %s", normalized_ig_id, err)
+
+    if not _is_allowed_profile_picture_url(profile_url):
+        return ""
+
+    IG_PROFILE_PICTURE_MEM_CACHE[normalized_ig_id] = {
+        "url": profile_url,
+        "ts": now_ts,
+    }
+    return profile_url
 
 
 def _fetch_facebook_page_info(page_id: str) -> Dict[str, Any]:
@@ -4469,6 +4557,51 @@ def instagram_audience():
     response = dict(payload)
     response["cache"] = meta
     return jsonify(response)
+
+@app.get("/api/instagram/profile-picture")
+def instagram_profile_picture_proxy():
+    ig_user_id = str(request.args.get("igUserId") or "").strip()
+    if not ig_user_id:
+        return jsonify({"error": "igUserId is required"}), 400
+
+    force_refresh = str(request.args.get("force") or "").strip().lower() in {"1", "true", "yes", "y"}
+    picture_url = _resolve_instagram_profile_picture_url(ig_user_id, force_refresh=force_refresh)
+    if not picture_url:
+        return jsonify({"error": "profile picture is not available"}), 404
+
+    def _download(url: str):
+        return requests.get(
+            url,
+            timeout=IG_PROFILE_PICTURE_REQUEST_TIMEOUT_SEC,
+            headers={"User-Agent": "Mozilla/5.0 (compatible; MonitorAvatarProxy/1.0)"},
+        )
+
+    try:
+        upstream = _download(picture_url)
+        if not upstream.ok and not force_refresh:
+            refreshed_url = _resolve_instagram_profile_picture_url(ig_user_id, force_refresh=True)
+            if refreshed_url and refreshed_url != picture_url:
+                picture_url = refreshed_url
+                upstream = _download(picture_url)
+        if not upstream.ok:
+            logger.warning(
+                "Falha no proxy de avatar IG %s: status %s",
+                ig_user_id,
+                upstream.status_code,
+            )
+            return jsonify({"error": "could not fetch profile picture"}), 502
+
+        content_type = upstream.headers.get("Content-Type") or "image/jpeg"
+        response = Response(upstream.content, status=200, mimetype=content_type)
+        response.headers["Cache-Control"] = "public, max-age=300"
+        return response
+    except requests.RequestException as err:
+        logger.warning("Falha de rede ao buscar avatar IG %s: %s", ig_user_id, err)
+        return jsonify({"error": "could not fetch profile picture"}), 502
+    except Exception as err:  # noqa: BLE001
+        logger.exception("Erro inesperado no proxy de avatar IG %s", ig_user_id)
+        return jsonify({"error": str(err)}), 500
+
 
 @app.get("/api/instagram/posts")
 def instagram_posts():

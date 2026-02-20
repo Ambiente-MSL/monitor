@@ -41,11 +41,13 @@ import {
 import DataState from "../components/DataState";
 import CustomChartTooltip from "../components/CustomChartTooltip";
 import DateRangeIndicator from "../components/DateRangeIndicator";
+import AvatarWithFallback from "../components/AvatarWithFallback";
 import { useAccounts } from "../context/AccountsContext";
 import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import { useAuth } from "../context/AuthContext";
 import useQueryState from "../hooks/useQueryState";
 import { isApiEnvelope, unwrapApiData } from "../lib/apiEnvelope";
+import { buildInstagramAvatarCandidates } from "../lib/avatar";
 import { formatChartDate, formatCompactNumber, formatTooltipNumber } from "../lib/chartFormatters";
 import { fetchWithTimeout } from "../lib/fetchWithTimeout";
 import { normalizeSyncInfo } from "../lib/syncInfo";
@@ -323,7 +325,7 @@ export default function AdsDashboard() {
       }
 
       const fallbackUsername = selectedAccount.instagramUsername || selectedAccount.label || "";
-      const fallbackProfilePicture = selectedAccount.profilePictureUrl || null;
+      const fallbackProfilePicture = selectedAccount.profilePictureUrl || selectedAccount.pagePictureUrl || null;
       if (fallbackUsername && fallbackProfilePicture) {
         if (!cancelled) {
           setInstagramProfileData({
@@ -365,8 +367,23 @@ export default function AdsDashboard() {
     selectedAccount?.instagramUserId,
     selectedAccount?.instagramUsername,
     selectedAccount?.profilePictureUrl,
+    selectedAccount?.pagePictureUrl,
     selectedAccount?.label,
   ]);
+
+  const instagramAvatarCandidates = useMemo(
+    () => buildInstagramAvatarCandidates({
+      instagramUserId: selectedAccount?.instagramUserId,
+      profilePictureUrl: instagramProfileData?.profilePicture,
+      additionalUrls: [selectedAccount?.profilePictureUrl, selectedAccount?.pagePictureUrl],
+    }),
+    [
+      selectedAccount?.instagramUserId,
+      selectedAccount?.profilePictureUrl,
+      selectedAccount?.pagePictureUrl,
+      instagramProfileData?.profilePicture,
+    ],
+  );
 
   const formatNumber = (num) => {
     if (typeof num !== "number") return num;
@@ -1325,19 +1342,11 @@ export default function AdsDashboard() {
               {/* Avatar */}
               <div className="ig-profile-vertical__avatar-wrapper">
                 <div className="ig-profile-vertical__avatar">
-                  {instagramProfileData?.profilePicture ? (
-                    <img
-                      src={instagramProfileData.profilePicture}
-                      alt={selectedAccount?.label || 'Perfil'}
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'flex';
-                      }}
-                    />
-                  ) : null}
-                  <span style={{ display: instagramProfileData?.profilePicture ? 'none' : 'flex' }}>
-                    {selectedAccount?.label?.charAt(0)?.toUpperCase() || 'A'}
-                  </span>
+                  <AvatarWithFallback
+                    candidates={instagramAvatarCandidates}
+                    alt={selectedAccount?.label || "Perfil"}
+                    placeholderText={selectedAccount?.label?.charAt(0)?.toUpperCase() || "A"}
+                  />
                 </div>
               </div>
 

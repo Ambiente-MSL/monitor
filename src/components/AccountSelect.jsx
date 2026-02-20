@@ -6,6 +6,8 @@ import { useAccounts } from "../context/AccountsContext";
 import { useAuth } from "../context/AuthContext";
 import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import { unwrapApiData } from "../lib/apiEnvelope";
+import AvatarWithFallback from "./AvatarWithFallback";
+import { buildInstagramAvatarCandidates } from "../lib/avatar";
 
 const FALLBACK_ACCOUNT_ID = DEFAULT_ACCOUNTS[0]?.id || "";
 const EMPTY_ACCOUNT_FORM = {
@@ -50,7 +52,11 @@ export default function AccountSelect() {
     const cached = account?.id ? accountsData[account.id] : null;
     return {
       username: cached?.username || account?.instagramUsername || account?.label || "",
-      profilePicture: cached?.profilePicture || account?.profilePictureUrl || account?.pagePictureUrl || null,
+      profilePictureCandidates: buildInstagramAvatarCandidates({
+        instagramUserId: account?.instagramUserId,
+        profilePictureUrl: cached?.profilePicture || account?.profilePictureUrl || null,
+        pagePictureUrl: account?.pagePictureUrl || null,
+      }),
     };
   }, [accountsData]);
 
@@ -288,17 +294,13 @@ export default function AccountSelect() {
             aria-haspopup="listbox"
           >
             <div className="account-dropdown__current">
-              {currentAccountDisplay.profilePicture ? (
-                <img
-                  src={currentAccountDisplay.profilePicture}
-                  alt={currentAccount.label}
-                  className="account-dropdown__avatar"
-                />
-              ) : (
-                <span className="account-dropdown__avatar-placeholder">
-                  {getAccountInitials(currentAccount?.label)}
-                </span>
-              )}
+              <AvatarWithFallback
+                candidates={currentAccountDisplay.profilePictureCandidates}
+                alt={currentAccount.label}
+                imageClassName="account-dropdown__avatar"
+                placeholderClassName="account-dropdown__avatar-placeholder"
+                placeholderText={getAccountInitials(currentAccount?.label)}
+              />
               <span
                 className="account-dropdown__name"
                 title={currentAccountLabel || undefined}
@@ -323,17 +325,13 @@ export default function AccountSelect() {
                           className={`account-dropdown__item${account.id === currentValue ? " account-dropdown__item--active" : ""}`}
                           onClick={() => handleSelect(account.id)}
                         >
-                          {accountDisplay.profilePicture ? (
-                            <img
-                              src={accountDisplay.profilePicture}
-                              alt={account.label}
-                              className="account-dropdown__avatar"
-                            />
-                          ) : (
-                            <span className="account-dropdown__avatar-placeholder">
-                              {getAccountInitials(account.label)}
-                            </span>
-                          )}
+                          <AvatarWithFallback
+                            candidates={accountDisplay.profilePictureCandidates}
+                            alt={account.label}
+                            imageClassName="account-dropdown__avatar"
+                            placeholderClassName="account-dropdown__avatar-placeholder"
+                            placeholderText={getAccountInitials(account.label)}
+                          />
                           <span
                             className="account-dropdown__item-name"
                             title={accountLabel || undefined}

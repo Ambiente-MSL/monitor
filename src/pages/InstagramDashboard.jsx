@@ -69,6 +69,7 @@ import { useAccounts } from "../context/AccountsContext";
 import PostsTable from "../components/PostsTable";
 import DataState from "../components/DataState";
 import InstagramPostModal from "../components/InstagramPostModal";
+import AvatarWithFallback from "../components/AvatarWithFallback";
 import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import WordCloudCard from "../components/WordCloudCard";
 import CustomChartTooltip from "../components/CustomChartTooltip";
@@ -82,6 +83,7 @@ import {
   setDashboardCache,
 } from "../lib/dashboardCache";
 import { getApiErrorMessage, isApiEnvelope, unwrapApiData } from "../lib/apiEnvelope";
+import { buildInstagramAvatarCandidates } from "../lib/avatar";
 import { formatChartDate, formatCompactNumber, formatTooltipNumber } from "../lib/chartFormatters";
 import { normalizeSyncInfo } from "../lib/syncInfo";
 
@@ -3635,6 +3637,19 @@ const profileViewsMetric = useMemo(() => {
   };
 
   const accountInitial = (accountInfo?.username || accountInfo?.name || "IG").charAt(0).toUpperCase();
+  const profileAvatarCandidates = useMemo(
+    () => buildInstagramAvatarCandidates({
+      instagramUserId: accountConfig?.instagramUserId,
+      profilePictureUrl: accountInfo?.profile_picture_url,
+      additionalUrls: [accountConfig?.profilePictureUrl, accountConfig?.pagePictureUrl],
+    }),
+    [
+      accountConfig?.instagramUserId,
+      accountConfig?.profilePictureUrl,
+      accountConfig?.pagePictureUrl,
+      accountInfo?.profile_picture_url,
+    ],
+  );
   const [coverImage, setCoverImage] = useState(null);
   const [coverLoading, setCoverLoading] = useState(false);
   const [coverError, setCoverError] = useState("");
@@ -3919,11 +3934,11 @@ const profileViewsMetric = useMemo(() => {
 
               <div className="ig-profile-vertical__avatar-wrapper">
                 <div className="ig-profile-vertical__avatar">
-                  {accountInfo?.profile_picture_url ? (
-                    <img src={accountInfo.profile_picture_url} alt="Profile" />
-                  ) : (
-                    <span>{accountInitial}</span>
-                  )}
+                  <AvatarWithFallback
+                    candidates={profileAvatarCandidates}
+                    alt="Profile"
+                    placeholderText={accountInitial}
+                  />
                 </div>
               </div>
 

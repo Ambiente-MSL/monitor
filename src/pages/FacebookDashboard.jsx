@@ -55,6 +55,8 @@ import CustomChartTooltip from "../components/CustomChartTooltip";
 import WordCloudCard from "../components/WordCloudCard";
 import DateRangeIndicator from "../components/DateRangeIndicator";
 import InfoTooltip from "../components/InfoTooltip";
+import AvatarWithFallback from "../components/AvatarWithFallback";
+import { dedupeNormalizedUrls } from "../lib/avatar";
 import { fetchWithTimeout, isTimeoutError } from "../lib/fetchWithTimeout";
 import { formatChartDate, formatCompactNumber, formatTooltipNumber } from "../lib/chartFormatters";
 import { normalizeSyncInfo } from "../lib/syncInfo";
@@ -1064,9 +1066,13 @@ useEffect(() => {
       controller.abort();
     };
   }, [accountConfig?.facebookPageId, audienceCacheKey]);
-  const avatarUrl = useMemo(
-    () => pageInfo?.picture_url || accountConfig?.profilePictureUrl || accountConfig?.pagePictureUrl || "",
-    [pageInfo?.picture_url, accountConfig?.pagePictureUrl, accountConfig?.profilePictureUrl],
+  const avatarCandidates = useMemo(
+    () => dedupeNormalizedUrls([
+      pageInfo?.picture_url,
+      accountConfig?.profilePictureUrl,
+      accountConfig?.pagePictureUrl,
+    ]),
+    [pageInfo?.picture_url, accountConfig?.profilePictureUrl, accountConfig?.pagePictureUrl],
   );
 
   // Cover style is now inline in the JSX (same pattern as Instagram)
@@ -1653,7 +1659,11 @@ useEffect(() => {
 
               <div className="ig-profile-vertical__avatar-wrapper">
                 <div className="ig-profile-vertical__avatar">
-                  {avatarUrl ? <img src={avatarUrl} alt="Profile" /> : <span>{accountInitial}</span>}
+                  <AvatarWithFallback
+                    candidates={avatarCandidates}
+                    alt="Profile"
+                    placeholderText={accountInitial}
+                  />
                 </div>
               </div>
 
