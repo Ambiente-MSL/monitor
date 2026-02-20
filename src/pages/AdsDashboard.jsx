@@ -315,8 +315,24 @@ export default function AdsDashboard() {
 
   // Fetch Instagram profile picture
   useEffect(() => {
+    let cancelled = false;
     const fetchInstagramProfile = async () => {
-      if (!selectedAccount?.instagramUserId) return;
+      if (!selectedAccount?.instagramUserId) {
+        if (!cancelled) setInstagramProfileData(null);
+        return;
+      }
+
+      const fallbackUsername = selectedAccount.instagramUsername || selectedAccount.label || "";
+      const fallbackProfilePicture = selectedAccount.profilePictureUrl || null;
+      if (fallbackUsername && fallbackProfilePicture) {
+        if (!cancelled) {
+          setInstagramProfileData({
+            username: fallbackUsername,
+            profilePicture: fallbackProfilePicture,
+          });
+        }
+        return;
+      }
 
       try {
         const params = new URLSearchParams({ igUserId: selectedAccount.instagramUserId, limit: "1" });
@@ -324,19 +340,33 @@ export default function AdsDashboard() {
         const resp = await fetchWithTimeout(url);
         const json = unwrapApiData(await resp.json(), {});
 
-        if (json.account) {
+        if (!cancelled && json.account) {
           setInstagramProfileData({
-            username: json.account.username || json.account.name,
-            profilePicture: json.account.profile_picture_url,
+            username: json.account.username || json.account.name || fallbackUsername,
+            profilePicture: json.account.profile_picture_url || fallbackProfilePicture,
           });
         }
       } catch (err) {
         console.warn(`Falha ao carregar foto de perfil do Instagram.`, err);
+        if (!cancelled) {
+          setInstagramProfileData({
+            username: fallbackUsername,
+            profilePicture: fallbackProfilePicture,
+          });
+        }
       }
     };
 
     fetchInstagramProfile();
-  }, [selectedAccount?.instagramUserId]);
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    selectedAccount?.instagramUserId,
+    selectedAccount?.instagramUsername,
+    selectedAccount?.profilePictureUrl,
+    selectedAccount?.label,
+  ]);
 
   const formatNumber = (num) => {
     if (typeof num !== "number") return num;

@@ -760,19 +760,21 @@ body.theme-light {
   top: 0;
   z-index: 30;
   width: 100%;
-  background: #ffffff;
-  border: none;
+  background: var(--topbar-bg);
+  border-bottom: 1px solid var(--topbar-border);
   padding: 14px 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #111827;
+  color: var(--topbar-fg);
   box-shadow: none;
   margin: 0;
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
 }
 
-.topbar--dark {
+:root[data-theme="dark"] .topbar {
   background: linear-gradient(180deg, #1f1f23 0%, #18181b 100%);
+  border-bottom-color: rgba(255, 255, 255, 0.06);
 }
 
 .topbar__inner {
@@ -801,11 +803,15 @@ body.theme-light {
 }
 
 .topbar__logo-text {
-  color: #ffffff;
+  color: var(--topbar-fg);
   font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.5px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+:root[data-theme="dark"] .topbar__logo-text {
+  color: #ffffff;
 }
 
 .topbar__controls {
@@ -828,7 +834,7 @@ body.theme-light {
   border-radius: 14px;
   border: none;
   background: transparent;
-  color: #f472b6;
+  color: var(--color-accent);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -842,7 +848,8 @@ body.theme-light {
 
 .topbar__notif-btn:hover {
   transform: translateY(-2px);
-  color: #ec4899;
+  color: var(--color-accent);
+  filter: brightness(0.85);
 }
 
 .topbar__notif-badge {
@@ -858,7 +865,7 @@ body.theme-light {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 0 2px #1f1f23;
+  box-shadow: 0 0 0 2px var(--topbar-bg, #1f1f23);
 }
 
 .topbar__controls {
@@ -878,12 +885,12 @@ body.theme-light {
 
 .topbar__chip {
   position: relative;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--stroke);
   border-radius: 12px;
   padding: 10px 20px;
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--panel);
   backdrop-filter: blur(10px);
-  color: #1f2937;
+  color: var(--fg);
   font-size: 0.82rem;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -895,6 +902,11 @@ body.theme-light {
   cursor: pointer;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+:root[data-theme="dark"] .topbar__chip {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .topbar__chip::before {
@@ -912,8 +924,8 @@ body.theme-light {
 }
 
 .topbar__chip:hover {
-  background: #ffffff;
-  color: #111827;
+  background: var(--panel-elevated);
+  color: var(--fg);
   border-color: rgba(139, 92, 246, 0.3);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
@@ -1062,15 +1074,20 @@ body.theme-light {
   gap: 10px;
   border-radius: 999px;
   padding: 4px 16px 4px 4px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--stroke);
+  background: var(--panel);
   backdrop-filter: blur(10px);
-  color: #1f2937;
+  color: var(--fg);
   font-weight: 600;
   height: 40px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: visible;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+:root[data-theme="dark"] .topbar__account {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .topbar__account::before {
@@ -1088,7 +1105,7 @@ body.theme-light {
 }
 
 .topbar__account:hover {
-  background: #ffffff;
+  background: var(--panel-elevated);
   border-color: rgba(139, 92, 246, 0.3);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
@@ -1110,7 +1127,7 @@ body.theme-light {
   justify-content: center;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--fg);
 }
 
 .topbar__account-name {
@@ -1133,7 +1150,7 @@ body.theme-light {
 .topbar__account .filter-select__input {
   background: transparent;
   border: none;
-  color: #111827;
+  color: var(--fg);
   font-weight: 600;
 }
 
@@ -1142,7 +1159,7 @@ body.theme-light {
 }
 
 .topbar__account .filter-select__icon {
-  color: #6b7280;
+  color: var(--muted);
 }
 
 @media (max-width: 768px) {
@@ -1351,9 +1368,9 @@ body.theme-light {
   gap: 12px;
   padding: 10px 16px;
   border-radius: var(--radius);
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  color: #0f172a;
+  background: var(--panel);
+  border: 1px solid var(--stroke);
+  color: var(--fg);
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
@@ -1362,15 +1379,15 @@ body.theme-light {
 }
 
 .date-range-btn:hover {
-  border-color: #d1d5db;
-  background: #f9fafb;
+  border-color: var(--color-primary);
+  background: var(--panel-hover);
   transform: translateY(-1px);
 }
 
 .date-range-btn[data-open] {
-  border-color: #3b82f6;
-  background: #f9fafb;
-  color: #0f172a;
+  border-color: var(--color-primary);
+  background: var(--panel-hover);
+  color: var(--fg);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
 }
 
@@ -1386,7 +1403,7 @@ body.theme-light {
 
 .date-range-btn__icon {
 
-  color: #0f172a;
+  color: var(--muted);
 
   transition: color 200ms ease;
 
@@ -1396,7 +1413,7 @@ body.theme-light {
 
 .date-range-btn[data-open] .date-range-btn__icon {
 
-  color: #3b82f6;
+  color: var(--color-primary);
 
 }
 
@@ -1594,8 +1611,8 @@ body.theme-light {
 /* Modern Date Picker Styles */
 .date-range-dropdown--modern {
   min-width: 700px;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  background: var(--panel);
+  border: 1px solid var(--stroke);
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
@@ -1636,14 +1653,14 @@ body.theme-light {
 .date-range-presets {
   flex: 0 0 200px;
   padding: 20px;
-  border-right: 1px solid #e5e7eb;
-  background: #f9fafb;
+  border-right: 1px solid var(--stroke);
+  background: var(--bg-secondary);
 }
 
 .date-range-presets__title {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin: 0 0 12px 0;
@@ -1658,9 +1675,9 @@ body.theme-light {
 .date-range-preset-btn {
   padding: 10px 14px;
   border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  background: #ffffff;
-  color: #374151;
+  border: 1px solid var(--stroke);
+  background: var(--panel);
+  color: var(--fg);
   font-size: 0.875rem;
   font-weight: 500;
   text-align: left;
@@ -1669,8 +1686,8 @@ body.theme-light {
 }
 
 .date-range-preset-btn:hover {
-  background: #f3f4f6;
-  border-color: #d1d5db;
+  background: var(--panel-hover);
+  border-color: var(--color-primary);
   transform: translateX(2px);
 }
 
@@ -1708,9 +1725,9 @@ body.theme-light {
   position: absolute;
   top: calc(100% + 12px);
   right: 0;
-  background: #ffffff;
+  background: var(--panel);
   border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08), 0 0 1px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-lg);
   z-index: 1000;
   min-width: 360px;
   max-width: 360px;
@@ -1736,17 +1753,17 @@ body.theme-light {
 /* Header - Clean & Minimal */
 .date-range-dropdown__header {
   padding: 20px 24px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid var(--stroke);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #ffffff;
+  background: var(--panel);
 }
 
 .date-range-dropdown__header span {
   font-size: 16px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--fg);
   letter-spacing: -0.01em;
 }
 
@@ -1756,7 +1773,7 @@ body.theme-light {
   cursor: pointer;
   padding: 8px;
   border-radius: 8px;
-  color: #64748b;
+  color: var(--muted);
   transition: all 0.15s ease;
   display: flex;
   align-items: center;
@@ -1764,14 +1781,14 @@ body.theme-light {
 }
 
 .date-range-dropdown__close:hover {
-  background: #f1f5f9;
-  color: #0f172a;
+  background: var(--panel-hover);
+  color: var(--fg);
 }
 
 /* Body - Calendar Container */
 .date-range-dropdown__body {
   padding: 16px;
-  background: #ffffff;
+  background: var(--panel);
 }
 
 .date-range-calendar-wrapper {
@@ -1782,11 +1799,11 @@ body.theme-light {
 /* Footer - Modern Buttons */
 .date-range-dropdown__footer {
   padding: 16px 24px;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  border-top: 1px solid var(--stroke);
   display: flex;
   gap: 12px;
   justify-content: flex-end;
-  background: #fafafa;
+  background: var(--bg-secondary);
 }
 
 .date-range-dropdown__btn {
@@ -1802,15 +1819,15 @@ body.theme-light {
 }
 
 .date-range-dropdown__btn--secondary {
-  background: #ffffff;
-  color: #64748b;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: var(--panel);
+  color: var(--muted);
+  border: 1px solid var(--stroke);
 }
 
 .date-range-dropdown__btn--secondary:hover {
-  background: #f8fafc;
-  color: #0f172a;
-  border-color: rgba(0, 0, 0, 0.15);
+  background: var(--panel-hover);
+  color: var(--fg);
+  border-color: var(--stroke);
   transform: translateY(-1px);
 }
 
@@ -1826,8 +1843,8 @@ body.theme-light {
 }
 
 .date-range-dropdown__btn--primary:disabled {
-  background: #e2e8f0;
-  color: #94a3b8;
+  background: var(--surface-200);
+  color: var(--muted);
   cursor: not-allowed;
   box-shadow: none;
   transform: none;
@@ -1846,17 +1863,20 @@ body.theme-light {
 .react-datepicker {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   border: none;
-  background: linear-gradient(135deg, #1a1a1a 0%, #252525 100%);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--panel);
+  border: 1px solid var(--stroke);
   border-radius: 20px;
-  box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  box-shadow: var(--shadow-lg);
   font-size: 13px;
   padding: 8px 16px 16px;
   min-width: 310px;
   max-width: 310px;
   backdrop-filter: blur(20px);
+}
+
+:root[data-theme="dark"] .react-datepicker {
+  background: linear-gradient(135deg, #1a1a1a 0%, #252525 100%);
+  border-color: rgba(255, 255, 255, 0.06);
 }
 
 /* Header - Clean & Minimal */
@@ -1869,7 +1889,7 @@ body.theme-light {
 
 /* Mês/Ano - Typography Hero */
 .react-datepicker__current-month {
-  color: #ffffff;
+  color: var(--fg);
   font-size: 14px;
   font-weight: 600;
   margin-bottom: 16px;
@@ -1885,13 +1905,13 @@ body.theme-light {
   justify-content: space-between;
   margin-top: 0;
   padding: 0 2px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--stroke);
   padding-bottom: 10px;
   margin-bottom: 6px;
 }
 
 .react-datepicker__day-name {
-  color: #666666;
+  color: var(--muted);
   font-size: 10px;
   font-weight: 600;
   width: 38px;
@@ -1916,7 +1936,7 @@ body.theme-light {
 
 /* Dias - Minimal Clean Design */
 .react-datepicker__day {
-  color: #b8b8b8;
+  color: var(--fg);
   width: 38px;
   height: 38px;
   line-height: 38px;
@@ -2029,7 +2049,7 @@ body.theme-light {
 /* Today - Subtle Ring */
 .react-datepicker__day--today {
   font-weight: 500;
-  color: #ffffff;
+  color: var(--fg);
   position: relative;
   background: transparent;
 }
@@ -2045,14 +2065,15 @@ body.theme-light {
 
 /* Disabled & Outside Month */
 .react-datepicker__day--outside-month {
-  color: #404040;
+  color: var(--muted);
+  opacity: 0.4;
   visibility: visible;
 }
 
 .react-datepicker__day--disabled {
-  color: #333333;
+  color: var(--muted);
   cursor: not-allowed;
-  opacity: 0.4;
+  opacity: 0.3;
 }
 
 .react-datepicker__day--disabled:hover {
@@ -2067,7 +2088,7 @@ body.theme-light {
   border: none;
   width: 32px;
   height: 32px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--surface-100);
   border-radius: 10px;
   transition: all 0.25s ease;
   border: 1px solid transparent;
@@ -2080,7 +2101,7 @@ body.theme-light {
 }
 
 .react-datepicker__navigation-icon::before {
-  border-color: #999999;
+  border-color: var(--muted);
   border-width: 2px 2px 0 0;
   width: 7px;
   height: 7px;
@@ -2102,11 +2123,11 @@ body.theme-light {
 .react-datepicker__year-read-view {
   padding: 6px 12px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--stroke);
+  background: var(--surface-100);
   font-size: 13px;
   font-weight: 500;
-  color: #ffffff;
+  color: var(--fg);
   transition: all 0.25s ease;
   cursor: pointer;
 }
@@ -2121,15 +2142,19 @@ body.theme-light {
 
 .react-datepicker__month-dropdown,
 .react-datepicker__year-dropdown {
-  background: linear-gradient(135deg, #1a1a1a 0%, #252525 100%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--panel);
+  border: 1px solid var(--stroke);
   border-radius: 14px;
-  box-shadow:
-    0 20px 40px rgba(0, 0, 0, 0.6),
-    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+  box-shadow: var(--shadow-lg);
   padding: 6px;
   margin-top: 6px;
   backdrop-filter: blur(20px);
+}
+
+:root[data-theme="dark"] .react-datepicker__month-dropdown,
+:root[data-theme="dark"] .react-datepicker__year-dropdown {
+  background: linear-gradient(135deg, #1a1a1a 0%, #252525 100%);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .react-datepicker__month-option,
@@ -2137,7 +2162,7 @@ body.theme-light {
   padding: 9px 14px;
   border-radius: 8px;
   font-size: 13px;
-  color: #b8b8b8;
+  color: var(--fg);
   transition: all 0.2s ease;
   cursor: pointer;
   font-weight: 400;
@@ -2221,9 +2246,9 @@ body.theme-light {
 .date-range-preset-new {
   padding: 8px 16px;
   border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  background: #ffffff;
-  color: #6b7280;
+  border: 1px solid var(--stroke);
+  background: var(--panel);
+  color: var(--muted);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -2255,10 +2280,10 @@ body.theme-light {
   gap: 6px;
   padding: 10px 12px;
   border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--stroke);
+  background: var(--panel);
   backdrop-filter: blur(10px);
-  color: #1f2937;
+  color: var(--fg);
   font-size: 0.82rem;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -2269,6 +2294,11 @@ body.theme-light {
   height: 40px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+:root[data-theme="dark"] .date-range-btn-new {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .date-range-btn-new::before {
@@ -2286,8 +2316,8 @@ body.theme-light {
 }
 
 .date-range-btn-new:hover {
-  background: #ffffff;
-  color: #111827;
+  background: var(--panel-elevated);
+  color: var(--fg);
   border-color: rgba(139, 92, 246, 0.3);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
@@ -2298,9 +2328,9 @@ body.theme-light {
 }
 
 .date-range-btn-new[data-open] {
-  background: #ffffff;
+  background: var(--panel-elevated);
   border: 1px solid rgba(139, 92, 246, 0.4);
-  color: #111827;
+  color: var(--fg);
   box-shadow: 0 4px 16px rgba(139, 92, 246, 0.2);
 }
 
@@ -2310,7 +2340,7 @@ body.theme-light {
 }
 
 .date-range-btn-new__icon {
-  color: #000000;
+  color: var(--muted);
   flex-shrink: 0;
   width: 15px;
   height: 15px;
@@ -2323,7 +2353,7 @@ body.theme-light {
 }
 
 .date-range-btn-new__chevron {
-  color: #000000;
+  color: var(--muted);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
   margin-left: -2px;
@@ -2331,7 +2361,7 @@ body.theme-light {
 
 .date-range-btn-new__chevron--open {
   transform: rotate(180deg);
-  color: #000000;
+  color: var(--muted);
 }
 
 /* Dropdown Container */
@@ -2339,12 +2369,10 @@ body.theme-light {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  background: rgba(255, 255, 255, 0.98);
+  background: var(--panel);
   backdrop-filter: blur(20px);
   border-radius: 14px;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2),
-              0 0 0 1px rgba(255, 255, 255, 0.1) inset,
-              0 1px 0 rgba(255, 255, 255, 0.6) inset;
+  box-shadow: var(--shadow-lg);
   border: 1px solid rgba(139, 92, 246, 0.2);
   z-index: 1000;
   width: 300px;
@@ -2401,14 +2429,14 @@ body.theme-light {
   border-radius: 5px;
   border: none;
   background: transparent;
-  color: #6b7280;
+  color: var(--muted);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .date-range-dropdown-new__close:hover {
-  background: #f3f4f6;
-  color: #111827;
+  background: var(--surface-100);
+  color: var(--fg);
 }
 
 /* Body */
@@ -2428,7 +2456,7 @@ body.theme-light {
   gap: 3px;
   min-width: 100px;
   padding: 6px;
-  background: #f9fafb;
+  background: var(--surface-100);
   border-radius: 6px;
 }
 
@@ -2437,7 +2465,7 @@ body.theme-light {
   border-radius: 5px;
   border: none;
   background: transparent;
-  color: #6b7280;
+  color: var(--muted);
   font-size: 11px;
   font-weight: 500;
   text-align: left;
@@ -2448,8 +2476,8 @@ body.theme-light {
 }
 
 .date-range-dropdown-new__preset:hover {
-  background: #ffffff;
-  color: #a855f7;
+  background: var(--panel);
+  color: var(--color-primary);
   transform: translateX(2px);
 }
 
@@ -2476,8 +2504,8 @@ body.theme-light {
   justify-content: space-between;
   gap: 10px;
   padding: 16px 20px;
-  border-top: 1px solid rgba(139, 92, 246, 0.1);
-  background: linear-gradient(180deg, rgba(249, 250, 251, 0.8), rgba(255, 255, 255, 0.95));
+  border-top: 1px solid var(--stroke);
+  background: var(--bg-secondary);
   backdrop-filter: blur(10px);
 }
 
@@ -2965,10 +2993,10 @@ body.theme-light {
   right: 0;
   min-width: 220px;
   max-width: 300px;
-  background: white;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: var(--panel);
+  border: 1px solid var(--stroke);
   border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-lg);
   list-style: none;
   margin: 0;
   padding: 8px;
@@ -2995,7 +3023,7 @@ body.theme-light {
   padding: 10px 12px;
   border: none;
   background: transparent;
-  color: #000000;
+  color: var(--fg);
   cursor: pointer;
   border-radius: 8px;
   transition: all 0.15s ease;
@@ -3022,7 +3050,7 @@ body.theme-light {
 .account-dropdown__divider {
   height: 1px;
   margin: 6px 8px;
-  background: #e5e7eb;
+  background: var(--stroke);
   border-radius: 999px;
 }
 
@@ -3033,8 +3061,8 @@ body.theme-light {
   width: 100%;
   padding: 10px 12px;
   border: none;
-  background: #f9fafb;
-  color: #111827;
+  background: var(--surface-100);
+  color: var(--fg);
   border-radius: 8px;
   font-weight: 600;
   font-size: 13px;
@@ -3096,20 +3124,20 @@ body.theme-light {
 .account-dropdown__add-form-title {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--fg);
   margin: 0;
 }
 
 .account-dropdown__add-form-subtitle {
   margin: 4px 0 0;
   font-size: 0.8rem;
-  color: #6b7280;
+  color: var(--muted);
   line-height: 1.3;
 }
 
 .account-dropdown__back-button {
   border: none;
-  background: #f3f4f6;
+  background: var(--surface-100);
   border-radius: 8px;
   width: 28px;
   height: 28px;
@@ -3119,10 +3147,11 @@ body.theme-light {
   cursor: pointer;
   transition: background 0.15s ease;
   flex-shrink: 0;
+  color: var(--fg);
 }
 
 .account-dropdown__back-button:hover:not(:disabled) {
-  background: #e5e7eb;
+  background: var(--surface-200);
 }
 
 .account-dropdown__back-button:disabled {
@@ -3145,38 +3174,40 @@ body.theme-light {
 .account-dropdown__form-field label {
   font-size: 0.8rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--muted);
 }
 
 .account-dropdown__form-field input {
   padding: 8px 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--stroke);
   border-radius: 8px;
   font-size: 0.85rem;
-  color: #111827;
-  background: white;
+  color: var(--fg);
+  background: var(--panel);
+  font-family: inherit;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .account-dropdown__form-field input:focus {
   outline: none;
-  border-color: #8b5cf6;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
 .account-dropdown__form-field input:disabled {
-  background: #f9fafb;
+  background: var(--surface-100);
   cursor: not-allowed;
   opacity: 0.6;
 }
 
 .account-dropdown__form-field input::placeholder {
-  color: #9ca3af;
+  color: var(--muted);
+  opacity: 0.7;
 }
 
 .account-dropdown__form-hint {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--muted);
   margin: 2px 0 0;
   line-height: 1.3;
 }
@@ -3186,9 +3217,9 @@ body.theme-light {
   color: #dc2626;
   margin: 0;
   padding: 8px 12px;
-  background: #fef2f2;
+  background: rgba(220, 38, 38, 0.08);
   border-radius: 8px;
-  border: 1px solid #fecaca;
+  border: 1px solid rgba(220, 38, 38, 0.2);
 }
 
 .account-dropdown__form-actions {
@@ -3209,12 +3240,12 @@ body.theme-light {
 }
 
 .account-dropdown__form-button--secondary {
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--surface-100);
+  color: var(--fg);
 }
 
 .account-dropdown__form-button--secondary:hover:not(:disabled) {
-  background: #e5e7eb;
+  background: var(--surface-200);
 }
 
 .account-dropdown__form-button--primary {
@@ -3264,11 +3295,10 @@ body.theme-light {
   width: min(520px, 100%);
   max-height: min(85vh, 800px);
   overflow-y: auto;
-  background: #ffffff;
+  background: var(--panel);
   border-radius: 16px;
   padding: 24px;
-  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.25),
-              0 0 0 1px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-lg), 0 0 0 1px var(--stroke);
   z-index: 1;
   animation: modalFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -3295,7 +3325,7 @@ body.theme-light {
 .account-add-modal__title {
   font-size: 1.05rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--fg);
   margin: 0;
 }
 
@@ -3457,53 +3487,53 @@ body:has(.instagram-dashboard--clean) .topbar__account .account-dropdown__name {
 }
 
 body:has(.instagram-dashboard--clean) .topbar__account .account-dropdown__list {
-  background: #ffffff;
-  border-color: rgba(0, 0, 0, 0.12);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  background: var(--panel);
+  border-color: var(--stroke);
+  box-shadow: var(--shadow-lg);
 }
 
 body:has(.instagram-dashboard--clean) .topbar__account .account-dropdown__item {
-  color: #1f2937;
+  color: var(--fg);
 }
 
 body:has(.instagram-dashboard--clean) .topbar__account .account-dropdown__item:hover {
   background: rgba(139, 92, 246, 0.1);
-  color: #111827;
+  color: var(--fg);
 }
 
 body:has(.instagram-dashboard--clean) .topbar__account .account-dropdown__item--active {
   background: rgba(139, 92, 246, 0.15);
-  color: #111827;
+  color: var(--fg);
 }
 
 body:has(.instagram-dashboard--clean) .topbar__account .account-dropdown__item-name {
-  color: #1f2937;
+  color: var(--fg);
   font-weight: 500;
 }
 
-/* Facebook Dashboard - Dropdown Branco */
+/* Facebook Dashboard - Dropdown */
 body:has(.facebook-dashboard--clean) .topbar__account .account-dropdown__list {
-  background: #ffffff;
-  border-color: rgba(0, 0, 0, 0.12);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  background: var(--panel);
+  border-color: var(--stroke);
+  box-shadow: var(--shadow-lg);
 }
 
 body:has(.facebook-dashboard--clean) .topbar__account .account-dropdown__item {
-  color: #1f2937;
+  color: var(--fg);
 }
 
 body:has(.facebook-dashboard--clean) .topbar__account .account-dropdown__item:hover {
   background: rgba(139, 92, 246, 0.1);
-  color: #111827;
+  color: var(--fg);
 }
 
 body:has(.facebook-dashboard--clean) .topbar__account .account-dropdown__item--active {
   background: rgba(139, 92, 246, 0.15);
-  color: #111827;
+  color: var(--fg);
 }
 
 body:has(.facebook-dashboard--clean) .topbar__account .account-dropdown__item-name {
-  color: #1f2937;
+  color: var(--fg);
   font-weight: 500;
 }
 
@@ -3533,15 +3563,15 @@ body:has(.facebook-dashboard--clean) .topbar__account .account-dropdown__item-na
 
   border-radius: 12px;
 
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--stroke);
 
   padding: 12px 18px;
 
   font-weight: 600;
 
-  background: #ffffff;
+  background: var(--panel);
 
-  color: #0f172a;
+  color: var(--fg);
 
   cursor: pointer;
 
@@ -3821,7 +3851,7 @@ input:focus {
 
 .auth-left {
   flex: 1;
-  background: #ffffff;
+  background: var(--panel);
   border-radius: 24px 0 0 24px;
   padding: 60px 40px;
   display: flex;
@@ -5386,11 +5416,11 @@ input:focus {
   align-items: center;
   gap: 8px;
   padding: 6px 14px;
-  background: #ffffff;
-  border: none;
+  background: var(--panel);
+  border: 1px solid var(--stroke);
   border-radius: 8px;
   margin: 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   position: relative;
   top: -2px;
 }
@@ -5410,17 +5440,17 @@ input:focus {
 }
 
 .date-range-indicator__label {
-  color: #6b7280;
+  color: var(--muted);
   font-weight: 500;
 }
 
 .date-range-indicator__dates {
-  color: #111827;
+  color: var(--fg);
   font-weight: 600;
 }
 
 .date-range-indicator__days {
-  color: #9ca3af;
+  color: var(--muted);
   font-size: 12px;
   font-weight: 500;
 }
@@ -7288,9 +7318,9 @@ tbody
   font-size: 12px;
   font-weight: 600;
   border-radius: 999px;
-  border: 1px solid rgba(17, 24, 39, 0.15);
-  background: #fff;
-  color: #111827;
+  border: 1px solid var(--stroke);
+  background: var(--panel);
+  color: var(--fg);
   cursor: pointer;
   text-decoration: none;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
@@ -7487,9 +7517,9 @@ tbody
 
 /* Tooltip claro nos grï¿½ficos (melhor leitura) */
 .recharts-default-tooltip, .recharts-tooltip-wrapper .recharts-default-tooltip {
-  background: #ffffff !important;
-  color: #0b1220 !important;
-  border: 1px solid #e5e7eb !important;
+  background: var(--panel) !important;
+  color: var(--fg) !important;
+  border: 1px solid var(--stroke) !important;
   border-radius: 10px !important;
   padding: 8px 10px !important;
   box-shadow: 0 8px 24px rgba(0,0,0,.12) !important;
@@ -9109,7 +9139,7 @@ td.posts-table__metric + td.posts-table__metric {
   padding: 5px 8px;
   border: 1px solid rgba(103, 123, 170, 0.25);
   border-radius: 5px;
-  background: white;
+  background: var(--panel);
   color: var(--fg);
   font-size: 0.75rem;
   outline: none;
@@ -9719,8 +9749,8 @@ td.posts-table__metric + td.posts-table__metric {
   gap: 8px;
   padding: 0.45rem 1rem;
   border-radius: 999px;
-  border: 1px solid #e5e7eb;
-  background: #ffffff;
+  border: 1px solid var(--stroke);
+  background: var(--panel);
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
@@ -9730,9 +9760,9 @@ td.posts-table__metric + td.posts-table__metric {
 
 .ig-topbar-controls__account .filter-select__input {
   border: none;
-  background: #ffffff;
+  background: transparent;
   font-weight: 600;
-  color: #111827;
+  color: var(--fg);
 }
 
 .ig-topbar-controls__account .filter-select__input:focus {
@@ -9740,7 +9770,7 @@ td.posts-table__metric + td.posts-table__metric {
 }
 
 .ig-topbar-controls__account .filter-select__icon {
-  color: #111827;
+  color: var(--muted);
 }
 
 .ig-topbar-controls__date {
@@ -9749,13 +9779,13 @@ td.posts-table__metric + td.posts-table__metric {
   gap: 10px;
   padding: 0.45rem 1rem;
   border-radius: 999px;
-  border: 1px solid #e5e7eb;
-  background: #ffffff;
+  border: 1px solid var(--stroke);
+  background: var(--panel);
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
 .ig-topbar-controls__date svg {
-  color: #111827;
+  color: var(--muted);
 }
 
 .ig-topbar-controls__date .date-range-wrapper {
@@ -10440,7 +10470,7 @@ td.posts-table__metric + td.posts-table__metric {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: white;
+  background: var(--panel);
   padding: 8px 16px;
   border-radius: 8px;
   cursor: pointer;
@@ -10449,7 +10479,7 @@ td.posts-table__metric + td.posts-table__metric {
 }
 
 .ig-topbar-unified__user-dropdown:hover {
-  background: #f9fafb;
+  background: var(--bg-secondary);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
@@ -10489,13 +10519,13 @@ td.posts-table__metric + td.posts-table__metric {
 .ig-topbar-unified__username {
   font-size: 14px;
   font-weight: 600;
-  color: #111827;
+  color: var(--fg);
   line-height: 1.2;
 }
 
 .ig-topbar-unified__account-type {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--muted);
   font-weight: 400;
   line-height: 1.2;
 }
@@ -10506,7 +10536,7 @@ td.posts-table__metric + td.posts-table__metric {
   top: calc(100% + 8px);
   right: 0;
   min-width: 280px;
-  background: white;
+  background: var(--panel);
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
   padding: 8px;
@@ -10532,7 +10562,7 @@ td.posts-table__metric + td.posts-table__metric {
 }
 
 .ig-account-item:hover {
-  background: #f3f4f6;
+  background: var(--bg-secondary);
 }
 
 .ig-account-item--active {
@@ -10563,13 +10593,13 @@ td.posts-table__metric + td.posts-table__metric {
 .ig-account-item__name {
   font-size: 14px;
   font-weight: 600;
-  color: #111827;
+  color: var(--fg);
   line-height: 1.2;
 }
 
 .ig-account-item__username {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--muted);
   line-height: 1.2;
 }
 
@@ -10678,8 +10708,8 @@ td.posts-table__metric + td.posts-table__metric {
 }
 
 .ig-new-tab-inline--active {
-  background: white;
-  color: #333;
+  background: var(--panel);
+  color: var(--fg);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
@@ -10719,10 +10749,10 @@ td.posts-table__metric + td.posts-table__metric {
 
 /* Card de Perfil - Layout Compacto Horizontal */
 .ig-new-profile-card {
-  background: white;
+  background: var(--ig-card-bg);
   border-radius: 20px;
   padding: 24px;
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -10763,7 +10793,7 @@ td.posts-table__metric + td.posts-table__metric {
 .ig-new-profile-card__username {
   font-size: 18px;
   font-weight: 700;
-  color: #111827;
+  color: var(--ig-text-primary);
   margin-bottom: 16px;
   letter-spacing: -0.02em;
 }
@@ -10782,14 +10812,14 @@ td.posts-table__metric + td.posts-table__metric {
 .ig-new-stat-inline__value {
   font-size: 24px;
   font-weight: 700;
-  color: #111827;
+  color: var(--ig-text-primary);
   letter-spacing: -0.02em;
   line-height: 1;
 }
 
 .ig-new-stat-inline__label {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--ig-text-secondary);
   font-weight: 500;
 }
 
@@ -10797,40 +10827,41 @@ td.posts-table__metric + td.posts-table__metric {
   display: flex;
   gap: 32px;
   padding-top: 16px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--ig-card-border);
 }
 
 .ig-new-stat__dropdown-compact {
   margin-top: 8px;
   width: 100%;
   padding: 6px 10px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--ig-card-border);
   border-radius: 6px;
   font-size: 12px;
-  color: #6b7280;
-  background: #f9fafb;
+  color: var(--ig-text-secondary);
+  background: var(--surface-100);
   cursor: pointer;
   transition: all 0.2s ease;
   font-weight: 500;
+  font-family: inherit;
 }
 
 .ig-new-stat__dropdown-compact:hover {
-  border-color: #8b5cf6;
-  background: white;
+  border-color: var(--color-primary);
+  background: var(--panel);
 }
 
 .ig-new-stat__dropdown-compact:focus {
   outline: none;
-  border-color: #8b5cf6;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
 /* Card de Crescimento */
 .ig-new-growth-card {
-  background: white;
+  background: var(--ig-card-bg);
   border-radius: 20px;
   padding: 32px;
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-md);
 }
 
 .ig-new-growth-card__header {
@@ -10844,14 +10875,14 @@ td.posts-table__metric + td.posts-table__metric {
 .ig-new-growth-card__header h3 {
   font-size: 20px;
   font-weight: 700;
-  color: #111827;
+  color: var(--ig-text-primary);
   margin-bottom: 4px;
   letter-spacing: -0.02em;
 }
 
 .ig-new-growth-card__subtitle {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--ig-text-secondary);
   font-weight: 500;
 }
 
@@ -10864,10 +10895,10 @@ td.posts-table__metric + td.posts-table__metric {
 
 .ig-new-filter-chip {
   padding: 8px 16px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--ig-card-border);
   border-radius: 8px;
-  background: #f9fafb;
-  color: #6b7280;
+  background: var(--surface-100);
+  color: var(--ig-text-secondary);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -10876,9 +10907,9 @@ td.posts-table__metric + td.posts-table__metric {
 }
 
 .ig-new-filter-chip:hover {
-  border-color: #8b5cf6;
-  background: white;
-  color: #111827;
+  border-color: var(--color-primary);
+  background: var(--panel);
+  color: var(--ig-text-primary);
 }
 
 .ig-new-filter-chip--active {
@@ -11141,13 +11172,13 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 }
 
 .ig-clean-tab:hover:not(:disabled) {
-  background: #e5e7eb;
-  color: #111827;
+  background: var(--surface-200);
+  color: var(--ig-text-primary);
 }
 
 .ig-clean-tab--active {
-  background: white;
-  color: #111827;
+  background: var(--panel);
+  color: var(--ig-text-primary);
   font-weight: 600;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
@@ -11243,7 +11274,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 
 /* Card de Perfil Vertical */
 .ig-profile-vertical {
-  background: white;
+  background: var(--panel);
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
@@ -11319,7 +11350,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   height: 100px;
   border-radius: 50%;
   background: linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%);
-  border: 5px solid white;
+  border: 5px solid var(--panel);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -11343,7 +11374,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .ig-profile-vertical__username {
   font-size: 18px;
   font-weight: 700;
-  color: #111827;
+  color: var(--fg);
   margin: 0 0 24px 0;
 }
 
@@ -11357,7 +11388,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   max-width: 520px;
   padding: 48px 40px;
   border-radius: 18px;
-  background: white;
+  background: var(--panel);
   box-shadow: 0 18px 60px rgba(15, 23, 42, 0.08);
   text-align: center;
   display: flex;
@@ -11368,7 +11399,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .fb-disabled__card h2 {
   font-size: 24px;
   font-weight: 700;
-  color: #111827;
+  color: var(--fg);
   margin: 0;
 }
 
@@ -11399,7 +11430,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .ig-overview-stat__value {
   font-size: 26px;
   font-weight: 700;
-  color: #111827;
+  color: var(--fg);
   margin-bottom: 6px;
 }
 
@@ -11459,7 +11490,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 
 .ig-overview-stat__label {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--muted);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.4px;
@@ -11537,13 +11568,13 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .ig-overview-metric__value {
   font-size: 24px;
   font-weight: 700;
-  color: #111827;
+  color: var(--fg);
 }
 
 .ig-overview-metric__label {
   font-size: 12px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
@@ -11552,10 +11583,10 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   margin-top: 4px;
   padding: 6px 12px;
   border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  background: #f9fafb;
+  border: 1px solid var(--stroke);
+  background: var(--bg-secondary);
   font-size: 12px;
-  color: #6b7280;
+  color: var(--muted);
   cursor: pointer;
   transition: border-color 0.2s ease;
   align-self: center;
@@ -11748,17 +11779,17 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 
 /* Top Posts Section na Coluna Esquerda */
 .ig-top-posts-section {
-  background: white;
+  background: var(--ig-card-bg);
   border-radius: 16px;
   padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-sm);
   margin-top: 20px;
 }
 
 .ig-section-title {
   font-size: 18px;
   font-weight: 700;
-  color: #111827;
+  color: var(--ig-text-primary);
   margin: 0 0 20px 0;
 }
 
@@ -11773,14 +11804,14 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   gap: 12px;
   padding: 12px;
   border-radius: 10px;
-  background: #ffffff;
-  border: 1px solid #f3f4f6;
+  background: var(--surface-50);
+  border: 1px solid var(--ig-card-border);
   transition: all 0.2s ease;
 }
 
 .ig-top-post-card:hover {
-  background: #f9fafb;
-  border-color: #e5e7eb;
+  background: var(--surface-100);
+  border-color: var(--stroke);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
@@ -12100,10 +12131,10 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 
 /* Card de Crescimento Limpo */
 .ig-growth-clean {
-  background: white;
+  background: var(--ig-card-bg);
   border-radius: 16px;
   padding: 24px 24px 12px 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-sm);
 }
 
 .ig-card-header {
@@ -12118,13 +12149,13 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .ig-card-header h3 {
   font-size: 18px;
   font-weight: 700;
-  color: #111827;
+  color: var(--ig-text-primary);
   margin: 0 0 4px 0;
 }
 
 .ig-card-subtitle {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--ig-text-secondary);
   margin: 0;
 }
 
@@ -12137,10 +12168,10 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 
 .ig-filter-pill {
   padding: 8px 16px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--ig-card-border);
   border-radius: 8px;
-  background: white;
-  color: #6b7280;
+  background: var(--panel);
+  color: var(--ig-text-secondary);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -12318,8 +12349,8 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   width: 132px;
   border-radius: 12px;
   overflow: hidden;
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--panel);
+  border: 1px solid var(--stroke);
   cursor: pointer;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
@@ -12332,7 +12363,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .ig-top-post-card__thumb {
   width: 100%;
   aspect-ratio: 9 / 16;
-  background: #f3f4f6;
+  background: var(--bg-secondary);
   overflow: hidden;
 }
 
@@ -12354,7 +12385,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #9ca3af;
+  color: var(--muted);
 }
 
 .ig-top-post-card__info {
@@ -12363,20 +12394,20 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   align-items: center;
   gap: 2px;
   padding: 10px 8px;
-  background: white;
-  border-top: 1px solid #f3f4f6;
+  background: var(--panel);
+  border-top: 1px solid var(--stroke);
 }
 
 .ig-top-post-card__value {
   font-size: 15px;
   font-weight: 700;
-  color: #111827;
+  color: var(--fg);
   line-height: 1.2;
 }
 
 .ig-top-post-card__label {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--muted);
   font-weight: 500;
 }
 
@@ -12496,7 +12527,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   height: 160px;
   border-radius: 8px;
   overflow: hidden;
-  background: #f3f4f6;
+  background: var(--bg-secondary);
 }
 
 .ig-top-post-item__thumb img {
@@ -12511,13 +12542,13 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #9ca3af;
+  color: var(--muted);
   font-size: 12px;
 }
 
 .ig-top-post-item__caption {
   font-size: 13px;
-  color: #374151;
+  color: var(--fg);
   line-height: 1.4;
 }
 
@@ -12525,7 +12556,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   display: flex;
   gap: 12px;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--muted);
 }
 
 .ig-top-post-item__stats span {
@@ -12546,15 +12577,15 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   display: flex;
   flex-direction: column;
   padding: 14px;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  background: var(--ig-card-bg);
+  border: 1px solid var(--ig-card-border);
   border-radius: 10px;
   transition: all 0.2s ease;
 }
 
 .ig-top-post-compact:hover {
-  background: #f9fafb;
-  border-color: #d1d5db;
+  background: var(--surface-100);
+  border-color: var(--stroke);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
@@ -12576,7 +12607,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   height: 90px;
   border-radius: 8px;
   overflow: hidden;
-  background: #f3f4f6;
+  background: var(--bg-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -13445,7 +13476,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  background: #f3f4f6;
+  background: var(--bg-secondary);
 }
 
 .ig-calendar__day:not(.ig-calendar__day--empty):hover {
@@ -13462,13 +13493,13 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .ig-calendar__day-number {
   font-size: 13px;
   font-weight: 600;
-  color: #111827;
+  color: var(--fg);
   z-index: 1;
 }
 
 /* Níveis de atividade (baseado em número de publicações) */
 .ig-calendar__day--level-0 {
-  background: #f3f4f6;
+  background: var(--bg-secondary);
 }
 
 .ig-calendar__day--level-1 {
@@ -14208,10 +14239,10 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 
 /* Performance de Conteúdo */
 .fb-content-performance {
-  background: white;
+  background: var(--panel);
   border-radius: 16px;
   padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .fb-content-grid {
@@ -14222,7 +14253,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 }
 
 .fb-content-type-card {
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background: var(--surface-100);
   border-radius: 14px;
   padding: 20px 16px;
   border: 2px solid transparent;
@@ -14308,7 +14339,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .fb-content-type-card__value {
   font-size: 28px;
   font-weight: 700;
-  color: #111827;
+  color: var(--fg);
   line-height: 1;
   margin-bottom: 6px;
 }
@@ -14316,7 +14347,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .fb-content-type-card__label {
   font-size: 13px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 12px;
@@ -14350,7 +14381,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 
 /* Engajamento por Horário */
 .fb-engagement-timing {
-  background: white;
+  background: var(--panel);
   border-radius: 16px;
   padding: 24px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -14404,7 +14435,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 
 /* Fontes de Alcance */
 .fb-reach-sources {
-  background: white;
+  background: var(--panel);
   border-radius: 16px;
   padding: 24px;
 }
@@ -14446,19 +14477,19 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .fb-reach-source-item__label {
   font-size: 14px;
   font-weight: 600;
-  color: #374151;
+  color: var(--fg);
 }
 
 .fb-reach-source-item__value {
   font-size: 24px;
   font-weight: 700;
-  color: #111827;
+  color: var(--fg);
   margin-bottom: 4px;
 }
 
 .fb-reach-source-item__bar {
   height: 8px;
-  background: #f3f4f6;
+  background: var(--bg-secondary);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -14472,20 +14503,20 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .fb-reach-source-item__percentage {
   font-size: 13px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--muted);
 }
 
 .fb-reach-total {
   margin-top: 24px;
   padding-top: 24px;
-  border-top: 2px solid #e5e7eb;
+  border-top: 2px solid var(--stroke);
   text-align: center;
 }
 
 .fb-reach-total__label {
   font-size: 12px;
   font-weight: 600;
-  color: #9ca3af;
+  color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 8px;
@@ -14499,7 +14530,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 
 /* Sentimento */
 .fb-sentiment-card {
-  background: white;
+  background: var(--panel);
   border-radius: 16px;
   padding: 24px;
 }
@@ -14562,7 +14593,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .fb-sentiment-item__label {
   font-size: 13px;
   font-weight: 600;
-  color: #4b5563;
+  color: var(--fg);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 8px;
@@ -14571,13 +14602,13 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .fb-sentiment-item__value {
   font-size: 28px;
   font-weight: 700;
-  color: #111827;
+  color: var(--fg);
   margin-bottom: 6px;
 }
 
 .fb-sentiment-item__count {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--muted);
 }
 
 .fb-sentiment-summary {
@@ -14597,7 +14628,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 
 /* Top 5 Cidades */
 .fb-demographics-card {
-  background: white;
+  background: var(--panel);
   border-radius: 16px;
   padding: 24px;
 }
@@ -14614,14 +14645,14 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   align-items: center;
   gap: 14px;
   padding: 14px 16px;
-  background: #f9fafb;
+  background: var(--bg-secondary);
   border-radius: 12px;
   border: 2px solid transparent;
   transition: all 0.3s ease;
 }
 
 .fb-city-item:hover {
-  background: white;
+  background: var(--panel);
   border-color: rgba(24, 119, 242, 0.2);
   box-shadow: 0 4px 12px rgba(24, 119, 242, 0.1);
   transform: translateX(4px);
@@ -14677,7 +14708,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .fb-city-item__name {
   font-size: 14px;
   font-weight: 600;
-  color: #111827;
+  color: var(--fg);
   margin-bottom: 6px;
   white-space: nowrap;
   overflow: hidden;
@@ -14707,7 +14738,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 
 /* Idade e Gênero */
 .fb-age-gender-card {
-  background: white;
+  background: var(--panel);
   border-radius: 16px;
   padding: 24px;
 }
@@ -14718,7 +14749,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   gap: 24px;
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 2px solid #f3f4f6;
+  border-top: 2px solid var(--stroke);
 }
 
 .fb-gender-legend__item {
@@ -14727,7 +14758,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   gap: 8px;
   font-size: 13px;
   font-weight: 600;
-  color: #374151;
+  color: var(--fg);
 }
 
 .fb-gender-legend__dot {
@@ -14837,8 +14868,8 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 }
 
 .fb-card-action {
-  border: 1px solid #e5e7eb;
-  background: white;
+  border: 1px solid var(--stroke);
+  background: var(--panel);
   color: #1877F2;
   padding: 8px 16px;
   border-radius: 999px;
@@ -14869,7 +14900,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   right: 0;
   width: min(440px, 92vw);
   height: 100vh;
-  background: white;
+  background: var(--panel);
   z-index: 91;
   display: flex;
   flex-direction: column;
@@ -14878,7 +14909,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 
 .fb-detail-panel__header {
   padding: 20px 24px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--stroke);
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -14889,27 +14920,27 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   margin: 0;
   font-size: 18px;
   font-weight: 700;
-  color: #111827;
+  color: var(--fg);
 }
 
 .fb-detail-panel__header p {
   margin: 4px 0 0;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--muted);
 }
 
 .fb-detail-panel__close {
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
+  background: var(--bg-secondary);
+  border: 1px solid var(--stroke);
   border-radius: 10px;
   padding: 6px;
   cursor: pointer;
-  color: #111827;
+  color: var(--fg);
   transition: all 0.2s ease;
 }
 
 .fb-detail-panel__close:hover {
-  background: #e5e7eb;
+  background: var(--stroke);
 }
 
 .fb-detail-panel__body {
@@ -14924,7 +14955,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   margin: 0 0 10px 0;
   font-size: 14px;
   font-weight: 700;
-  color: #111827;
+  color: var(--fg);
 }
 
 .fb-detail-metric-grid {
@@ -14934,8 +14965,8 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 }
 
 .fb-detail-metric {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  background: var(--bg-secondary);
+  border: 1px solid var(--stroke);
   border-radius: 12px;
   padding: 12px;
   display: flex;
@@ -14945,14 +14976,14 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 
 .fb-detail-metric__label {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--muted);
   font-weight: 600;
 }
 
 .fb-detail-metric__value {
   font-size: 20px;
   font-weight: 700;
-  color: #111827;
+  color: var(--fg);
 }
 
 .fb-detail-followers-list {
@@ -14967,14 +14998,14 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   gap: 10px;
   align-items: center;
   padding: 8px 10px;
-  background: #f9fafb;
+  background: var(--bg-secondary);
   border-radius: 10px;
-  border: 1px solid #eef2f7;
+  border: 1px solid var(--stroke);
   font-size: 12px;
 }
 
 .fb-detail-followers-row__date {
-  color: #374151;
+  color: var(--fg);
   font-weight: 600;
 }
 
@@ -14995,8 +15026,8 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 }
 
 .fb-detail-origin {
-  background: #f9fafb;
-  border: 1px solid #eef2f7;
+  background: var(--bg-secondary);
+  border: 1px solid var(--stroke);
   border-radius: 12px;
   padding: 12px;
 }
@@ -15005,7 +15036,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   margin: 0 0 8px 0;
   font-size: 12px;
   font-weight: 700;
-  color: #111827;
+  color: var(--fg);
 }
 
 .fb-detail-origin ul {
@@ -15021,12 +15052,12 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   display: flex;
   justify-content: space-between;
   font-size: 12px;
-  color: #374151;
+  color: var(--fg);
 }
 
 .fb-detail-origin__empty {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--muted);
 }
 
 .fb-detail-posts {
@@ -15043,14 +15074,14 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   text-decoration: none;
   color: inherit;
   padding: 10px;
-  background: #f9fafb;
-  border: 1px solid #eef2f7;
+  background: var(--bg-secondary);
+  border: 1px solid var(--stroke);
   border-radius: 12px;
   transition: all 0.2s ease;
 }
 
 .fb-detail-post:hover {
-  background: white;
+  background: var(--panel);
   border-color: #dbeafe;
   box-shadow: 0 8px 16px rgba(24, 119, 242, 0.12);
 }
@@ -15060,8 +15091,8 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   height: 74px;
   border-radius: 10px;
   overflow: hidden;
-  background: #e5e7eb;
-  border: 1px solid #e5e7eb;
+  background: var(--bg-secondary);
+  border: 1px solid var(--stroke);
 }
 
 .fb-detail-post__thumb img {
@@ -15077,7 +15108,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   align-items: center;
   justify-content: center;
   font-size: 10px;
-  color: #6b7280;
+  color: var(--muted);
 }
 
 .fb-detail-post__content {
@@ -15088,7 +15119,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .fb-detail-post__title {
   font-size: 12px;
   font-weight: 600;
-  color: #111827;
+  color: var(--fg);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -15096,7 +15127,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 
 .fb-detail-post__date {
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--muted);
   margin-top: 2px;
 }
 
@@ -15105,7 +15136,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   gap: 10px;
   flex-wrap: wrap;
   font-size: 11px;
-  color: #6b7280;
+  color: var(--muted);
   margin-top: 6px;
 }
 
@@ -15118,7 +15149,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .fb-detail-post__engagement {
   font-size: 14px;
   font-weight: 700;
-  color: #111827;
+  color: var(--fg);
   text-align: right;
 }
 
@@ -15141,14 +15172,14 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   flex-direction: column;
   gap: 6px;
   padding: 16px;
-  background: #f9fafb;
+  background: var(--bg-secondary);
   border-radius: 12px;
   border: 2px solid transparent;
   transition: all 0.2s ease;
 }
 
 .fb-follower-kpi:hover {
-  background: white;
+  background: var(--panel);
   border-color: rgba(24, 119, 242, 0.15);
   box-shadow: 0 2px 8px rgba(24, 119, 242, 0.08);
 }
@@ -15166,7 +15197,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .fb-follower-kpi__value {
   font-size: 32px;
   font-weight: 700;
-  color: #111827;
+  color: var(--fg);
   line-height: 1;
 }
 
@@ -15181,7 +15212,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .fb-follower-kpi__label {
   font-size: 13px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--muted);
   text-transform: none;
   letter-spacing: 0;
 }
@@ -15206,7 +15237,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 }
 
 .fb-follower-kpi__change-label {
-  color: #9ca3af;
+  color: var(--muted);
   font-size: 12px;
 }
 
@@ -15223,14 +15254,14 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   flex-direction: column;
   gap: 6px;
   padding: 16px;
-  background: #f9fafb;
+  background: var(--bg-secondary);
   border-radius: 12px;
   border: 2px solid transparent;
   transition: all 0.2s ease;
 }
 
 .fb-reach-kpi:hover {
-  background: white;
+  background: var(--panel);
   border-color: rgba(24, 119, 242, 0.15);
   box-shadow: 0 2px 8px rgba(24, 119, 242, 0.08);
 }
@@ -15243,14 +15274,14 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .fb-reach-kpi__value {
   font-size: 28px;
   font-weight: 700;
-  color: #111827;
+  color: var(--fg);
   line-height: 1;
 }
 
 .fb-reach-kpi__label {
   font-size: 13px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--muted);
   text-transform: none;
   letter-spacing: 0;
 }
@@ -15259,7 +15290,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .fb-reach-sparkline {
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--stroke);
 }
 
 /* Card de Desempenho de Vídeos */
@@ -15351,14 +15382,14 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .fb-video-stats__funnel-label {
   font-size: 13px;
   font-weight: 600;
-  color: #374151;
+  color: var(--fg);
 }
 
 .fb-video-stats__funnel-percent {
   font-size: 13px;
   font-weight: 700;
-  color: #6b7280;
-  background: #f3f4f6;
+  color: var(--muted);
+  background: var(--bg-secondary);
   padding: 2px 8px;
   border-radius: 4px;
 }
@@ -15391,18 +15422,18 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .fb-reach-detail-item__label {
   font-size: 14px;
   font-weight: 600;
-  color: #374151;
+  color: var(--fg);
 }
 
 .fb-reach-detail-item__value {
   font-size: 18px;
   font-weight: 700;
-  color: #111827;
+  color: var(--fg);
 }
 
 .fb-reach-detail-item__bar {
   height: 12px;
-  background: #f3f4f6;
+  background: var(--bg-secondary);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -15424,7 +15455,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .fb-reach-detail-item__percentage {
   font-size: 12px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--muted);
   text-align: right;
 }
 
@@ -15441,7 +15472,7 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 .fb-reach-detail-total__label {
   font-size: 14px;
   font-weight: 600;
-  color: #374151;
+  color: var(--fg);
 }
 
 .fb-reach-detail-total__value {
@@ -15916,4 +15947,407 @@ body:has(.facebook-dashboard--clean) .app-main__content {
 
 .info-tooltip--inline {
   margin-left: 4px;
+}
+
+/* =============================================
+   Transição suave global de tema
+   Aplicada somente durante a mudança de tema via JS
+   ============================================= */
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+  transition:
+    background-color 300ms ease,
+    border-color 300ms ease,
+    color 300ms ease,
+    box-shadow 300ms ease !important;
+}
+
+/* =============================================
+   Theme Picker — seção de Aparência em Settings
+   ============================================= */
+.theme-picker {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.theme-picker__option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 12px 14px;
+  border-radius: 14px;
+  border: 2px solid var(--stroke);
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 200ms ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-picker__option:hover {
+  border-color: var(--color-primary);
+  background: var(--panel-hover);
+  color: var(--fg);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.12);
+}
+
+.theme-picker__option--active {
+  border-color: var(--color-primary);
+  background: var(--purple-soft);
+  color: var(--color-primary);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.18);
+}
+
+.theme-picker__option--active:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.25);
+}
+
+.theme-picker__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--surface-100);
+  transition: background 200ms ease;
+}
+
+.theme-picker__option--active .theme-picker__icon {
+  background: color-mix(in oklab, var(--color-primary) 15%, transparent);
+  color: var(--color-primary);
+}
+
+.theme-picker__label {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.theme-picker__check {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.5);
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+
+.theme-picker__option--active .theme-picker__check {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* =============================================
+   Settings — Cards de Contas (substituir inline styles)
+   ============================================= */
+.settings-accounts-summary {
+  margin-bottom: 1rem;
+  padding: 12px;
+  border: 1px solid var(--stroke);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+}
+
+.settings-accounts-summary__stats {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.settings-accounts-summary__stat {
+  flex: 1 1 160px;
+  min-width: 160px;
+}
+
+.settings-accounts-summary__stat-label {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.settings-accounts-summary__stat-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.settings-accounts-grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.settings-account-card {
+  background: var(--panel);
+  border: 1px solid var(--stroke);
+  border-radius: 12px;
+  padding: 10px 12px;
+  transition: border-color 200ms ease;
+}
+
+.settings-account-card--editing {
+  border: 2px solid var(--color-primary);
+}
+
+.settings-account-card__view {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings-account-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.settings-account-card__info {
+  flex: 1;
+}
+
+.settings-account-card__name {
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: var(--fg);
+}
+
+.settings-account-card__meta {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.settings-account-card__meta--empty {
+  font-size: 0.85rem;
+  color: var(--muted);
+  opacity: 0.6;
+}
+
+.settings-account-card__actions {
+  display: flex;
+  gap: 4px;
+}
+
+.settings-account-card__btn {
+  padding: 6px;
+  background: transparent;
+  border: 1px solid var(--stroke);
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  color: var(--fg);
+  transition: all 150ms ease;
+}
+
+.settings-account-card__btn:hover {
+  background: var(--panel-hover);
+}
+
+.settings-account-card__btn--danger {
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+.settings-account-card__btn--danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.settings-account-card__ad-section {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-account-card__ad-label {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.settings-account-card__ad-note {
+  font-size: 0.75rem;
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.settings-account-card__ad-info {
+  font-size: 0.85rem;
+  color: var(--fg);
+  padding: 6px 8px;
+  background: var(--surface-100);
+  border-radius: 8px;
+  border: 1px solid var(--stroke);
+}
+
+.settings-account-card__ad-empty {
+  margin-top: 8px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+/* Form de edição inline */
+.settings-account-card__edit {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings-account-label {
+  font-size: 0.75rem;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.settings-account-input {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 0.875rem;
+  border: 1px solid var(--stroke);
+  border-radius: 6px;
+  outline: none;
+  background: var(--panel);
+  color: var(--fg);
+  transition: border-color 150ms ease;
+  font-family: inherit;
+}
+
+.settings-account-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.12);
+}
+
+.settings-account-select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--stroke);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--fg);
+  font-size: 0.9rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 150ms ease;
+}
+
+.settings-account-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.settings-account-edit-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.settings-account-btn-save {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: filter 150ms ease;
+}
+
+.settings-account-btn-save:hover {
+  filter: brightness(1.1);
+}
+
+.settings-account-btn-cancel {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: var(--panel);
+  color: var(--muted);
+  border: 1px solid var(--stroke);
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 150ms ease;
+}
+
+.settings-account-btn-cancel:hover {
+  background: var(--panel-hover);
+  color: var(--fg);
+}
+
+/* Painel adicionar nova conta */
+.settings-add-account-panel {
+  margin-top: 24px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--stroke);
+  border-radius: 12px;
+}
+
+.settings-add-account-panel__title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--fg);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.settings-add-account-panel__desc {
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+/* Footer de links legais */
+.settings-footer {
+  margin-top: 2rem;
+  text-align: center;
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.settings-footer__link {
+  color: var(--color-primary);
+  text-decoration: underline;
+  font-weight: 500;
+  transition: opacity 150ms ease;
+}
+
+.settings-footer__link:hover {
+  opacity: 0.8;
 }

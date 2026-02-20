@@ -13,6 +13,8 @@ services:
       FRONTEND_ORIGIN: https://monitor.mslestrategia.com.br
       FACEBOOK_APP_ID: '2063845937779150'
       FACEBOOK_APP_SECRET: 817f6bda801530f8f4a50249330618f5
+      META_SYNC_AUTOSTART: '0'
+      WEB_CONCURRENCY: '2'
     restart: unless-stopped
     ports:
     - 2025:3001

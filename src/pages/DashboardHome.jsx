@@ -255,239 +255,148 @@ const { setTopbarConfig, resetTopbarConfig } = outletContext;
 
       const warnings = [];
 
-      let nextFacebook = null;
-
-      let nextInstagram = null;
-
-      let nextAds = null;
-
-
-
-
-      if (FACEBOOK_FEATURE_ENABLED && accountConfig?.facebookPageId) {
-
-        try {
-
-          const params = new URLSearchParams();
-
-          params.set('pageId', accountConfig.facebookPageId);
-
-          if (since) params.set('since', since);
-
-          if (until) params.set('until', until);
-
-
-
-          const data = await fetchJson(`${API_BASE_URL}/api/facebook/metrics?${params.toString()}`);
-
-          const reachMetric = getMetric(data, 'reach');
-
-          const engagementMetric = getMetric(data, 'post_engagement_total');
-
-          const pageViewsMetric = getMetric(data, 'page_views');
-
-          const followersMetric = getMetric(data, 'followers_total');
-
-          const followerNet = safeNumber(data.page_overview?.net_followers);
-
-          const followersTotal = safeNumber(followersMetric?.value ?? data.page_overview?.followers_total);
-
-
-
-          nextFacebook = {
-
-            accountId: accountKey,
-
-            reach: safeNumber(reachMetric?.value),
-
-            reachGrowth: reachMetric?.deltaPct,
-
-            engagement: safeNumber(engagementMetric?.value),
-
-            engagementGrowth: engagementMetric?.deltaPct,
-
-            pageViews: safeNumber(pageViewsMetric?.value),
-
-            followersNet: followerNet,
-
-            followersTotal,
-
-            cacheAt: data.cache?.fetched_at || null,
-
-          };
-
-        } catch (err) {
-
-          warnings.push(`Facebook: ${err.message}`);
-
+      const loadFacebook = async () => {
+        if (!FACEBOOK_FEATURE_ENABLED || !accountConfig?.facebookPageId) {
+          return { summary: null, warning: null };
         }
-
-      }
-
-
-
-      if (accountConfig?.instagramUserId) {
-
         try {
-
           const params = new URLSearchParams();
-
-          params.set('igUserId', accountConfig.instagramUserId);
-
+          params.set('pageId', accountConfig.facebookPageId);
           if (since) params.set('since', since);
-
           if (until) params.set('until', until);
+          const data = await fetchJson(`${API_BASE_URL}/api/facebook/metrics?${params.toString()}`);
+          const reachMetric = getMetric(data, 'reach');
+          const engagementMetric = getMetric(data, 'post_engagement_total');
+          const pageViewsMetric = getMetric(data, 'page_views');
+          const followersMetric = getMetric(data, 'followers_total');
+          const followerNet = safeNumber(data.page_overview?.net_followers);
+          const followersTotal = safeNumber(followersMetric?.value ?? data.page_overview?.followers_total);
+          return {
+            summary: {
+              accountId: accountKey,
+              reach: safeNumber(reachMetric?.value),
+              reachGrowth: reachMetric?.deltaPct,
+              engagement: safeNumber(engagementMetric?.value),
+              engagementGrowth: engagementMetric?.deltaPct,
+              pageViews: safeNumber(pageViewsMetric?.value),
+              followersNet: followerNet,
+              followersTotal,
+              cacheAt: data.cache?.fetched_at || null,
+            },
+            warning: null,
+          };
+        } catch (err) {
+          return { summary: null, warning: `Facebook: ${err.message}` };
+        }
+      };
 
-
-
+      const loadInstagram = async () => {
+        if (!accountConfig?.instagramUserId) {
+          return { summary: null, warning: null };
+        }
+        try {
+          const params = new URLSearchParams();
+          params.set('igUserId', accountConfig.instagramUserId);
+          if (since) params.set('since', since);
+          if (until) params.set('until', until);
           const data = await fetchJson(`${API_BASE_URL}/api/instagram/metrics?${params.toString()}`);
 
           const reachMetric = getMetric(data, 'reach');
-
           const interactionsMetric = getMetric(data, 'interactions');
-
           const profileViewsMetric = getMetric(data, 'profile_views');
-
           const followerMetric = getMetric(data, 'followers_total');
-
           const followerCountsRaw = data.follower_counts || {};
-
           const followersTotal =
-
             parseFiniteNumber(followerCountsRaw?.end) ?? parseFiniteNumber(followerMetric?.value);
-
           const followerCounts = {
-
             start: parseFiniteNumber(followerCountsRaw?.start),
-
             end: parseFiniteNumber(followerCountsRaw?.end),
-
             follows: parseFiniteNumber(followerCountsRaw?.follows),
-
             unfollows: parseFiniteNumber(followerCountsRaw?.unfollows),
-
           };
 
-          let accountFollowers = null;
-
-          try {
-
-            const postsParams = new URLSearchParams({
-
-              igUserId: accountConfig.instagramUserId,
-
-              limit: '1',
-
-            });
-
-            const postsData = await fetchJson(`${API_BASE_URL}/api/instagram/posts?${postsParams.toString()}`);
-
-            accountFollowers = parseFiniteNumber(postsData?.account?.followers_count);
-
-          } catch (err) {
-
-            warnings.push(`Instagram account: ${err.message}`);
-
+          let extraWarning = null;
+          let accountFollowers = parseFiniteNumber(data?.account?.followers_count);
+          if (accountFollowers == null && followersTotal == null) {
+            try {
+              const postsParams = new URLSearchParams({
+                igUserId: accountConfig.instagramUserId,
+                limit: '1',
+              });
+              const postsData = await fetchJson(`${API_BASE_URL}/api/instagram/posts?${postsParams.toString()}`);
+              accountFollowers = parseFiniteNumber(postsData?.account?.followers_count);
+            } catch (err) {
+              extraWarning = `Instagram account: ${err.message}`;
+            }
           }
 
           const resolvedFollowersTotal = accountFollowers ?? followersTotal ?? null;
-
           if (resolvedFollowersTotal != null && followerCounts.end == null) {
-
             followerCounts.end = resolvedFollowersTotal;
-
           }
 
-
-
-          nextInstagram = {
-
-            accountId: accountKey,
-
-            reach: safeNumber(reachMetric?.value),
-
-            reachGrowth: reachMetric?.deltaPct,
-
-            engagement: safeNumber(interactionsMetric?.value),
-
-            engagementGrowth: interactionsMetric?.deltaPct,
-
-            profileViews: safeNumber(profileViewsMetric?.value),
-
-            followersTotal: resolvedFollowersTotal,
-
-            followerCounts,
-
-            cacheAt: data.cache?.fetched_at || null,
-
+          return {
+            summary: {
+              accountId: accountKey,
+              reach: safeNumber(reachMetric?.value),
+              reachGrowth: reachMetric?.deltaPct,
+              engagement: safeNumber(interactionsMetric?.value),
+              engagementGrowth: interactionsMetric?.deltaPct,
+              profileViews: safeNumber(profileViewsMetric?.value),
+              followersTotal: resolvedFollowersTotal,
+              followerCounts,
+              cacheAt: data.cache?.fetched_at || null,
+            },
+            warning: extraWarning,
           };
-
         } catch (err) {
-
-          warnings.push(`Instagram: ${err.message}`);
-
+          return { summary: null, warning: `Instagram: ${err.message}` };
         }
+      };
 
-      }
-
-
-
-      if (accountConfig?.adAccountId) {
-
+      const loadAds = async () => {
+        if (!accountConfig?.adAccountId) {
+          return { summary: null, warning: null };
+        }
         try {
-
           const params = new URLSearchParams({ actId: accountConfig.adAccountId });
-
           const isoSince = toIsoDate(since);
-
           const isoUntil = toIsoDate(until);
-
           if (isoSince) params.set('since', isoSince);
-
           if (isoUntil) params.set('until', isoUntil);
-
-
-
           const data = await fetchJson(`${API_BASE_URL}/api/ads/highlights?${params.toString()}`);
-
-          nextAds = {
-
-            accountId: accountKey,
-
-            spend: safeNumber(data.totals?.spend),
-
-            clicks: safeNumber(data.totals?.clicks),
-
-            reach: safeNumber(data.totals?.reach),
-
-            bestAd: data.best_ad || null,
-
-            cacheAt: data.cache?.fetched_at || null,
-
+          return {
+            summary: {
+              accountId: accountKey,
+              spend: safeNumber(data.totals?.spend),
+              clicks: safeNumber(data.totals?.clicks),
+              reach: safeNumber(data.totals?.reach),
+              bestAd: data.best_ad || null,
+              cacheAt: data.cache?.fetched_at || null,
+            },
+            warning: null,
           };
-
         } catch (err) {
-
-          warnings.push(`Ads: ${err.message}`);
-
+          return { summary: null, warning: `Ads: ${err.message}` };
         }
+      };
 
-      }
+      const [facebookResult, instagramResult, adsResult] = await Promise.all([
+        loadFacebook(),
+        loadInstagram(),
+        loadAds(),
+      ]);
 
-
+      [facebookResult.warning, instagramResult.warning, adsResult.warning]
+        .filter(Boolean)
+        .forEach((message) => warnings.push(message));
 
       if (active) {
-
-        setFacebookSummary(nextFacebook);
-
-        setInstagramSummary(nextInstagram);
-
-        setAdsSummary(nextAds);
-
+        setFacebookSummary(facebookResult.summary);
+        setInstagramSummary(instagramResult.summary);
+        setAdsSummary(adsResult.summary);
         setError(warnings.length ? warnings.join(' - ') : null);
-
         setLoading(false);
-
       }
 
     };

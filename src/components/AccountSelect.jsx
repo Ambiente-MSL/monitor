@@ -6,10 +6,8 @@ import { useAccounts } from "../context/AccountsContext";
 import { useAuth } from "../context/AuthContext";
 import { DEFAULT_ACCOUNTS } from "../data/accounts";
 import { unwrapApiData } from "../lib/apiEnvelope";
-import { fetchWithTimeout } from "../lib/fetchWithTimeout";
 
 const FALLBACK_ACCOUNT_ID = DEFAULT_ACCOUNTS[0]?.id || "";
-const API_BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 const EMPTY_ACCOUNT_FORM = {
   label: "",
   facebookPageId: "",
@@ -19,7 +17,7 @@ const EMPTY_ACCOUNT_FORM = {
 
 export default function AccountSelect() {
   const { accounts, loading, addAccount } = useAccounts();
-  const { token, signOut } = useAuth();
+  const { token, signOut, apiFetch } = useAuth();
   const navigate = useNavigate();
   const availableAccounts = accounts.length ? accounts : DEFAULT_ACCOUNTS;
   const [get, set] = useQueryState({ account: FALLBACK_ACCOUNT_ID });
@@ -34,10 +32,7 @@ export default function AccountSelect() {
   const dropdownRef = useRef(null);
   const addFirstInputRef = useRef(null);
   const pendingAccountRef = useRef(null);
-  const authHeaders = useMemo(
-    () => (token ? { Authorization: `Bearer ${token}` } : {}),
-    [token],
-  );
+  const accountProfileRequestsRef = useRef(new Set());
 
   const currentValue = useMemo(() => {
     if (!availableAccounts.length) return "";
@@ -51,7 +46,19 @@ export default function AccountSelect() {
     () => availableAccounts.find((acc) => acc.id === currentValue) || availableAccounts[0],
     [availableAccounts, currentValue]
   );
-  const currentAccountLabel = accountsData[currentAccount?.id]?.username || currentAccount?.label || "";
+  const resolveAccountDisplay = useCallback((account) => {
+    const cached = account?.id ? accountsData[account.id] : null;
+    return {
+      username: cached?.username || account?.instagramUsername || account?.label || "",
+      profilePicture: cached?.profilePicture || account?.profilePictureUrl || account?.pagePictureUrl || null,
+    };
+  }, [accountsData]);
+
+  const currentAccountDisplay = useMemo(
+    () => resolveAccountDisplay(currentAccount),
+    [currentAccount, resolveAccountDisplay],
+  );
+  const currentAccountLabel = currentAccountDisplay.username;
 
   useEffect(() => {
     if (!availableAccounts.length) return;
@@ -67,35 +74,98 @@ export default function AccountSelect() {
   }, [availableAccounts, queryAccount, loading, set]);
 
   useEffect(() => {
-    const fetchAccountData = async (account) => {
-      if (!account?.instagramUserId || accountsData[account.id]) return;
+    setAccountsData((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      availableAccounts.forEach((account) => {
+        const accountId = account?.id;
+        if (!accountId || next[accountId]) return;
+        const username = String(account?.instagramUsername || "").trim();
+        const profilePicture = String(account?.profilePictureUrl || account?.pagePictureUrl || "").trim();
+        if (!username && !profilePicture) return;
+        next[accountId] = {
+          username: username || account.label || "",
+          profilePicture: profilePicture || null,
+        };
+        changed = true;
+      });
+      return changed ? next : prev;
+    });
+  }, [availableAccounts]);
 
+  const accountsToEnrich = useMemo(() => {
+    const scopedAccounts = isOpen ? availableAccounts : currentAccount ? [currentAccount] : [];
+    return scopedAccounts.filter((account) => {
+      if (!account?.id || !account?.instagramUserId) return false;
+      const cached = accountsData[account.id];
+      const hasUsername = Boolean(
+        String(cached?.username || account?.instagramUsername || "").trim(),
+      );
+      const hasProfilePicture = Boolean(
+        String(cached?.profilePicture || account?.profilePictureUrl || account?.pagePictureUrl || "").trim(),
+      );
+      return !(hasUsername && hasProfilePicture);
+    });
+  }, [availableAccounts, currentAccount, isOpen, accountsData]);
+
+  useEffect(() => {
+    if (!token || !accountsToEnrich.length) return undefined;
+    let cancelled = false;
+
+    const fetchAccountData = async (account) => {
+      const accountId = account?.id;
+      if (!accountId || accountProfileRequestsRef.current.has(accountId)) return;
+      accountProfileRequestsRef.current.add(accountId);
       try {
         const params = new URLSearchParams({ igUserId: account.instagramUserId, limit: "1" });
-        const url = `${API_BASE_URL}/api/instagram/posts?${params.toString()}`;
-        const resp = await fetchWithTimeout(url, { headers: authHeaders });
-        const json = unwrapApiData(await resp.json(), {});
-
-        if (json.account) {
-          setAccountsData((prev) => ({
+        const payload = await apiFetch(`/api/instagram/posts?${params.toString()}`, { timeoutMs: 12000 });
+        const json = unwrapApiData(payload, {});
+        const accountPayload = json?.account;
+        if (!accountPayload || cancelled) return;
+        setAccountsData((prev) => {
+          const previous = prev[accountId] || {};
+          const nextUsername = accountPayload.username
+            || accountPayload.name
+            || previous.username
+            || account.instagramUsername
+            || account.label
+            || "";
+          const nextProfilePicture = accountPayload.profile_picture_url
+            || previous.profilePicture
+            || account.profilePictureUrl
+            || account.pagePictureUrl
+            || null;
+          if (
+            previous.username === nextUsername
+            && previous.profilePicture === nextProfilePicture
+          ) {
+            return prev;
+          }
+          return {
             ...prev,
-            [account.id]: {
-              username: json.account.username || json.account.name,
-              profilePicture: json.account.profile_picture_url,
+            [accountId]: {
+              username: nextUsername,
+              profilePicture: nextProfilePicture,
             },
-          }));
-        }
+          };
+        });
       } catch (err) {
-        console.warn(`Falha ao carregar dados da conta ${account.id}`, err);
+        if (!cancelled) {
+          console.warn(`Falha ao carregar dados da conta ${account.id}`, err);
+        }
+      } finally {
+        accountProfileRequestsRef.current.delete(accountId);
       }
     };
 
-    availableAccounts.forEach((account) => {
-      if (account.instagramUserId) {
-        fetchAccountData(account);
-      }
+    accountsToEnrich.forEach((account) => {
+      fetchAccountData(account);
     });
-  }, [availableAccounts, accountsData, authHeaders]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [accountsToEnrich, apiFetch, token]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -218,9 +288,9 @@ export default function AccountSelect() {
             aria-haspopup="listbox"
           >
             <div className="account-dropdown__current">
-              {accountsData[currentAccount?.id]?.profilePicture ? (
+              {currentAccountDisplay.profilePicture ? (
                 <img
-                  src={accountsData[currentAccount.id].profilePicture}
+                  src={currentAccountDisplay.profilePicture}
                   alt={currentAccount.label}
                   className="account-dropdown__avatar"
                 />
@@ -244,7 +314,8 @@ export default function AccountSelect() {
               {!isAddFormVisible ? (
                 <>
                   {availableAccounts.map((account) => {
-                    const accountLabel = accountsData[account.id]?.username || account.label || "";
+                    const accountDisplay = resolveAccountDisplay(account);
+                    const accountLabel = accountDisplay.username || account.label || "";
                     return (
                       <div key={account.id} role="option" aria-selected={account.id === currentValue}>
                         <button
@@ -252,9 +323,9 @@ export default function AccountSelect() {
                           className={`account-dropdown__item${account.id === currentValue ? " account-dropdown__item--active" : ""}`}
                           onClick={() => handleSelect(account.id)}
                         >
-                          {accountsData[account.id]?.profilePicture ? (
+                          {accountDisplay.profilePicture ? (
                             <img
-                              src={accountsData[account.id].profilePicture}
+                              src={accountDisplay.profilePicture}
                               alt={account.label}
                               className="account-dropdown__avatar"
                             />

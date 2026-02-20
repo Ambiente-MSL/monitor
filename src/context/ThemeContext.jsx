@@ -35,10 +35,15 @@ export function ThemeProvider({ children }) {
     const root = document.documentElement;
 
     const applyTheme = (mode) => {
+      // Ativa transição suave
+      root.classList.add('theme-transitioning');
       root.setAttribute('data-theme', mode);
       document.body.classList.toggle('theme-light', mode === 'light');
       document.body.classList.toggle('theme-dark', mode === 'dark');
       setResolvedTheme(mode);
+      // Remove a classe após a transição terminar
+      const timer = setTimeout(() => root.classList.remove('theme-transitioning'), 350);
+      return () => clearTimeout(timer);
     };
 
     if (theme === 'auto') {

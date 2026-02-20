@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { useOutletContext } from 'react-router-dom';
 
-import { ChevronDown, Edit3, Plus, Trash2, Settings as SettingsIcon, Check, X } from 'lucide-react';
+import { ChevronDown, Edit3, Plus, Trash2, Settings as SettingsIcon, Check, X, Sun, Moon, Monitor } from 'lucide-react';
 
 import { useAccounts } from '../context/AccountsContext';
+import { useTheme } from '../context/ThemeContext';
 
 import NavigationHero from '../components/NavigationHero';
 import { buildLegalUrl } from '../lib/legalLinks';
@@ -13,7 +14,7 @@ import { buildLegalUrl } from '../lib/legalLinks';
 
 const NOTIFICATION_STORAGE_KEY = 'ui-notifications-enabled';
 
-const SECTION_STATE = { alerts: true, accounts: true };
+const SECTION_STATE = { appearance: true, alerts: false, accounts: true };
 
 const ACCOUNT_FORM_INITIAL = {
 
@@ -27,6 +28,11 @@ const ACCOUNT_FORM_INITIAL = {
 
 };
 
+const THEME_OPTIONS = [
+  { value: 'light', label: 'Claro', Icon: Sun },
+  { value: 'auto', label: 'Automático', Icon: Monitor },
+  { value: 'dark', label: 'Escuro', Icon: Moon },
+];
 
 
 export default function Settings() {
@@ -38,6 +44,8 @@ export default function Settings() {
     setTopbarConfig({ title: "Configuracoes", showFilters: false });
     return () => resetTopbarConfig?.();
   }, [setTopbarConfig, resetTopbarConfig]);
+
+  const { theme, setTheme } = useTheme();
 
   const { accounts, addAccount, updateAccount, removeAccount } = useAccounts();
   const discoveredAdAccounts = useMemo(() => {
@@ -348,6 +356,51 @@ export default function Settings() {
 
         <div className="settings-layout">
 
+          {/* ===== Seção: Aparência ===== */}
+          <section className={`settings-section ${openSections.appearance ? 'is-open' : ''}`}>
+            <button
+              type="button"
+              className="settings-section__header"
+              onClick={() => toggleSection('appearance')}
+              aria-expanded={openSections.appearance}
+            >
+              <div className="settings-section__header-text">
+                <h2 className="settings-section__title">Aparência</h2>
+                <p className="settings-section__subtitle">Escolha como o painel deve ser exibido.</p>
+              </div>
+              <ChevronDown className={`settings-section__icon ${openSections.appearance ? 'is-open' : ''}`} size={18} />
+            </button>
+
+            {openSections.appearance && (
+              <div className="settings-section__body">
+                <div className="theme-picker" role="radiogroup" aria-label="Tema do painel">
+                  {THEME_OPTIONS.map(({ value, label, Icon }) => {
+                    const isActive = theme === value;
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        role="radio"
+                        aria-checked={isActive}
+                        className={`theme-picker__option${isActive ? ' theme-picker__option--active' : ''}`}
+                        onClick={() => setTheme(value)}
+                      >
+                        <div className="theme-picker__icon">
+                          <Icon size={20} />
+                        </div>
+                        <span className="theme-picker__label">{label}</span>
+                        <span className="theme-picker__check" aria-hidden="true">
+                          <Check size={10} />
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* ===== Seção: Alertas ===== */}
           <section className={`settings-section ${openSections.alerts ? 'is-open' : ''}`}>
 
             <button
@@ -440,8 +493,7 @@ export default function Settings() {
 
           </section>
 
-
-
+          {/* ===== Seção: Contas conectadas ===== */}
           <section className={`settings-section ${openSections.accounts ? 'is-open' : ''}`}>
 
             <button
@@ -474,99 +526,72 @@ export default function Settings() {
 
                 {/* Painel de contas descobertas */}
                 {accounts.length > 0 && (
-                  <div style={{ marginBottom: '1rem', padding: '12px', border: '1px solid #e5e7eb', borderRadius: '12px', background: '#f9fafb' }}>
-                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                      <div style={{ flex: '1 1 160px', minWidth: 160 }}>
-                        <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>Páginas</div>
-                        <div style={{ fontSize: '1.4rem', fontWeight: 700 }}>{discoveredPages.length}</div>
+                  <div className="settings-accounts-summary">
+                    <div className="settings-accounts-summary__stats">
+                      <div className="settings-accounts-summary__stat">
+                        <div className="settings-accounts-summary__stat-label">Páginas</div>
+                        <div className="settings-accounts-summary__stat-value">{discoveredPages.length}</div>
                       </div>
-                      <div style={{ flex: '1 1 160px', minWidth: 160 }}>
-                        <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>Contas Instagram</div>
-                        <div style={{ fontSize: '1.4rem', fontWeight: 700 }}>{discoveredIgAccounts.length}</div>
+                      <div className="settings-accounts-summary__stat">
+                        <div className="settings-accounts-summary__stat-label">Contas Instagram</div>
+                        <div className="settings-accounts-summary__stat-value">{discoveredIgAccounts.length}</div>
                       </div>
-                      <div style={{ flex: '1 1 160px', minWidth: 160 }}>
-                        <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>Contas de anúncios</div>
-                        <div style={{ fontSize: '1.4rem', fontWeight: 700 }}>{discoveredAdAccounts.length}</div>
+                      <div className="settings-accounts-summary__stat">
+                        <div className="settings-accounts-summary__stat-label">Contas de anúncios</div>
+                        <div className="settings-accounts-summary__stat-value">{discoveredAdAccounts.length}</div>
                       </div>
                     </div>
 
-                    <div style={{ marginTop: '12px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+                    <div className="settings-accounts-grid">
                       {discoveredPages.map((page) => {
                         const isEditing = editingCardId === page.id;
-                        const account = accounts.find((acc) => acc.facebookPageId === page.id);
 
                         return (
-                          <div key={page.id} style={{ background: '#fff', border: isEditing ? '2px solid #223A3A' : '1px solid #e5e7eb', borderRadius: '12px', padding: '10px 12px' }}>
+                          <div
+                            key={page.id}
+                            className={`settings-account-card${isEditing ? ' settings-account-card--editing' : ''}`}
+                          >
                             {isEditing ? (
-                              // Modo de edição inline
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                              <div className="settings-account-card__edit">
                                 <div>
-                                  <label style={{ fontSize: '0.75rem', color: '#6b7280', display: 'block', marginBottom: '4px' }}>Nome</label>
+                                  <label className="settings-account-label">Nome</label>
                                   <input
                                     type="text"
                                     name="label"
                                     value={editingCardData.label}
                                     onChange={handleCardFieldChange}
-                                    style={{
-                                      width: '100%',
-                                      padding: '6px 8px',
-                                      fontSize: '0.875rem',
-                                      border: '1px solid #d1d5db',
-                                      borderRadius: '6px',
-                                      outline: 'none',
-                                    }}
+                                    className="settings-account-input"
                                   />
                                 </div>
                                 <div>
-                                  <label style={{ fontSize: '0.75rem', color: '#6b7280', display: 'block', marginBottom: '4px' }}>Page ID</label>
+                                  <label className="settings-account-label">Page ID</label>
                                   <input
                                     type="text"
                                     name="facebookPageId"
                                     value={editingCardData.facebookPageId}
                                     onChange={handleCardFieldChange}
-                                    style={{
-                                      width: '100%',
-                                      padding: '6px 8px',
-                                      fontSize: '0.875rem',
-                                      border: '1px solid #d1d5db',
-                                      borderRadius: '6px',
-                                      outline: 'none',
-                                    }}
+                                    className="settings-account-input"
                                   />
                                 </div>
                                 <div>
-                                  <label style={{ fontSize: '0.75rem', color: '#6b7280', display: 'block', marginBottom: '4px' }}>Instagram ID</label>
+                                  <label className="settings-account-label">Instagram ID</label>
                                   <input
                                     type="text"
                                     name="instagramUserId"
                                     value={editingCardData.instagramUserId}
                                     onChange={handleCardFieldChange}
-                                    style={{
-                                      width: '100%',
-                                      padding: '6px 8px',
-                                      fontSize: '0.875rem',
-                                      border: '1px solid #d1d5db',
-                                      borderRadius: '6px',
-                                      outline: 'none',
-                                    }}
+                                    className="settings-account-input"
                                   />
                                 </div>
                                 <div>
-                                  <label style={{ fontSize: '0.75rem', color: '#6b7280', display: 'block', marginBottom: '4px' }}>Ad Account ID</label>
+                                  <label className="settings-account-label">Ad Account ID</label>
                                   <input
                                     type="text"
                                     name="adAccountId"
                                     value={editingCardData.adAccountId}
                                     onChange={handleCardFieldChange}
                                     list="ad-accounts-options-inline"
-                                    style={{
-                                      width: '100%',
-                                      padding: '6px 8px',
-                                      fontSize: '0.875rem',
-                                      border: '1px solid #d1d5db',
-                                      borderRadius: '6px',
-                                      outline: 'none',
-                                    }}
+                                    className="settings-account-input"
                                   />
                                   {discoveredAdAccounts.length > 0 && (
                                     <datalist id="ad-accounts-options-inline">
@@ -578,25 +603,11 @@ export default function Settings() {
                                     </datalist>
                                   )}
                                 </div>
-                                <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                                <div className="settings-account-edit-actions">
                                   <button
                                     type="button"
                                     onClick={() => handleSaveCardEdit(page.id)}
-                                    style={{
-                                      flex: 1,
-                                      padding: '6px 10px',
-                                      fontSize: '0.85rem',
-                                      fontWeight: 600,
-                                      background: '#223A3A',
-                                      color: '#fff',
-                                      border: 'none',
-                                      borderRadius: '6px',
-                                      cursor: 'pointer',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      gap: '4px',
-                                    }}
+                                    className="settings-account-btn-save"
                                   >
                                     <Check size={14} />
                                     Salvar
@@ -604,21 +615,7 @@ export default function Settings() {
                                   <button
                                     type="button"
                                     onClick={handleCancelCardEdit}
-                                    style={{
-                                      flex: 1,
-                                      padding: '6px 10px',
-                                      fontSize: '0.85rem',
-                                      fontWeight: 600,
-                                      background: '#fff',
-                                      color: '#6b7280',
-                                      border: '1px solid #d1d5db',
-                                      borderRadius: '6px',
-                                      cursor: 'pointer',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      gap: '4px',
-                                    }}
+                                    className="settings-account-btn-cancel"
                                   >
                                     <X size={14} />
                                     Cancelar
@@ -626,37 +623,27 @@ export default function Settings() {
                                 </div>
                               </div>
                             ) : (
-                              // Modo de visualização
-                              <>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-                                  <div style={{ flex: 1 }}>
-                                    <div style={{ fontWeight: 700, marginBottom: '4px' }}>{page.label}</div>
-                                    <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>Page ID: {page.id}</div>
+                              <div className="settings-account-card__view">
+                                <div className="settings-account-card__header">
+                                  <div className="settings-account-card__info">
+                                    <div className="settings-account-card__name">{page.label}</div>
+                                    <div className="settings-account-card__meta">Page ID: {page.id}</div>
                                     {page.instagramUserId ? (
-                                      <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>IG ID: {page.instagramUserId}</div>
+                                      <div className="settings-account-card__meta">IG ID: {page.instagramUserId}</div>
                                     ) : (
-                                      <div style={{ fontSize: '0.85rem', color: '#9ca3af' }}>IG não vinculado</div>
+                                      <div className="settings-account-card__meta--empty">IG não vinculado</div>
                                     )}
                                     {page.adAccountId ? (
-                                      <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>Ad Account: {page.adAccountId}</div>
+                                      <div className="settings-account-card__meta">Ad Account: {page.adAccountId}</div>
                                     ) : (
-                                      <div style={{ fontSize: '0.85rem', color: '#9ca3af' }}>Conta de anúncios não vinculada</div>
+                                      <div className="settings-account-card__meta--empty">Conta de anúncios não vinculada</div>
                                     )}
                                   </div>
-                                  <div style={{ display: 'flex', gap: '4px' }}>
+                                  <div className="settings-account-card__actions">
                                     <button
                                       type="button"
                                       onClick={() => handleEditCard(page.id)}
-                                      style={{
-                                        padding: '6px',
-                                        background: 'transparent',
-                                        border: '1px solid #e5e7eb',
-                                        borderRadius: '6px',
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        color: '#223A3A',
-                                      }}
+                                      className="settings-account-card__btn"
                                       title="Editar"
                                     >
                                       <Edit3 size={14} />
@@ -664,16 +651,7 @@ export default function Settings() {
                                     <button
                                       type="button"
                                       onClick={() => handleDeleteCard(page.id)}
-                                      style={{
-                                        padding: '6px',
-                                        background: 'transparent',
-                                        border: '1px solid #fecdd3',
-                                        borderRadius: '6px',
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        color: '#b91c1c',
-                                      }}
+                                      className="settings-account-card__btn settings-account-card__btn--danger"
                                       title="Remover"
                                     >
                                       <Trash2 size={14} />
@@ -681,21 +659,13 @@ export default function Settings() {
                                   </div>
                                 </div>
                                 {Array.isArray(page.adAccounts) && page.adAccounts.length > 0 ? (
-                                  <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                    <label style={{ fontSize: '0.8rem', color: '#6b7280' }}>Conta de anuncios</label>
+                                  <div className="settings-account-card__ad-section">
+                                    <label className="settings-account-card__ad-label">Conta de anuncios</label>
                                     {page.adAccounts.length > 1 ? (
                                       <select
                                         value={page.adAccountId || (page.adAccounts[0]?.id || '')}
                                         onChange={(event) => handleAdAccountSelect(page.id, event.target.value)}
-                                        style={{
-                                          width: '100%',
-                                          padding: '8px 10px',
-                                          border: '1px solid #d1d5db',
-                                          borderRadius: '8px',
-                                          background: '#fff',
-                                          fontSize: '0.9rem',
-                                          color: '#111827',
-                                        }}
+                                        className="settings-account-select"
                                         disabled={adAccountSaving === page.id}
                                       >
                                         {page.adAccounts.map((ad) => (
@@ -705,22 +675,22 @@ export default function Settings() {
                                         ))}
                                       </select>
                                     ) : (
-                                      <div style={{ fontSize: '0.85rem', color: '#4b5563', padding: '6px 8px', background: '#f3f4f6', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                                      <div className="settings-account-card__ad-info">
                                         Usando conta de anuncios: {page.adAccountId || page.adAccounts[0].id}
                                       </div>
                                     )}
                                     {page.usesAdFallback && (
-                                      <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+                                      <div className="settings-account-card__ad-note">
                                         Selecionamos a primeira conta de anuncios detectada para esta pagina.
                                       </div>
                                     )}
                                   </div>
                                 ) : (
-                                  <div style={{ marginTop: '8px', fontSize: '0.8rem', color: '#9ca3af' }}>
+                                  <div className="settings-account-card__ad-empty">
                                     {page.adAccountId ? `Usando conta de anuncios: ${page.adAccountId}` : 'Sem contas de anuncios vinculadas'}
                                   </div>
                                 )}
-                              </>
+                              </div>
                             )}
                           </div>
                         );
@@ -729,12 +699,12 @@ export default function Settings() {
                   </div>
                 )}
 
-                <div style={{ marginTop: '24px', padding: '16px', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px' }}>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '12px', color: '#111827' }}>
-                    <Plus size={18} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'text-bottom' }} />
+                <div className="settings-add-account-panel">
+                  <h3 className="settings-add-account-panel__title">
+                    <Plus size={18} />
                     Adicionar nova conta
                   </h3>
-                  <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '16px' }}>
+                  <p className="settings-add-account-panel__desc">
                     Preencha os campos abaixo para adicionar uma nova conta ao sistema.
                   </p>
 
@@ -855,33 +825,31 @@ export default function Settings() {
 
         </div>
 
-        <footer style={{ marginTop: '2rem', textAlign: 'center' }}>
-          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-            <a
-              href={buildLegalUrl('/legal/terms-of-service.html')}
-              style={{ color: '#7c3aed', textDecoration: 'underline', fontWeight: 500 }}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Termos de Serviço
-            </a>
-            <a
-              href={buildLegalUrl('/legal/privacy-policy.html')}
-              style={{ color: '#7c3aed', textDecoration: 'underline', fontWeight: 500 }}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Políticas de Privacidade
-            </a>
-            <a
-              href={buildLegalUrl('/legal/privacy-policy-en.html')}
-              style={{ color: '#7c3aed', textDecoration: 'underline', fontWeight: 500 }}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Privacy Policy
-            </a>
-          </div>
+        <footer className="settings-footer">
+          <a
+            href={buildLegalUrl('/legal/terms-of-service.html')}
+            className="settings-footer__link"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Termos de Serviço
+          </a>
+          <a
+            href={buildLegalUrl('/legal/privacy-policy.html')}
+            className="settings-footer__link"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Políticas de Privacidade
+          </a>
+          <a
+            href={buildLegalUrl('/legal/privacy-policy-en.html')}
+            className="settings-footer__link"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Privacy Policy
+          </a>
         </footer>
 
       </div>
@@ -891,5 +859,3 @@ export default function Settings() {
   );
 
 }
-
-

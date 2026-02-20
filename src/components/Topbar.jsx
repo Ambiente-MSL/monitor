@@ -95,7 +95,7 @@ export default function Topbar({
   const displayNotification = Number.isFinite(notificationCount) && notificationCount > 0;
 
   return (
-    <header className={`topbar topbar--dark ${className}`.trim()}>
+    <header className={`topbar ${className}`.trim()}>
       <div className="topbar__inner">
         <div className="topbar__logo">
           <img src={logo} alt="Dashboard Logo" className="topbar__logo-img" />
