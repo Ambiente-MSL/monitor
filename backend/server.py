@@ -161,19 +161,34 @@ def _ensure_meta_tokens_table() -> None:
 def _load_connected_accounts() -> List[Dict[str, Any]]:
     try:
         rows = fetch_all(f"SELECT * FROM {CONNECTED_ACCOUNTS_TABLE} ORDER BY label ASC")
-        return [
-            {
+        payload: List[Dict[str, Any]] = []
+        for row in rows:
+            ig_user_id = str(row.get("instagram_user_id") or "").strip()
+            summary = _resolve_instagram_account_summary(ig_user_id) if ig_user_id else {}
+            profile_picture_url = _normalize_remote_image_url(
+                row.get("profile_picture_url") or summary.get("profile_picture_url"),
+            )
+            page_picture_url = _normalize_remote_image_url(row.get("page_picture_url"))
+            instagram_username = str(summary.get("username") or "").strip()
+            followers_count = _coerce_followers_count(summary.get("followers_count"))
+
+            account_payload: Dict[str, Any] = {
                 "id": row.get("id"),
                 "label": row.get("label"),
                 "facebookPageId": row.get("facebook_page_id"),
-                "instagramUserId": row.get("instagram_user_id"),
+                "instagramUserId": ig_user_id,
                 "adAccountId": row.get("ad_account_id"),
-                "profilePictureUrl": row.get("profile_picture_url"),
-                "pagePictureUrl": row.get("page_picture_url"),
+                "profilePictureUrl": profile_picture_url,
+                "pagePictureUrl": page_picture_url,
                 "source": row.get("source") or "manual",
             }
-            for row in rows
-        ]
+            if instagram_username:
+                account_payload["instagramUsername"] = instagram_username
+            if followers_count is not None:
+                account_payload["followersCount"] = followers_count
+                account_payload["followers_count"] = followers_count
+            payload.append(account_payload)
+        return payload
     except Exception as err:  # noqa: BLE001
         logger.error("Falha ao carregar contas persistidas: %s", err)
         return []
@@ -281,6 +296,8 @@ IG_PROFILE_PICTURE_ALLOWED_HOSTS = (
     "facebook.com",
 )
 IG_PROFILE_PICTURE_MEM_CACHE: Dict[str, Dict[str, Any]] = {}
+IG_ACCOUNT_SUMMARY_CACHE_TTL_SEC = int(os.getenv("IG_ACCOUNT_SUMMARY_CACHE_TTL_SEC", "900"))
+IG_ACCOUNT_SUMMARY_MEM_CACHE: Dict[str, Dict[str, Any]] = {}
 
 _ensure_connected_accounts_table()
 _ensure_meta_tokens_table()
@@ -2002,6 +2019,246 @@ def _resolve_instagram_profile_picture_url(ig_user_id: str, *, force_refresh: bo
         "ts": now_ts,
     }
     return profile_url
+
+
+def _coerce_followers_count(value: Any) -> Optional[int]:
+    if value is None:
+        return None
+    if isinstance(value, dict):
+        for key in ("count", "value", "total", "followers_count", "followersCount"):
+            if key not in value:
+                continue
+            nested = _coerce_followers_count(value.get(key))
+            if nested is not None:
+                return nested
+        return None
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, (int, float)):
+        if not math.isfinite(float(value)):
+            return None
+        return int(round(float(value)))
+    text = str(value).strip().replace(",", ".")
+    if not text:
+        return None
+    try:
+        numeric = float(text)
+    except ValueError:
+        return None
+    if not math.isfinite(numeric):
+        return None
+    return int(round(numeric))
+
+
+def _normalize_instagram_account_payload(payload: Any, *, fallback_ig_id: str = "") -> Dict[str, Any]:
+    if not isinstance(payload, dict):
+        payload = {}
+
+    normalized: Dict[str, Any] = {}
+    account_id = str(
+        payload.get("id")
+        or payload.get("ig_user_id")
+        or payload.get("igUserId")
+        or fallback_ig_id
+        or "",
+    ).strip()
+    if account_id:
+        normalized["id"] = account_id
+
+    username = str(payload.get("username") or payload.get("instagram_username") or "").strip()
+    if username:
+        normalized["username"] = username
+
+    name = str(payload.get("name") or payload.get("label") or "").strip()
+    if name:
+        normalized["name"] = name
+
+    profile_picture_url = _normalize_remote_image_url(
+        payload.get("profile_picture_url") or payload.get("profilePictureUrl"),
+    )
+    if profile_picture_url:
+        normalized["profile_picture_url"] = profile_picture_url
+
+    followers_count = _coerce_followers_count(
+        payload.get("followers_count")
+        if payload.get("followers_count") is not None
+        else payload.get("followersCount"),
+    )
+    if followers_count is None:
+        followers_count = _coerce_followers_count(payload.get("followers"))
+    if followers_count is None and isinstance(payload.get("insights"), dict):
+        followers_count = _coerce_followers_count(payload["insights"].get("followers"))
+    if followers_count is not None:
+        normalized["followers_count"] = followers_count
+
+    return normalized
+
+
+def _merge_instagram_account_payloads(
+    primary: Any,
+    secondary: Any,
+    *,
+    fallback_ig_id: str = "",
+) -> Dict[str, Any]:
+    primary_norm = _normalize_instagram_account_payload(primary, fallback_ig_id=fallback_ig_id)
+    secondary_norm = _normalize_instagram_account_payload(secondary, fallback_ig_id=fallback_ig_id)
+
+    merged: Dict[str, Any] = {}
+    for key in ("id", "username", "name", "profile_picture_url"):
+        value = primary_norm.get(key) or secondary_norm.get(key)
+        if value:
+            merged[key] = value
+
+    followers_count = primary_norm.get("followers_count")
+    if followers_count is None:
+        followers_count = secondary_norm.get("followers_count")
+    if followers_count is not None:
+        merged["followers_count"] = followers_count
+
+    if fallback_ig_id and not merged.get("id"):
+        merged["id"] = fallback_ig_id
+    return merged
+
+
+def _latest_followers_total_from_db(ig_user_id: str) -> Optional[int]:
+    client = get_postgres_client()
+    if client is None:
+        return None
+
+    try:
+        response = (
+            client.table(IG_METRICS_TABLE)
+            .select("value")
+            .eq("account_id", ig_user_id)
+            .eq("platform", IG_METRICS_PLATFORM)
+            .eq("metric_key", "followers_total")
+            .order("metric_date", desc=True)
+            .limit(1)
+            .execute()
+        )
+        if getattr(response, "error", None):
+            logger.warning("Falha ao carregar followers_total para IG %s: %s", ig_user_id, response.error)
+            return None
+        rows = response.data if isinstance(response.data, list) else []
+        if not rows:
+            return None
+        return _coerce_followers_count(rows[0].get("value"))
+    except Exception as err:  # noqa: BLE001
+        logger.warning("Erro ao buscar followers_total no banco para IG %s: %s", ig_user_id, err)
+        return None
+
+
+def _resolve_instagram_account_summary(ig_user_id: str, *, force_refresh: bool = False) -> Dict[str, Any]:
+    normalized_ig_id = str(ig_user_id or "").strip()
+    if not normalized_ig_id:
+        return {}
+
+    now_ts = time.time()
+    if not force_refresh:
+        cached = IG_ACCOUNT_SUMMARY_MEM_CACHE.get(normalized_ig_id)
+        if cached:
+            age_seconds = now_ts - float(cached.get("ts") or 0)
+            cached_data = cached.get("data")
+            if age_seconds < IG_ACCOUNT_SUMMARY_CACHE_TTL_SEC and isinstance(cached_data, dict):
+                return dict(cached_data)
+
+    summary: Dict[str, Any] = {"id": normalized_ig_id}
+
+    remote_payload: Dict[str, Any] = {}
+    try:
+        remote_payload = gget(
+            f"/{normalized_ig_id}",
+            {"fields": "id,username,name,profile_picture_url,followers_count"},
+        )
+    except MetaAPIError as err:
+        logger.warning("Falha ao resolver conta IG %s via Meta: %s", normalized_ig_id, err)
+    except Exception as err:  # noqa: BLE001
+        logger.warning("Erro inesperado ao resolver conta IG %s via Meta: %s", normalized_ig_id, err)
+    summary = _merge_instagram_account_payloads(summary, remote_payload, fallback_ig_id=normalized_ig_id)
+
+    if not summary.get("profile_picture_url") or not summary.get("username"):
+        try:
+            row = fetch_one(
+                f"""
+                SELECT label, profile_picture_url
+                FROM {CONNECTED_ACCOUNTS_TABLE}
+                WHERE instagram_user_id = %(ig_user_id)s
+                ORDER BY updated_at DESC
+                LIMIT 1
+                """,
+                {"ig_user_id": normalized_ig_id},
+            )
+        except Exception as err:  # noqa: BLE001
+            row = None
+            logger.warning("Falha ao buscar conta IG %s na base local: %s", normalized_ig_id, err)
+        if row:
+            fallback_payload = {
+                "name": row.get("label"),
+                "profile_picture_url": row.get("profile_picture_url"),
+            }
+            summary = _merge_instagram_account_payloads(summary, fallback_payload, fallback_ig_id=normalized_ig_id)
+
+    if not summary.get("profile_picture_url"):
+        proxy_profile = _resolve_instagram_profile_picture_url(normalized_ig_id)
+        if proxy_profile:
+            summary["profile_picture_url"] = proxy_profile
+
+    if summary.get("followers_count") is None:
+        followers_from_db = _latest_followers_total_from_db(normalized_ig_id)
+        if followers_from_db is not None:
+            summary["followers_count"] = followers_from_db
+
+    if not summary.get("username") or summary.get("followers_count") is None:
+        latest_posts = get_latest_cached_payload("instagram_posts", normalized_ig_id, platform=DEFAULT_CACHE_PLATFORM)
+        if latest_posts:
+            latest_payload, _ = latest_posts
+            cached_account = latest_payload.get("account") if isinstance(latest_payload, dict) else {}
+            summary = _merge_instagram_account_payloads(summary, cached_account, fallback_ig_id=normalized_ig_id)
+
+    if summary.get("followers_count") is None:
+        latest_metrics = get_latest_cached_payload("instagram_metrics", normalized_ig_id, platform=DEFAULT_CACHE_PLATFORM)
+        if latest_metrics:
+            metrics_payload, _ = latest_metrics
+            if isinstance(metrics_payload, dict):
+                followers_count = _coerce_followers_count((metrics_payload.get("follower_counts") or {}).get("end"))
+                if followers_count is None:
+                    for metric in metrics_payload.get("metrics") or []:
+                        if not isinstance(metric, dict) or metric.get("key") != "followers_total":
+                            continue
+                        followers_count = _coerce_followers_count(metric.get("value"))
+                        if followers_count is not None:
+                            break
+                if followers_count is not None:
+                    summary["followers_count"] = followers_count
+
+    if not summary.get("name") and summary.get("username"):
+        summary["name"] = summary["username"]
+
+    IG_ACCOUNT_SUMMARY_MEM_CACHE[normalized_ig_id] = {
+        "ts": now_ts,
+        "data": dict(summary),
+    }
+    return dict(summary)
+
+
+def _attach_instagram_account_summary(payload_obj: Any, ig_user_id: str) -> Any:
+    if not isinstance(payload_obj, dict):
+        return payload_obj
+
+    normalized_ig_id = str(ig_user_id or "").strip()
+    if not normalized_ig_id:
+        return dict(payload_obj)
+
+    enriched = dict(payload_obj)
+    summary = _resolve_instagram_account_summary(normalized_ig_id)
+    merged_account = _merge_instagram_account_payloads(
+        enriched.get("account"),
+        summary,
+        fallback_ig_id=normalized_ig_id,
+    )
+    if merged_account:
+        enriched["account"] = merged_account
+    return enriched
 
 
 def _fetch_facebook_page_info(page_id: str) -> Dict[str, Any]:
@@ -4192,6 +4449,7 @@ def instagram_metrics():
         db_payload = None
     if db_payload:
         payload_obj = dict(db_payload)
+        payload_obj = _attach_instagram_account_summary(payload_obj, str(ig))
         _ensure_reach_timeseries(payload_obj)
         coverage = payload_obj.get("coverage") if isinstance(payload_obj.get("coverage"), dict) else {}
         has_full_coverage = bool(coverage.get("has_full_coverage"))
@@ -4242,6 +4500,7 @@ def instagram_metrics():
             meta["requested_since"] = since
             meta["requested_until"] = until
             response = dict(payload) if isinstance(payload, dict) else {"payload": payload}
+            response = _attach_instagram_account_summary(response, str(ig))
             response["cache"] = meta
             envelope = _build_api_envelope(
                 response,
@@ -4294,6 +4553,7 @@ def instagram_metrics():
             meta["requested_since"] = since
             meta["requested_until"] = until
             response = dict(payload) if isinstance(payload, dict) else {"payload": payload}
+            response = _attach_instagram_account_summary(response, str(ig))
             response["cache"] = meta
             envelope = _build_api_envelope(
                 response,
@@ -4344,6 +4604,7 @@ def instagram_metrics():
             meta["requested_since"] = since
             meta["requested_until"] = until
             response = dict(payload) if isinstance(payload, dict) else {"payload": payload}
+            response = _attach_instagram_account_summary(response, str(ig))
             response["cache"] = meta
             envelope = _build_api_envelope(
                 response,
@@ -4385,6 +4646,7 @@ def instagram_metrics():
         return jsonify(envelope), 500
 
     payload_obj = dict(payload) if isinstance(payload, dict) else {"payload": payload}
+    payload_obj = _attach_instagram_account_summary(payload_obj, str(ig))
     _ensure_reach_timeseries(payload_obj)
 
     # Alguns caches antigos podem ter alcance total mas sem série diária.
@@ -4406,6 +4668,7 @@ def instagram_metrics():
                 refresh_reason="missing_reach_timeseries",
             )
             payload_obj = dict(refreshed_payload) if isinstance(refreshed_payload, dict) else {"payload": refreshed_payload}
+            payload_obj = _attach_instagram_account_summary(payload_obj, str(ig))
             meta = refreshed_meta
             _ensure_reach_timeseries(payload_obj)
         except Exception as refresh_err:  # noqa: BLE001
@@ -4668,6 +4931,7 @@ def instagram_posts():
             meta["fallback_reason"] = "meta_api_error"
             meta["requested_limit"] = limit
             response = dict(payload) if isinstance(payload, dict) else {"payload": payload}
+            response = _attach_instagram_account_summary(response, str(ig))
             response["cache"] = meta
             envelope = _build_api_envelope(
                 response,
@@ -4725,6 +4989,7 @@ def instagram_posts():
             meta["fallback_reason"] = "unexpected_error"
             meta["requested_limit"] = limit
             response = dict(payload) if isinstance(payload, dict) else {"payload": payload}
+            response = _attach_instagram_account_summary(response, str(ig))
             response["cache"] = meta
             envelope = _build_api_envelope(
                 response,
@@ -4763,6 +5028,7 @@ def instagram_posts():
         )
         return jsonify(envelope), 500
     response = dict(payload)
+    response = _attach_instagram_account_summary(response, str(ig))
     response["cache"] = meta
     envelope = _build_api_envelope(
         response,
@@ -5532,7 +5798,7 @@ def discover_accounts():
         # 1. Buscar todas as páginas que o usuário administra
         pages_response = gget("/me/accounts", params={
             "fields": (
-                "id,name,access_token,category,tasks,"
+                "id,name,access_token,category,tasks,picture{url,height,width},"
                 "instagram_business_account{id,username,name,profile_picture_url,followers_count},"
                 "ads_accounts{id,account_id,name,account_status,currency,timezone_name}"
             )
@@ -5551,30 +5817,58 @@ def discover_accounts():
                 page_name = page.get("name")
                 if not page_id:
                     continue
+                page_picture_data = ((page.get("picture") or {}).get("data") or {}) if isinstance(page.get("picture"), dict) else {}
+                page_picture_url = _normalize_remote_image_url(page_picture_data.get("url"))
 
                 page_data = {
                     "id": page_id,
                     "name": page_name,
                     "category": page.get("category"),
                     "tasks": page.get("tasks", []),
+                    "picture_url": page_picture_url,
                 }
                 pages.append(page_data)
 
                 ig_account = page.get("instagram_business_account")
                 ig_id = ""
                 ig_username = ""
+                ig_name = ""
+                ig_profile_picture_url = ""
+                ig_followers_count: Optional[int] = None
                 if isinstance(ig_account, dict):
-                    ig_id = ig_account.get("id") or ""
-                    ig_username = ig_account.get("username") or ""
-                    instagram_accounts.append({
-                        "id": ig_account.get("id"),
-                        "username": ig_account.get("username"),
-                        "name": ig_account.get("name"),
-                        "profilePictureUrl": ig_account.get("profile_picture_url"),
-                        "followersCount": ig_account.get("followers_count"),
+                    ig_id = str(ig_account.get("id") or "").strip()
+                    ig_username = str(ig_account.get("username") or "").strip()
+                    ig_name = str(ig_account.get("name") or "").strip()
+                    ig_profile_picture_url = _normalize_remote_image_url(ig_account.get("profile_picture_url"))
+                    ig_followers_count = _coerce_followers_count(ig_account.get("followers_count"))
+
+                if ig_id:
+                    resolved_ig_summary = _resolve_instagram_account_summary(ig_id)
+                    if not ig_username:
+                        ig_username = str(resolved_ig_summary.get("username") or "").strip()
+                    if not ig_name:
+                        ig_name = str(resolved_ig_summary.get("name") or "").strip()
+                    if not ig_profile_picture_url:
+                        ig_profile_picture_url = _normalize_remote_image_url(
+                            resolved_ig_summary.get("profile_picture_url"),
+                        )
+                    if ig_followers_count is None:
+                        ig_followers_count = _coerce_followers_count(
+                            resolved_ig_summary.get("followers_count"),
+                        )
+                    instagram_account_payload: Dict[str, Any] = {
+                        "id": ig_id,
+                        "username": ig_username or None,
+                        "name": ig_name or None,
+                        "profilePictureUrl": ig_profile_picture_url,
+                        "profile_picture_url": ig_profile_picture_url,
                         "linkedPageId": page_id,
                         "linkedPageName": page_name,
-                    })
+                    }
+                    if ig_followers_count is not None:
+                        instagram_account_payload["followersCount"] = ig_followers_count
+                        instagram_account_payload["followers_count"] = ig_followers_count
+                    instagram_accounts.append(instagram_account_payload)
 
                 ads_accounts_payload = page.get("ads_accounts")
                 ads_accounts_data = []
@@ -5598,8 +5892,14 @@ def discover_accounts():
                     "id": f"page-{page_id}",
                     "label": page_name or page_id,
                     "facebookPageId": page_id,
+                    "pagePictureUrl": page_picture_url,
+                    "page_picture_url": page_picture_url,
                     "instagramUserId": ig_id,
                     "instagramUsername": ig_username,
+                    "profilePictureUrl": ig_profile_picture_url,
+                    "profile_picture_url": ig_profile_picture_url,
+                    "followersCount": ig_followers_count,
+                    "followers_count": ig_followers_count,
                     "adAccountId": ads_accounts_data[0]["id"] if ads_accounts_data else "",
                     "adAccounts": ads_accounts_data,
                 })
@@ -5701,22 +6001,10 @@ def list_connected_accounts():
     if error:
         return error
     try:
-        rows = fetch_all(f"SELECT * FROM {CONNECTED_ACCOUNTS_TABLE} ORDER BY label ASC")
+        payload = _load_connected_accounts()
     except Exception as err:  # noqa: BLE001
         logger.error("Failed to list connected accounts: %s", err)
         return jsonify({"error": "could not list accounts"}), 500
-    payload = []
-    for row in rows:
-        payload.append({
-            "id": row.get("id"),
-            "label": row.get("label"),
-            "facebookPageId": row.get("facebook_page_id"),
-            "instagramUserId": row.get("instagram_user_id"),
-            "adAccountId": row.get("ad_account_id"),
-            "profilePictureUrl": row.get("profile_picture_url"),
-            "pagePictureUrl": row.get("page_picture_url"),
-            "source": row.get("source") or "manual",
-        })
     return jsonify({"accounts": payload})
 
 

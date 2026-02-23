@@ -26,6 +26,7 @@ function normalizeAccount(raw, existing = []) {
     instagramUserId,
     adAccountId,
     instagramUsername,
+    followersCount,
     adAccounts,
     source,
   } = raw;
@@ -43,6 +44,13 @@ function normalizeAccount(raw, existing = []) {
   }
   if (instagramUsername) {
     normalized.instagramUsername = String(instagramUsername).trim();
+  }
+  const followersSource = followersCount ?? raw.followers_count;
+  if (followersSource != null && String(followersSource).trim() !== "") {
+    const parsedFollowers = Number(followersSource);
+    if (Number.isFinite(parsedFollowers)) {
+      normalized.followersCount = Math.max(0, Math.round(parsedFollowers));
+    }
   }
   const pagePictureSource = raw.pagePictureUrl ?? raw.page_picture_url;
   if (pagePictureSource) {
@@ -216,6 +224,9 @@ export function AccountsProvider({ children }) {
               }
               if (metaAccount.pagePictureUrl) {
                 merged.pagePictureUrl = metaAccount.pagePictureUrl;
+              }
+              if (metaAccount.followersCount != null) {
+                merged.followersCount = metaAccount.followersCount;
               }
               merged.source = current.source || metaAccount.source;
 

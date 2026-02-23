@@ -330,7 +330,11 @@ const { setTopbarConfig, resetTopbarConfig } = outletContext;
             }
           }
 
-          const resolvedFollowersTotal = accountFollowers ?? followersTotal ?? null;
+          const resolvedFollowersTotal =
+            accountFollowers
+            ?? followersTotal
+            ?? parseFiniteNumber(accountConfig?.followersCount)
+            ?? null;
           if (resolvedFollowersTotal != null && followerCounts.end == null) {
             followerCounts.end = resolvedFollowersTotal;
           }

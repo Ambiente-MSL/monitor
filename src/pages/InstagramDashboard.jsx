@@ -2711,6 +2711,7 @@ const profileViewsMetric = useMemo(() => {
     if (metricsLoading) return null;
     const candidateValues = [
       activeSnapshot?.followers,
+      accountConfig?.followersCount,
       accountInfo?.followers_count,
       accountInfo?.followers,
       getNestedValue(accountInfo, ["followers", "count"]),
@@ -2737,6 +2738,7 @@ const profileViewsMetric = useMemo(() => {
 
     return zeroFallback ?? null;
   }, [
+    accountConfig?.followersCount,
     accountInfo,
     activeSnapshot,
     followerCounts,
