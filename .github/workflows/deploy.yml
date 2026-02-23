@@ -27,11 +27,25 @@ jobs:
 
           if command -v flock >/dev/null 2>&1; then
             exec 9>/tmp/monitor_deploy.lock
-            if ! flock -n 9; then
-              echo "ERROR: outro deploy ja esta em execucao no servidor."
+            echo "Aguardando lock de deploy (max 10m)..."
+            if ! flock -w 600 9; then
+              echo "ERROR: outro deploy ainda esta em execucao no servidor."
+              if [ -f /tmp/monitor_deploy.pid ]; then
+                ACTIVE_PID="$(cat /tmp/monitor_deploy.pid 2>/dev/null || true)"
+                if [ -n "${ACTIVE_PID}" ]; then
+                  echo "Processo que segurou lock:"
+                  ps -p "${ACTIVE_PID}" -o pid,etime,cmd || true
+                fi
+              fi
               exit 1
             fi
+            echo "$$" > /tmp/monitor_deploy.pid
           fi
+
+          cleanup_lock_pid() {
+            rm -f /tmp/monitor_deploy.pid || true
+          }
+          trap cleanup_lock_pid EXIT
 
           on_error() {
             echo "ERROR: deploy falhou. Estado atual:"
@@ -87,14 +101,14 @@ jobs:
           df -h || true
 
           echo "Build backend (imagem base usada por backend + worker):"
-          time docker compose --progress=plain build --pull backend
+          time docker compose --progress=plain build backend
 
           if [ "${SHOULD_BUILD_FRONTEND}" -eq 1 ]; then
             echo "Build frontend:"
             if command -v timeout >/dev/null 2>&1; then
-              time timeout 25m docker compose --progress=plain build --pull frontend
+              time timeout 35m docker compose --progress=plain build frontend
             else
-              time docker compose --progress=plain build --pull frontend
+              time docker compose --progress=plain build frontend
             fi
           else
             echo "Sem alteracoes de frontend. Pulando build do frontend."
