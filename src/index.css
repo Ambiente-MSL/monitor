@@ -11199,6 +11199,10 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   align-items: start;
 }
 
+.ig-clean-grid--detail {
+  grid-template-columns: minmax(320px, 1fr) minmax(0, 2fr);
+}
+
 .ig-clean-grid__left {
   display: flex;
   flex-direction: column;
@@ -11359,6 +11363,13 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 24px;
+}
+
+.ig-profile-vertical__stats-grid--overview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  margin-top: 20px;
 }
 
 .ig-overview-stat {
@@ -12177,6 +12188,46 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
   margin-top: 16px;
+}
+
+.ig-detail-panel {
+  width: 100%;
+  min-width: 0;
+}
+
+.ig-detail-kpi-grid {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.ig-detail-kpi-grid--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ig-detail-kpi-grid--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ig-detail-kpi-grid--four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.ig-detail-kpi-grid--compact {
+  gap: 12px;
+}
+
+.ig-detail-breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ig-detail-flex-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
 .ig-card-white {
@@ -13506,6 +13557,10 @@ body:has(.facebook-dashboard--clean) .app-main__content {
     grid-template-columns: 1fr;
   }
 
+  .ig-clean-grid--detail {
+    grid-template-columns: 1fr;
+  }
+
   .ig-clean-grid-triple {
     grid-template-columns: 1fr;
   }
@@ -13515,10 +13570,46 @@ body:has(.facebook-dashboard--clean) .app-main__content {
   }
 }
 
+@media (max-width: 1024px) {
+  .ig-detail-kpi-grid--three,
+  .ig-detail-kpi-grid--four {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 768px) {
   .ig-clean-header {
     flex-direction: column;
     gap: 16px;
+  }
+
+  .instagram-dashboard--clean .ig-clean-grid,
+  .instagram-dashboard--clean .ig-clean-grid--detail {
+    gap: 16px;
+  }
+
+  .instagram-dashboard--clean .ig-profile-vertical__body {
+    padding: 84px 16px 16px;
+  }
+
+  .instagram-dashboard--clean .ig-profile-vertical__stats-grid--overview {
+    margin-top: 16px;
+  }
+
+  .instagram-dashboard--clean .ig-overview-stat__value {
+    font-size: clamp(20px, 6vw, 26px);
+  }
+
+  .ig-detail-kpi-grid--two,
+  .ig-detail-kpi-grid--three,
+  .ig-detail-kpi-grid--four,
+  .ig-detail-breakdown-grid,
+  .ig-detail-flex-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .instagram-dashboard--clean .ig-engagement-mini-grid {
+    grid-template-columns: 1fr;
   }
 
   .ig-top-posts-grid {

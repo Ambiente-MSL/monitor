@@ -3750,6 +3750,12 @@ const profileViewsMetric = useMemo(() => {
     () => [metricsNotice, postsNotice].filter(Boolean),
     [metricsNotice, postsNotice],
   );
+  const isAnyDetailPanelOpen = showDetailedView
+    || showFollowersDetail
+    || showInteractionsDetail
+    || showPostsDetail
+    || showWordCloudDetail
+    || showCitiesDetail;
 
   return (
     <div className="instagram-dashboard instagram-dashboard--clean">
@@ -3815,7 +3821,7 @@ const profileViewsMetric = useMemo(() => {
         </div>
 
         {/* Grid Principal */}
-          <div className="ig-clean-grid" style={(showDetailedView || showFollowersDetail || showInteractionsDetail || showPostsDetail || showWordCloudDetail || showCitiesDetail) ? { display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' } : {}}>
+          <div className={`ig-clean-grid${isAnyDetailPanelOpen ? " ig-clean-grid--detail" : ""}`}>
           <div className="ig-clean-grid__left">
             <section className="ig-profile-vertical">
               <div
@@ -3947,7 +3953,7 @@ const profileViewsMetric = useMemo(() => {
                   @{accountInfo?.username || accountInfo?.name || "insta_sample"}
                 </h3>
 
-                <div className="ig-profile-vertical__stats-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0', marginTop: '20px' }}>
+                <div className="ig-profile-vertical__stats-grid ig-profile-vertical__stats-grid--overview">
                   <div className="ig-overview-stat" style={{ paddingBottom: '16px', borderBottom: '1px solid var(--stroke)' }}>
                     <div className="ig-overview-stat__trend" style={{ visibility: 'hidden' }}>
                       <span>&nbsp;</span>
@@ -4079,12 +4085,12 @@ const profileViewsMetric = useMemo(() => {
                         <div className="ig-engagement-summary__label">Taxa de engajamento</div>
                       </div>
 
-                      <div className="ig-engagement-mini-grid" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-start' }}>
-                        <div className="ig-engagement-mini-card ig-engagement-mini-card--teal" style={{ flex: '0 1 auto', minWidth: '140px' }}>
+                      <div className="ig-engagement-mini-grid">
+                        <div className="ig-engagement-mini-card ig-engagement-mini-card--teal">
                           <span className="ig-engagement-mini-card__label">Melhor horário para postar</span>
                           <span className="ig-engagement-mini-card__value">{bestTimes.bestTimeRange || "--"}</span>
                         </div>
-                        <div className="ig-engagement-mini-card ig-engagement-mini-card--pink" style={{ flex: '0 1 auto', minWidth: '140px' }}>
+                        <div className="ig-engagement-mini-card ig-engagement-mini-card--pink">
                           <span className="ig-engagement-mini-card__label">Melhor dia</span>
                           <span className="ig-engagement-mini-card__value">{bestTimes.bestDay || "--"}</span>
                         </div>
@@ -4277,19 +4283,21 @@ const profileViewsMetric = useMemo(() => {
             {/* DESATIVADO TEMPORARIAMENTE — Crescimento de Seguidores detail */}
             {false && showFollowersDetail ? (
               /* Conteúdo detalhado de Crescimento de Seguidores */
-              <div className="ig-followers-detail-panel">
+              <div className="ig-followers-detail-panel ig-detail-panel">
                 {/* Header com botão voltar */}
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '12px',
                   marginBottom: '24px',
                   padding: '16px 20px',
                   background: 'linear-gradient(135deg, #c084fc 0%, #a855f7 100%)',
                   borderRadius: '16px',
                   color: 'white'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                     <button
                       onClick={handleBackToDashboard}
                       style={{
@@ -4318,12 +4326,7 @@ const profileViewsMetric = useMemo(() => {
                 </div>
 
                 {/* KPIs */}
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(3, 1fr)',
-                  gap: '16px',
-                  marginBottom: '24px'
-                }}>
+                <div className="ig-detail-kpi-grid ig-detail-kpi-grid--three">
                   <div className="ig-card-white" style={{ padding: '20px', textAlign: 'center' }}>
                     <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--fg)' }}>
                       {formatNumber(totalFollowers ?? 0)}
@@ -4412,7 +4415,7 @@ const profileViewsMetric = useMemo(() => {
                 </section>
 
                 {/* Grid com Gênero e Faixa Etária */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', marginBottom: '24px' }}>
+                <div className="ig-detail-kpi-grid ig-detail-kpi-grid--two">
                   {/* Gênero */}
                   <section className="ig-card-white">
                     <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--stroke)' }}>
@@ -4569,19 +4572,21 @@ const profileViewsMetric = useMemo(() => {
               </div>
             ) : showDetailedView ? (
               /* Conteúdo detalhado de Visualizações */
-              <div className="ig-views-detail-panel">
+              <div className="ig-views-detail-panel ig-detail-panel">
                 {/* Header com botão voltar */}
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '12px',
                   marginBottom: '24px',
                   padding: '16px 20px',
                   background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
                   borderRadius: '16px',
                   color: 'white'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                     <button
                       onClick={handleBackToDashboard}
                       style={{
@@ -4610,12 +4615,7 @@ const profileViewsMetric = useMemo(() => {
                 </div>
 
                 {/* KPIs */}
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(4, 1fr)',
-                  gap: '16px',
-                  marginBottom: '24px'
-                }}>
+                <div className="ig-detail-kpi-grid ig-detail-kpi-grid--four">
                   <div className="ig-card-white ig-kpi-hover" style={{ padding: '20px', textAlign: 'center' }}>
                     <div className="ig-kpi-icon" style={{ background: 'rgba(99, 102, 241, 0.12)', margin: '0 auto 10px' }}>
                       <Eye size={20} color="#6366f1" />
@@ -4821,19 +4821,21 @@ const profileViewsMetric = useMemo(() => {
               </div>
             ) : showInteractionsDetail ? (
               /* Conteúdo detalhado de Interações */
-              <div className="ig-interactions-detail-panel">
+              <div className="ig-interactions-detail-panel ig-detail-panel">
                 {/* Header com botão voltar */}
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '12px',
                   marginBottom: '24px',
                   padding: '16px 20px',
                   background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
                   borderRadius: '16px',
                   color: 'white'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                     <button
                       onClick={handleBackToDashboard}
                       style={{
@@ -4862,12 +4864,7 @@ const profileViewsMetric = useMemo(() => {
                 </div>
 
                 {/* KPIs */}
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(2, 1fr)',
-                  gap: '16px',
-                  marginBottom: '24px'
-                }}>
+                <div className="ig-detail-kpi-grid ig-detail-kpi-grid--two">
                   <div className="ig-card-white ig-kpi-hover" style={{ padding: '20px', textAlign: 'center' }}>
                     <div className="ig-kpi-icon" style={{ background: 'rgba(236, 72, 153, 0.12)', margin: '0 auto 10px' }}>
                       <Zap size={20} color="#ec4899" />
@@ -4898,7 +4895,7 @@ const profileViewsMetric = useMemo(() => {
                     </h4>
                   </div>
                   <div style={{ padding: '16px 20px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                    <div className="ig-detail-breakdown-grid">
                       <div className="ig-breakdown-hover" style={{ padding: '12px', background: '#fef2f2', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <Heart size={18} color="#ef4444" />
@@ -5022,7 +5019,7 @@ const profileViewsMetric = useMemo(() => {
                   </div>
                 </section>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+                <div className="ig-detail-flex-grid">
                   {/* Gráfico de Pizza */}
                   <section className="ig-card-white">
                     <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--stroke)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
@@ -5198,19 +5195,21 @@ const profileViewsMetric = useMemo(() => {
               </div>
             ) : showPostsDetail ? (
               /* Conteúdo detalhado de Posts */
-              <div className="ig-posts-detail-panel">
+              <div className="ig-posts-detail-panel ig-detail-panel">
                 {/* Header com botão voltar */}
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '12px',
                   marginBottom: '24px',
                   padding: '16px 20px',
                   background: 'linear-gradient(135deg, #f97316 0%, #fb923c 100%)',
                   borderRadius: '16px',
                   color: 'white'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                     <button
                       onClick={handleBackToDashboard}
                       style={{
@@ -5239,12 +5238,7 @@ const profileViewsMetric = useMemo(() => {
                 </div>
 
                 {/* KPIs de Posts */}
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(3, 1fr)',
-                  gap: '12px',
-                  marginBottom: '24px'
-                }}>
+                <div className="ig-detail-kpi-grid ig-detail-kpi-grid--three ig-detail-kpi-grid--compact">
                   <div className="ig-card-white ig-kpi-hover" style={{ padding: '16px', textAlign: 'center' }}>
                     <div className="ig-kpi-icon" style={{ background: 'rgba(249, 115, 22, 0.12)', margin: '0 auto 8px' }}>
                       <FileText size={18} color="#f97316" />
@@ -5330,19 +5324,21 @@ const profileViewsMetric = useMemo(() => {
               </div>
             ) : showWordCloudDetail ? (
               /* Conteúdo detalhado de Palavras-chave */
-              <div className="ig-wordcloud-detail-panel">
+              <div className="ig-wordcloud-detail-panel ig-detail-panel">
                 {/* Header com botão voltar */}
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '12px',
                   marginBottom: '24px',
                   padding: '16px 20px',
                   background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
                   borderRadius: '16px',
                   color: 'white'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                     <button
                       onClick={handleBackToDashboard}
                       style={{
@@ -5376,12 +5372,7 @@ const profileViewsMetric = useMemo(() => {
 
                 {/* KPIs */}
                 {wordCloudDetails && !wordCloudDetailsLoading && !wordCloudDetailsError && (
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(2, 1fr)',
-                    gap: '16px',
-                    marginBottom: '24px'
-                  }}>
+                  <div className="ig-detail-kpi-grid ig-detail-kpi-grid--two">
                     <div className="ig-card-white ig-kpi-hover" style={{ padding: '20px', textAlign: 'center' }}>
                       <div className="ig-kpi-icon" style={{ background: 'rgba(220, 38, 38, 0.12)', margin: '0 auto 10px' }}>
                         <Hash size={20} color="#dc2626" />
@@ -5529,19 +5520,21 @@ const profileViewsMetric = useMemo(() => {
               </div>
             ) : showCitiesDetail ? (
               /* Conteúdo detalhado de Top Cidades */
-              <div className="ig-cities-detail-panel">
+              <div className="ig-cities-detail-panel ig-detail-panel">
                 {/* Header com botão voltar */}
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '12px',
                   marginBottom: '24px',
                   padding: '16px 20px',
                   background: 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',
                   borderRadius: '16px',
                   color: 'white'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                     <button
                       onClick={handleBackToDashboard}
                       style={{
@@ -5588,12 +5581,7 @@ const profileViewsMetric = useMemo(() => {
                 </div>
 
                 {/* KPIs de Resumo */}
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(3, 1fr)',
-                  gap: '16px',
-                  marginBottom: '24px'
-                }}>
+                <div className="ig-detail-kpi-grid ig-detail-kpi-grid--three">
                   <div className="ig-card-white ig-kpi-hover" style={{ padding: '20px', textAlign: 'center' }}>
                     <div className="ig-kpi-icon" style={{ background: 'rgba(59, 130, 246, 0.12)', margin: '0 auto 10px' }}>
                       <MapPin size={20} color="#3b82f6" />
@@ -6396,6 +6384,7 @@ const profileViewsMetric = useMemo(() => {
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
+                flexWrap: 'wrap',
                 gap: '20px',
                 padding: '16px 16px',
                 width: '100%'
@@ -6423,7 +6412,8 @@ const profileViewsMetric = useMemo(() => {
                   gridTemplateColumns: 'repeat(2, 1fr)',
                   gridTemplateRows: 'repeat(2, 1fr)',
                   gap: '8px',
-                  flex: 1
+                  flex: 1,
+                  minWidth: 0
                 }}>
                   <div style={{
                     padding: '8px 8px',
@@ -6509,6 +6499,7 @@ const profileViewsMetric = useMemo(() => {
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
+                flexWrap: 'wrap',
                 gap: '20px',
                 padding: '16px 16px 16px'
               }}>
@@ -6534,7 +6525,8 @@ const profileViewsMetric = useMemo(() => {
                   display: 'grid',
                   gridTemplateColumns: 'repeat(2, 1fr)',
                   gap: '8px',
-                  flex: 1
+                  flex: 1,
+                  minWidth: 0
                 }}>
                   <div style={{
                     padding: '8px 8px',
