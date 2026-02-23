@@ -46,6 +46,7 @@ jobs:
           echo "========================================="
 
           cd /root/monitor || exit 1
+          PREV_COMMIT="$(git rev-parse HEAD 2>/dev/null || true)"
 
           if [ ! -f deploy/backend.env ]; then
             echo "ERROR: arquivo deploy/backend.env nao encontrado em /root/monitor/deploy/backend.env"
@@ -53,11 +54,24 @@ jobs:
           fi
 
           echo "Sincronizando com origin/main..."
-          git fetch --depth=1 origin main
+          git fetch --depth=1 --no-show-forced-updates origin main
           git reset --hard origin/main
 
           echo "Ultimo commit:"
           git log -1 --oneline
+          CURRENT_COMMIT="$(git rev-parse HEAD)"
+          echo "Commit anterior: ${PREV_COMMIT:-N/A}"
+          echo "Commit atual: ${CURRENT_COMMIT}"
+
+          SHOULD_BUILD_FRONTEND=1
+          if [ -n "${PREV_COMMIT}" ]; then
+            CHANGED_FILES="$(git diff --name-only "${PREV_COMMIT}" "${CURRENT_COMMIT}" || true)"
+            echo "Arquivos alterados desde o deploy anterior:"
+            echo "${CHANGED_FILES:-<nenhum>}"
+            if ! echo "${CHANGED_FILES}" | grep -Eq '^(src/|public/|package\.json$|package-lock\.json$|Dockerfile\.frontend$|nginx\.conf$|\.dockerignore$)'; then
+              SHOULD_BUILD_FRONTEND=0
+            fi
+          fi
 
           export DOCKER_BUILDKIT=1
           export COMPOSE_DOCKER_CLI_BUILD=1
@@ -68,9 +82,23 @@ jobs:
 
           echo "Uso de disco antes do build:"
           docker system df || true
+          echo "Recursos do host antes do build:"
+          free -h || true
+          df -h || true
 
-          echo "Build das imagens (logs detalhados):"
-          time docker compose build --pull --progress=plain backend worker frontend
+          echo "Build backend (imagem base usada por backend + worker):"
+          time docker compose --progress=plain build --pull backend
+
+          if [ "${SHOULD_BUILD_FRONTEND}" -eq 1 ]; then
+            echo "Build frontend:"
+            if command -v timeout >/dev/null 2>&1; then
+              time timeout 25m docker compose --progress=plain build --pull frontend
+            else
+              time docker compose --progress=plain build --pull frontend
+            fi
+          else
+            echo "Sem alteracoes de frontend. Pulando build do frontend."
+          fi
 
           echo "Subindo containers..."
           docker compose up -d --remove-orphans

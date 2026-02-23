@@ -1,8 +1,11 @@
 # Build
 FROM node:20-alpine AS build
 WORKDIR /app
+ENV NODE_OPTIONS=--max_old_space_size=2048 \
+    GENERATE_SOURCEMAP=false \
+    BROWSERSLIST_IGNORE_OLD_DATA=1
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --no-audit --no-fund
 COPY . .
 # Variáveis de build (CRA usa REACT_APP_*)
 ARG REACT_APP_API_URL
