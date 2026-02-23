@@ -21,7 +21,7 @@ jobs:
         host: ${{ secrets.SERVER_HOST }}
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        command_timeout: 45m
+        command_timeout: 90m
         script: |
           set -euo pipefail
 
@@ -51,7 +51,7 @@ jobs:
             echo "ERROR: deploy falhou. Estado atual:"
             docker compose ps || true
             echo "Ultimos logs (backend/worker/frontend):"
-            docker compose logs --tail=200 backend worker frontend || true
+            docker compose logs --since=20m --tail=200 backend worker frontend || true
           }
           trap on_error ERR
 
@@ -105,11 +105,7 @@ jobs:
 
           if [ "${SHOULD_BUILD_FRONTEND}" -eq 1 ]; then
             echo "Build frontend:"
-            if command -v timeout >/dev/null 2>&1; then
-              time timeout 35m docker compose --progress=plain build frontend
-            else
-              time docker compose --progress=plain build frontend
-            fi
+            time docker compose --progress=plain build frontend
           else
             echo "Sem alteracoes de frontend. Pulando build do frontend."
           fi
