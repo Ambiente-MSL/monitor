@@ -94,6 +94,24 @@ export default function Topbar({
 
   const displayNotification = Number.isFinite(notificationCount) && notificationCount > 0;
 
+  const handleAccountContainerClick = (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    if (
+      target.closest(".account-dropdown__trigger")
+      || target.closest(".account-dropdown__label")
+      || target.closest(".account-dropdown__list")
+      || target.closest(".account-dropdown__add-form")
+      || target.closest("button, a, input, textarea, select")
+    ) {
+      return;
+    }
+    const trigger = event.currentTarget.querySelector(".account-dropdown__trigger");
+    if (!trigger) return;
+    if (trigger.getAttribute("aria-expanded") === "true") return;
+    trigger.click();
+  };
+
   return (
     <header className={`topbar ${className}`.trim()}>
       <div className="topbar__inner">
@@ -132,7 +150,7 @@ export default function Topbar({
             </>
           )}
 
-          <div className="topbar__account">
+          <div className="topbar__account" onClick={handleAccountContainerClick}>
             <AccountSelect />
           </div>
         </div>

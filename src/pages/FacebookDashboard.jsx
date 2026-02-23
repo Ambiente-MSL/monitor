@@ -79,7 +79,7 @@ const FB_POSTS_INITIAL_LIMIT = 8;
 const FB_POSTS_DEFER_MS = 400;
 const FB_AUDIENCE_DEFER_MS = 1000;
 const FB_WORDCLOUD_DEFER_MS = 1600;
-const FB_FOLLOWERS_DEFER_MS = 1200;
+const FB_FOLLOWERS_DEFER_MS = 0;
 
 const WEEKDAY_LABELS = ["D", "S", "T", "Q", "Q", "S", "S"];
 const DEFAULT_WEEKLY_FOLLOWERS = [3, 4, 5, 6, 7, 5, 4];
@@ -759,6 +759,95 @@ useEffect(() => {
     const controller = new AbortController();
     const shouldBlockUi = !hasCachedOverview;
 
+    const hasMetricValue = (metricsList, metricKey) => (
+      Array.isArray(metricsList)
+      && metricsList.some((metric) => (
+        metric?.key === metricKey
+        && metric?.value !== undefined
+        && metric?.value !== null
+        && metric?.value !== ""
+      ))
+    );
+
+    const hasPrimaryOverviewMetrics = (metricsList) => (
+      hasMetricValue(metricsList, "followers_total")
+      || hasMetricValue(metricsList, "reach")
+      || hasMetricValue(metricsList, "post_engagement_total")
+      || hasMetricValue(metricsList, "page_views")
+    );
+
+    const mergeFallbackMetrics = (fallbackMetrics) => {
+      if (!Array.isArray(fallbackMetrics) || !fallbackMetrics.length) return;
+      setPageMetrics((previous) => {
+        const byKey = new Map();
+        (Array.isArray(previous) ? previous : []).forEach((metric) => {
+          if (!metric?.key) return;
+          byKey.set(metric.key, metric);
+        });
+        fallbackMetrics.forEach((metric) => {
+          if (!metric?.key) return;
+          const current = byKey.get(metric.key);
+          const currentHasValue = (
+            current?.value !== undefined
+            && current?.value !== null
+            && current?.value !== ""
+          );
+          if (currentHasValue) return;
+          byKey.set(metric.key, {
+            ...(current || {}),
+            ...metric,
+            deltaPct: current?.deltaPct ?? metric?.deltaPct ?? null,
+          });
+        });
+        return Array.from(byKey.values());
+      });
+    };
+
+    const hydrateEssentialFallbackMetrics = async () => {
+      const params = new URLSearchParams();
+      params.set("pageId", accountConfig.facebookPageId);
+      if (sinceParam) params.set("since", sinceParam);
+      if (untilParam) params.set("until", untilParam);
+
+      const [followersResult, reachResult] = await Promise.allSettled([
+        apiFetch(`/api/facebook/followers?${params.toString()}`, { timeoutMs: FB_DEFAULT_TIMEOUT_MS }),
+        apiFetch(`/api/facebook/reach?${params.toString()}`, { timeoutMs: FB_DEFAULT_TIMEOUT_MS }),
+      ]);
+      if (isStale()) return false;
+
+      const fallbackMetrics = [];
+
+      if (followersResult.status === "fulfilled") {
+        const followersValue = Number(followersResult.value?.followers?.value);
+        if (Number.isFinite(followersValue)) {
+          setFollowersOverride(followersValue);
+          setDashboardCache(followersCacheKey, { value: followersValue });
+          fallbackMetrics.push({
+            key: "followers_total",
+            label: "Seguidores da pagina",
+            value: followersValue,
+            deltaPct: null,
+          });
+        }
+      }
+
+      if (reachResult.status === "fulfilled") {
+        const reachValue = Number(reachResult.value?.reach?.value);
+        if (Number.isFinite(reachValue)) {
+          fallbackMetrics.push({
+            key: "reach",
+            label: "Alcance organico",
+            value: reachValue,
+            deltaPct: null,
+          });
+        }
+      }
+
+      if (!fallbackMetrics.length) return false;
+      mergeFallbackMetrics(fallbackMetrics);
+      return true;
+    };
+
     const loadOverviewMetrics = async () => {
       if (shouldBlockUi) {
         setOverviewLoading(true);
@@ -813,29 +902,36 @@ useEffect(() => {
         setReachSeries(reachSeriesPayload);
         setContentGrowthSeries(contentGrowthSeriesPayload);
         setOverviewSource(json);
+        if (!hasPrimaryOverviewMetrics(fetchedMetrics)) {
+          await hydrateEssentialFallbackMetrics();
+        }
         mergeDashboardCache(overviewCacheKey, {
           pageMetrics: fetchedMetrics,
           netFollowersSeries: fetchedFollowersSeries,
           reachSeries: reachSeriesPayload,
           contentGrowthSeries: contentGrowthSeriesPayload,
           overviewSource: json,
-          followersOverride,
           sync: syncInfo,
         });
       } catch (err) {
         if (controller.signal.aborted || isStale()) return;
         console.error(err);
         if (shouldBlockUi) {
-          setPageMetrics([]);
-          setNetFollowersSeries([]);
-          setReachSeries([]);
-          setContentGrowthSeries([]);
-          setOverviewSource(null);
-          setPageError(
-            isTimeoutError(err)
-              ? "Tempo esgotado ao carregar metricas do Facebook."
-              : err.message || "Nao foi possivel carregar as metricas do Facebook.",
-          );
+          const recovered = await hydrateEssentialFallbackMetrics();
+          if (recovered) {
+            setPageError("");
+          } else {
+            setPageMetrics([]);
+            setNetFollowersSeries([]);
+            setReachSeries([]);
+            setContentGrowthSeries([]);
+            setOverviewSource(null);
+            setPageError(
+              isTimeoutError(err)
+                ? "Tempo esgotado ao carregar metricas do Facebook."
+                : err.message || "Nao foi possivel carregar as metricas do Facebook.",
+            );
+          }
         } else {
           setPageError("");
         }
@@ -851,7 +947,7 @@ useEffect(() => {
       cancelled = true;
       controller.abort();
     };
-  }, [accountConfig?.facebookPageId, sinceParam, untilParam, apiFetch, pageCacheKey, overviewCacheKey]);
+  }, [accountConfig?.facebookPageId, sinceParam, untilParam, apiFetch, pageCacheKey, overviewCacheKey, followersCacheKey]);
 
   useEffect(() => {
     if (!accountConfig?.facebookPageId) {
@@ -1155,7 +1251,12 @@ useEffect(() => {
   );
   const engagementValue = extractNumber(
     pageMetricsByKey.post_engagement_total?.value,
-    extractNumber(overviewSource?.engagement?.total, 0),
+    extractNumber(
+      overviewSource?.engagement?.total,
+      Array.isArray(fbPosts)
+        ? fbPosts.reduce((acc, post) => acc + extractNumber(post?.engagementTotal, 0), 0)
+        : 0,
+    ),
   );
   const pageViewsValue = extractNumber(
     pageMetricsByKey.page_views?.value,

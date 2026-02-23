@@ -3990,19 +3990,36 @@ def facebook_metrics():
             )
     except MetaAPIError as err:
         mark_cache_error("facebook_metrics", page_id, since, until, extra, err.args[0], platform="facebook")
-        payload = {
-            "error": err.args[0],
-            "graph": {
-                "status": err.status,
-                "code": err.code,
-                "type": err.error_type,
-            },
-            "meta": {
-                "source": _map_sync_source(None),
-                "sync": _build_sync_meta(None),
-            },
-        }
-        return jsonify(payload), 502
+        fallback = get_latest_cached_payload(
+            "facebook_metrics",
+            page_id,
+            extra=extra,
+            platform="facebook",
+        )
+        if not fallback and extra:
+            fallback = get_latest_cached_payload("facebook_metrics", page_id, platform="facebook")
+        if fallback:
+            payload, meta = fallback
+            meta = dict(meta or {})
+            meta["fallback_error"] = err.args[0] if err.args else "Meta API error"
+            meta["fallback_reason"] = "meta_api_error"
+            meta["requested_since"] = since
+            meta["requested_until"] = until
+            meta["requested_lite"] = bool(lite_flag)
+        else:
+            payload = {
+                "error": err.args[0],
+                "graph": {
+                    "status": err.status,
+                    "code": err.code,
+                    "type": err.error_type,
+                },
+                "meta": {
+                    "source": _map_sync_source(None),
+                    "sync": _build_sync_meta(None),
+                },
+            }
+            return jsonify(payload), 502
     except ValueError as err:
         payload = {
             "error": str(err),
@@ -4012,6 +4029,26 @@ def facebook_metrics():
             },
         }
         return jsonify(payload), 400
+    except Exception as err:  # noqa: BLE001
+        logger.exception("Falha inesperada em facebook_metrics")
+        fallback = get_latest_cached_payload(
+            "facebook_metrics",
+            page_id,
+            extra=extra,
+            platform="facebook",
+        )
+        if not fallback and extra:
+            fallback = get_latest_cached_payload("facebook_metrics", page_id, platform="facebook")
+        if fallback:
+            payload, meta = fallback
+            meta = dict(meta or {})
+            meta["fallback_error"] = str(err)
+            meta["fallback_reason"] = "unexpected_error"
+            meta["requested_since"] = since
+            meta["requested_until"] = until
+            meta["requested_lite"] = bool(lite_flag)
+        else:
+            return jsonify({"error": "Falha ao carregar metricas do Facebook."}), 500
 
     payload_obj = dict(payload or {})
     _enrich_facebook_metrics_payload(payload_obj)
@@ -4143,9 +4180,34 @@ def facebook_followers():
         )
     except MetaAPIError as err:
         mark_cache_error("facebook_metrics", page_id, since, until, None, err.args[0], platform="facebook")
-        return meta_error_response(err)
+        fallback = get_latest_cached_payload(
+            "facebook_metrics",
+            page_id,
+            extra={"lite": True},
+            platform="facebook",
+        )
+        if not fallback:
+            fallback = get_latest_cached_payload("facebook_metrics", page_id, platform="facebook")
+        if fallback:
+            payload, meta = fallback
+        else:
+            return meta_error_response(err)
     except ValueError as err:
         return jsonify({"error": str(err)}), 400
+    except Exception as err:  # noqa: BLE001
+        logger.exception("Falha inesperada em facebook_followers")
+        fallback = get_latest_cached_payload(
+            "facebook_metrics",
+            page_id,
+            extra={"lite": True},
+            platform="facebook",
+        )
+        if not fallback:
+            fallback = get_latest_cached_payload("facebook_metrics", page_id, platform="facebook")
+        if fallback:
+            payload, meta = fallback
+        else:
+            return jsonify({"error": "Nao foi possivel carregar seguidores."}), 500
 
     payload = dict(payload or {})
     _enrich_facebook_metrics_payload(payload)
@@ -4196,9 +4258,34 @@ def facebook_reach():
         )
     except MetaAPIError as err:
         mark_cache_error("facebook_metrics", page_id, since, until, None, err.args[0], platform="facebook")
-        return meta_error_response(err)
+        fallback = get_latest_cached_payload(
+            "facebook_metrics",
+            page_id,
+            extra={"lite": True},
+            platform="facebook",
+        )
+        if not fallback:
+            fallback = get_latest_cached_payload("facebook_metrics", page_id, platform="facebook")
+        if fallback:
+            payload, meta = fallback
+        else:
+            return meta_error_response(err)
     except ValueError as err:
         return jsonify({"error": str(err)}), 400
+    except Exception as err:  # noqa: BLE001
+        logger.exception("Falha inesperada em facebook_reach")
+        fallback = get_latest_cached_payload(
+            "facebook_metrics",
+            page_id,
+            extra={"lite": True},
+            platform="facebook",
+        )
+        if not fallback:
+            fallback = get_latest_cached_payload("facebook_metrics", page_id, platform="facebook")
+        if fallback:
+            payload, meta = fallback
+        else:
+            return jsonify({"error": "Nao foi possivel carregar alcance."}), 500
 
     payload = dict(payload or {})
     _enrich_facebook_metrics_payload(payload)
