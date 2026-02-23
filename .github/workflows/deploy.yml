@@ -15,44 +15,75 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: 🚀 Deploy via SSH
+    - name: Deploy via SSH
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.SERVER_HOST }}
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        command_timeout: 30m
+        command_timeout: 45m
         script: |
-          set -e
+          set -euo pipefail
+
+          if command -v flock >/dev/null 2>&1; then
+            exec 9>/tmp/monitor_deploy.lock
+            if ! flock -n 9; then
+              echo "ERROR: outro deploy ja esta em execucao no servidor."
+              exit 1
+            fi
+          fi
+
+          on_error() {
+            echo "ERROR: deploy falhou. Estado atual:"
+            docker compose ps || true
+            echo "Ultimos logs (backend/worker/frontend):"
+            docker compose logs --tail=200 backend worker frontend || true
+          }
+          trap on_error ERR
 
           echo "========================================="
-          echo "🔄 Iniciando deploy do Monitor"
+          echo "Iniciando deploy do Monitor"
           echo "========================================="
 
           cd /root/monitor || exit 1
 
-          echo "⬇️  Fazendo sync com origin/main..."
-          git fetch origin main
+          if [ ! -f deploy/backend.env ]; then
+            echo "ERROR: arquivo deploy/backend.env nao encontrado em /root/monitor/deploy/backend.env"
+            exit 1
+          fi
+
+          echo "Sincronizando com origin/main..."
+          git fetch --depth=1 origin main
           git reset --hard origin/main
 
-          echo "📝 Último commit:"
+          echo "Ultimo commit:"
           git log -1 --oneline
 
           export DOCKER_BUILDKIT=1
           export COMPOSE_DOCKER_CLI_BUILD=1
 
-          echo "🔨 Build + Up (sem derrubar tudo)..."
-          docker compose up -d --build --remove-orphans
+          echo "Limpando artefatos locais pesados..."
+          rm -rf node_modules build backend/.venv backend/.pytest_cache || true
+          find . -type d -name "__pycache__" -prune -exec rm -rf {} + || true
 
-          echo "⏳ Aguardando containers..."
+          echo "Uso de disco antes do build:"
+          docker system df || true
+
+          echo "Build das imagens (logs detalhados):"
+          time docker compose build --pull --progress=plain backend worker frontend
+
+          echo "Subindo containers..."
+          docker compose up -d --remove-orphans
+
+          echo "Aguardando containers..."
           sleep 5
 
-          echo "📊 Status dos containers:"
+          echo "Status dos containers:"
           docker compose ps
 
-          echo "🧹 Limpeza segura (opcional)..."
+          echo "Limpeza segura (opcional)..."
           docker image prune -f --filter "until=168h"
 
           echo "========================================="
-          echo "✅ Deploy concluído!"
+          echo "Deploy concluido!"
           echo "========================================="
