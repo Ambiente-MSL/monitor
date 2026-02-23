@@ -242,7 +242,7 @@ export default function InstagramPostModal({ post, onClose, accountInfo }) {
           maxWidth: "1100px",
           maxHeight: "90vh",
           width: "100%",
-          background: "white",
+          background: "var(--panel)",
           borderRadius: "12px",
           overflow: "hidden",
           boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)"
@@ -285,7 +285,7 @@ export default function InstagramPostModal({ post, onClose, accountInfo }) {
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              color: "#999",
+              color: "var(--muted)",
               padding: "40px",
               textAlign: "center"
             }}>
@@ -395,7 +395,7 @@ export default function InstagramPostModal({ post, onClose, accountInfo }) {
             maxWidth: "500px",
             display: "flex",
             flexDirection: "column",
-            background: "white"
+            background: "var(--panel)"
           }}
         >
           {/* Header com perfil */}
@@ -403,7 +403,7 @@ export default function InstagramPostModal({ post, onClose, accountInfo }) {
             display: "flex",
             alignItems: "center",
             padding: "16px",
-            borderBottom: "1px solid #efefef",
+            borderBottom: "1px solid var(--stroke)",
             gap: "12px"
           }}>
             {profilePic ? (
@@ -434,11 +434,11 @@ export default function InstagramPostModal({ post, onClose, accountInfo }) {
               </div>
             )}
             <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 600, fontSize: "14px", color: "#262626" }}>
+              <div style={{ fontWeight: 600, fontSize: "14px", color: "var(--fg)" }}>
                 @{username}
               </div>
               {timestamp && (
-                <div style={{ fontSize: "12px", color: "#8e8e8e" }}>
+                <div style={{ fontSize: "12px", color: "var(--muted)" }}>
                   {formatDate(timestamp)}
                 </div>
               )}
@@ -448,7 +448,7 @@ export default function InstagramPostModal({ post, onClose, accountInfo }) {
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                color: "#8e8e8e",
+                color: "var(--muted)",
                 display: "flex",
                 alignItems: "center",
                 gap: "4px",
@@ -472,14 +472,14 @@ export default function InstagramPostModal({ post, onClose, accountInfo }) {
                 margin: 0,
                 fontSize: "14px",
                 lineHeight: 1.5,
-                color: "#262626",
+                color: "var(--fg)",
                 whiteSpace: "pre-wrap",
                 wordBreak: "break-word"
               }}>
                 {caption.length > 500 ? `${caption.slice(0, 500)}...` : caption}
               </p>
             ) : (
-              <p style={{ margin: 0, fontSize: "14px", color: "#8e8e8e", fontStyle: "italic" }}>
+              <p style={{ margin: 0, fontSize: "14px", color: "var(--muted)", fontStyle: "italic" }}>
                 Sem legenda
               </p>
             )}
@@ -494,16 +494,16 @@ export default function InstagramPostModal({ post, onClose, accountInfo }) {
               padding: "12px 16px",
               gap: "16px"
             }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#262626" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--fg)" }}>
                 <Heart size={24} />
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#262626" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--fg)" }}>
                 <MessageCircle size={24} />
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#262626" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--fg)" }}>
                 <Send size={24} />
               </div>
-              <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "6px", color: "#262626" }}>
+              <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "6px", color: "var(--fg)" }}>
                 <Bookmark size={24} />
               </div>
             </div>
@@ -516,44 +516,44 @@ export default function InstagramPostModal({ post, onClose, accountInfo }) {
               gap: "12px"
             }}>
               <div style={{
-                background: "#fafafa",
+                background: "var(--bg-secondary)",
                 borderRadius: "8px",
                 padding: "12px",
                 textAlign: "center"
               }}>
-                <div style={{ fontSize: "20px", fontWeight: 700, color: "#262626" }}>
+                <div style={{ fontSize: "20px", fontWeight: 700, color: "var(--fg)" }}>
                   {formatNumber(likes)}
                 </div>
-                <div style={{ fontSize: "12px", color: "#8e8e8e", marginTop: "2px" }}>
+                <div style={{ fontSize: "12px", color: "var(--muted)", marginTop: "2px" }}>
                   Curtidas
                 </div>
               </div>
 
               <div style={{
-                background: "#fafafa",
+                background: "var(--bg-secondary)",
                 borderRadius: "8px",
                 padding: "12px",
                 textAlign: "center"
               }}>
-                <div style={{ fontSize: "20px", fontWeight: 700, color: "#262626" }}>
+                <div style={{ fontSize: "20px", fontWeight: 700, color: "var(--fg)" }}>
                   {formatNumber(comments)}
                 </div>
-                <div style={{ fontSize: "12px", color: "#8e8e8e", marginTop: "2px" }}>
+                <div style={{ fontSize: "12px", color: "var(--muted)", marginTop: "2px" }}>
                   Comentarios
                 </div>
               </div>
 
               {saves > 0 && (
                 <div style={{
-                  background: "#fafafa",
+                  background: "var(--bg-secondary)",
                   borderRadius: "8px",
                   padding: "12px",
                   textAlign: "center"
                 }}>
-                  <div style={{ fontSize: "20px", fontWeight: 700, color: "#262626" }}>
+                  <div style={{ fontSize: "20px", fontWeight: 700, color: "var(--fg)" }}>
                     {formatNumber(saves)}
                   </div>
-                  <div style={{ fontSize: "12px", color: "#8e8e8e", marginTop: "2px" }}>
+                  <div style={{ fontSize: "12px", color: "var(--muted)", marginTop: "2px" }}>
                     Salvos
                   </div>
                 </div>
@@ -561,15 +561,15 @@ export default function InstagramPostModal({ post, onClose, accountInfo }) {
 
               {shares > 0 && (
                 <div style={{
-                  background: "#fafafa",
+                  background: "var(--bg-secondary)",
                   borderRadius: "8px",
                   padding: "12px",
                   textAlign: "center"
                 }}>
-                  <div style={{ fontSize: "20px", fontWeight: 700, color: "#262626" }}>
+                  <div style={{ fontSize: "20px", fontWeight: 700, color: "var(--fg)" }}>
                     {formatNumber(shares)}
                   </div>
-                  <div style={{ fontSize: "12px", color: "#8e8e8e", marginTop: "2px" }}>
+                  <div style={{ fontSize: "12px", color: "var(--muted)", marginTop: "2px" }}>
                     Compartilhamentos
                   </div>
                 </div>
@@ -577,15 +577,15 @@ export default function InstagramPostModal({ post, onClose, accountInfo }) {
 
               {isVideo && plays > 0 && (
                 <div style={{
-                  background: "#fafafa",
+                  background: "var(--bg-secondary)",
                   borderRadius: "8px",
                   padding: "12px",
                   textAlign: "center"
                 }}>
-                  <div style={{ fontSize: "20px", fontWeight: 700, color: "#262626" }}>
+                  <div style={{ fontSize: "20px", fontWeight: 700, color: "var(--fg)" }}>
                     {formatNumber(plays)}
                   </div>
-                  <div style={{ fontSize: "12px", color: "#8e8e8e", marginTop: "2px" }}>
+                  <div style={{ fontSize: "12px", color: "var(--muted)", marginTop: "2px" }}>
                     Reproducoes
                   </div>
                 </div>
@@ -593,15 +593,15 @@ export default function InstagramPostModal({ post, onClose, accountInfo }) {
 
               {reach > 0 && (
                 <div style={{
-                  background: "#fafafa",
+                  background: "var(--bg-secondary)",
                   borderRadius: "8px",
                   padding: "12px",
                   textAlign: "center"
                 }}>
-                  <div style={{ fontSize: "20px", fontWeight: 700, color: "#262626" }}>
+                  <div style={{ fontSize: "20px", fontWeight: 700, color: "var(--fg)" }}>
                     {formatNumber(reach)}
                   </div>
-                  <div style={{ fontSize: "12px", color: "#8e8e8e", marginTop: "2px" }}>
+                  <div style={{ fontSize: "12px", color: "var(--muted)", marginTop: "2px" }}>
                     Alcance
                   </div>
                 </div>
@@ -609,15 +609,15 @@ export default function InstagramPostModal({ post, onClose, accountInfo }) {
 
               {impressions > 0 && (
                 <div style={{
-                  background: "#fafafa",
+                  background: "var(--bg-secondary)",
                   borderRadius: "8px",
                   padding: "12px",
                   textAlign: "center"
                 }}>
-                  <div style={{ fontSize: "20px", fontWeight: 700, color: "#262626" }}>
+                  <div style={{ fontSize: "20px", fontWeight: 700, color: "var(--fg)" }}>
                     {formatNumber(impressions)}
                   </div>
-                  <div style={{ fontSize: "12px", color: "#8e8e8e", marginTop: "2px" }}>
+                  <div style={{ fontSize: "12px", color: "var(--muted)", marginTop: "2px" }}>
                     Impressoes
                   </div>
                 </div>
@@ -635,8 +635,8 @@ export default function InstagramPostModal({ post, onClose, accountInfo }) {
                 alignItems: "center",
                 justifyContent: "space-between"
               }}>
-                <span style={{ fontSize: "14px", color: "#8e8e8e" }}>Total de interacoes</span>
-                <span style={{ fontSize: "18px", fontWeight: 700, color: "#262626" }}>
+                <span style={{ fontSize: "14px", color: "var(--muted)" }}>Total de interacoes</span>
+                <span style={{ fontSize: "18px", fontWeight: 700, color: "var(--fg)" }}>
                   {formatNumber(likes + comments + shares + saves)}
                 </span>
               </div>

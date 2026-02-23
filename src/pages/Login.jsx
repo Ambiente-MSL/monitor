@@ -270,9 +270,9 @@ export default function Login() {
         </form>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '1.25rem 10% 0.75rem 10%' }}>
-          <div style={{ flex: 1, height: 1, backgroundColor: '#e5e7eb' }} />
-          <span style={{ color: '#6b7280', fontSize: '0.9rem' }}>{t('login.or')}</span>
-          <div style={{ flex: 1, height: 1, backgroundColor: '#e5e7eb' }} />
+          <div style={{ flex: 1, height: 1, backgroundColor: 'var(--stroke)' }} />
+          <span style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>{t('login.or')}</span>
+          <div style={{ flex: 1, height: 1, backgroundColor: 'var(--stroke)' }} />
         </div>
 
         <button
@@ -302,7 +302,7 @@ export default function Login() {
             <a
               href={buildLegalUrl('/legal/terms-of-service.html')}
               className="auth-link"
-              style={{ color: '#223A3A' }}
+              style={{ color: 'var(--muted)' }}
               target="_blank"
               rel="noreferrer"
             >
@@ -311,7 +311,7 @@ export default function Login() {
             <a
               href={buildLegalUrl('/legal/privacy-policy.html')}
               className="auth-link"
-              style={{ color: '#223A3A' }}
+              style={{ color: 'var(--muted)' }}
               target="_blank"
               rel="noreferrer"
             >
@@ -320,7 +320,7 @@ export default function Login() {
             <a
               href={buildLegalUrl('/legal/privacy-policy-en.html')}
               className="auth-link"
-              style={{ color: '#223A3A' }}
+              style={{ color: 'var(--muted)' }}
               target="_blank"
               rel="noreferrer"
             >

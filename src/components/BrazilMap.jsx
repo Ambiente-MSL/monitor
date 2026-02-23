@@ -15,7 +15,7 @@ const STATE_NAME_TO_CODE = {
   'São Paulo': 'SP', 'Sergipe': 'SE', 'Tocantins': 'TO'
 };
 
-const BrazilMap = ({ data = [], colorScale = '#6366f1', emptyColor = '#f3f4f6', strokeColor = '#9ca3af' }) => {
+const BrazilMap = ({ data = [], colorScale = '#6366f1', emptyColor = 'rgba(107,114,128,0.12)', strokeColor = 'rgba(107,114,128,0.4)' }) => {
 
   // Normalizar dados para incluir tanto nome completo quanto sigla
   const normalizedData = useMemo(() => {
@@ -216,7 +216,7 @@ const BrazilMap = ({ data = [], colorScale = '#6366f1', emptyColor = '#f3f4f6', 
                   if (hasData) {
                     e.target.style.strokeWidth = '3';
                     e.target.style.filter = 'brightness(1.1)';
-                    e.target.style.stroke = '#374151';
+                    e.target.style.stroke = 'var(--fg)';
                   }
                 }}
                 onMouseLeave={(e) => {
@@ -237,10 +237,10 @@ const BrazilMap = ({ data = [], colorScale = '#6366f1', emptyColor = '#f3f4f6', 
                 y={labelPos.y}
                 fontSize="11"
                 fontWeight="700"
-                fill={hasData ? '#1f2937' : '#9ca3af'}
+                fill={hasData ? 'var(--fg)' : 'var(--muted)'}
                 textAnchor="middle"
                 pointerEvents="none"
-                style={{ userSelect: 'none', textShadow: '0 1px 2px rgba(255,255,255,0.8)' }}
+                style={{ userSelect: 'none' }}
               >
                 {code}
               </text>

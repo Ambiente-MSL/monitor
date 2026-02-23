@@ -155,7 +155,7 @@ export default function Register() {
             href={buildLegalUrl('/legal/privacy-policy.html')}
             target="_blank"
             rel="noreferrer"
-            style={{ color: '#223A3A', textDecoration: 'underline' }}
+            style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}
           >
             Políticas de privacidade
           </a>
@@ -164,7 +164,7 @@ export default function Register() {
             href={buildLegalUrl('/legal/terms-of-service.html')}
             target="_blank"
             rel="noreferrer"
-            style={{ color: '#223A3A', textDecoration: 'underline' }}
+            style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}
           >
             Termos de Serviço
           </a>.
@@ -172,7 +172,7 @@ export default function Register() {
 
         <p className="auth-footnote" style={{ fontSize: '15px', marginTop: '1rem' }}>
           Ja tem conta?{' '}
-          <Link className="auth-link" style={{ color: '#223A3A', fontSize: '15px', fontWeight: '600' }} to="/login">
+          <Link className="auth-link" style={{ color: 'var(--color-primary)', fontSize: '15px', fontWeight: '600' }} to="/login">
             Fazer login
           </Link>
         </p>

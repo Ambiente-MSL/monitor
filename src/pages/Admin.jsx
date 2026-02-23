@@ -161,10 +161,10 @@ export default function Admin() {
                 <div className="ig-card-white" style={{ textAlign: 'center', padding: '3rem' }}>
                   <Shield size={48} style={{ marginBottom: '1rem', color: '#ec4899' }} />
                   <h2 style={{ marginBottom: '1rem', fontSize: '1.5rem', fontWeight: '600' }}>Acesso Negado</h2>
-                  <p style={{ color: '#6b7280', marginBottom: '0.5rem' }}>
+                  <p style={{ color: 'var(--muted)', marginBottom: '0.5rem' }}>
                     Você não tem permissão para acessar esta página.
                   </p>
-                  <p style={{ fontSize: '0.875rem', color: '#9ca3af' }}>
+                  <p style={{ fontSize: '0.875rem', color: 'var(--muted)' }}>
                     Apenas usuários com role <strong>admin</strong> podem gerenciar usuários.
                   </p>
                 </div>
@@ -185,10 +185,10 @@ export default function Admin() {
           <div className="ig-main-layout">
             <div className="ig-content-area">
               <section className="ig-card-white" style={{ marginBottom: '2rem' }}>
-              <div className="ig-analytics-card__header" style={{ borderBottom: '1px solid #e5e7eb', paddingBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="ig-analytics-card__header" style={{ borderBottom: '1px solid var(--stroke)', paddingBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <h4 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827' }}>Gerenciamento de usuários</h4>
-                  <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                  <h4 style={{ fontSize: '1.25rem', fontWeight: '600', color: 'var(--fg)' }}>Gerenciamento de usuários</h4>
+                  <p style={{ fontSize: '0.875rem', color: 'var(--muted)', marginTop: '0.25rem' }}>
                     Gerencie roles e permissões dos usuários do sistema.
                   </p>
                 </div>
@@ -355,13 +355,13 @@ export default function Admin() {
           <div style={{
             marginTop: '1.5rem',
             padding: '1rem',
-            backgroundColor: '#f9fafb',
-            border: '1px solid #e5e7eb',
+            backgroundColor: 'var(--bg-secondary)',
+            border: '1px solid var(--stroke)',
             borderRadius: '0.5rem',
             fontSize: '0.875rem',
-            color: '#6b7280'
+            color: 'var(--muted)'
           }}>
-            <strong style={{ color: '#111827' }}>Informações sobre roles:</strong>
+            <strong style={{ color: 'var(--fg)' }}>Informações sobre roles:</strong>
             <ul style={{ marginTop: '0.5rem', paddingLeft: '1.5rem' }}>
               <li><strong>Analista:</strong> Pode visualizar dashboards e relatórios.</li>
               <li><strong>Admin:</strong> Tem acesso total, incluindo gerenciamento de usuários.</li>
@@ -388,7 +388,7 @@ export default function Admin() {
             zIndex: 1000
           }}>
             <div style={{
-              backgroundColor: 'white',
+              backgroundColor: 'var(--panel)',
               borderRadius: '0.75rem',
               padding: '2rem',
               maxWidth: '500px',
@@ -406,19 +406,19 @@ export default function Admin() {
                   background: 'none',
                   border: 'none',
                   cursor: 'pointer',
-                  color: '#6b7280'
+                  color: 'var(--muted)'
                 }}
               >
                 <X size={24} />
               </button>
 
-              <h3 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1.5rem', color: '#111827' }}>
+              <h3 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1.5rem', color: 'var(--fg)' }}>
                 Adicionar novo usuário
               </h3>
 
               <form onSubmit={handleAddUser}>
                 <div style={{ marginBottom: '1rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem', color: '#374151' }}>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem', color: 'var(--muted)' }}>
                     Nome completo
                   </label>
                   <input
@@ -430,14 +430,14 @@ export default function Admin() {
                       width: '100%',
                       padding: '0.625rem',
                       borderRadius: '0.375rem',
-                      border: '1px solid #d1d5db',
+                      border: '1px solid var(--stroke)',
                       fontSize: '0.875rem'
                     }}
                   />
                 </div>
 
                 <div style={{ marginBottom: '1rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem', color: '#374151' }}>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem', color: 'var(--muted)' }}>
                     Email
                   </label>
                   <input
@@ -449,14 +449,14 @@ export default function Admin() {
                       width: '100%',
                       padding: '0.625rem',
                       borderRadius: '0.375rem',
-                      border: '1px solid #d1d5db',
+                      border: '1px solid var(--stroke)',
                       fontSize: '0.875rem'
                     }}
                   />
                 </div>
 
                 <div style={{ marginBottom: '1rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem', color: '#374151' }}>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem', color: 'var(--muted)' }}>
                     Senha
                   </label>
                   <input
@@ -469,14 +469,14 @@ export default function Admin() {
                       width: '100%',
                       padding: '0.625rem',
                       borderRadius: '0.375rem',
-                      border: '1px solid #d1d5db',
+                      border: '1px solid var(--stroke)',
                       fontSize: '0.875rem'
                     }}
                   />
                 </div>
 
                 <div style={{ marginBottom: '1.5rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem', color: '#374151' }}>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem', color: 'var(--muted)' }}>
                     Role
                   </label>
                   <select
@@ -486,7 +486,7 @@ export default function Admin() {
                       width: '100%',
                       padding: '0.625rem',
                       borderRadius: '0.375rem',
-                      border: '1px solid #d1d5db',
+                      border: '1px solid var(--stroke)',
                       fontSize: '0.875rem'
                     }}
                   >
@@ -501,8 +501,8 @@ export default function Admin() {
                     onClick={() => setShowAddModal(false)}
                     style={{
                       padding: '0.625rem 1.25rem',
-                      backgroundColor: '#e5e7eb',
-                      color: '#374151',
+                      backgroundColor: 'var(--bg-secondary)',
+                      color: 'var(--fg)',
                       border: 'none',
                       borderRadius: '0.5rem',
                       fontSize: '0.875rem',
@@ -548,7 +548,7 @@ export default function Admin() {
             zIndex: 1000
           }}>
             <div style={{
-              backgroundColor: 'white',
+              backgroundColor: 'var(--panel)',
               borderRadius: '0.75rem',
               padding: '2rem',
               maxWidth: '500px',
@@ -569,19 +569,19 @@ export default function Admin() {
                   background: 'none',
                   border: 'none',
                   cursor: 'pointer',
-                  color: '#6b7280'
+                  color: 'var(--muted)'
                 }}
               >
                 <X size={24} />
               </button>
 
-              <h3 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1.5rem', color: '#111827' }}>
+              <h3 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1.5rem', color: 'var(--fg)' }}>
                 Editar usuário
               </h3>
 
               <form onSubmit={handleEditUser}>
                 <div style={{ marginBottom: '1rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem', color: '#374151' }}>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem', color: 'var(--muted)' }}>
                     Nome completo
                   </label>
                   <input
@@ -593,14 +593,14 @@ export default function Admin() {
                       width: '100%',
                       padding: '0.625rem',
                       borderRadius: '0.375rem',
-                      border: '1px solid #d1d5db',
+                      border: '1px solid var(--stroke)',
                       fontSize: '0.875rem'
                     }}
                   />
                 </div>
 
                 <div style={{ marginBottom: '1rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem', color: '#374151' }}>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem', color: 'var(--muted)' }}>
                     Email
                   </label>
                   <input
@@ -612,14 +612,14 @@ export default function Admin() {
                       width: '100%',
                       padding: '0.625rem',
                       borderRadius: '0.375rem',
-                      border: '1px solid #d1d5db',
+                      border: '1px solid var(--stroke)',
                       fontSize: '0.875rem'
                     }}
                   />
                 </div>
 
                 <div style={{ marginBottom: '1rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem', color: '#374151' }}>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem', color: 'var(--muted)' }}>
                     Nova senha (deixe em branco para manter a atual)
                   </label>
                   <input
@@ -632,14 +632,14 @@ export default function Admin() {
                       width: '100%',
                       padding: '0.625rem',
                       borderRadius: '0.375rem',
-                      border: '1px solid #d1d5db',
+                      border: '1px solid var(--stroke)',
                       fontSize: '0.875rem'
                     }}
                   />
                 </div>
 
                 <div style={{ marginBottom: '1.5rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem', color: '#374151' }}>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem', color: 'var(--muted)' }}>
                     Role
                   </label>
                   <select
@@ -650,7 +650,7 @@ export default function Admin() {
                       width: '100%',
                       padding: '0.625rem',
                       borderRadius: '0.375rem',
-                      border: '1px solid #d1d5db',
+                      border: '1px solid var(--stroke)',
                       fontSize: '0.875rem',
                       cursor: editingUser.id === user?.id ? 'not-allowed' : 'pointer',
                       opacity: editingUser.id === user?.id ? 0.6 : 1
@@ -660,7 +660,7 @@ export default function Admin() {
                     <option value="admin">Admin</option>
                   </select>
                   {editingUser.id === user?.id && (
-                    <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '0.25rem' }}>
                       Você não pode alterar sua própria role
                     </p>
                   )}
@@ -675,8 +675,8 @@ export default function Admin() {
                     }}
                     style={{
                       padding: '0.625rem 1.25rem',
-                      backgroundColor: '#e5e7eb',
-                      color: '#374151',
+                      backgroundColor: 'var(--bg-secondary)',
+                      color: 'var(--fg)',
                       border: 'none',
                       borderRadius: '0.5rem',
                       fontSize: '0.875rem',

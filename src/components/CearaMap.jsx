@@ -5,7 +5,7 @@ import React, { useMemo } from 'react';
  * baseado nos valores de investimento/gasto
  */
 
-const CearaMap = ({ data = [], colorScale = '#6366f1', emptyColor = '#f3f4f6', strokeColor = '#9ca3af' }) => {
+const CearaMap = ({ data = [], colorScale = '#6366f1', emptyColor = 'rgba(107,114,128,0.12)', strokeColor = 'rgba(107,114,128,0.4)' }) => {
 
   // Normalizar dados para municípios
   const normalizedData = useMemo(() => {
@@ -123,7 +123,7 @@ const CearaMap = ({ data = [], colorScale = '#6366f1', emptyColor = '#f3f4f6', s
         <path
           d="M 120 150 L 480 140 L 500 180 L 520 250 L 510 350 L 490 450 L 460 550 L 420 620 L 360 650 L 280 640 L 220 600 L 180 530 L 150 450 L 130 350 L 120 250 Z"
           fill="none"
-          stroke="#d1d5db"
+          stroke="var(--stroke)"
           strokeWidth="2"
           strokeDasharray="4,4"
           opacity="0.3"
@@ -155,7 +155,7 @@ const CearaMap = ({ data = [], colorScale = '#6366f1', emptyColor = '#f3f4f6', s
                   if (hasData) {
                     e.target.style.strokeWidth = '2.5';
                     e.target.style.filter = 'brightness(1.1)';
-                    e.target.style.stroke = '#374151';
+                    e.target.style.stroke = 'var(--fg)';
                   }
                 }}
                 onMouseLeave={(e) => {
@@ -177,10 +177,10 @@ const CearaMap = ({ data = [], colorScale = '#6366f1', emptyColor = '#f3f4f6', s
                   y={labelPos.y}
                   fontSize="9"
                   fontWeight="600"
-                  fill="#1f2937"
+                  fill="var(--fg)"
                   textAnchor="middle"
                   pointerEvents="none"
-                  style={{ userSelect: 'none', textShadow: '0 1px 2px rgba(255,255,255,0.9)' }}
+                  style={{ userSelect: 'none' }}
                 >
                   {cityName.length > 12 ? cityName.substring(0, 10) + '...' : cityName}
                 </text>
@@ -195,7 +195,7 @@ const CearaMap = ({ data = [], colorScale = '#6366f1', emptyColor = '#f3f4f6', s
           y="50"
           fontSize="20"
           fontWeight="700"
-          fill="#374151"
+          fill="var(--fg)"
           textAnchor="middle"
           style={{ userSelect: 'none' }}
         >
