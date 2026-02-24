@@ -8,7 +8,7 @@ import { formatTooltipNumber } from '../lib/chartFormatters';
  *
  * @param {Object} props
  * @param {Array} props.data - Array de objetos {range, value, percentage}
- * @param {string} props.title - Título do gráfico
+ * @param {string} props.title - Título do gráficoa
  */
 export default function AgeChart({ data, title = 'Distribuição por Idade' }) {
   if (!data || data.length === 0) {
