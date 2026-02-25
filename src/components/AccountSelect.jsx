@@ -289,7 +289,7 @@ export default function AccountSelect() {
           <button
             type="button"
             className="account-dropdown__trigger"
-            onClick={() => setIsOpen(!isOpen)}
+            onClick={() => setIsOpen((prev) => !prev)}
             aria-expanded={isOpen}
             aria-haspopup="listbox"
           >

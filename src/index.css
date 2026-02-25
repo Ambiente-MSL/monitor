@@ -1083,13 +1083,14 @@ body.theme-light {
   align-items: center;
   gap: 10px;
   border-radius: 999px;
-  padding: 4px 16px 4px 4px;
+  padding: 0;
   border: 1px solid var(--topbar-stroke);
   background: var(--topbar-surface);
   backdrop-filter: blur(10px);
   color: var(--topbar-fg);
   font-weight: 600;
   height: 40px;
+  cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: visible;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
@@ -1106,6 +1107,7 @@ body.theme-light {
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.3s ease;
 }
 
@@ -3359,6 +3361,8 @@ body.theme-light {
 .topbar__account .account-dropdown {
   min-width: auto;
   position: static;
+  width: 100%;
+  height: 100%;
 }
 
 .topbar__account .account-dropdown__label {
@@ -3366,7 +3370,10 @@ body.theme-light {
 }
 
 .topbar__account .account-dropdown__trigger {
-  padding: 0;
+  width: 100%;
+  height: 100%;
+  padding: 4px 16px 4px 4px;
+  border-radius: 999px;
   background: transparent;
 }
 
