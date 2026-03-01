@@ -1,51 +1,56 @@
 services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: monitor
+      POSTGRES_USER: monitor
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - internal
+
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     image: dashboardsocial-backend:latest
-    container_name: monitor_backend
-    env_file:
-    - ./deploy/backend.env
-    environment:
-      DATABASE_HOST: 172.17.0.1
-      DATABASE_PORT: '5432'
-      FRONTEND_ORIGIN: https://monitor.mslestrategia.com.br
-      FACEBOOK_APP_ID: '2063845937779150'
-      FACEBOOK_APP_SECRET: 817f6bda801530f8f4a50249330618f5
-      META_SYNC_AUTOSTART: '0'
-      WEB_CONCURRENCY: '2'
     restart: unless-stopped
-    ports:
-    - 2025:3001
-    extra_hosts:
-    - host.docker.internal:host-gateway
+    env_file:
+      - ./deploy/backend.env
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: "5432"
+      FRONTEND_ORIGIN: https://monitor.mslestrategia.com.br
+      META_SYNC_AUTOSTART: "0"
+      WEB_CONCURRENCY: "2"
+      # coloque secrets no Dokploy (env), não aqui
+    depends_on:
+      - db
+    expose:
+      - "3001"
     networks:
-    - internal
+      - internal
     healthcheck:
-      test:
-      - CMD
-      - curl
-      - -fsS
-      - http://localhost:3001/api/instagram/posts?limit=1
+      test: ["CMD", "curl", "-fsS", "http://localhost:3001/api/instagram/posts?limit=1"]
       interval: 30s
       timeout: 5s
       retries: 5
       start_period: 120s
+
   worker:
     image: dashboardsocial-backend:latest
-    container_name: monitor_worker
-    env_file:
-    - ./deploy/backend.env
-    command: python scheduler_runner.py
     restart: unless-stopped
+    env_file:
+      - ./deploy/backend.env
+    command: python scheduler_runner.py
     depends_on:
-    - backend
+      - backend
+      - db
     networks:
-    - internal
-    environment:
-      FACEBOOK_APP_ID: '2063845937779150'
-      FACEBOOK_APP_SECRET: 817f6bda801530f8f4a50249330618f5
+      - internal
+
   frontend:
     build:
       context: .
@@ -53,13 +58,16 @@ services:
       args:
         REACT_APP_API_URL: https://monitor.mslestrategia.com.br
     image: dashboardsocial-frontend:latest
-    container_name: monitor_frontend
     restart: unless-stopped
     depends_on:
-    - backend
-    ports:
-    - 2024:80
+      - backend
+    expose:
+      - "80"
     networks:
-    - internal
+      - internal
+
 networks:
-  internal: null
+  internal:
+
+volumes:
+  postgres_data:
