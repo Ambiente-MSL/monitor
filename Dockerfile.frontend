@@ -8,12 +8,20 @@ ENV NODE_OPTIONS=--max_old_space_size=2048 \
 COPY package*.json ./
 RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
 COPY . .
-# Variáveis de build (CRA usa REACT_APP_*)
+# Variaveis de build (CRA usa REACT_APP_*)
 ARG REACT_APP_API_URL
-ENV REACT_APP_API_URL=$REACT_APP_API_URL
+ARG REACT_APP_FACEBOOK_APP_ID
+ARG REACT_APP_FACEBOOK_CONFIG_ID
+ARG REACT_APP_LEGAL_BASE_URL
+ARG REACT_APP_BACKEND_URL
+ENV REACT_APP_API_URL=$REACT_APP_API_URL \
+    REACT_APP_FACEBOOK_APP_ID=$REACT_APP_FACEBOOK_APP_ID \
+    REACT_APP_FACEBOOK_CONFIG_ID=$REACT_APP_FACEBOOK_CONFIG_ID \
+    REACT_APP_LEGAL_BASE_URL=$REACT_APP_LEGAL_BASE_URL \
+    REACT_APP_BACKEND_URL=$REACT_APP_BACKEND_URL
 RUN npm run build
 
-# Serve estático
+# Serve estatico
 FROM nginx:alpine AS serve
 COPY --from=build /app/build /usr/share/nginx/html
 # SPA fallback

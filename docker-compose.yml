@@ -1,39 +1,48 @@
-services:
-  db:
-    image: postgres:16
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: monitor
-      POSTGRES_USER: monitor
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - internal
+x-backend-common-env: &backend-common-env
+  DATABASE_HOST: ${DATABASE_HOST:-}
+  DATABASE_PORT: ${DATABASE_PORT:-5432}
+  DATABASE_NAME: ${DATABASE_NAME:-}
+  DATABASE_USER: ${DATABASE_USER:-}
+  DATABASE_PASSWORD: ${DATABASE_PASSWORD:-}
+  DATABASE_SSLMODE: ${DATABASE_SSLMODE:-disable}
+  DATABASE_POOL_MIN: ${DATABASE_POOL_MIN:-1}
+  DATABASE_POOL_MAX: ${DATABASE_POOL_MAX:-10}
+  AUTH_SECRET_KEY: ${AUTH_SECRET_KEY:-}
+  AUTH_TOKEN_TTL_SECONDS: ${AUTH_TOKEN_TTL_SECONDS:-86400}
+  META_GRAPH_VERSION: ${META_GRAPH_VERSION:-v23.0}
+  META_SYSTEM_USER_TOKEN: ${META_SYSTEM_USER_TOKEN:-}
+  META_APP_SECRET: ${META_APP_SECRET:-}
+  META_PAGE_ID: ${META_PAGE_ID:-}
+  META_IG_USER_ID: ${META_IG_USER_ID:-}
+  META_AD_ACCOUNT_ID: ${META_AD_ACCOUNT_ID:-}
+  FACEBOOK_APP_ID: ${FACEBOOK_APP_ID:-}
+  FACEBOOK_APP_SECRET: ${FACEBOOK_APP_SECRET:-}
+  CACHE_WARM_TZ: ${CACHE_WARM_TZ:-America/Sao_Paulo}
 
+services:
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     image: dashboardsocial-backend:latest
     restart: unless-stopped
-    env_file:
-      - ./deploy/backend.env
     environment:
-      DATABASE_HOST: db
-      DATABASE_PORT: "5432"
-      FRONTEND_ORIGIN: https://monitor.mslestrategia.com.br
+      <<: *backend-common-env
+      PORT: "3001"
+      FRONTEND_ORIGINS: ${FRONTEND_ORIGINS:-http://localhost:3010}
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3010}
       META_SYNC_AUTOSTART: "0"
-      WEB_CONCURRENCY: "2"
-      # coloque secrets no Dokploy (env), não aqui
-    depends_on:
-      - db
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
     expose:
       - "3001"
-    networks:
-      - internal
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:3001/api/instagram/posts?limit=1"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3001/privacy-policy', timeout=5)",
+        ]
       interval: 30s
       timeout: 5s
       retries: 5
@@ -42,32 +51,30 @@ services:
   worker:
     image: dashboardsocial-backend:latest
     restart: unless-stopped
-    env_file:
-      - ./deploy/backend.env
     command: python scheduler_runner.py
+    environment:
+      <<: *backend-common-env
+      META_SYNC_AUTOSTART: "0"
+      SCHEDULER_LOG_LEVEL: ${SCHEDULER_LOG_LEVEL:-INFO}
     depends_on:
-      - backend
-      - db
-    networks:
-      - internal
+      backend:
+        condition: service_healthy
 
   frontend:
     build:
       context: .
       dockerfile: Dockerfile.frontend
       args:
-        REACT_APP_API_URL: https://monitor.mslestrategia.com.br
+        REACT_APP_API_URL: ${REACT_APP_API_URL:-}
+        REACT_APP_FACEBOOK_APP_ID: ${REACT_APP_FACEBOOK_APP_ID:-}
+        REACT_APP_FACEBOOK_CONFIG_ID: ${REACT_APP_FACEBOOK_CONFIG_ID:-}
+        REACT_APP_LEGAL_BASE_URL: ${REACT_APP_LEGAL_BASE_URL:-}
+        REACT_APP_BACKEND_URL: ${REACT_APP_BACKEND_URL:-}
     image: dashboardsocial-frontend:latest
     restart: unless-stopped
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     expose:
       - "80"
-    networks:
-      - internal
 
-networks:
-  internal:
-
-volumes:
-  postgres_data:
