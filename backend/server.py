@@ -158,6 +158,33 @@ def _ensure_meta_tokens_table() -> None:
         logger.error("Falha ao garantir tabela de tokens Meta: %s", err)
 
 
+def _ensure_social_covers_table() -> None:
+    """
+    Garante que a tabela de capas sociais exista para armazenar uploads do frontend.
+    """
+    try:
+        execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS {SOCIAL_COVERS_TABLE} (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                account_id TEXT NOT NULL,
+                platform TEXT NOT NULL,
+                storage_url TEXT NOT NULL,
+                content_type TEXT,
+                size_bytes BIGINT,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                UNIQUE (account_id, platform)
+            );
+            """,
+        )
+        execute(
+            f"CREATE INDEX IF NOT EXISTS {SOCIAL_COVERS_TABLE}_platform_idx ON {SOCIAL_COVERS_TABLE} (platform);"
+        )
+    except Exception as err:  # noqa: BLE001
+        logger.error("Falha ao garantir tabela de capas sociais: %s", err)
+
+
 def _load_connected_accounts() -> List[Dict[str, Any]]:
     try:
         rows = fetch_all(f"SELECT * FROM {CONNECTED_ACCOUNTS_TABLE} ORDER BY label ASC")
@@ -301,6 +328,7 @@ IG_ACCOUNT_SUMMARY_MEM_CACHE: Dict[str, Dict[str, Any]] = {}
 
 _ensure_connected_accounts_table()
 _ensure_meta_tokens_table()
+_ensure_social_covers_table()
 
 
 def validate_timestamp(ts: int, param_name: str = "timestamp") -> int:

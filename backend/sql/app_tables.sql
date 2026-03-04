@@ -176,3 +176,18 @@ CREATE TABLE IF NOT EXISTS reports (
     created_by UUID REFERENCES app_users(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS social_covers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    account_id TEXT NOT NULL,
+    platform TEXT NOT NULL,
+    storage_url TEXT NOT NULL,
+    content_type TEXT,
+    size_bytes BIGINT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (account_id, platform)
+);
+
+CREATE INDEX IF NOT EXISTS social_covers_platform_idx
+    ON social_covers (platform);
