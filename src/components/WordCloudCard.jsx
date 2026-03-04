@@ -21,7 +21,7 @@ const WORD_COLORS = [
 ];
 // Fonte light/clean de wordcloud (referência: traço fino, sem serifa)
 const CLOUD_FONT_FAMILY = "Helvetica Neue, Helvetica, Arial, sans-serif";
-const CLOUD_FONT_WEIGHT = 300;
+const CLOUD_FONT_WEIGHT = 500;
 const DEFAULT_MIN_FONT = 12;
 const DEFAULT_MAX_FONT = 90;
 const DEFAULT_CLOUD_PADDING = 2;
