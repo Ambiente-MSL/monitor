@@ -9,6 +9,7 @@ import unicodedata
 import uuid
 import json
 import threading
+from pathlib import Path
 from collections import Counter, defaultdict
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
@@ -49,7 +50,7 @@ from jobs.instagram_ingest import ingest_account_range, daterange
 from jobs.instagram_comments_ingest import ingest_account_comments
 from scheduler import MetaSyncScheduler
 from postgres_client import get_postgres_client
-from db import execute, fetch_all, fetch_one
+from db import execute, execute_script, fetch_all, fetch_one, is_configured as is_db_configured
 
 # Configurar logging
 logging.basicConfig(
@@ -183,6 +184,18 @@ def _ensure_social_covers_table() -> None:
         )
     except Exception as err:  # noqa: BLE001
         logger.error("Falha ao garantir tabela de capas sociais: %s", err)
+
+
+def _bootstrap_database_schema() -> None:
+    schema_path = Path(__file__).resolve().parent / "sql" / "app_tables.sql"
+    if not schema_path.exists():
+        logger.warning("Arquivo de schema nao encontrado: %s", schema_path)
+        return
+
+    try:
+        execute_script(schema_path.read_text(encoding="utf-8"))
+    except Exception as err:  # noqa: BLE001
+        logger.error("Falha ao garantir schema base: %s", err)
 
 
 def _load_connected_accounts() -> List[Dict[str, Any]]:
@@ -326,6 +339,7 @@ IG_PROFILE_PICTURE_MEM_CACHE: Dict[str, Dict[str, Any]] = {}
 IG_ACCOUNT_SUMMARY_CACHE_TTL_SEC = int(os.getenv("IG_ACCOUNT_SUMMARY_CACHE_TTL_SEC", "900"))
 IG_ACCOUNT_SUMMARY_MEM_CACHE: Dict[str, Dict[str, Any]] = {}
 
+_bootstrap_database_schema()
 _ensure_connected_accounts_table()
 _ensure_meta_tokens_table()
 _ensure_social_covers_table()
@@ -3447,6 +3461,36 @@ def privacy_policy_en_page():
 @app.get("/terms-of-service")
 def terms_of_service_page():
     return _serve_legal_document("terms_of_service.html")
+
+
+@app.get("/api/health")
+def api_health() -> Any:
+    database_configured = False
+    database_reachable = False
+    schema_ready = False
+    error_message = None
+
+    try:
+        database_configured = is_db_configured()
+        if database_configured:
+            row = fetch_one("SELECT 1 AS ok, to_regclass('public.app_users') AS app_users_table")
+            database_reachable = bool(row and row.get("ok") == 1)
+            schema_ready = bool(row and row.get("app_users_table"))
+        else:
+            error_message = "Database connection is not configured."
+    except Exception as err:  # noqa: BLE001
+        error_message = str(err)
+
+    ready = database_configured and database_reachable and schema_ready
+    payload: Dict[str, Any] = {
+        "status": "ok" if ready else "degraded",
+        "databaseConfigured": database_configured,
+        "databaseReachable": database_reachable,
+        "schemaReady": schema_ready,
+    }
+    if error_message:
+        payload["error"] = error_message
+    return jsonify(payload), 200 if ready else 503
 
 
 @app.post("/api/auth/register")

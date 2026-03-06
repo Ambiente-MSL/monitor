@@ -1,4 +1,5 @@
 x-backend-common-env: &backend-common-env
+  DATABASE_URL: ${DATABASE_URL:-}
   DATABASE_HOST: ${DATABASE_HOST:-}
   DATABASE_PORT: ${DATABASE_PORT:-5432}
   DATABASE_NAME: ${DATABASE_NAME:-}
@@ -41,7 +42,7 @@ services:
           "CMD",
           "python",
           "-c",
-          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3001/privacy-policy', timeout=5)",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3001/api/health', timeout=5)",
         ]
       interval: 30s
       timeout: 5s

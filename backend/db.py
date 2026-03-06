@@ -149,6 +149,16 @@ def execute_many(query: PoolQuery, param_seq: Iterable[Mapping[str, Any]]) -> No
         conn.commit()
 
 
+def execute_script(script: str) -> None:
+    pool = get_pool()
+    if pool is None:
+        raise RuntimeError("Database connection is not configured.")
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(script)
+        conn.commit()
+
+
 def format_identifier(name: str) -> sql.Identifier:
     return sql.Identifier(name)
 

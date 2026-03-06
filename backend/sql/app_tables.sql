@@ -34,6 +34,22 @@ CREATE TABLE IF NOT EXISTS meta_user_tokens (
 CREATE UNIQUE INDEX IF NOT EXISTS meta_user_tokens_user_page_idx ON meta_user_tokens (user_id, page_id);
 CREATE INDEX IF NOT EXISTS meta_user_tokens_facebook_idx ON meta_user_tokens (facebook_user_id);
 
+CREATE TABLE IF NOT EXISTS connected_accounts (
+    id TEXT PRIMARY KEY,
+    label TEXT NOT NULL,
+    facebook_page_id TEXT NOT NULL,
+    instagram_user_id TEXT NOT NULL,
+    ad_account_id TEXT NOT NULL,
+    profile_picture_url TEXT,
+    page_picture_url TEXT,
+    source TEXT DEFAULT 'manual',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS connected_accounts_page_idx
+    ON connected_accounts (facebook_page_id);
+
 CREATE TABLE IF NOT EXISTS ig_comments (
     id TEXT PRIMARY KEY,
     account_id TEXT NOT NULL,
