@@ -3463,8 +3463,7 @@ def terms_of_service_page():
     return _serve_legal_document("terms_of_service.html")
 
 
-@app.get("/api/health")
-def api_health() -> Any:
+def _database_health_snapshot() -> tuple[Dict[str, Any], bool]:
     database_configured = False
     database_reachable = False
     schema_ready = False
@@ -3490,6 +3489,18 @@ def api_health() -> Any:
     }
     if error_message:
         payload["error"] = error_message
+    return payload, ready
+
+
+@app.get("/api/health/live")
+def api_health_live() -> Any:
+    return jsonify({"status": "ok"}), 200
+
+
+@app.get("/api/health")
+@app.get("/api/health/ready")
+def api_health() -> Any:
+    payload, ready = _database_health_snapshot()
     return jsonify(payload), 200 if ready else 503
 
 

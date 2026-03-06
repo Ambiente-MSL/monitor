@@ -27,6 +27,9 @@ services:
       dockerfile: Dockerfile
     image: dashboardsocial-backend:latest
     restart: unless-stopped
+    networks:
+      - default
+      - dokploy-network
     environment:
       <<: *backend-common-env
       PORT: "3001"
@@ -42,17 +45,20 @@ services:
           "CMD",
           "python",
           "-c",
-          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3001/api/health', timeout=5)",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3001/api/health/live', timeout=5)",
         ]
       interval: 30s
       timeout: 5s
       retries: 5
-      start_period: 120s
+      start_period: 20s
 
   worker:
     image: dashboardsocial-backend:latest
     restart: unless-stopped
     command: python scheduler_runner.py
+    networks:
+      - default
+      - dokploy-network
     environment:
       <<: *backend-common-env
       META_SYNC_AUTOSTART: "0"
@@ -78,4 +84,8 @@ services:
         condition: service_healthy
     expose:
       - "80"
+
+networks:
+  dokploy-network:
+    external: true
 
