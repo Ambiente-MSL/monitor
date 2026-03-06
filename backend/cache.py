@@ -225,7 +225,7 @@ def get_latest_cached_payload(
 
     normalized_extra = _make_extra(extra)
     if normalized_extra:
-        query = query.eq("extra", normalized_extra)
+        query = query.eq("extra", Json(_sanitize_json(normalized_extra)))
 
     try:
         response = query.order("fetched_at", desc=True).limit(1).execute()
