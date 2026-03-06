@@ -1,5 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import DataState from './DataState';
+import AvatarWithFallback from './AvatarWithFallback';
+import { buildInstagramMediaPreviewCandidates } from '../lib/instagramMedia';
 
 const PostsTable = ({ posts, loading, error }) => {
   const [sortKey, setSortKey] = useState('timestamp');
@@ -105,16 +107,7 @@ const PostsTable = ({ posts, loading, error }) => {
     }
   };
 
-  const getPreviewUrl = (post) => {
-    return [
-      post.preview_url,
-      post.previewUrl,
-      post.thumbnail_url,
-      post.thumbnailUrl,
-      post.media_url,
-      post.mediaUrl,
-    ].find((url) => url && !/\.(mp4|mov)$/i.test(url));
-  };
+  const getPreviewCandidates = (post) => buildInstagramMediaPreviewCandidates(post);
 
   const getPermalink = (post) => {
     return post.permalink || (post.id ? `https://www.instagram.com/p/${post.id}` : null);
@@ -294,7 +287,7 @@ const PostsTable = ({ posts, loading, error }) => {
             const eng = getEngagement(post);
             const postType = getPostType(post);
             const { relative, full } = formatPostDate(post.timestamp || (post.timestamp_unix ? post.timestamp_unix * 1000 : null));
-            const previewUrl = getPreviewUrl(post);
+            const previewCandidates = getPreviewCandidates(post);
             const permalink = getPermalink(post);
             const caption = post.caption || post.text || '';
             const isExpanded = expandedPost === (post.id || idx);
@@ -303,17 +296,20 @@ const PostsTable = ({ posts, loading, error }) => {
               <div key={post.id || idx} className="rp-card" onClick={() => setExpandedPost(isExpanded ? null : (post.id || idx))}>
                 {/* Thumbnail */}
                 <div className="rp-card__thumb">
-                  {previewUrl ? (
-                    <img src={previewUrl} alt={caption || 'Post'} loading="lazy" />
-                  ) : (
-                    <div className="rp-card__thumb-placeholder">
-                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.4">
-                        <rect x="3" y="3" width="18" height="18" rx="2" />
-                        <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
-                        <path d="M21 15l-5-5L5 21" />
-                      </svg>
-                    </div>
-                  )}
+                  <AvatarWithFallback
+                    candidates={previewCandidates}
+                    alt={caption || 'Post'}
+                    imgProps={{ loading: 'lazy' }}
+                    placeholder={(
+                      <div className="rp-card__thumb-placeholder">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.4">
+                          <rect x="3" y="3" width="18" height="18" rx="2" />
+                          <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
+                          <path d="M21 15l-5-5L5 21" />
+                        </svg>
+                      </div>
+                    )}
+                  />
                   {/* Overlay badges */}
                   <div className="rp-card__badges">
                     <span className={`rp-card__type-badge rp-card__type-badge--${postType}`}>
@@ -423,7 +419,7 @@ const PostsTable = ({ posts, loading, error }) => {
             const eng = getEngagement(post);
             const postType = getPostType(post);
             const { relative, full } = formatPostDate(post.timestamp || (post.timestamp_unix ? post.timestamp_unix * 1000 : null));
-            const previewUrl = getPreviewUrl(post);
+            const previewCandidates = getPreviewCandidates(post);
             const permalink = getPermalink(post);
             const caption = post.caption || post.text || '';
 
@@ -431,15 +427,18 @@ const PostsTable = ({ posts, loading, error }) => {
               <div key={post.id || idx} className="rp-list-item">
                 {/* Thumbnail */}
                 <div className="rp-list-item__thumb">
-                  {previewUrl ? (
-                    <img src={previewUrl} alt={caption || 'Post'} loading="lazy" />
-                  ) : (
-                    <div className="rp-list-item__thumb-placeholder">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.4">
-                        <rect x="3" y="3" width="18" height="18" rx="2" />
-                      </svg>
-                    </div>
-                  )}
+                  <AvatarWithFallback
+                    candidates={previewCandidates}
+                    alt={caption || 'Post'}
+                    imgProps={{ loading: 'lazy' }}
+                    placeholder={(
+                      <div className="rp-list-item__thumb-placeholder">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.4">
+                          <rect x="3" y="3" width="18" height="18" rx="2" />
+                        </svg>
+                      </div>
+                    )}
+                  />
                   <span className={`rp-list-item__type rp-list-item__type--${postType}`}>
                     {getPostTypeLabel(postType)}
                   </span>

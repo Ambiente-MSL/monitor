@@ -1,9 +1,8 @@
 // src/components/InstagramRanking.jsx
 import { Play, Heart, MessageCircle, ExternalLink, TrendingUp } from "lucide-react";
 import DataState from "./DataState";
-
-const isLikelyVideoUrl = (url) =>
-  typeof url === "string" && /\.(mp4|mov|mpe?g|m4v|avi|wmv|flv)(\?|$)/i.test(url);
+import AvatarWithFallback from "./AvatarWithFallback";
+import { buildInstagramMediaPreviewCandidates } from "../lib/instagramMedia";
 
 export default function InstagramRanking({ posts, loading }) {
   if (loading) {
@@ -40,35 +39,17 @@ export default function InstagramRanking({ posts, loading }) {
           const mediaProductType = String(post.mediaProductType || post.media_product_type || "").toUpperCase();
           const isVideo = rawMediaType === "VIDEO" || rawMediaType === "REEL" || rawMediaType === "IGTV" || mediaProductType === "REEL";
 
-          const previewCandidates = [
-            post.previewUrl,
-            post.preview_url,
-            post.thumbnailUrl,
-            post.thumbnail_url,
-            post.posterUrl,
-            post.poster_url,
-            post.mediaPreviewUrl,
-            post.media_preview_url,
-          ];
-
-          if (!isVideo) {
-            const mediaCandidate = post.mediaUrl || post.media_url;
-            if (mediaCandidate && !isLikelyVideoUrl(mediaCandidate)) previewCandidates.push(mediaCandidate);
-          }
-
-          const previewUrl = previewCandidates.find((url) => url && !isLikelyVideoUrl(url));
+          const previewCandidates = buildInstagramMediaPreviewCandidates(post);
 
           return (
             <div key={post.id} className="ig-ranking-item">
               {/* Preview com badge de posição */}
               <div className="ig-ranking-item__preview">
-                {previewUrl ? (
-                  <img src={previewUrl} alt={`Post #${index + 1}`} />
-                ) : (
-                  <div className="ig-ranking-item__no-preview">
-                    Sem imagem
-                  </div>
-                )}
+                <AvatarWithFallback
+                  candidates={previewCandidates}
+                  alt={`Post #${index + 1}`}
+                  placeholder={<div className="ig-ranking-item__no-preview">Sem imagem</div>}
+                />
                 <span className={`ig-ranking-item__position ig-ranking-item__position--${index + 1}`}>
                   #{index + 1}
                 </span>

@@ -84,6 +84,7 @@ import {
 } from "../lib/dashboardCache";
 import { getApiErrorMessage, isApiEnvelope, unwrapApiData } from "../lib/apiEnvelope";
 import { buildInstagramAvatarCandidates } from "../lib/avatar";
+import { buildInstagramMediaPreviewCandidates } from "../lib/instagramMedia";
 import { formatChartDate, formatCompactNumber, formatTooltipNumber } from "../lib/chartFormatters";
 import { normalizeSyncInfo } from "../lib/syncInfo";
 
@@ -4119,14 +4120,7 @@ const profileViewsMetric = useMemo(() => {
                         const comments = resolvePostMetric(post, "comments");
                         const saves = resolvePostMetric(post, "saves");
                         const shares = resolvePostMetric(post, "shares");
-                        const previewUrl = [
-                          post.previewUrl,
-                          post.preview_url,
-                          post.thumbnailUrl,
-                          post.thumbnail_url,
-                          post.mediaUrl,
-                          post.media_url,
-                        ].find((url) => url && !/\.(mp4|mov)$/i.test(url));
+                        const previewCandidates = buildInstagramMediaPreviewCandidates(post);
 
                         const postDate = post.timestamp ? new Date(post.timestamp) : null;
                         const dateStr = postDate ? postDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
@@ -4151,11 +4145,11 @@ const profileViewsMetric = useMemo(() => {
                                     }
                                   }}
                                 >
-                                  {previewUrl ? (
-                                    <img src={previewUrl} alt="Post" />
-                                  ) : (
-                                    <div className="ig-empty-thumb">Sem imagem</div>
-                                  )}
+                                  <AvatarWithFallback
+                                    candidates={previewCandidates}
+                                    alt="Post"
+                                    placeholder={<div className="ig-empty-thumb">Sem imagem</div>}
+                                  />
                                 </div>
                                 <div className="ig-top-post-compact__datetime">
                                   {dateStr} {timeStr}
@@ -4778,15 +4772,7 @@ const profileViewsMetric = useMemo(() => {
                     {(topPostsByViews || []).length > 0 ? (
                       <div style={{ display: 'flex', gap: '14px', overflowX: 'auto', paddingBottom: '8px' }}>
                         {(topPostsByViews || []).slice(0, 5).map((post, idx) => {
-                          const previewUrl = [
-                            post.previewUrl,
-                            post.preview_url,
-                            post.thumbnailUrl,
-                            post.thumbnail_url,
-                            post.mediaUrl,
-                            post.media_url,
-                            post.thumbnail,
-                          ].find((url) => url && !/\.(mp4|mov)$/i.test(url));
+                          const previewCandidates = buildInstagramMediaPreviewCandidates(post);
                           const views = resolvePostViews(post);
                           return (
                             <div
@@ -4795,17 +4781,19 @@ const profileViewsMetric = useMemo(() => {
                               onClick={() => setSelectedPost(post)}
                             >
                               <div className="ig-top-post-card__thumb">
-                                {previewUrl ? (
-                                  <img src={previewUrl} alt="Post" />
-                                ) : (
-                                  <div className="ig-top-post-card__placeholder">
-                                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                                      <circle cx="8.5" cy="8.5" r="1.5" />
-                                      <polyline points="21 15 16 10 5 21" />
-                                    </svg>
-                                  </div>
-                                )}
+                                <AvatarWithFallback
+                                  candidates={previewCandidates}
+                                  alt="Post"
+                                  placeholder={(
+                                    <div className="ig-top-post-card__placeholder">
+                                      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                        <circle cx="8.5" cy="8.5" r="1.5" />
+                                        <polyline points="21 15 16 10 5 21" />
+                                      </svg>
+                                    </div>
+                                  )}
+                                />
                               </div>
                               <div className="ig-top-post-card__info">
                                 <span className="ig-top-post-card__value">{formatNumber(views)}</span>
@@ -5152,15 +5140,7 @@ const profileViewsMetric = useMemo(() => {
                     {(topPosts || []).length > 0 ? (
                       <div style={{ display: 'flex', gap: '14px', overflowX: 'auto', paddingBottom: '8px' }}>
                         {(topPosts || []).slice(0, 5).map((post, idx) => {
-                          const previewUrl = [
-                            post.previewUrl,
-                            post.preview_url,
-                            post.thumbnailUrl,
-                            post.thumbnail_url,
-                            post.mediaUrl,
-                            post.media_url,
-                            post.thumbnail,
-                          ].find((url) => url && !/\.(mp4|mov)$/i.test(url));
+                          const previewCandidates = buildInstagramMediaPreviewCandidates(post);
                           const engagement = sumInteractions(post);
                           return (
                             <div
@@ -5169,17 +5149,19 @@ const profileViewsMetric = useMemo(() => {
                               onClick={() => setSelectedPost(post)}
                             >
                               <div className="ig-top-post-card__thumb">
-                                {previewUrl ? (
-                                  <img src={previewUrl} alt="Post" />
-                                ) : (
-                                  <div className="ig-top-post-card__placeholder">
-                                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                                      <circle cx="8.5" cy="8.5" r="1.5" />
-                                      <polyline points="21 15 16 10 5 21" />
-                                    </svg>
-                                  </div>
-                                )}
+                                <AvatarWithFallback
+                                  candidates={previewCandidates}
+                                  alt="Post"
+                                  placeholder={(
+                                    <div className="ig-top-post-card__placeholder">
+                                      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                        <circle cx="8.5" cy="8.5" r="1.5" />
+                                        <polyline points="21 15 16 10 5 21" />
+                                      </svg>
+                                    </div>
+                                  )}
+                                />
                               </div>
                               <div className="ig-top-post-card__info">
                                 <span className="ig-top-post-card__value">{formatNumber(engagement)}</span>

@@ -336,6 +336,8 @@ IG_PROFILE_PICTURE_ALLOWED_HOSTS = (
     "facebook.com",
 )
 IG_PROFILE_PICTURE_MEM_CACHE: Dict[str, Dict[str, Any]] = {}
+IG_MEDIA_PREVIEW_CACHE_TTL_SEC = int(os.getenv("IG_MEDIA_PREVIEW_CACHE_TTL_SEC", "900"))
+IG_MEDIA_PREVIEW_MEM_CACHE: Dict[str, Dict[str, Any]] = {}
 IG_ACCOUNT_SUMMARY_CACHE_TTL_SEC = int(os.getenv("IG_ACCOUNT_SUMMARY_CACHE_TTL_SEC", "900"))
 IG_ACCOUNT_SUMMARY_MEM_CACHE: Dict[str, Dict[str, Any]] = {}
 
@@ -2012,6 +2014,48 @@ def _is_allowed_profile_picture_url(url: str) -> bool:
     if scheme not in {"http", "https"} or not host:
         return False
     return any(host == suffix or host.endswith(f".{suffix}") for suffix in IG_PROFILE_PICTURE_ALLOWED_HOSTS)
+
+
+def _resolve_instagram_media_preview_url(media_id: str, *, force_refresh: bool = False) -> str:
+    normalized_media_id = str(media_id or "").strip()
+    if not normalized_media_id:
+        return ""
+
+    now_ts = time.time()
+    if not force_refresh:
+        cached = IG_MEDIA_PREVIEW_MEM_CACHE.get(normalized_media_id)
+        if cached:
+            age_seconds = now_ts - float(cached.get("ts") or 0)
+            cached_url = str(cached.get("url") or "")
+            if age_seconds < IG_MEDIA_PREVIEW_CACHE_TTL_SEC and cached_url:
+                return cached_url
+
+    preview_url = ""
+    try:
+        media_payload = gget(
+            f"/{normalized_media_id}",
+            {"fields": "id,media_type,media_product_type,media_url,thumbnail_url"},
+        )
+        media_type = str((media_payload or {}).get("media_type") or "").upper()
+        thumbnail_url = _normalize_remote_image_url((media_payload or {}).get("thumbnail_url"))
+        media_url = _normalize_remote_image_url((media_payload or {}).get("media_url"))
+        if media_type in {"VIDEO", "REEL", "IGTV"} and thumbnail_url:
+            preview_url = thumbnail_url
+        else:
+            preview_url = media_url or thumbnail_url
+    except MetaAPIError as err:
+        logger.warning("Falha ao resolver preview do media IG %s via Meta: %s", normalized_media_id, err)
+    except Exception as err:  # noqa: BLE001
+        logger.warning("Erro inesperado ao resolver preview do media IG %s: %s", normalized_media_id, err)
+
+    if not _is_allowed_profile_picture_url(preview_url):
+        return ""
+
+    IG_MEDIA_PREVIEW_MEM_CACHE[normalized_media_id] = {
+        "url": preview_url,
+        "ts": now_ts,
+    }
+    return preview_url
 
 
 def _resolve_instagram_profile_picture_url(ig_user_id: str, *, force_refresh: bool = False) -> str:
@@ -5033,6 +5077,51 @@ def instagram_profile_picture_proxy():
         return jsonify({"error": "could not fetch profile picture"}), 502
     except Exception as err:  # noqa: BLE001
         logger.exception("Erro inesperado no proxy de avatar IG %s", ig_user_id)
+        return jsonify({"error": str(err)}), 500
+
+
+@app.get("/api/instagram/media-preview")
+def instagram_media_preview_proxy():
+    media_id = str(request.args.get("mediaId") or "").strip()
+    if not media_id:
+        return jsonify({"error": "mediaId is required"}), 400
+
+    force_refresh = str(request.args.get("force") or "").strip().lower() in {"1", "true", "yes", "y"}
+    preview_url = _resolve_instagram_media_preview_url(media_id, force_refresh=force_refresh)
+    if not preview_url:
+        return jsonify({"error": "media preview is not available"}), 404
+
+    def _download(url: str):
+        return requests.get(
+            url,
+            timeout=IG_PROFILE_PICTURE_REQUEST_TIMEOUT_SEC,
+            headers={"User-Agent": "Mozilla/5.0 (compatible; MonitorMediaProxy/1.0)"},
+        )
+
+    try:
+        upstream = _download(preview_url)
+        if not upstream.ok and not force_refresh:
+            refreshed_url = _resolve_instagram_media_preview_url(media_id, force_refresh=True)
+            if refreshed_url and refreshed_url != preview_url:
+                preview_url = refreshed_url
+                upstream = _download(preview_url)
+        if not upstream.ok:
+            logger.warning(
+                "Falha no proxy de preview IG %s: status %s",
+                media_id,
+                upstream.status_code,
+            )
+            return jsonify({"error": "could not fetch media preview"}), 502
+
+        content_type = upstream.headers.get("Content-Type") or "image/jpeg"
+        response = Response(upstream.content, status=200, mimetype=content_type)
+        response.headers["Cache-Control"] = "public, max-age=300"
+        return response
+    except requests.RequestException as err:
+        logger.warning("Falha de rede ao buscar preview IG %s: %s", media_id, err)
+        return jsonify({"error": "could not fetch media preview"}), 502
+    except Exception as err:  # noqa: BLE001
+        logger.exception("Erro inesperado no proxy de preview IG %s", media_id)
         return jsonify({"error": str(err)}), 500
 
 

@@ -1,5 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { X, Heart, MessageCircle, Send, Bookmark, ExternalLink, Play } from "lucide-react";
+import AvatarWithFallback from "./AvatarWithFallback";
+import { buildInstagramAvatarCandidates } from "../lib/avatar";
+import { buildInstagramMediaPreviewCandidates } from "../lib/instagramMedia";
 
 const formatNumber = (num) => {
   if (num == null || Number.isNaN(num)) return "0";
@@ -165,17 +168,8 @@ export default function InstagramPostModal({ post, onClose, accountInfo }) {
   });
 
   // Usar mesma logica dos cards - buscar primeira URL valida que nao seja video
-  const mediaUrl = [
-    post.previewUrl,
-    post.preview_url,
-    post.thumbnailUrl,
-    post.thumbnail_url,
-    post.mediaPreviewUrl,
-    post.media_preview_url,
-    !isVideo ? post.mediaUrl : null,
-    !isVideo ? post.media_url : null,
-    post.thumbnail,
-  ].find((url) => url && !isLikelyVideoUrl(url));
+  const mediaPreviewCandidates = buildInstagramMediaPreviewCandidates(post);
+  const mediaUrl = mediaPreviewCandidates[0] || "";
   const showVideoPlayer = isVideo && videoUrl && !videoError;
 
   // Usar resolvePostMetric para extrair metricas corretamente
@@ -192,7 +186,10 @@ export default function InstagramPostModal({ post, onClose, accountInfo }) {
   const timestamp = post.timestamp;
 
   const username = accountInfo?.username || accountInfo?.name || "Instagram";
-  const profilePic = accountInfo?.profile_picture_url;
+  const profilePicCandidates = buildInstagramAvatarCandidates({
+    instagramUserId: accountInfo?.id,
+    profilePictureUrl: accountInfo?.profile_picture_url,
+  });
 
   return (
     <div
@@ -406,11 +403,11 @@ export default function InstagramPostModal({ post, onClose, accountInfo }) {
             borderBottom: "1px solid var(--stroke)",
             gap: "12px"
           }}>
-            {profilePic ? (
-              <img
-                src={profilePic}
+            {profilePicCandidates.length ? (
+              <AvatarWithFallback
+                candidates={profilePicCandidates}
                 alt={username}
-                style={{
+                imageStyle={{
                   width: "40px",
                   height: "40px",
                   borderRadius: "50%",

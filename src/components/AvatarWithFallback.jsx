@@ -10,6 +10,8 @@ export default function AvatarWithFallback({
   placeholderText = "?",
   imageStyle,
   placeholderStyle,
+  imgProps = {},
+  placeholder = null,
 }) {
   const normalizedCandidates = useMemo(
     () => dedupeNormalizedUrls(Array.isArray(candidates) ? candidates : [candidates]),
@@ -25,11 +27,8 @@ export default function AvatarWithFallback({
   const src = normalizedCandidates[candidateIndex] || "";
 
   if (!src) {
-    return (
-      <span className={placeholderClassName} style={placeholderStyle}>
-        {placeholderText}
-      </span>
-    );
+    if (placeholder) return placeholder;
+    return <span className={placeholderClassName} style={placeholderStyle}>{placeholderText}</span>;
   }
 
   return (
@@ -38,7 +37,13 @@ export default function AvatarWithFallback({
       alt={alt}
       className={imageClassName}
       style={imageStyle}
-      onError={() => setCandidateIndex((current) => current + 1)}
+      {...imgProps}
+      onError={(event) => {
+        if (typeof imgProps.onError === "function") {
+          imgProps.onError(event);
+        }
+        setCandidateIndex((current) => current + 1);
+      }}
     />
   );
 }
@@ -51,4 +56,6 @@ AvatarWithFallback.propTypes = {
   placeholderText: PropTypes.node,
   imageStyle: PropTypes.object,
   placeholderStyle: PropTypes.object,
+  imgProps: PropTypes.object,
+  placeholder: PropTypes.node,
 };
